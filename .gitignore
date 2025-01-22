@@ -17,3 +17,6 @@ logs/
 .DS_Store
 Thumbs.dbnode-modules/
 node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node
+
+coffee-processing.db
+database.sqlite
