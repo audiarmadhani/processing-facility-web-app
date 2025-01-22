@@ -1,0 +1,83 @@
+import * as React from 'react';
+import { NextAppProvider } from '@toolpad/core/nextjs';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+import type { Navigation } from '@toolpad/core/AppProvider';
+import { SessionProvider, signIn, signOut } from 'next-auth/react';
+import theme from '../theme';
+import { auth } from '../auth';
+
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import WarehouseIcon from "@mui/icons-material/Warehouse";
+import NoteAltIcon from "@mui/icons-material/NoteAlt";
+import FactoryIcon from "@mui/icons-material/Factory";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import CottageIcon from "@mui/icons-material/Cottage";
+import GroupsIcon from "@mui/icons-material/Groups";
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import AdjustIcon from '@mui/icons-material/Adjust';
+import SummarizeIcon from '@mui/icons-material/Summarize';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+
+const NAVIGATION: Navigation = [
+  { kind: "header", title: "Main items" },
+  { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
+  { kind: "divider" },
+  {
+    segment: "station",
+    title: "Station",
+    icon: <CottageIcon />,
+    children: [
+      { segment: "receivingstation", title: "Receiving", icon: <WarehouseIcon /> },
+      { segment: "qcstation", title: "Quality Control", icon: <NoteAltIcon /> },
+      { segment: "preprocessingstation", title: "Pre-Processing", icon: <FactoryIcon /> },
+      { segment: "postprocessingstation", title: "Post-Processing", icon: <LocalShippingIcon /> },
+    ],
+  },
+  { kind: "divider" },
+  { segment: "farmer", title: "Our Farmers", icon: <GroupsIcon /> },
+  { kind: "divider" },
+  {
+    segment: "admin",
+    title: "Admin",
+    icon: <AdminPanelSettingsIcon />,
+    children: [
+      { segment: "schedule", title: "Schedule (WIP)", icon: <CalendarMonthIcon /> },
+      { segment: "target", title: "Target", icon: <AdjustIcon /> },
+      { segment: "report", title: "Report (WIP)", icon: <SummarizeIcon /> },
+      { segment: "cctv", title: "CCTV (WIP)", icon: <VideocamIcon /> },
+    ],
+  },
+];
+
+const AUTHENTICATION = {
+  signIn,
+  signOut,
+};
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth();
+  return (
+    <html lang="en" data-toolpad-color-scheme="light">
+      <body>
+        <SessionProvider session={session}>
+          <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+            <NextAppProvider
+              theme={theme}
+              navigation={NAVIGATION}
+              session={session}
+              authentication={AUTHENTICATION}
+              branding={{
+                // logo: <img src="https://mui.com/static/logo.png" alt="MUI logo" />,
+                title: 'Processing Facility Platform',
+                homeUrl: '/',
+              }}
+            >
+              {children}
+            </NextAppProvider>
+          </AppRouterCacheProvider>
+        </SessionProvider>
+      </body>
+    </html>
+  );
+}
