@@ -31,6 +31,8 @@ secrets.txt
 # Ignore operating system files
 .DS_Store
 Thumbs.db
+node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node
+
 
 # Environment variables
 *.env*
