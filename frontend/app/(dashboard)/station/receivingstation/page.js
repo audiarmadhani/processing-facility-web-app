@@ -17,6 +17,8 @@ import {
   OutlinedInput,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 function ReceivingStation() {
   const [farmerName, setFarmerName] = useState('');
@@ -50,7 +52,7 @@ function ReceivingStation() {
   // Fetch farmers data from API
   const fetchFarmerList = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/farmer');
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/farmer');
       if (!response.ok) throw new Error('Failed to fetch farmers');
 
       const data = await response.json();
@@ -66,7 +68,7 @@ function ReceivingStation() {
 
   const fetchReceivingData = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/receiving');
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
       if (!response.ok) throw new Error('Failed to fetch receiving data');
 
       const data = await response.json();
@@ -129,7 +131,7 @@ function ReceivingStation() {
     };
 
     try {
-      const response = await fetch('http://localhost:5001/api/receiving', {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

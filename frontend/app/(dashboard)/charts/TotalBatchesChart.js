@@ -5,6 +5,8 @@ import { LineChart, Line, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'rec
 import axios from 'axios';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const TotalBatchesChart = () => {
   const [data, setData] = useState([]);
@@ -14,7 +16,7 @@ const TotalBatchesChart = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/dashboard-metrics');
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/dashboard-metrics');
         const formattedData = response.data.totalWeightBagsbyDate.map(item => ({
           date: new Date(item.DATE).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }), // Format date
           totalWeight: item.TOTAL_WEIGHT,

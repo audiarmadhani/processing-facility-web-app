@@ -5,6 +5,7 @@ import { AreaChart, Area, Tooltip, XAxis, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 const ArabicaProcessedMoM = () => {
@@ -63,7 +64,7 @@ const ArabicaProcessedMoM = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/dashboard-metrics');
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/dashboard-metrics');
         const formattedData = response.data.arabicaProcessedMoM.map(item => ({
           date: item.Date,
           thisMonth: item.TotalWeightThisMonth,

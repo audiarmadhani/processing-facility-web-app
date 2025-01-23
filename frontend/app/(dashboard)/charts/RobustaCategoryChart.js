@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
 import axios from "axios";
 import { Box, Typography, CircularProgress } from "@mui/material";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const RobustaCategoryChart = () => {
   const [data, setData] = useState([]);
@@ -14,7 +16,7 @@ const RobustaCategoryChart = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/dashboard-metrics");
+        const response = await axios.get("https://processing-facility-backend.onrender.com/api/dashboard-metrics");
         const transformedData = processChartData(response.data.robustaTotalWeightbyDate);
         setData(transformedData.dataset);
         setCategories(transformedData.categories);

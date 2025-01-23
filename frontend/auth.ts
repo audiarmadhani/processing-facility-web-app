@@ -4,6 +4,8 @@ import type { Provider } from 'next-auth/providers';
 import axios from 'axios';
 
 const bcrypt = require('bcryptjs'); // Use bcryptjs instead of bcrypt
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 // Define the User type to match your user model
 type User = {
@@ -22,7 +24,7 @@ const providers: Provider[] = [
     authorize: async (credentials) => {
       try {
         // Fetch the list of users from the API
-        const response = await axios.get('http://localhost:5001/api/');
+        const response = await axios.get('${API_BASE_URL}/api/');
         const users: User[] = response.data; // Ensure the users array is typed
     
         // Find the user with the matching email

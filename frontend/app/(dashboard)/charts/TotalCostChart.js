@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import { Box, Typography, CircularProgress } from '@mui/material';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const TotalCostChart = () => {
   const [data, setData] = useState([]);
@@ -12,7 +14,7 @@ const TotalCostChart = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/dashboard-metrics');
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/dashboard-metrics');
         
         // Access totalWeightBagsbyDate directly from the response
         const formattedData = response.data.totalCostbyDate.map(item => ({

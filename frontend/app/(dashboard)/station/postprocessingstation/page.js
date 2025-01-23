@@ -17,6 +17,8 @@ import {
   OutlinedInput,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 function PostprocessingStation() {
   const [notes, setNotes] = useState('');
@@ -46,7 +48,7 @@ function PostprocessingStation() {
 
   const fetchPostprocessingData = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/postprocessing');
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/postprocessing');
       if (!response.ok) throw new Error('Failed to fetch post processing data');
 
       const data = await response.json();
@@ -82,7 +84,7 @@ function PostprocessingStation() {
     };
 
     try {
-      const response = await fetch('http://localhost:5001/api/postprocessing', {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/postprocessing', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

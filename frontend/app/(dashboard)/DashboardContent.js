@@ -17,6 +17,7 @@ import ArabicaProductionMoM from './charts/ArabicaProductionMoM'; // Adjust the 
 import RobustaProductionMoM from './charts/RobustaProductionMoM'; // Adjust the path as necessary
 import ArabicaCategoryChart from './charts/ArabicaCategoryChart'; // Adjust the path as necessary
 import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the path as necessary
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 function Dashboard() {
@@ -36,7 +37,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/dashboard-metrics');
+        const response = await axios.get('${API_BASE_URL}/api/dashboard-metrics');
         setMetrics(response.data);
         setLoading(false);
       } catch (error) {

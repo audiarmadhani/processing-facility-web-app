@@ -23,6 +23,7 @@ import {
 import Alert from '@mui/material/Alert';
 import Webcam from 'react-webcam';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 const QCStation = () => {
@@ -123,7 +124,7 @@ const uploadImage = async (file, batchNumber) => {
     formData.append('file', file);
     formData.append('batchNumber', batchNumber);
 
-    const response = await fetch('http://localhost:5001/api/upload-image', {
+    const response = await fetch('https://processing-facility-backend.onrender.com/api/upload-image', {
       method: 'POST',
       body: formData,
     });
@@ -143,7 +144,7 @@ const uploadImage = async (file, batchNumber) => {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/qc');
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
         if (!response.ok) throw new Error('Failed to fetch QC data');
         const data = await response.json();
         setQcData(data.allRows || []);
@@ -157,7 +158,7 @@ const uploadImage = async (file, batchNumber) => {
   useEffect(() => {
     const fetchReceivingData = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/receiving');
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
         if (!response.ok) throw new Error('Failed to fetch receiving data');
   
         const data = await response.json();
@@ -227,7 +228,7 @@ const uploadImage = async (file, batchNumber) => {
   // Handle batch number search
   const handleBatchNumberSearch = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/receiving/${batchNumber}`);
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch receiving data');
       const data = await response.json();
 
@@ -270,7 +271,7 @@ const uploadImage = async (file, batchNumber) => {
     };
 
     try {
-      const response = await fetch('http://localhost:5001/api/qc', {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/qc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(qcDataPayload),
@@ -294,7 +295,7 @@ const uploadImage = async (file, batchNumber) => {
       setQcNotes('');
 
       // Refresh the QC data
-      const refreshQCData = await fetch('http://localhost:5001/api/qc');
+      const refreshQCData = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const refreshData = await refreshQCData.json();
       setQcData(refreshData.allRows || []);
 

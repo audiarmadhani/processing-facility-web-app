@@ -18,6 +18,8 @@ import {
 } from '@mui/material';
 
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const PreprocessingStation = () => {
   const [rfidTag, setRfidTag] = useState('');
@@ -50,7 +52,7 @@ const PreprocessingStation = () => {
 
   const fetchAvailableBags = async (batchNumber, totalBags) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/preprocessing/${batchNumber}`);
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch preprocessing data');
   
       const preprocessingResponse = await response.json();
@@ -80,7 +82,7 @@ const PreprocessingStation = () => {
 
   const fetchBatchData = async (batchNumber) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/receiving/${batchNumber}`);
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch receiving data');
   
       const dataArray = await response.json();
@@ -127,7 +129,7 @@ const PreprocessingStation = () => {
     setRfidTag(scannedTag);
 
     try {
-      const response = await fetch(`http://localhost:5001/api/getBatchDetails/${scannedTag}`);
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/getBatchDetails/${scannedTag}`);
       if (!response.ok) throw new Error('Failed to fetch batch details');
       
       const data = await response.json();
@@ -151,10 +153,10 @@ const PreprocessingStation = () => {
 
   const fetchBagsHistory = async () => {
     try {
-      const batchesResponse = await fetch("http://localhost:5001/api/receiving");
+      const batchesResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving");
       const batches = await batchesResponse.json();
 
-      const processedResponse = await fetch("http://localhost:5001/api/preprocessing");
+      const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing");
       const processedBags = await processedResponse.json();
 
       const historyData = batches.map((batch) => {
@@ -205,7 +207,7 @@ const PreprocessingStation = () => {
     };
 
     try {
-        const response = await fetch('http://localhost:5001/api/preprocessing', {
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(preprocessingData),
@@ -245,9 +247,9 @@ const PreprocessingStation = () => {
 
   const fetchPreprocessingData = async () => {
     try {
-      const receivingResponse = await fetch('http://localhost:5001/api/receiving');
-      const QCResponse = await fetch('http://localhost:5001/api/qc');
-      const preprocessingResponse = await fetch('http://localhost:5001/api/preprocessing');
+      const receivingResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
+      const QCResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
+      const preprocessingResponse = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing');
 
       const receivingRawResult = await receivingResponse.json();
       const QCResult = await QCResponse.json();
