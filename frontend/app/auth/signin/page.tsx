@@ -24,15 +24,6 @@ function SignUpLink() {
   );
 }
 
-function DemoInfo() {
-  return (
-    <Alert severity="info" style={{marginBottom: "20px"}}>
-      You can use <strong>audiarmadhani.aa@gmail.com</strong> with the password <strong>testing</strong> to
-      test
-    </Alert>
-  );
-}
-
 export default function SignIn() {
   return (
     <SignInPage
@@ -41,7 +32,6 @@ export default function SignIn() {
       slots={{
         forgotPasswordLink: ForgotPasswordLink,
         signUpLink: SignUpLink,
-        subtitle: DemoInfo,
       }}
     />
   );
