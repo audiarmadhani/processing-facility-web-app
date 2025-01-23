@@ -64,7 +64,7 @@ const arabicaAvgCostMoM = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/dashboard-metrics');
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics`);
         const formattedData = response.data.arabicaAvgCostMoM.map(item => ({
           date: item.Date,
           thisMonth: item.RunningAverageCostThisMonth,

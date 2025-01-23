@@ -37,7 +37,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await axios.get('${API_BASE_URL}/api/dashboard-metrics');
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/dashboard-metrics');
         setMetrics(response.data);
         setLoading(false);
       } catch (error) {
