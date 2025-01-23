@@ -33,6 +33,18 @@ function Dashboard() {
 
   const [loading, setLoading] = useState(true);
 
+  const formatWeight = (weight) => {
+    if (weight >= 1e9) {
+      return `${(weight / 1e9).toFixed(2)} B`; // Format to billions
+    } else if (weight >= 1e6) {
+      return `${(weight / 1e6).toFixed(2)} M`; // Format to millions
+    } else if (weight >= 1e3) {
+      return `${(weight / 1e3).toFixed(2)} K`; // Format to millions
+    } else {
+      return `Rp ${new Intl.NumberFormat('de-DE').format(weight)} /kg`; // Format normally
+    }
+  };
+
   // Fetch metrics from the backend
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -102,7 +114,9 @@ function Dashboard() {
             <CardContent>
               <Typography variant="body1">Total Arabica Cherry Cost</Typography>
               <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                Rp {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaCost)} /kg
+                <Typography>
+                  {formatWeight(metrics.totalArabicaCost)}
+                </Typography>
                 {metrics.lastmonthArabicaCost !== 0 && (
                   <Typography
                     variant="subtitle2"
@@ -162,7 +176,9 @@ function Dashboard() {
             <CardContent>
               <Typography variant="body1">Total Robusta Cherry Cost</Typography>
               <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                Rp {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaCost)} /kg
+                <Typography>
+                  {formatWeight(metrics.totalRobustaCost)}
+                </Typography>
                 {metrics.lastmonthRobustaCost !== 0 && (
                   <Typography
                     variant="subtitle2"
