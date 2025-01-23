@@ -114,9 +114,7 @@ function Dashboard() {
             <CardContent>
               <Typography variant="body1">Total Arabica Cherry Cost</Typography>
               <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography>
-                  {formatWeight(metrics.totalArabicaCost)}
-                </Typography>
+                {formatWeight(metrics.totalArabicaCost)}
                 {metrics.lastmonthArabicaCost !== 0 && (
                   <Typography
                     variant="subtitle2"
@@ -176,9 +174,7 @@ function Dashboard() {
             <CardContent>
               <Typography variant="body1">Total Robusta Cherry Cost</Typography>
               <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography>
-                  {formatWeight(metrics.totalRobustaCost)}
-                </Typography>
+                {formatWeight(metrics.totalRobustaCost)}
                 {metrics.lastmonthRobustaCost !== 0 && (
                   <Typography
                     variant="subtitle2"
