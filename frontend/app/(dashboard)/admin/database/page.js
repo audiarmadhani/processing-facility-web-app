@@ -1,40 +1,68 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Box, Typography, MenuItem, Select, FormControl, InputLabel, Button } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/DeleteOutlined";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Close";
+import {
+  DataGrid,
+  GridActionsCellItem,
+  GridRowModes,
+  GridToolbarContainer,
+  GridRowEditStopReasons,
+} from "@mui/x-data-grid";
 import axios from "axios";
 
 const API_BASE_URL = "https://processing-facility-backend.onrender.com"; // Replace with your backend URL
 
-function DatabasePage() {
-  const [tables, setTables] = useState([]); // List of tables in the database
-  const [selectedTable, setSelectedTable] = useState(""); // Currently selected table
-  const [columns, setColumns] = useState([]); // Table columns
-  const [rows, setRows] = useState([]); // Table rows
-  const [loading, setLoading] = useState(false); // Loading state
+function EditToolbar({ setRows, setRowModesModel }) {
+  const handleAddClick = () => {
+    const id = Math.random().toString(36).substr(2, 9); // Generate a random ID
+    setRows((prevRows) => [
+      ...prevRows,
+      { id, isNew: true }, // Add a new row with default empty fields
+    ]);
+    setRowModesModel((prev) => ({
+      ...prev,
+      [id]: { mode: GridRowModes.Edit, fieldToFocus: "id" },
+    }));
+  };
 
-  // Fetch tables from the API
+  return (
+    <GridToolbarContainer>
+      <Button color="primary" startIcon={<AddIcon />} onClick={handleAddClick}>
+        Add record
+      </Button>
+    </GridToolbarContainer>
+  );
+}
+
+export default function DatabasePage() {
+  const [tables, setTables] = useState([]);
+  const [selectedTable, setSelectedTable] = useState("");
+  const [rows, setRows] = useState([]);
+  const [columns, setColumns] = useState([]);
+  const [rowModesModel, setRowModesModel] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  // Fetch list of tables
   useEffect(() => {
     const fetchTables = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/tables`);
-        setTables(response.data); // Set the tables array
+        setTables(response.data);
       } catch (err) {
-        console.error('Error fetching tables:', err);
+        console.error("Error fetching tables:", err);
       }
     };
-
     fetchTables();
   }, []);
 
-  // Handle table selection
-  const handleChange = (event) => {
-    const tableName = event.target.value;
-    setSelectedTable(tableName);
-  };
-
-  // Fetch table data when the selected table changes
+  // Fetch data and column structure when a table is selected
   useEffect(() => {
     if (!selectedTable) return;
 
@@ -42,124 +70,167 @@ function DatabasePage() {
       setLoading(true);
       try {
         const response = await axios.get(`${API_BASE_URL}/api/tables/${selectedTable}`);
+        const { rows: tableRows, columns: tableColumns } = response.data;
+
         setColumns(
-          response.data.columns.map((col) => ({
+          tableColumns.map((col) => ({
             field: col.field,
             headerName: col.headerName || col.field,
             width: col.width || 150,
-            editable: col.editable || true, // Allow editing
+            editable: true,
           }))
         );
-        setRows(response.data.rows); // Set rows from the fetched data
-      } catch (error) {
-        console.error("Error fetching table data:", error);
+        setRows(
+          tableRows.map((row) => ({
+            ...row,
+            id: getRowId(row),
+          }))
+        );
+      } catch (err) {
+        console.error("Error fetching table data:", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchTableData();
   }, [selectedTable]);
 
-  // Handle CRUD operations
-  const handleProcessRowUpdate = async (newRow, oldRow) => {
-    const id = getRowId(newRow); // Get the unique identifier for the row
-    try {
-      // Send update request to backend
-      await axios.put(`${API_BASE_URL}/api/tables/${selectedTable}/${id}`, newRow);
-      return newRow; // Update locally if successful
-    } catch (error) {
-      console.error("Error updating row:", error);
-      return oldRow; // Revert changes on failure
+  // Generate unique row identifier
+  const getRowId = (row) => {
+    return row.id || `${row[columns[0]?.field]}_${row[columns[1]?.field]}`;
+  };
+
+  // Handle CRUD actions
+  const handleRowEditStop = (params, event) => {
+    if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+      event.defaultMuiPrevented = true;
     }
   };
 
-  const handleDelete = async (row) => {
-    const id = getRowId(row); // Get the unique identifier for the row
+  const processRowUpdate = async (newRow) => {
+    const id = getRowId(newRow);
+    try {
+      await axios.put(`${API_BASE_URL}/api/tables/${selectedTable}/${id}`, newRow);
+      return { ...newRow, isNew: false };
+    } catch (err) {
+      console.error("Error updating row:", err);
+      throw err;
+    }
+  };
+
+  const handleDeleteClick = (id) => async () => {
     try {
       await axios.delete(`${API_BASE_URL}/api/tables/${selectedTable}/${id}`);
-      setRows(rows.filter((r) => getRowId(r) !== id)); // Remove row locally
-    } catch (error) {
-      console.error("Error deleting row:", error);
+      setRows((prevRows) => prevRows.filter((row) => row.id !== id));
+    } catch (err) {
+      console.error("Error deleting row:", err);
     }
   };
 
-  const handleAddRow = async () => {
-    try {
-      const newRow = {}; // Provide default values for new rows if needed
-      const response = await axios.post(`${API_BASE_URL}/api/tables/${selectedTable}`, newRow);
-      setRows((prevRows) => [...prevRows, response.data]); // Add new row locally
-    } catch (error) {
-      console.error("Error adding row:", error);
+  const handleSaveClick = (id) => () => {
+    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+  };
+
+  const handleCancelClick = (id) => () => {
+    setRowModesModel({
+      ...rowModesModel,
+      [id]: { mode: GridRowModes.View, ignoreModifications: true },
+    });
+    const editedRow = rows.find((row) => row.id === id);
+    if (editedRow?.isNew) {
+      setRows((prevRows) => prevRows.filter((row) => row.id !== id));
     }
   };
 
-  // Generate a unique identifier for the row
-  const getRowId = (row) => {
-    // If the id field exists, use it; otherwise, combine columns to create a unique id
-    if (row.id) return row.id;
-    return `${row[columns[0].field]}_${row[columns[1].field]}`; // Combine first two columns to create a unique identifier
+  const handleEditClick = (id) => () => {
+    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
   };
+
+  const columnsWithActions = [
+    ...columns,
+    {
+      field: "actions",
+      type: "actions",
+      headerName: "Actions",
+      width: 100,
+      getActions: ({ id }) => {
+        const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
+
+        if (isInEditMode) {
+          return [
+            <GridActionsCellItem
+              icon={<SaveIcon />}
+              label="Save"
+              onClick={handleSaveClick(id)}
+              color="primary"
+            />,
+            <GridActionsCellItem
+              icon={<CancelIcon />}
+              label="Cancel"
+              onClick={handleCancelClick(id)}
+              color="inherit"
+            />,
+          ];
+        }
+
+        return [
+          <GridActionsCellItem
+            icon={<EditIcon />}
+            label="Edit"
+            onClick={handleEditClick(id)}
+            color="inherit"
+          />,
+          <GridActionsCellItem
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={handleDeleteClick(id)}
+            color="inherit"
+          />,
+        ];
+      },
+    },
+  ];
 
   return (
     <Box sx={{ p: 2 }}>
       {/* Dropdown for table selection */}
-      <FormControl sx={{ minWidth: 200, mb: 2 }}>
-        <InputLabel id="table-select-label">Select Table</InputLabel>
-        <Select
-          labelId="table-select-label"
+      <Box sx={{ mb: 2 }}>
+        <select
           value={selectedTable}
-          onChange={handleChange}
-          displayEmpty
+          onChange={(e) => setSelectedTable(e.target.value)}
+          style={{ padding: "8px", fontSize: "16px" }}
         >
-          {tables.length === 0 ? (
-            <MenuItem disabled>No tables available</MenuItem>
-          ) : (
-            tables.map((table) => (
-              <MenuItem key={table} value={table}>
-                {table}
-              </MenuItem>
-            ))
-          )}
-        </Select>
-      </FormControl>
-
-      {/* Add new row button */}
-      {selectedTable && (
-        <Button variant="contained" color="primary" onClick={handleAddRow} sx={{ mb: 2 }}>
-          Add New Row
-        </Button>
-      )}
+          <option value="" disabled>
+            Select a table
+          </option>
+          {tables.map((table) => (
+            <option key={table} value={table}>
+              {table}
+            </option>
+          ))}
+        </select>
+      </Box>
 
       {/* DataGrid */}
-      {selectedTable && (
-        <Box sx={{ height: 500, width: "100%" }}>
-          <DataGrid
-            rows={rows.map(row => ({ ...row, id: getRowId(row) }))} // Map rows to include the unique id
-            columns={columns}
-            loading={loading}
-            processRowUpdate={handleProcessRowUpdate}
-            onProcessRowUpdateError={(error) => console.error("Update error:", error)}
-            experimentalFeatures={{ newEditingApi: true }}
-            components={{
-              Toolbar: () => (
-                <Box sx={{ display: "flex", justifyContent: "space-between", p: 1 }}>
-                  <Typography variant="body1">
-                    Table: {selectedTable}
-                  </Typography>
-                </Box>
-              ),
-            }}
-            checkboxSelection
-            onRowSelectionModelChange={(selection) => {
-              const selectedIDs = new Set(selection);
-              const selectedRowData = rows.filter((row) => selectedIDs.has(getRowId(row)));
-              console.log("Selected rows:", selectedRowData);
-            }}
-          />
-        </Box>
-      )}
+      <Box sx={{ height: 500, width: "100%" }}>
+        <DataGrid
+          rows={rows}
+          columns={columnsWithActions}
+          editMode="row"
+          rowModesModel={rowModesModel}
+          onRowModesModelChange={setRowModesModel}
+          onRowEditStop={handleRowEditStop}
+          processRowUpdate={processRowUpdate}
+          loading={loading}
+          slots={{
+            toolbar: EditToolbar,
+          }}
+          slotProps={{
+            toolbar: { setRows, setRowModesModel },
+          }}
+        />
+      </Box>
     </Box>
   );
 }
-
-export default DatabasePage;
