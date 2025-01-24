@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -8,6 +6,11 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
 import {
   DataGrid,
   GridActionsCellItem,
@@ -16,6 +19,10 @@ import {
   GridRowEditStopReasons,
 } from "@mui/x-data-grid";
 import axios from "axios";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import InputLabel from "@mui/material/InputLabel";
+import FormControl from "@mui/material/FormControl";
 
 const API_BASE_URL = "https://processing-facility-backend.onrender.com"; // Replace with your backend URL
 
@@ -48,6 +55,10 @@ export default function DatabasePage() {
   const [columns, setColumns] = useState([]);
   const [rowModesModel, setRowModesModel] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // State for delete confirmation dialog
+  const [openDialog, setOpenDialog] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState(null);
 
   // Fetch list of tables
   useEffect(() => {
@@ -101,7 +112,6 @@ export default function DatabasePage() {
     return row.id || `${row[columns[0]?.field]}_${row[columns[1]?.field]}`;
   };
 
-  // Handle CRUD actions
   const handleRowEditStop = (params, event) => {
     if (params.reason === GridRowEditStopReasons.rowFocusOut) {
       event.defaultMuiPrevented = true;
@@ -119,13 +129,28 @@ export default function DatabasePage() {
     }
   };
 
-  const handleDeleteClick = (id) => async () => {
-    try {
-      await axios.delete(`${API_BASE_URL}/api/tables/${selectedTable}/${id}`);
-      setRows((prevRows) => prevRows.filter((row) => row.id !== id));
-    } catch (err) {
-      console.error("Error deleting row:", err);
+  const handleDeleteClick = (id) => () => {
+    setRowToDelete(id);
+    setOpenDialog(true); // Open the confirmation dialog
+  };
+
+  const confirmDelete = async () => {
+    if (rowToDelete) {
+      try {
+        await axios.delete(`${API_BASE_URL}/api/tables/${selectedTable}/${rowToDelete}`);
+        setRows((prevRows) => prevRows.filter((row) => row.id !== rowToDelete));
+      } catch (err) {
+        console.error("Error deleting row:", err);
+      } finally {
+        setOpenDialog(false);
+        setRowToDelete(null);
+      }
     }
+  };
+
+  const cancelDelete = () => {
+    setOpenDialog(false);
+    setRowToDelete(null);
   };
 
   const handleSaveClick = (id) => () => {
@@ -194,26 +219,25 @@ export default function DatabasePage() {
 
   return (
     <Box sx={{ p: 2 }}>
-      {/* Dropdown for table selection */}
-      <Box sx={{ mb: 2 }}>
-        <select
-          value={selectedTable}
-          onChange={(e) => setSelectedTable(e.target.value)}
-          style={{ padding: "8px", fontSize: "16px" }}
-        >
-          <option value="" disabled>
-            Select a table
-          </option>
-          {tables.map((table) => (
-            <option key={table} value={table}>
-              {table}
-            </option>
-          ))}
-        </select>
+      <Box sx={{ mb: 2, minWidth: 200 }}>
+        <FormControl fullWidth>
+          <InputLabel id="table-select-label">Select Table</InputLabel>
+          <Select
+            labelId="table-select-label"
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(e.target.value)}
+            label="Select Table"
+          >
+            {tables.map((table) => (
+              <MenuItem key={table} value={table}>
+                {table}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
 
-      {/* DataGrid */}
-      <Box sx={{ height: 500, width: "100%" }}>
+      <Box sx={{ height: 1000, width: "100%" }}>
         <DataGrid
           rows={rows}
           columns={columnsWithActions}
@@ -231,6 +255,24 @@ export default function DatabasePage() {
           }}
         />
       </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDialog} onClose={cancelDelete}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this row? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={confirmDelete} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
