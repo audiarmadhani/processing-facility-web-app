@@ -86,10 +86,6 @@ function DatabasePage() {
 
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Database Management
-      </Typography>
-
       {/* Dropdown for table selection */}
       <FormControl sx={{ minWidth: 200, mb: 2 }}>
         <InputLabel id="table-select-label">Select Table</InputLabel>
