@@ -79,7 +79,7 @@ function Dashboard() {
         {/* Row 1: Cards */}
         
         {/* Total Weight */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Arabica Cherry Weight</Typography>
@@ -109,7 +109,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Arabica Cost */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Arabica Cherry Cost</Typography>
@@ -139,7 +139,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Robusta Weight */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Cherry Weight</Typography>
@@ -169,7 +169,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Robusta Cost */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Cherry Cost</Typography>
@@ -201,7 +201,7 @@ function Dashboard() {
         {/* Row 2: Cards */}
         
         {/* Average Arabica Cost */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Average Arabica Cherry Cost</Typography>
@@ -231,7 +231,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Arabica Processed */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Arabica Processed</Typography>
@@ -261,7 +261,7 @@ function Dashboard() {
         </Grid>
 
         {/* Average Robusta Cost */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Average Robusta Cherry Cost</Typography>
@@ -291,7 +291,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Robusta Processed */}
-        <Grid item xs={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Processed</Typography>
@@ -323,7 +323,7 @@ function Dashboard() {
         {/* Row 3: Cards */}
 
         {/* Total Arabica Production */}
-        <Grid item xs={6} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={6} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Arabica Production</Typography>
@@ -353,7 +353,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Robusta Production */}
-        <Grid item xs={6} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={6} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Production</Typography>
