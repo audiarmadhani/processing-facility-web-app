@@ -14,18 +14,26 @@ function DatabasePage() {
   const [rows, setRows] = useState([]); // Table rows
   const [loading, setLoading] = useState(false); // Loading state
 
-  // Fetch the list of tables on mount
+  // Fetch tables from the API
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/tables`); // Endpoint to get all table names
-        setTables(response.data); // Example: ["users", "products", "orders"]
-      } catch (error) {
-        console.error("Error fetching tables:", error);
+        const response = await axios.get('/api/tables');
+        setTables(response.data); // Set the tables array
+      } catch (err) {
+        console.error('Error fetching tables:', err);
       }
     };
+
     fetchTables();
   }, []);
+
+  // Handle table selection
+  const handleChange = (event) => {
+    const tableName = event.target.value;
+    setSelectedTable(tableName);
+    onTableSelect(tableName); // Notify the parent about the selected table
+  };
 
   // Fetch table data when the selected table changes
   useEffect(() => {
