@@ -18,7 +18,7 @@ function DatabasePage() {
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const response = await axios.get('/api/tables');
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/tables`);
         setTables(response.data); // Set the tables array
       } catch (err) {
         console.error('Error fetching tables:', err);
@@ -42,7 +42,7 @@ function DatabasePage() {
     const fetchTableData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE_URL}/tables/${selectedTable}`);
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/tables/${selectedTable}`);
         setColumns(
           response.data.columns.map((col) => ({
             field: col.field,
@@ -65,7 +65,7 @@ function DatabasePage() {
   const handleProcessRowUpdate = async (newRow, oldRow) => {
     try {
       // Send update request to backend
-      await axios.put(`${API_BASE_URL}/tables/${selectedTable}/${newRow.id}`, newRow);
+      await axios.put(`https://processing-facility-backend.onrender.com/tables/${selectedTable}/${newRow.id}`, newRow);
       return newRow; // Update locally if successful
     } catch (error) {
       console.error("Error updating row:", error);
@@ -75,7 +75,7 @@ function DatabasePage() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_BASE_URL}/tables/${selectedTable}/${id}`);
+      await axios.delete(`https://processing-facility-backend.onrender.com/tables/${selectedTable}/${id}`);
       setRows(rows.filter((row) => row.id !== id)); // Remove row locally
     } catch (error) {
       console.error("Error deleting row:", error);
@@ -85,7 +85,7 @@ function DatabasePage() {
   const handleAddRow = async () => {
     try {
       const newRow = {}; // Provide default values for new rows if needed
-      const response = await axios.post(`${API_BASE_URL}/tables/${selectedTable}`, newRow);
+      const response = await axios.post(`https://processing-facility-backend.onrender.com/tables/${selectedTable}`, newRow);
       setRows((prevRows) => [...prevRows, response.data]); // Add new row locally
     } catch (error) {
       console.error("Error adding row:", error);
