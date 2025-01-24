@@ -379,7 +379,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Robusta Production */}
-        <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Production</Typography>
@@ -409,7 +409,7 @@ function Dashboard() {
         </Grid>
 
         {/* Row 4: Line Chart */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -420,7 +420,7 @@ function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
