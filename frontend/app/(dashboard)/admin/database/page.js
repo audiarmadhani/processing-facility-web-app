@@ -5,7 +5,7 @@ import { Box, Typography, MenuItem, Select, FormControl, InputLabel, Button } fr
 import { DataGrid } from "@mui/x-data-grid";
 import axios from "axios";
 
-const API_BASE_URL = "https://your-backend-url/api"; // Replace with your backend URL
+const API_BASE_URL = "https://processing-facility-backend.onrender.com"; // Replace with your backend URL
 
 function DatabasePage() {
   const [tables, setTables] = useState([]); // List of tables in the database
