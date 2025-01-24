@@ -92,13 +92,18 @@ function DatabasePage() {
         <Select
           labelId="table-select-label"
           value={selectedTable}
-          onChange={(e) => setSelectedTable(e.target.value)}
+          onChange={handleChange}
+          displayEmpty
         >
-          {tables.map((table) => (
-            <MenuItem key={table} value={table}>
-              {table}
-            </MenuItem>
-          ))}
+          {tables.length === 0 ? (
+            <MenuItem disabled>No tables available</MenuItem>
+          ) : (
+            tables.map((table) => (
+              <MenuItem key={table} value={table}>
+                {table}
+              </MenuItem>
+            ))
+          )}
         </Select>
       </FormControl>
 
