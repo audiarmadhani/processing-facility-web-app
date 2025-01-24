@@ -79,7 +79,7 @@ function Dashboard() {
         {/* Row 1: Cards */}
         
         {/* Total Weight */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Arabica Cherry Weight</Typography>
@@ -109,7 +109,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Arabica Cost */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Arabica Cherry Cost</Typography>
@@ -139,7 +139,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Robusta Weight */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Cherry Weight</Typography>
@@ -169,7 +169,7 @@ function Dashboard() {
         </Grid>
 
         {/* Total Robusta Cost */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Cherry Cost</Typography>
@@ -201,7 +201,7 @@ function Dashboard() {
         {/* Row 2: Cards */}
         
         {/* Average Arabica Cost */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Average Arabica Cherry Cost</Typography>
@@ -230,38 +230,21 @@ function Dashboard() {
           </Card>
         </Grid>
 
-        {/* Total Arabica Processed */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        {/* Total Arabica Land Covered */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
-              <Typography variant="body1">Total Arabica Processed</Typography>
+              <Typography variant="body1">Total Arabica Land Covered</Typography>
               <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaProcessed)} kg
-                {metrics.lastmonthArabicaProcessed !== 0 && (
-                  <Typography
-                    variant="subtitle2"
-                    color={metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? 'green' : 'red'}
-                    sx={{
-                      fontWeight: 'bold',
-                      backgroundColor: metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? '#e0f4e0' : '#f4e0e0', // Light background color  
-                      borderRadius: '12px', // Pill shape
-                      padding: '4px 8px', // Padding for the pill
-                      marginLeft: 'auto', // Push to the far right
-                    }}
-                  >
-                    {metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? '+' : '-'}
-                    {Math.abs(((metrics.totalArabicaProcessed - metrics.lastmonthArabicaProcessed) / metrics.lastmonthArabicaProcessed * 100).toFixed(2))}%
-                  </Typography>
-                )}
+                {new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)} m2
               </Typography>
-              <Typography variant="caption">This Month</Typography>
-              <ArabicaProcessedMoM />
+              <Typography variant="caption">All time</Typography>
             </CardContent>
           </Card>
         </Grid>
 
         {/* Average Robusta Cost */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Average Robusta Cherry Cost</Typography>
@@ -290,40 +273,53 @@ function Dashboard() {
           </Card>
         </Grid>
 
-        {/* Total Robusta Processed */}
-        <Grid item xs={12} md={3} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        {/* Total Arabica Land Covered */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
-              <Typography variant="body1">Total Robusta Processed</Typography>
+              <Typography variant="body1">Total Robusta Land Covered</Typography>
               <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaProcessed)} kg
-                {metrics.lastmonthRobustaProcessed !== 0 && (
-                  <Typography
-                    variant="subtitle2"
-                    color={metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? 'green' : 'red'}
-                    sx={{
-                      fontWeight: 'bold',
-                      backgroundColor: metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? '#e0f4e0' : '#f4e0e0', // Light background color 
-                      borderRadius: '12px', // Pill shape
-                      padding: '4px 8px', // Padding for the pill
-                      marginLeft: 'auto', // Push to the far right
-                    }}
-                  >
-                    {metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? '+' : '-'}
-                    {Math.abs(((metrics.totalRobustaProcessed - metrics.lastmonthRobustaProcessed) / metrics.lastmonthRobustaProcessed * 100).toFixed(2))}%
-                  </Typography>
-                )}
+                {new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)} m2
               </Typography>
-              <Typography variant="caption">This Month</Typography>
-              <RobustaProcessedMoM />
+              <Typography variant="caption">All time</Typography>
             </CardContent>
           </Card>
         </Grid>
 
         {/* Row 3: Cards */}
 
+        {/* Total Arabica Processed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+          <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+            <CardContent>
+              <Typography variant="body1">Total Arabica Processed</Typography>
+              <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaProcessed)} kg
+                {metrics.lastmonthArabicaProcessed !== 0 && (
+                  <Typography
+                    variant="subtitle2"
+                    color={metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? 'green' : 'red'}
+                    sx={{
+                      fontWeight: 'bold',
+                      backgroundColor: metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? '#e0f4e0' : '#f4e0e0', // Light background color  
+                      borderRadius: '12px', // Pill shape
+                      padding: '4px 8px', // Padding for the pill
+                      marginLeft: 'auto', // Push to the far right
+                    }}
+                  >
+                    {metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? '+' : '-'}
+                    {Math.abs(((metrics.totalArabicaProcessed - metrics.lastmonthArabicaProcessed) / metrics.lastmonthArabicaProcessed * 100).toFixed(2))}%
+                  </Typography>
+                )}
+              </Typography>
+              <Typography variant="caption">This Month</Typography>
+              <ArabicaProcessedMoM />
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Total Arabica Production */}
-        <Grid item xs={12} md={6} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Arabica Production</Typography>
@@ -352,8 +348,38 @@ function Dashboard() {
           </Card>
         </Grid>
 
+        {/* Total Robusta Processed */}
+        <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+          <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+            <CardContent>
+              <Typography variant="body1">Total Robusta Processed</Typography>
+              <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaProcessed)} kg
+                {metrics.lastmonthRobustaProcessed !== 0 && (
+                  <Typography
+                    variant="subtitle2"
+                    color={metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? 'green' : 'red'}
+                    sx={{
+                      fontWeight: 'bold',
+                      backgroundColor: metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? '#e0f4e0' : '#f4e0e0', // Light background color 
+                      borderRadius: '12px', // Pill shape
+                      padding: '4px 8px', // Padding for the pill
+                      marginLeft: 'auto', // Push to the far right
+                    }}
+                  >
+                    {metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? '+' : '-'}
+                    {Math.abs(((metrics.totalRobustaProcessed - metrics.lastmonthRobustaProcessed) / metrics.lastmonthRobustaProcessed * 100).toFixed(2))}%
+                  </Typography>
+                )}
+              </Typography>
+              <Typography variant="caption">This Month</Typography>
+              <RobustaProcessedMoM />
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Total Robusta Production */}
-        <Grid item xs={12} md={6} sx={{ height: '220px' }}> {/* Adjust the height as needed */}
+        <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
           <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
             <CardContent>
               <Typography variant="body1">Total Robusta Production</Typography>
