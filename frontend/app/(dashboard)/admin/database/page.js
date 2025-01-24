@@ -18,7 +18,7 @@ function DatabasePage() {
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/tables`);
+        const response = await axios.get(`${API_BASE_URL}/api/tables`);
         setTables(response.data); // Set the tables array
       } catch (err) {
         console.error('Error fetching tables:', err);
@@ -32,7 +32,6 @@ function DatabasePage() {
   const handleChange = (event) => {
     const tableName = event.target.value;
     setSelectedTable(tableName);
-    onTableSelect(tableName); // Notify the parent about the selected table
   };
 
   // Fetch table data when the selected table changes
@@ -42,7 +41,7 @@ function DatabasePage() {
     const fetchTableData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/tables/${selectedTable}`);
+        const response = await axios.get(`${API_BASE_URL}/api/tables/${selectedTable}`);
         setColumns(
           response.data.columns.map((col) => ({
             field: col.field,
@@ -51,7 +50,7 @@ function DatabasePage() {
             editable: col.editable || true, // Allow editing
           }))
         );
-        setRows(response.data.rows); // Example: [{ id: 1, name: "John" }, ...]
+        setRows(response.data.rows); // Set rows from the fetched data
       } catch (error) {
         console.error("Error fetching table data:", error);
       } finally {
@@ -63,9 +62,10 @@ function DatabasePage() {
 
   // Handle CRUD operations
   const handleProcessRowUpdate = async (newRow, oldRow) => {
+    const id = getRowId(newRow); // Get the unique identifier for the row
     try {
       // Send update request to backend
-      await axios.put(`https://processing-facility-backend.onrender.com/api/tables/${selectedTable}/${newRow.id}`, newRow);
+      await axios.put(`${API_BASE_URL}/api/tables/${selectedTable}/${id}`, newRow);
       return newRow; // Update locally if successful
     } catch (error) {
       console.error("Error updating row:", error);
@@ -73,10 +73,11 @@ function DatabasePage() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (row) => {
+    const id = getRowId(row); // Get the unique identifier for the row
     try {
-      await axios.delete(`https://processing-facility-backend.onrender.com/api/tables/${selectedTable}/${id}`);
-      setRows(rows.filter((row) => row.id !== id)); // Remove row locally
+      await axios.delete(`${API_BASE_URL}/api/tables/${selectedTable}/${id}`);
+      setRows(rows.filter((r) => getRowId(r) !== id)); // Remove row locally
     } catch (error) {
       console.error("Error deleting row:", error);
     }
@@ -85,11 +86,18 @@ function DatabasePage() {
   const handleAddRow = async () => {
     try {
       const newRow = {}; // Provide default values for new rows if needed
-      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/tables/${selectedTable}`, newRow);
+      const response = await axios.post(`${API_BASE_URL}/api/tables/${selectedTable}`, newRow);
       setRows((prevRows) => [...prevRows, response.data]); // Add new row locally
     } catch (error) {
       console.error("Error adding row:", error);
     }
+  };
+
+  // Generate a unique identifier for the row
+  const getRowId = (row) => {
+    // If the id field exists, use it; otherwise, combine columns to create a unique id
+    if (row.id) return row.id;
+    return `${row[columns[0].field]}_${row[columns[1].field]}`; // Combine first two columns to create a unique identifier
   };
 
   return (
@@ -126,7 +134,7 @@ function DatabasePage() {
       {selectedTable && (
         <Box sx={{ height: 500, width: "100%" }}>
           <DataGrid
-            rows={rows}
+            rows={rows.map(row => ({ ...row, id: getRowId(row) }))} // Map rows to include the unique id
             columns={columns}
             loading={loading}
             processRowUpdate={handleProcessRowUpdate}
@@ -144,7 +152,7 @@ function DatabasePage() {
             checkboxSelection
             onRowSelectionModelChange={(selection) => {
               const selectedIDs = new Set(selection);
-              const selectedRowData = rows.filter((row) => selectedIDs.has(row.id));
+              const selectedRowData = rows.filter((row) => selectedIDs.has(getRowId(row)));
               console.log("Selected rows:", selectedRowData);
             }}
           />
