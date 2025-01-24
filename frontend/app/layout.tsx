@@ -23,7 +23,13 @@ import StorageIcon from '@mui/icons-material/Storage';
 const NAVIGATION: Navigation = [
   { kind: "header", title: "Main items" },
   { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
+
   { kind: "divider" },
+
+  { segment: "farmer", title: "Our Farmers", icon: <GroupsIcon /> },
+
+  { kind: "divider" },
+
   {
     segment: "station",
     title: "Station",
@@ -35,9 +41,9 @@ const NAVIGATION: Navigation = [
       { segment: "postprocessingstation", title: "Post-Processing", icon: <LocalShippingIcon /> },
     ],
   },
+  
   { kind: "divider" },
-  { segment: "farmer", title: "Our Farmers", icon: <GroupsIcon /> },
-  { kind: "divider" },
+  
   {
     segment: "admin",
     title: "Admin",

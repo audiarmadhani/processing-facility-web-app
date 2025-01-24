@@ -409,7 +409,7 @@ function Dashboard() {
         </Grid>
 
         {/* Row 4: Line Chart */}
-        <Grid item xs={12} md={6} sx={{ height: { xs: '100px', md: '220px' } }}>
+        <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -420,7 +420,7 @@ function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6} sx={{ height: { xs: '100px', md: '220px' } }}>
+        <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
