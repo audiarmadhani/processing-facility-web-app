@@ -18,6 +18,7 @@ import AdjustIcon from '@mui/icons-material/Adjust';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import StorageIcon from '@mui/icons-material/Storage';
 
 const NAVIGATION: Navigation = [
   { kind: "header", title: "Main items" },
@@ -44,6 +45,7 @@ const NAVIGATION: Navigation = [
     children: [
       { segment: "schedule", title: "Schedule (WIP)", icon: <CalendarMonthIcon /> },
       { segment: "target", title: "Target", icon: <AdjustIcon /> },
+      { segment: "database", title: "Database (WIP)", icon: <StorageIcon /> },
       { segment: "report", title: "Report (WIP)", icon: <SummarizeIcon /> },
       { segment: "cctv", title: "CCTV (WIP)", icon: <VideocamIcon /> },
     ],
