@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop"; // Core monitoring utility
+import React, { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import Typography from "@mui/material/Typography";
@@ -37,50 +36,55 @@ const TaskCard = styled(Card)(({ theme }) => ({
 const SchedulePage = () => {
   const [data, setData] = useState(initialData);
 
-  React.useEffect(() => {
-    monitorForElements({
-      onDragStart: ({ source }) => {
-        console.log("Drag started:", source);
-      },
-      onDrop: ({ source, location }) => {
-        if (!location) return; // If dropped outside droppable areas
+  const handleDragStart = (event, taskId, columnId) => {
+    event.dataTransfer.setData("taskId", taskId);
+    event.dataTransfer.setData("sourceColumnId", columnId);
+  };
 
-        const sourceColumnId = source.data.columnId;
-        const destinationColumnId = location.data.columnId;
-        const destinationIndex = location.index;
+  const handleDrop = (event, destinationColumnId) => {
+    event.preventDefault();
 
-        if (sourceColumnId === destinationColumnId && destinationIndex === null) return;
+    const taskId = event.dataTransfer.getData("taskId");
+    const sourceColumnId = event.dataTransfer.getData("sourceColumnId");
 
-        // Remove task from source column
-        const sourceColumn = data.columns[sourceColumnId];
-        const sourceTasks = [...sourceColumn.tasks];
-        const [movedTask] = sourceTasks.splice(
-          sourceTasks.findIndex((task) => task.id === source.data.id),
-          1
-        );
+    if (sourceColumnId === destinationColumnId) return; // No movement needed
 
-        // Add task to destination column
-        const destinationColumn = data.columns[destinationColumnId];
-        const destinationTasks = [...destinationColumn.tasks];
-        destinationTasks.splice(destinationIndex, 0, movedTask);
+    // Update the task data
+    const sourceColumn = data.columns[sourceColumnId];
+    const destinationColumn = data.columns[destinationColumnId];
+    const task = sourceColumn.tasks.find((task) => task.id === taskId);
 
-        setData({
-          ...data,
-          columns: {
-            ...data.columns,
-            [sourceColumnId]: { ...sourceColumn, tasks: sourceTasks },
-            [destinationColumnId]: { ...destinationColumn, tasks: destinationTasks },
-          },
-        });
-      },
+    setData((prevData) => {
+      const updatedSourceTasks = sourceColumn.tasks.filter((task) => task.id !== taskId);
+      const updatedDestinationTasks = [...destinationColumn.tasks, task];
+
+      return {
+        ...prevData,
+        columns: {
+          ...prevData.columns,
+          [sourceColumnId]: { ...sourceColumn, tasks: updatedSourceTasks },
+          [destinationColumnId]: { ...destinationColumn, tasks: updatedDestinationTasks },
+        },
+      };
     });
-  }, [data]);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault(); // Allow dropping
+  };
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
       <Box sx={{ display: "flex", gap: 4 }}>
         {Object.entries(data.columns).map(([columnId, column]) => (
-          <Column key={columnId} columnId={columnId} column={column} />
+          <Column
+            key={columnId}
+            columnId={columnId}
+            column={column}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragStart={handleDragStart}
+          />
         ))}
       </Box>
     </Box>
@@ -88,13 +92,13 @@ const SchedulePage = () => {
 };
 
 // Component for rendering a single column
-const Column = ({ columnId, column }) => {
+const Column = ({ columnId, column, onDrop, onDragOver, onDragStart }) => {
   const { name, tasks } = column;
 
   return (
     <Box
-      data-droppable
-      data-column-id={columnId}
+      onDrop={(event) => onDrop(event, columnId)}
+      onDragOver={onDragOver}
       sx={{
         width: 300,
         backgroundColor: "#f4f4f4",
@@ -106,21 +110,19 @@ const Column = ({ columnId, column }) => {
       <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
         {name}
       </Typography>
-      {tasks.map((task, index) => (
-        <Task key={task.id} task={task} columnId={columnId} index={index} />
+      {tasks.map((task) => (
+        <Task key={task.id} task={task} columnId={columnId} onDragStart={onDragStart} />
       ))}
     </Box>
   );
 };
 
 // Component for rendering a single task
-const Task = ({ task, columnId, index }) => {
+const Task = ({ task, columnId, onDragStart }) => {
   return (
     <TaskCard
-      data-draggable
-      data-column-id={columnId}
-      data-index={index}
-      data-task-id={task.id}
+      draggable
+      onDragStart={(event) => onDragStart(event, task.id, columnId)}
     >
       {task.content}
     </TaskCard>
