@@ -56,29 +56,29 @@ const SchedulePage = () => {
           processingType: task.processingType,
           quality: task.quality,
           targetValue: task.targetValue,
-          achievement: task.achievement
+          achievement: task.achievement,
+          columnName: task.columnName // Ensure you have columnName here
         }));
-
-        setData({
-          columns: {
-            todo: {
-              name: "To Do",
-              tasks: tasks,
-            },
-            inprogress: {
-              name: "In Progress",
-              tasks: [],
-            },
-            done: {
-              name: "Done",
-              tasks: [],
-            },
+    
+        // Initialize your columns with fetched tasks based on their columnName
+        const newColumns = {
+          todo: {
+            name: "To Do",
+            tasks: tasks.filter(task => task.columnName === "todo"), // Filter tasks for To Do
           },
-        });
+          inprogress: {
+            name: "In Progress",
+            tasks: tasks.filter(task => task.columnName === "inprogress"), // Filter tasks for In Progress
+          },
+          done: {
+            name: "Done",
+            tasks: tasks.filter(task => task.columnName === "done"), // Filter tasks for Done
+          },
+        };
+    
+        setData({ columns: newColumns });
       } catch (error) {
         console.error("Error fetching tasks:", error);
-      } finally {
-        setLoading(false); // Set loading to false after fetch
       }
     };
 
