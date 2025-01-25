@@ -49,9 +49,9 @@ const NAVIGATION: Navigation = [
     title: "Admin",
     icon: <AdminPanelSettingsIcon />,
     children: [
-      { segment: "schedule", title: "Schedule (WIP)", icon: <CalendarMonthIcon /> },
       { segment: "target", title: "Target", icon: <AdjustIcon /> },
       { segment: "database", title: "Database", icon: <StorageIcon /> },
+      { segment: "schedule", title: "Schedule (WIP)", icon: <CalendarMonthIcon /> },
       { segment: "report", title: "Report (WIP)", icon: <SummarizeIcon /> },
       { segment: "cctv", title: "CCTV (WIP)", icon: <VideocamIcon /> },
     ],

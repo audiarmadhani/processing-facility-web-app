@@ -19,6 +19,7 @@ import {
   GridRowModes,
   GridToolbarContainer,
   GridRowEditStopReasons,
+  GridToolbar,
 } from "@mui/x-data-grid";
 import axios from "axios";
 import Select from "@mui/material/Select";
@@ -250,10 +251,29 @@ export default function DatabasePage() {
           processRowUpdate={processRowUpdate}
           loading={loading}
           slots={{
-            toolbar: EditToolbar,
-          }}
-          slotProps={{
-            toolbar: { setRows, setRowModesModel },
+            toolbar: () => (
+              <GridToolbarContainer>
+                <Button
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={() => {
+                    const id = Math.random().toString(36).substr(2, 9); // Generate a random ID
+                    setRows((prevRows) => [
+                      ...prevRows,
+                      { id, isNew: true }, // Add a new row with default empty fields
+                    ]);
+                    setRowModesModel((prev) => ({
+                      ...prev,
+                      [id]: { mode: GridRowModes.Edit, fieldToFocus: "id" },
+                    }));
+                  }}
+                  sx={{ mr: 2 }}
+                >
+                  Add record
+                </Button>
+                <GridToolbar />
+              </GridToolbarContainer>
+            ),
           }}
         />
       </Box>
