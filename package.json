@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
     "axios": "^1.7.9",
     "next": "^15.1.4",
     "react": "^19.0.0",
