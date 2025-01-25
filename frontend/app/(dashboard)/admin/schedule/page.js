@@ -49,7 +49,7 @@ const SchedulePage = () => {
     // Fetch tasks from the API
     const fetchTasks = async () => {
       try {
-        const response = await axios.get('/api/targets/this-week');
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/targets/this-week');
         const tasks = response.data;
 
         // Map API response to fit your task format
