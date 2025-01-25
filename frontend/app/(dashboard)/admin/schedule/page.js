@@ -38,8 +38,8 @@ const ColumnBox = styled(Box)(({ theme }) => ({
   backgroundColor: "rgba(37, 37, 37, 0.1)",
   borderRadius: "8px",
   padding: theme.spacing(2),
-  minHeight: "800px", // Adjust this value for the desired minimum height
-  height: "auto", // Set this to a fixed height if needed
+  minHeight: "800px",
+  height: "auto",
 }));
 
 const SchedulePage = () => {
@@ -48,6 +48,7 @@ const SchedulePage = () => {
 
   useEffect(() => {
     const fetchTasks = async () => {
+      setLoading(true); // Set loading to true when fetching starts
       try {
         const response = await axios.get('https://processing-facility-backend.onrender.com/api/targets/this-week');
         const tasks = response.data.map(task => ({
@@ -57,44 +58,47 @@ const SchedulePage = () => {
           quality: task.quality,
           targetValue: task.targetValue,
           achievement: task.achievement,
-          columnName: task.columnName // Ensure you have columnName here
+          columnName: task.columnName, // Ensure you have columnName here
         }));
     
         // Initialize your columns with fetched tasks based on their columnName
         const newColumns = {
           todo: {
             name: "To Do",
-            tasks: tasks.filter(task => task.columnName === "todo"), // Filter tasks for To Do
+            tasks: tasks.filter(task => task.columnName === "todo"),
           },
           inprogress: {
             name: "In Progress",
-            tasks: tasks.filter(task => task.columnName === "inprogress"), // Filter tasks for In Progress
+            tasks: tasks.filter(task => task.columnName === "inprogress"),
           },
           done: {
             name: "Done",
-            tasks: tasks.filter(task => task.columnName === "done"), // Filter tasks for Done
+            tasks: tasks.filter(task => task.columnName === "done"),
           },
         };
     
         setData({ columns: newColumns });
       } catch (error) {
         console.error("Error fetching tasks:", error);
+      } finally {
+        setLoading(false); // Set loading to false after data is fetched
       }
     };
 
     fetchTasks();
   }, []);
 
+  // Show loading indicator while tasks are being fetched
   if (loading) {
-    return <Typography variant="h6">Loading tasks...</Typography>; // Loading indicator
+    return <Typography variant="h6">Loading tasks...</Typography>;
   }
 
   const onDragEnd = async (result) => {
     const { source, destination } = result;
-  
+
     // If dropped outside a droppable area, do nothing
     if (!destination) return;
-  
+
     // If dropped in the same column and position, do nothing
     if (
       source.droppableId === destination.droppableId &&
@@ -102,17 +106,17 @@ const SchedulePage = () => {
     ) {
       return;
     }
-  
+
     // Move the task
     const sourceColumn = data.columns[source.droppableId];
     const destinationColumn = data.columns[destination.droppableId];
-  
+
     const sourceTasks = Array.from(sourceColumn.tasks);
     const [movedTask] = sourceTasks.splice(source.index, 1); // Remove the task from the source
-  
+
     const destinationTasks = Array.from(destinationColumn.tasks);
     destinationTasks.splice(destination.index, 0, movedTask); // Add the task to the destination
-  
+
     // Update state
     setData({
       ...data,
@@ -128,7 +132,7 @@ const SchedulePage = () => {
         },
       },
     });
-  
+
     // Make API call to update the task's column name in the database
     try {
       await axios.put(`https://processing-facility-backend.onrender.com/api/targets/${movedTask.id}`, {
@@ -160,8 +164,8 @@ const SchedulePage = () => {
                   >
                     {column.tasks.map((task, index) => (
                       <Draggable
-                        key={task.id} // This should be a string
-                        draggableId={task.id} // This should be a string
+                        key={task.id} 
+                        draggableId={task.id} 
                         index={index}
                       >
                         {(provided) => (
