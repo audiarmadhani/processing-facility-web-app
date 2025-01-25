@@ -44,26 +44,26 @@ const ColumnBox = styled(Box)(({ theme }) => ({
 
 const SchedulePage = () => {
   const [data, setData] = useState(initialData);
+  const [loading, setLoading] = useState(true); // Loading state
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         const response = await axios.get('https://processing-facility-backend.onrender.com/api/targets/this-week');
         const tasks = response.data.map(task => ({
-          id: String(task.id), // Convert the id to a string
+          id: String(task.id),
           type: task.type,
           processingType: task.processingType,
           quality: task.quality,
           targetValue: task.targetValue,
           achievement: task.achievement
         }));
-  
-        // Initialize your columns with fetched tasks
+
         setData({
           columns: {
             todo: {
               name: "To Do",
-              tasks: tasks, // Assign fetched tasks to the To Do column
+              tasks: tasks,
             },
             inprogress: {
               name: "In Progress",
@@ -77,17 +77,20 @@ const SchedulePage = () => {
         });
       } catch (error) {
         console.error("Error fetching tasks:", error);
+      } finally {
+        setLoading(false); // Set loading to false after fetch
       }
     };
-  
-    fetchTasks();
-  }, []); // Run once on component mount
 
-  const onDragEnd = (result) => {
+    fetchTasks();
+  }, []);
+
+  if (loading) {
+    return <Typography variant="h6">Loading tasks...</Typography>; // Loading indicator
+  }
+
+  const onDragEnd = async (result) => {
     const { source, destination } = result;
-  
-    console.log("Source:", source);
-    console.log("Destination:", destination);  
   
     // If dropped outside a droppable area, do nothing
     if (!destination) return;
@@ -125,8 +128,16 @@ const SchedulePage = () => {
         },
       },
     });
-
-    console.log("Updated data:", data); // Check the data structure after update
+  
+    // Make API call to update the task's column name in the database
+    try {
+      await axios.put(`https://processing-facility-backend.onrender.com/api/targets/${movedTask.id}`, {
+        columnName: destination.droppableId, // Send the new column name
+      });
+    } catch (error) {
+      console.error("Error updating column name:", error);
+      // Optionally handle UI feedback for the error
+    }
   };
 
   return (

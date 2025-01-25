@@ -126,7 +126,12 @@ function TargetInputStation() {
         setTargetValue('');
         setStartDate(null);
         setEndDate(null);
+
+        // Fetch the updated targets
         fetchTargets(timeframeSelect, setCurrentTargets);
+        fetchData(); // Call this to refresh the table data
+
+        // Show success notification
         setSnackbarOpen(true);
       } else {
         const errorData = await response.json();
@@ -135,7 +140,7 @@ function TargetInputStation() {
     } catch (error) {
       console.error('Failed to communicate with the backend:', error);
     }
-  };
+  };  
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
