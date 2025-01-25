@@ -122,9 +122,10 @@ function PostprocessingStation() {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150, sortable: true },
-    { field: 'storedDate', headerName: 'Stored Date', width: 100, sortable: true },
+    { field: 'referenceNumber', headerName: 'Ref Number', width: 150, sortable: true },
+    { field: 'storedDate', headerName: 'Stored Date', width: 120, sortable: true },
     { field: 'processingType', headerName: 'Process', width: 180, sortable: true },
-    { field: 'productLine', headerName: 'Product Line', width: 180, sortable: true },
+    { field: 'productLine', headerName: 'Product Line', width: 150, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 90, sortable: true },
     { field: 'type', headerName: 'Type', width: 90, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 90, sortable: true },
@@ -215,7 +216,7 @@ function PostprocessingStation() {
                       input={<OutlinedInput label="Producer" />}
                       MenuProps={MenuProps}
                     >
-                      <MenuItem value="KF">Kopi Fabriek</MenuItem>
+                      <MenuItem value="BTM">Berkas Tuaian Melimpah</MenuItem>
                       <MenuItem value="HQ">HEQA</MenuItem>
                     </Select>
                   </FormControl>
