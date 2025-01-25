@@ -81,6 +81,8 @@ function PostprocessingStation() {
       totalBags,
       quality,
       notes,
+      producer,
+      productLine
     };
 
     try {
@@ -98,6 +100,8 @@ function PostprocessingStation() {
         setTotalBags('');
         setWeight('');
         setProcessingType('');
+        setProducer('');
+        setProductLine('');
         setQuality('');
         fetchPostprocessingData();
         setSnackbarOpen(true);
@@ -118,6 +122,8 @@ function PostprocessingStation() {
     { field: 'batchNumber', headerName: 'Batch Number', width: 150, sortable: true },
     { field: 'storedDate', headerName: 'Stored Date', width: 180, sortable: true },
     { field: 'processingType', headerName: 'Process', width: 90, sortable: true },
+    { field: 'productLine', headerName: 'Product Line', width: 90, sortable: true },
+    { field: 'producer', headerName: 'Producer', width: 90, sortable: true },
     { field: 'type', headerName: 'Type', width: 90, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 90, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 160, sortable: true },
@@ -166,10 +172,49 @@ function PostprocessingStation() {
                       input={<OutlinedInput label="Process" />}
                       MenuProps={MenuProps}
                     >
+                      <MenuItem value="Pulped Natural">Pulped Natural</MenuItem>
                       <MenuItem value="Natural">Natural</MenuItem>
-                      <MenuItem value="Wet Hulled">Wet Hulled</MenuItem>
-                      <MenuItem value="Honey">Honey</MenuItem>
-                      <MenuItem value="Experimental">Experimental</MenuItem>
+                      <MenuItem value="Washed">Washed</MenuItem>
+                      <MenuItem value="Anaerobic Natural">Anaerobic Natural</MenuItem>
+                      <MenuItem value="Anaerobic Washed">Anaerobic Washed</MenuItem>
+                      <MenuItem value="Anaerobic Honey">Anaerobic Honey</MenuItem>
+                      <MenuItem value="CM Natural">CM Natural</MenuItem>
+                      <MenuItem value="CM Washed">CM Washed</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="product-label">Product Line</InputLabel>
+                    <Select
+                      labelId="product-label"
+                      id="product"
+                      value={productLine}
+                      onChange={(e) => setProductLine(e.target.value)}
+                      input={<OutlinedInput label="Product Line" />}
+                      MenuProps={MenuProps}
+                    >
+                      <MenuItem value="Regional Lot">Regional Lot</MenuItem>
+                      <MenuItem value="Micro Lot">Micro Lot</MenuItem>
+                      <MenuItem value="Competition Lot">Competition Lot</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="producer-label">Producer</InputLabel>
+                    <Select
+                      labelId="producer-label"
+                      id="producer"
+                      value={producer}
+                      onChange={(e) => setProducer(e.target.value)}
+                      input={<OutlinedInput label="Producer" />}
+                      MenuProps={MenuProps}
+                    >
+                      <MenuItem value="KF">Kopi Fabriek</MenuItem>
+                      <MenuItem value="HQ">HEQA</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
