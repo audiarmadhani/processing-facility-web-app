@@ -39,43 +39,49 @@ const ColumnBox = styled(Box)(({ theme }) => ({
   backgroundColor: "rgba(37, 37, 37, 0.1)",
   borderRadius: "8px",
   padding: theme.spacing(2),
-  minHeight: "300px",
+  minHeight: "800px", // Adjust this value for the desired minimum height
+  height: "auto", // Set this to a fixed height if needed
 }));
 
 const SchedulePage = () => {
   const [data, setData] = useState(initialData);
 
   useEffect(() => {
-    // Fetch tasks from the API
     const fetchTasks = async () => {
       try {
         const response = await axios.get('https://processing-facility-backend.onrender.com/api/targets/this-week');
-        const tasks = response.data;
-
-        // Map API response to fit your task format
-        const mappedTasks = tasks.map(task => ({
-          id: task.id,
-          content: `Type: ${task.type}, Processing: ${task.processingType}, Quality: ${task.quality}, Target: ${task.targetValue}`,
+        const tasks = response.data.map(task => ({
+          id: task.id, // Ensure unique ID for each task
+          type: task.type,
+          processingType: task.processingType,
+          quality: task.quality,
+          targetValue: task.targetValue,
         }));
 
-        // Set the tasks in the "To Do" column
-        setData(prevData => ({
-          ...prevData,
+        // Initialize your columns with fetched tasks
+        setData({
           columns: {
-            ...prevData.columns,
             morning: {
-              ...prevData.columns.morning,
-              tasks: mappedTasks,
+              name: "To Do",
+              tasks: tasks, // Assign fetched tasks to the To Do column
+            },
+            afternoon: {
+              name: "In Progress",
+              tasks: [],
+            },
+            evening: {
+              name: "Done",
+              tasks: [],
             },
           },
-        }));
+        });
       } catch (error) {
-        console.error('Error fetching tasks:', error);
+        console.error("Error fetching tasks:", error);
       }
     };
 
     fetchTasks();
-  }, []);
+  }, []); // Run once on component mount
 
   const onDragEnd = (result) => {
     const { source, destination } = result;
@@ -122,7 +128,7 @@ const SchedulePage = () => {
       <DragDropContext onDragEnd={onDragEnd}>
         <Box sx={{ display: "flex", gap: 4 }}>
           {Object.entries(data.columns).map(([columnId, column]) => (
-            <Box key={columnId} sx={{ width: 300 }}>
+            <Box key={columnId} sx={{ width: 600 }}>
               <Typography
                 variant="h6"
                 sx={{ textAlign: "center", mb: 2, fontWeight: "bold" }}
@@ -147,7 +153,18 @@ const SchedulePage = () => {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            {task.content}
+                            <Typography variant="body1">
+                              Type: {task.type}
+                            </Typography>
+                            <Typography variant="body1">
+                              Processing: {task.processingType}
+                            </Typography>
+                            <Typography variant="body1">
+                              Quality: {task.quality}
+                            </Typography>
+                            <Typography variant="body1">
+                              Target: {task.targetValue} kg
+                            </Typography>
                           </TaskCard>
                         )}
                       </Draggable>
