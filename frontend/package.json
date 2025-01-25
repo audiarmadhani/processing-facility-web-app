@@ -8,6 +8,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
     "@emotion/cache": "^11",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",

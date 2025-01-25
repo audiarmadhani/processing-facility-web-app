@@ -1,252 +1,108 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from 'react';
-import {
-  TextField,
-  Button,
-  Typography,
-  Snackbar,
-  Alert,
-  Grid,
-  Card,
-  CardContent,
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem
-} from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import React, { useState } from "react";
+import { DragDropContext, Draggable, Droppable } from "@atlaskit/pragmatic-drag-and-drop-react";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import Typography from "@mui/material/Typography";
+import { styled } from "@mui/material/styles";
 
+// Initial data for columns and tasks
+const initialData = {
+  columns: {
+    "morning": {
+      name: "Morning",
+      tasks: [{ id: "task-1", content: "Meeting with Team A" }],
+    },
+    "afternoon": {
+      name: "Afternoon",
+      tasks: [{ id: "task-2", content: "Work on Project B" }],
+    },
+    "evening": {
+      name: "Evening",
+      tasks: [{ id: "task-3", content: "Client Call" }],
+    },
+  },
+};
 
-function FarmerInputStation() {
-  const [farmerName, setFarmerName] = useState('');
-  const [farmerAddress, setFarmerAddress] = useState('');
-  const [farmerLandArea, setFarmerLandArea] = useState('');
-  const [farmerContact, setFarmerContact] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [farmType, setFarmType] = useState('');
-  const [notes, setNotes] = useState('');
+// Styled components for tasks and columns
+const TaskCard = styled(Card)(({ theme }) => ({
+  margin: theme.spacing(1),
+  padding: theme.spacing(2),
+}));
 
-  const [farmerData, setFarmerData] = useState([]);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+const SchedulePage = () => {
+  const [data, setData] = useState(initialData);
 
+  const onDragEnd = ({ source, destination }) => {
+    // If dropped outside any droppable area, return
+    if (!destination) return;
 
-  useEffect(() => {
-    fetchFarmerData();
-  }, []);
+    // Handle task movement between columns
+    const sourceColumn = data.columns[source.droppableId];
+    const destinationColumn = data.columns[destination.droppableId];
+    const sourceTasks = Array.from(sourceColumn.tasks);
+    const destinationTasks = Array.from(destinationColumn.tasks);
 
-  const fetchFarmerData = async () => {
-    try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/farmer');
-      if (!response.ok) throw new Error('Failed to fetch farmer data');
+    // Remove the dragged task from the source column
+    const [movedTask] = sourceTasks.splice(source.index, 1);
 
-      const data = await response.json();
-      console.log('Fetched data:', data); // Log the fetched data for debugging
+    // Add it to the destination column
+    destinationTasks.splice(destination.index, 0, movedTask);
 
-      if (data && Array.isArray(data.latestRows)) {
-        setFarmerData(data.latestRows.map((row, index) => ({ ...row, id: index }))); // Add unique id
-      } else {
-        console.error('Unexpected data format:', data);
-        setFarmerData([]);
-      }
-    } catch (error) {
-      console.error('Error fetching farmer data:', error);
-      setFarmerData([]);
-    }
+    setData({
+      ...data,
+      columns: {
+        ...data.columns,
+        [source.droppableId]: { ...sourceColumn, tasks: sourceTasks },
+        [destination.droppableId]: { ...destinationColumn, tasks: destinationTasks },
+      },
+    });
   };
-
-  const handleWriteToCard = () => {
-    console.log('Writing to RFID card:', { farmerName });
-    alert('RFID card written successfully!');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const payload = {
-      farmerName,
-      farmerAddress,
-      farmerLandArea,
-      farmerContact,
-      latitude,
-      longitude,
-      farmType,
-      notes,
-    };
-
-    try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/farmer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        setFarmerName('');
-        setFarmerAddress('');
-        setFarmerLandArea('');
-        setFarmerContact('');
-        setLatitude('');
-        setLongitude('');
-        setFarmType('');
-        setNotes('');
-        fetchFarmerData();
-        setSnackbarOpen(true);
-      } else {
-        const errorData = await response.json();
-        console.error(errorData.message || 'Error creating batch.');
-      }
-    } catch (error) {
-      console.error('Failed to communicate with the backend:', error);
-    }
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-  };
-
-  const columns = [
-    { field: 'farmerID', headerName: 'ID', width: 140, sortable: true },
-    { field: 'farmerName', headerName: 'Name', width: 180, sortable: true },
-    { field: 'farmerAddress', headerName: 'Address', width: 180, sortable: true },
-    { field: 'farmerLandArea', headerName: 'Land Area', width: 180, sortable: true },
-    { field: 'farmerContact', headerName: 'Contact', width: 180, sortable: true },
-    { field: 'latitude', headerName: 'Latitude', width: 180, sortable: true },
-    { field: 'longitude', headerName: 'Longitude', width: 180, sortable: true },
-    { field: 'farmType', headerName: 'Type', width: 180, sortable: true },
-    { field: 'registrationDate', headerName: 'Registration Date', width: 180, sortable: true },
-    { field: 'isActive', headerName: 'Active', width: 180, sortable: true },
-    { field: 'notes', headerName: 'Notes', width: 180, sortable: true },
-  ];
-
 
   return (
-    <Grid container spacing={3}>
-      {/* Farmer Input Station Form */}
-      <Grid item xs={12} md={3}>
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Farmer Form
-            </Typography>
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Name"
-                    type="text"
-                    value={farmerName}
-                    onChange={(e) => setFarmerName(e.target.value)}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Address"
-                    type="text"
-                    value={farmerAddress}
-                    onChange={(e) => setFarmerAddress(e.target.value)}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Land Area"
-                    type="text"
-                    value={farmerLandArea}
-                    onChange={(e) => setFarmerLandArea(e.target.value)}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Contact"
-                    type="text"
-                    value={farmerContact}
-                    onChange={(e) => setFarmerContact(e.target.value)}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="type-label">Farm Type</InputLabel>
-                    <Select
-                      labelId="type-label"
-                      value={farmType}
-                      onChange={(e) => setFarmType(e.target.value)}
-                    >
-                      <MenuItem value="Arabica">Arabica</MenuItem>
-                      <MenuItem value="Robusta">Robusta</MenuItem>
-                      <MenuItem value="Mix">Mix</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Notes"
-                    multiline
-                    rows={4}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleWriteToCard}
-                    style={{ marginRight: '16px' }}
+    <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Box sx={{ display: "flex", gap: 4 }}>
+          {Object.entries(data.columns).map(([columnId, column]) => (
+            <Box key={columnId} sx={{ width: 300 }}>
+              <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
+                {column.name}
+              </Typography>
+              <Droppable droppableId={columnId}>
+                {(provided) => (
+                  <Box
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    sx={{
+                      backgroundColor: "#f4f4f4",
+                      borderRadius: 2,
+                      minHeight: 300,
+                      p: 2,
+                    }}
                   >
-                    Write to RFID Card
-                  </Button>
-                  <Button variant="contained" color="primary" type="submit">
-                    Submit
-                  </Button>
-                </Grid>
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Data Grid for Farmer Data */}
-      <Grid item xs={12} md={9}>
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Farmer Data
-            </Typography>
-            <div style={{ height: 1000, width: '100%' }}>
-              <DataGrid
-                rows={farmerData}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
-                sortingOrder={['asc', 'desc']}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Snackbar for notifications */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
-          Farmer successfully added!
-        </Alert>
-      </Snackbar>
-    </Grid>
+                    {column.tasks.map((task, index) => (
+                      <Draggable key={task.id} draggableId={task.id} index={index}>
+                        {(provided) => (
+                          <TaskCard
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
+                            {task.content}
+                          </TaskCard>
+                        )}
+                      </Draggable>
+                    ))}
+                  </Box>
+                )}
+              </Droppable>
+            </Box>
+          ))}
+        </Box>
+      </DragDropContext>
+    </Box>
   );
-}
+};
 
-export default FarmerInputStation;
+export default SchedulePage;
