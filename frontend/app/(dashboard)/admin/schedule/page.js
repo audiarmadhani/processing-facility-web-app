@@ -11,15 +11,15 @@ import axios from "axios";
 // Initial data for columns and tasks
 const initialData = {
   columns: {
-    morning: {
+    todo: {
       name: "To Do",
       tasks: [],
     },
-    afternoon: {
+    inprogress: {
       name: "In Progress",
       tasks: [],
     },
-    evening: {
+    done: {
       name: "Done",
       tasks: [],
     },
@@ -61,15 +61,15 @@ const SchedulePage = () => {
         // Initialize your columns with fetched tasks
         setData({
           columns: {
-            morning: {
+            todo: {
               name: "To Do",
               tasks: tasks, // Assign fetched tasks to the To Do column
             },
-            afternoon: {
+            inprogress: {
               name: "In Progress",
               tasks: [],
             },
-            evening: {
+            done: {
               name: "Done",
               tasks: [],
             },
