@@ -29,13 +29,13 @@ const initialData = {
 const TaskCard = styled(Card)(({ theme }) => ({
   margin: theme.spacing(1),
   padding: theme.spacing(2),
-  backgroundColor: "#ffffff",
+  backgroundColor: "rgba(42, 42, 42, 0.1)",
   border: "1px solid #e0e0e0",
   boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
 }));
 
 const ColumnBox = styled(Box)(({ theme }) => ({
-  backgroundColor: "#f4f4f4",
+  backgroundColor: "rgba(37, 37, 37, 0.1)",
   borderRadius: "8px",
   padding: theme.spacing(2),
   minHeight: "300px",
