@@ -128,7 +128,7 @@ const SchedulePage = () => {
       <DragDropContext onDragEnd={onDragEnd}>
         <Box sx={{ display: "flex", gap: 4 }}>
           {Object.entries(data.columns).map(([columnId, column]) => (
-            <Box key={columnId} sx={{ width: 600 }}>
+            <Box key={columnId} sx={{ width: 400 }}>
               <Typography
                 variant="h6"
                 sx={{ textAlign: "center", mb: 2, fontWeight: "bold" }}
