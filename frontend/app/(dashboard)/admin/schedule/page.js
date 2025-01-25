@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react";
-import { DragDropContext, Draggable, Droppable } from "@atlaskit/pragmatic-drag-and-drop-react";
+import { DragDropContext, Draggable, Droppable } from "@atlaskit/pragmatic-drag-and-drop";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import Typography from "@mui/material/Typography";
