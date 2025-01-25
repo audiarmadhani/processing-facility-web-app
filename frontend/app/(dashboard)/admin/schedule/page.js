@@ -50,14 +50,14 @@ const SchedulePage = () => {
       try {
         const response = await axios.get('https://processing-facility-backend.onrender.com/api/targets/this-week');
         const tasks = response.data.map(task => ({
-          id: task.id, // Ensure unique ID for each task
+          id: String(task.id), // Convert the id to a string
           type: task.type,
           processingType: task.processingType,
           quality: task.quality,
           targetValue: task.targetValue,
           achievement: task.achievement
         }));
-
+  
         // Initialize your columns with fetched tasks
         setData({
           columns: {
@@ -79,7 +79,7 @@ const SchedulePage = () => {
         console.error("Error fetching tasks:", error);
       }
     };
-
+  
     fetchTasks();
   }, []); // Run once on component mount
 
@@ -149,8 +149,8 @@ const SchedulePage = () => {
                   >
                     {column.tasks.map((task, index) => (
                       <Draggable
-                        key={task.id}
-                        draggableId={task.id}
+                        key={task.id} // This should be a string
+                        draggableId={task.id} // This should be a string
                         index={index}
                       >
                         {(provided) => (
@@ -174,7 +174,6 @@ const SchedulePage = () => {
                             <Typography variant="body1">
                               Achievement: {task.achievement} kg
                             </Typography>
-                            
                           </TaskCard>
                         )}
                       </Draggable>
