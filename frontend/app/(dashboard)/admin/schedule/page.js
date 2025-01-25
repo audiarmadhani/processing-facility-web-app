@@ -1,26 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
+import axios from "axios";
 
 // Initial data for columns and tasks
 const initialData = {
   columns: {
     morning: {
-      name: "Morning",
-      tasks: [{ id: "task-1", content: "Meeting with Team A" }],
+      name: "To Do",
+      tasks: [],
     },
     afternoon: {
-      name: "Afternoon",
-      tasks: [{ id: "task-2", content: "Work on Project B" }],
+      name: "In Progress",
+      tasks: [],
     },
     evening: {
-      name: "Evening",
-      tasks: [{ id: "task-3", content: "Client Call" }],
+      name: "Done",
+      tasks: [],
     },
   },
 };
@@ -43,6 +44,38 @@ const ColumnBox = styled(Box)(({ theme }) => ({
 
 const SchedulePage = () => {
   const [data, setData] = useState(initialData);
+
+  useEffect(() => {
+    // Fetch tasks from the API
+    const fetchTasks = async () => {
+      try {
+        const response = await axios.get('/api/targets/this-week');
+        const tasks = response.data;
+
+        // Map API response to fit your task format
+        const mappedTasks = tasks.map(task => ({
+          id: task.id,
+          content: `Type: ${task.type}, Processing: ${task.processingType}, Quality: ${task.quality}, Target: ${task.targetValue}`,
+        }));
+
+        // Set the tasks in the "To Do" column
+        setData(prevData => ({
+          ...prevData,
+          columns: {
+            ...prevData.columns,
+            morning: {
+              ...prevData.columns.morning,
+              tasks: mappedTasks,
+            },
+          },
+        }));
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    };
+
+    fetchTasks();
+  }, []);
 
   const onDragEnd = (result) => {
     const { source, destination } = result;
