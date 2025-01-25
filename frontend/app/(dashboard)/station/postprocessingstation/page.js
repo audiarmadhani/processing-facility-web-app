@@ -28,6 +28,8 @@ function PostprocessingStation() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [type, setType] = useState('');
   const [processingType, setProcessingType] = useState('');
+  const [productLine, setProductLine] = useState('');
+  const [producer, setProducer] = useState('');
   const [quality, setQuality] = useState('');
 
 
