@@ -31,7 +31,6 @@ const TaskCard = styled(Card)(({ theme }) => ({
   margin: theme.spacing(1),
   padding: theme.spacing(2),
   backgroundColor: "rgba(42, 42, 42, 0.1)",
-  border: "1px solid #e0e0e0",
   boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
 }));
 
@@ -56,6 +55,7 @@ const SchedulePage = () => {
           processingType: task.processingType,
           quality: task.quality,
           targetValue: task.targetValue,
+          achievement: task.achievement
         }));
 
         // Initialize your columns with fetched tasks
@@ -153,18 +153,22 @@ const SchedulePage = () => {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <Typography variant="body1">
-                              Type: {task.type}
+                            <Typography variant="h4">
+                              {task.type}
                             </Typography>
+
                             <Typography variant="body1">
-                              Processing: {task.processingType}
+                              {task.quality} {task.processingType}
                             </Typography>
-                            <Typography variant="body1">
-                              Quality: {task.quality}
-                            </Typography>
+
                             <Typography variant="body1">
                               Target: {task.targetValue} kg
                             </Typography>
+
+                            <Typography variant="body1">
+                              Achievement: {task.achievement} kg
+                            </Typography>
+                            
                           </TaskCard>
                         )}
                       </Draggable>
