@@ -174,12 +174,9 @@ const SchedulePage = () => {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <Typography variant="h4">
-                              {task.type}
-                            </Typography>
 
-                            <Typography variant="body1">
-                              {task.quality} {task.processingType}
+                            <Typography variant="h4">
+                              {task.type} {task.quality} {task.processingType}
                             </Typography>
 
                             <Typography variant="body1">
@@ -189,6 +186,7 @@ const SchedulePage = () => {
                             <Typography variant="body1">
                               Achievement: {task.achievement} kg
                             </Typography>
+
                           </TaskCard>
                         )}
                       </Draggable>
