@@ -85,10 +85,13 @@ const SchedulePage = () => {
 
   const onDragEnd = (result) => {
     const { source, destination } = result;
-
+  
+    console.log("Source:", source);
+    console.log("Destination:", destination);  
+  
     // If dropped outside a droppable area, do nothing
     if (!destination) return;
-
+  
     // If dropped in the same column and position, do nothing
     if (
       source.droppableId === destination.droppableId &&
@@ -96,31 +99,34 @@ const SchedulePage = () => {
     ) {
       return;
     }
-
+  
     // Move the task
     const sourceColumn = data.columns[source.droppableId];
     const destinationColumn = data.columns[destination.droppableId];
-
+  
     const sourceTasks = Array.from(sourceColumn.tasks);
-    const [movedTask] = sourceTasks.splice(source.index, 1);
-
+    const [movedTask] = sourceTasks.splice(source.index, 1); // Remove the task from the source
+  
     const destinationTasks = Array.from(destinationColumn.tasks);
-    destinationTasks.splice(destination.index, 0, movedTask);
-
+    destinationTasks.splice(destination.index, 0, movedTask); // Add the task to the destination
+  
+    // Update state
     setData({
       ...data,
       columns: {
         ...data.columns,
         [source.droppableId]: {
           ...sourceColumn,
-          tasks: sourceTasks,
+          tasks: sourceTasks, // Updated source tasks
         },
         [destination.droppableId]: {
           ...destinationColumn,
-          tasks: destinationTasks,
+          tasks: destinationTasks, // Updated destination tasks
         },
       },
     });
+
+    console.log("Updated data:", data); // Check the data structure after update
   };
 
   return (
