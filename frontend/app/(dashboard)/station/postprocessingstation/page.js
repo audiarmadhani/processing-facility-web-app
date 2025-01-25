@@ -122,9 +122,9 @@ function PostprocessingStation() {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150, sortable: true },
-    { field: 'storedDate', headerName: 'Stored Date', width: 180, sortable: true },
-    { field: 'processingType', headerName: 'Process', width: 90, sortable: true },
-    { field: 'productLine', headerName: 'Product Line', width: 90, sortable: true },
+    { field: 'storedDate', headerName: 'Stored Date', width: 100, sortable: true },
+    { field: 'processingType', headerName: 'Process', width: 180, sortable: true },
+    { field: 'productLine', headerName: 'Product Line', width: 180, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 90, sortable: true },
     { field: 'type', headerName: 'Type', width: 90, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 90, sortable: true },

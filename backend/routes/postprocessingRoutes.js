@@ -30,11 +30,17 @@ router.post('/postprocessing', async (req, res) => {
       return res.status(400).json({ error: 'Invalid product line or processing type' });
     }
 
+    console.log('Generated product:', productLine);
+    console.log('Generated processing:', processing);
+
     // Determine the current year
     const currentYear = new Date().getFullYear();
 
     // Generate the prefix for batch number
     const batchPrefix = `${producer}${currentYear}${product.abbreviation}-${processing.abbreviation}`;
+
+    console.log('Generated processing abbreviation:', processing.abbreviation);
+    console.log('Generated product abbreviation:', product.abbreviation);
 
     // Retrieve existing batches with the same prefix to determine the sequence number
     const [existingBatches] = await sequelize.query(
