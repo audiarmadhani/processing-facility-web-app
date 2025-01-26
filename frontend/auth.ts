@@ -26,40 +26,29 @@ const providers: Provider[] = [
           console.error('Missing email or password in credentials.');
           return null;
         }
-
-        // Fetch the list of users from the API
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/');
-        const users: User[] = response.data; // Ensure the users array is typed
-
-        // Find the user with the matching email
-        const user = users.find((u: User) => u.email === credentials.email);
-        if (!user) {
-          console.error('No user found with the provided email.');
-          return null;
-        }
-
-        // Validate the password
-        if (!user.password) {
-          console.error('User password is missing in the API response.');
-          return null;
-        }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-        if (isPasswordValid) {
+    
+        // Call the login API with the provided credentials
+        const response = await axios.post(
+          'https://processing-facility-backend.onrender.com/api/login',
+          {
+            email: credentials.email,
+            password: credentials.password,
+          }
+        );
+    
+        if (response.status === 200) {
+          const { id, name, email } = response.data.user;
+    
           // Return the user object for the session
-          return {
-            id: String(user.id),
-            name: user.name,
-            email: user.email,
-          };
-        } else {
-          console.error('Invalid password.');
+          return { id, name, email };
         }
+    
+        console.error('Invalid email or password.');
+        return null;
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error during authentication:', error);
+        return null;
       }
-
-      return null; // Return null if no user found or credentials are incorrect
     },
   }),
 ];
