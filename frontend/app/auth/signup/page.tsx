@@ -54,7 +54,7 @@ export default function SignUpPage() {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh', // Full height of the viewport
-        backgroundColor: '#343434', // Optional: Light background color
+        backgroundColor: '#000000', // Optional: Light background color
       }}
     >
       <Box
@@ -66,14 +66,14 @@ export default function SignUpPage() {
           borderRadius: 2,
           boxShadow: 3,
           border: '1px solid lightgrey',
-          backgroundColor: '#36454F',
+          backgroundColor: '#343434',
         }}
       >
         <Avatar sx={{ bgcolor: 'primary.main', mb: 2 }}>
           <PersonIcon />
         </Avatar>
         <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-          Sign Up
+          Processing Facility Sign Up
         </Typography>
         {error && <Alert severity="error">{error}</Alert>}
         {success && <Alert severity="success">Account created successfully!</Alert>}
@@ -86,7 +86,6 @@ export default function SignUpPage() {
             fullWidth
             margin="normal"
             required
-            sx={{ border: '1px solid lightgrey' }} // Light grey border around input
           />
           <TextField
             label="Email"
@@ -97,7 +96,6 @@ export default function SignUpPage() {
             fullWidth
             margin="normal"
             required
-            sx={{ border: '1px solid lightgrey' }} // Light grey border around input
           />
           <TextField
             label="Password"
@@ -108,7 +106,6 @@ export default function SignUpPage() {
             fullWidth
             margin="normal"
             required
-            sx={{ border: '1px solid lightgrey' }} // Light grey border around input
           />
           <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
             Sign Up
