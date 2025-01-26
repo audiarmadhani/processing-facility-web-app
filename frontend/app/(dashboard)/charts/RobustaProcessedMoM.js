@@ -104,18 +104,18 @@ const RobustaProcessedMoM = () => {
         <AreaChart data={data}>
           <defs>
             <linearGradient id="colorthisMonth" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#66b2b2" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#66b2b2" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#00B6EC" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#00B6EC" stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="colorlastMonth" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ffbfd3" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#ffbfd3" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#EA6400" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#EA6400" stopOpacity={0}/>
             </linearGradient>
           </defs>
           <XAxis dataKey="date" hide/>
           <Tooltip content={<CustomTooltip />} />
-          <Area type="monotone" dataKey="thisMonth" stroke="#66b2b2" fill="url(#colorthisMonth)" strokeWidth={2} connectNulls/>
-          <Area type="monotone" dataKey="lastMonth" stroke="#ffbfd3" fill="url(#colorlastMonth)" strokeWidth={2} connectNulls/>
+          <Area type="monotone" dataKey="thisMonth" stroke="#00B6EC" fill="url(#colorthisMonth)" strokeWidth={2} connectNulls/>
+          <Area type="monotone" dataKey="lastMonth" stroke="#EA6400" fill="url(#colorlastMonth)" strokeWidth={2} connectNulls/>
         </AreaChart>
       </ResponsiveContainer>
     </Box>
