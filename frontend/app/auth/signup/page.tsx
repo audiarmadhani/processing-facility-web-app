@@ -66,7 +66,7 @@ export default function SignUpPage() {
           borderRadius: 2,
           boxShadow: 3,
           border: '1px solid lightgrey',
-          backgroundColor: '#343434',
+          backgroundColor: '#28282B',
         }}
       >
         <Avatar sx={{ bgcolor: 'primary.main', mb: 2 }}>
