@@ -54,7 +54,7 @@ export default function SignUpPage() {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh', // Full height of the viewport
-        backgroundColor: '#f5f5f5', // Optional: Light background color
+        backgroundColor: '#343434', // Optional: Light background color
       }}
     >
       <Box
@@ -66,7 +66,7 @@ export default function SignUpPage() {
           borderRadius: 2,
           boxShadow: 3,
           border: '1px solid lightgrey',
-          backgroundColor: 'white',
+          backgroundColor: '#36454F',
         }}
       >
         <Avatar sx={{ bgcolor: 'primary.main', mb: 2 }}>
