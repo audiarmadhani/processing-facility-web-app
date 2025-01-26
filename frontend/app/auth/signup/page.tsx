@@ -1,7 +1,8 @@
 'use client';
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, TextField, Typography, Box } from '@mui/material';
+import { Alert, Button, TextField, Typography, Box, Avatar } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person'; // Import user icon
 
 export default function SignUpPage() {
   const [formData, setFormData] = React.useState({
@@ -50,49 +51,69 @@ export default function SignUpPage() {
     <Box
       sx={{
         display: 'flex',
-        flexDirection: 'column',
+        justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 8,
+        height: '100vh', // Full height of the viewport
+        backgroundColor: '#f5f5f5', // Optional: Light background color
       }}
     >
-      <Typography component="h1" variant="h5">
-        Sign Up
-      </Typography>
-      {error && <Alert severity="error">{error}</Alert>}
-      {success && <Alert severity="success">Account created successfully!</Alert>}
-      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%', maxWidth: 400 }}>
-        <TextField
-          label="Name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          required
-        />
-        <TextField
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          required
-        />
-        <TextField
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          required
-        />
-        <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: 4,
+          borderRadius: 2,
+          boxShadow: 3,
+          border: '1px solid lightgrey',
+          backgroundColor: 'white',
+        }}
+      >
+        <Avatar sx={{ bgcolor: 'primary.main', mb: 2 }}>
+          <PersonIcon />
+        </Avatar>
+        <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
           Sign Up
-        </Button>
+        </Typography>
+        {error && <Alert severity="error">{error}</Alert>}
+        {success && <Alert severity="success">Account created successfully!</Alert>}
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%', maxWidth: 400 }}>
+          <TextField
+            label="Name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            required
+            sx={{ border: '1px solid lightgrey' }} // Light grey border around input
+          />
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            required
+            sx={{ border: '1px solid lightgrey' }} // Light grey border around input
+          />
+          <TextField
+            label="Password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            required
+            sx={{ border: '1px solid lightgrey' }} // Light grey border around input
+          />
+          <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
+            Sign Up
+          </Button>
+        </Box>
       </Box>
     </Box>
   );
