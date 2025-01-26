@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
 import axios from "axios";
 import { Box, Typography, CircularProgress } from "@mui/material";
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-
-const RobustaCategoryChart = () => {
+const ArabicaCategoryChart = () => {
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +75,7 @@ const RobustaCategoryChart = () => {
         series={categories.map((category) => ({
           dataKey: category,
           label: category,
+          stack: "stack1", // Adding stack property to enable stacking
         }))}
         yAxis={[{ label: "Weight (kg)" }]}
         height={600}
@@ -88,4 +89,4 @@ const RobustaCategoryChart = () => {
   );
 };
 
-export default RobustaCategoryChart;
+export default ArabicaCategoryChart;

@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
 import axios from "axios";
 import { Box, Typography, CircularProgress } from "@mui/material";
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const ArabicaCategoryChart = () => {
   const [data, setData] = useState([]);
@@ -75,6 +75,7 @@ const ArabicaCategoryChart = () => {
         series={categories.map((category) => ({
           dataKey: category,
           label: category,
+          stack: "stack1", // Adding stack property to enable stacking
         }))}
         yAxis={[{ label: "Weight (kg)" }]}
         height={600}
