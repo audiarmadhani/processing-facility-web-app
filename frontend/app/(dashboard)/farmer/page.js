@@ -78,8 +78,8 @@ function FarmerInputStation() {
       farmerAddress,
       farmerLandArea,
       farmerContact,
-      latitude,
-      longitude,
+      latitude: latitude.trim() === "" ? null : parseFloat(latitude),
+      longitude: longitude.trim() === "" ? null : parseFloat(longitude),
       farmType,
       notes,
     };
