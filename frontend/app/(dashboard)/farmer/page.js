@@ -34,6 +34,7 @@ function FarmerInputStation() {
   const [longitude, setLongitude] = useState('');
   const [farmType, setFarmType] = useState('');
   const [notes, setNotes] = useState('');
+  const [farmVarieties, setFarmVarieties] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
@@ -82,6 +83,7 @@ function FarmerInputStation() {
       longitude: longitude.trim() === "" ? null : parseFloat(longitude),
       farmType,
       notes,
+      farmVarieties,
     };
 
     try {
@@ -103,6 +105,7 @@ function FarmerInputStation() {
         setLongitude('');
         setFarmType('');
         setNotes('');
+        setFarmVarieties([]);
 
         await fetchFarmerData();
 
@@ -130,6 +133,7 @@ function FarmerInputStation() {
     { field: "latitude", headerName: "Latitude", width: 180, sortable: true },
     { field: "longitude", headerName: "Longitude", width: 180, sortable: true },
     { field: "farmType", headerName: "Type", width: 180, sortable: true },
+    { field: "farmVarieties", headerName: "Varieties", width: 180, sortable: true },
     { field: "registrationDate", headerName: "Registration Date", width: 180, sortable: true },
     { field: "isActive", headerName: "Active", width: 180, sortable: true },
     { field: "notes", headerName: "Notes", width: 180, sortable: true },
@@ -200,6 +204,27 @@ function FarmerInputStation() {
                     </Select>
                   </FormControl>
                 </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="variety-label">Farm Varieties</InputLabel>
+                    <Select
+                      labelId="variety-label"
+                      id="variety"
+                      multiple
+                      value={farmVarieties}
+                      onChange={(e) => setFarmVarieties(e.target.value)}
+                      input={<OutlinedInput label="Varieties" />}
+                      MenuProps={MenuProps}
+                    >
+                      <MenuItem value="Bourbon">Bourbon</MenuItem>
+                      <MenuItem value="Java">Java</MenuItem>
+                      <MenuItem value="S795">S795</MenuItem>
+                      <MenuItem value="Typica">Typica</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     label="Notes"
