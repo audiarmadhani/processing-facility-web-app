@@ -18,6 +18,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
@@ -54,11 +55,6 @@ function FarmerInputStation() {
       console.error("Error fetching farmer data:", error);
       setFarmerData([]);
     }
-  };
-
-  const handleWriteToCard = () => {
-    console.log('Writing to RFID card:', { farmerName });
-    alert('RFID card written successfully!');
   };
 
   const handleSubmit = async (e) => {
@@ -198,14 +194,6 @@ function FarmerInputStation() {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleWriteToCard}
-                    style={{ marginRight: '16px' }}
-                  >
-                    Write to RFID Card
-                  </Button>
                   <Button variant="contained" color="primary" type="submit">
                     Submit
                   </Button>
