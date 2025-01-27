@@ -88,7 +88,7 @@ const ArabicaCategoryChart = () => {
           dataKey: category,
           label: category,
           stack: "stack1", // Adding stack property to enable stacking
-          color: colors[index % colors.length], // Assign colors cyclically based on the index
+          colors:"cheerfulFiesta",
         }))}
         yAxis={[{ label: "Weight (kg)" }]}
         height={600}
