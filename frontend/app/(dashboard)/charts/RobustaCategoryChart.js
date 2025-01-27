@@ -12,6 +12,18 @@ const ArabicaCategoryChart = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Define your custom color palette
+  const colors = [
+    "#88D8B0",
+    "#FFFDF3",
+    "#FED06A",
+    "#F96E5A",
+    "#1583D1",
+    "#65CBDA",
+    "#C5D04B",
+    "#D93B3B",
+  ];
+
   // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
@@ -76,6 +88,7 @@ const ArabicaCategoryChart = () => {
           dataKey: category,
           label: category,
           stack: "stack1", // Adding stack property to enable stacking
+          color: colors[index % colors.length], // Assign colors cyclically based on the index
         }))}
         yAxis={[{ label: "Weight (kg)" }]}
         height={600}
