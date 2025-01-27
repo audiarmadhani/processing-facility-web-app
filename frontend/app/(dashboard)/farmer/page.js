@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react'; // Import the useSession hook
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 import {
   TextField,
@@ -12,19 +12,28 @@ import {
   Grid,
   Card,
   CardContent,
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem
-} from '@mui/material';
-import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-
 function FarmerInputStation() {
   const { data: session, status } = useSession();
+
+  // State Declarations
   const [farmerData, setFarmerData] = useState([]);
+  const [farmerName, setFarmerName] = useState("");
+  const [farmerAddress, setFarmerAddress] = useState("");
+  const [farmerLandArea, setFarmerLandArea] = useState("");
+  const [farmerContact, setFarmerContact] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [farmType, setFarmType] = useState("");
+  const [notes, setNotes] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
@@ -36,7 +45,7 @@ function FarmerInputStation() {
   const fetchFarmerData = async () => {
     try {
       const response = await fetch(
-        "https://processing-facility-backend.onrender.com/api/farmer"
+        `${API_BASE_URL}/api/farmer`
       );
       if (!response.ok) throw new Error("Failed to fetch farmer data");
 
@@ -46,9 +55,13 @@ function FarmerInputStation() {
       if (data) {
         // Filter rows based on user role
         if (session.user.role === "staff") {
-          setFarmerData(data.latestRows.map((row, index) => ({ ...row, id: index })));
+          setFarmerData(
+            data.latestRows.map((row, index) => ({ ...row, id: index }))
+          );
         } else if (["admin", "manager"].includes(session.user.role)) {
-          setFarmerData(data.allRows.map((row, index) => ({ ...row, id: index })));
+          setFarmerData(
+            data.allRows.map((row, index) => ({ ...row, id: index }))
+          );
         }
       }
     } catch (error) {
@@ -72,31 +85,32 @@ function FarmerInputStation() {
     };
 
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/farmer', {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/farmer`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        setFarmerName('');
-        setFarmerAddress('');
-        setFarmerLandArea('');
-        setFarmerContact('');
-        setLatitude('');
-        setLongitude('');
-        setFarmType('');
-        setNotes('');
+        // Clear form inputs after a successful submission
+        setFarmerName("");
+        setFarmerAddress("");
+        setFarmerLandArea("");
+        setFarmerContact("");
+        setLatitude("");
+        setLongitude("");
+        setFarmType("");
+        setNotes("");
         fetchFarmerData();
         setSnackbarOpen(true);
       } else {
         const errorData = await response.json();
-        console.error(errorData.message || 'Error creating batch.');
+        console.error(errorData.message || "Error creating batch.");
       }
     } catch (error) {
-      console.error('Failed to communicate with the backend:', error);
+      console.error("Failed to communicate with the backend:", error);
     }
   };
 
@@ -105,22 +119,22 @@ function FarmerInputStation() {
   };
 
   const columns = [
-    { field: 'farmerID', headerName: 'ID', width: 140, sortable: true },
-    { field: 'farmerName', headerName: 'Name', width: 180, sortable: true },
-    { field: 'farmerAddress', headerName: 'Address', width: 180, sortable: true },
-    { field: 'farmerLandArea', headerName: 'Land Area', width: 180, sortable: true },
-    { field: 'farmerContact', headerName: 'Contact', width: 180, sortable: true },
-    { field: 'latitude', headerName: 'Latitude', width: 180, sortable: true },
-    { field: 'longitude', headerName: 'Longitude', width: 180, sortable: true },
-    { field: 'farmType', headerName: 'Type', width: 180, sortable: true },
-    { field: 'registrationDate', headerName: 'Registration Date', width: 180, sortable: true },
-    { field: 'isActive', headerName: 'Active', width: 180, sortable: true },
-    { field: 'notes', headerName: 'Notes', width: 180, sortable: true },
+    { field: "farmerID", headerName: "ID", width: 140, sortable: true },
+    { field: "farmerName", headerName: "Name", width: 180, sortable: true },
+    { field: "farmerAddress", headerName: "Address", width: 180, sortable: true },
+    { field: "farmerLandArea", headerName: "Land Area", width: 180, sortable: true },
+    { field: "farmerContact", headerName: "Contact", width: 180, sortable: true },
+    { field: "latitude", headerName: "Latitude", width: 180, sortable: true },
+    { field: "longitude", headerName: "Longitude", width: 180, sortable: true },
+    { field: "farmType", headerName: "Type", width: 180, sortable: true },
+    { field: "registrationDate", headerName: "Registration Date", width: 180, sortable: true },
+    { field: "isActive", headerName: "Active", width: 180, sortable: true },
+    { field: "notes", headerName: "Notes", width: 180, sortable: true },
   ];
 
   return (
     <Grid container spacing={3}>
-      {/* Farmer Input Station Form */}
+      {/* Farmer Form */}
       <Grid item xs={12} md={3}>
         <Card variant="outlined">
           <CardContent>
@@ -204,17 +218,15 @@ function FarmerInputStation() {
         </Card>
       </Grid>
 
-      {/* Data Grid for Farmer Data (Staff only) */}
-
       {/* Data Grid for Farmer Data */}
-      {["admin", "manager", "staff"].includes(session.user.role) && (
+      {["admin", "manager", "staff"].includes(session?.user?.role) && (
         <Grid item xs={12} md={9}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h5" gutterBottom>
                 Farmer Data
               </Typography>
-              <div style={{ height: 1000, width: "100%" }}>
+              <div style={{ height: 500, width: "100%" }}>
                 <DataGrid
                   rows={farmerData}
                   columns={columns}
@@ -230,9 +242,17 @@ function FarmerInputStation() {
         </Grid>
       )}
 
-      {/* Snackbar for notifications */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
           Farmer successfully added!
         </Alert>
       </Snackbar>
