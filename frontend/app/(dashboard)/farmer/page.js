@@ -125,16 +125,6 @@ function FarmerInputStation() {
     { field: 'notes', headerName: 'Notes', width: 180, sortable: true },
   ];
 
-    // Show loading screen while session is loading
-  if (status === 'loading') {
-    return <p>Loading...</p>;
-  }
-
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
-  if (!session?.user || session.user.role !== 'admin') {
-    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
-  }
-
   return (
     <Grid container spacing={3}>
       {/* Farmer Input Station Form */}
@@ -230,26 +220,28 @@ function FarmerInputStation() {
       </Grid>
 
       {/* Data Grid for Farmer Data */}
-      <Grid item xs={12} md={9}>
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Farmer Data
-            </Typography>
-            <div style={{ height: 1000, width: '100%' }}>
-              <DataGrid
-                rows={farmerData}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
-                sortingOrder={['asc', 'desc']}
-                slots={{ toolbar: GridToolbar }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </Grid>
+      {session?.user?.role === 'admin' && (
+        <Grid item xs={12} md={9}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Farmer Data
+              </Typography>
+              <div style={{ height: 1000, width: '100%' }}>
+                <DataGrid
+                  rows={farmerData}
+                  columns={columns}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                  disableSelectionOnClick
+                  sortingOrder={['asc', 'desc']}
+                  slots={{ toolbar: GridToolbar }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
 
       {/* Snackbar for notifications */}
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>

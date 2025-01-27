@@ -90,7 +90,7 @@ const ArabicaCategoryChart = () => {
     <Box sx={{ height: 600 }}>
       <BarChart
         dataset={data}
-        xAxis={[{ scaleType: "band", dataKey: "storedDate", label: "Stored Date" }]}
+        xAxis={[{ scaleType: "band", dataKey: "storedDate", label: "Stored Date", disableTicks : true }]}
         series={categories.map((category) => ({
           dataKey: category,
           label: category,
@@ -98,13 +98,15 @@ const ArabicaCategoryChart = () => {
           colors:"cheerfulFiesta",
         }))}
         yAxis={[{ label: "Weight (kg)" }]}
-        height={600}
+        height={500}
         sx={{
           ".MuiChart-axisLeft .MuiChart-axisLabel": {
             transform: "translate(-20px, 0)",
           },
         }}
         colors={colorCategories[colorScheme]}
+        borderRadius={10}
+        slotProps={{ legend: { hidden : true } }}
       />
     </Box>
   );
