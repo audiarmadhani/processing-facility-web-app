@@ -103,8 +103,11 @@ function FarmerInputStation() {
         setLongitude('');
         setFarmType('');
         setNotes('');
-        fetchFarmerData();
+
+        await fetchFarmerData();
+
         setSnackbarOpen(true);
+        
       } else {
         const errorData = await response.json();
         console.error(errorData.message || "Error creating batch.");
