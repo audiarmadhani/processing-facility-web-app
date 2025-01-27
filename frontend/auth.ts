@@ -13,55 +13,62 @@ type User = {
   role: string; // User role (e.g., 'admin', 'user')
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    CredentialsProvider({
-      credentials: {
-        email: { label: 'Email Address', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      authorize: async (credentials) => {
-        try {
-          if (!credentials?.email || !credentials?.password) {
-            console.error('Missing email or password in credentials.');
-            return null;
-          }
-
-          // Call the login API with the provided credentials
-          const response = await axios.post(
-            'https://processing-facility-backend.onrender.com/api/login',
-            {
-              email: credentials.email,
-              password: credentials.password,
-            }
-          );
-
-          if (response.status === 200) {
-            const { id, name, email, role } = response.data.user as User; // Assert the type here
-
-            // Validate password using bcrypt
-            const isPasswordValid = await bcrypt.compare(
-              credentials.password,
-              response.data.user.password
-            );
-
-            if (isPasswordValid) {
-              return { id, name, email, role }; // Include role in the user object
-            } else {
-              console.error('Invalid password.');
-              return null;
-            }
-          }
-
-          console.error('Invalid email or password.');
-          return null;
-        } catch (error) {
-          console.error('Error during authentication:', error);
+const providers = [
+  CredentialsProvider({
+    credentials: {
+      email: { label: 'Email Address', type: 'email' },
+      password: { label: 'Password', type: 'password' },
+    },
+    authorize: async (credentials) => {
+      try {
+        if (!credentials?.email || !credentials?.password) {
+          console.error('Missing email or password in credentials.');
           return null;
         }
-      },
-    }),
-  ],
+
+        // Call the login API with the provided credentials
+        const response = await axios.post(
+          'https://processing-facility-backend.onrender.com/api/login',
+          {
+            email: credentials.email,
+            password: credentials.password,
+          }
+        );
+
+        if (response.status === 200) {
+          const { id, name, email, role } = response.data.user as User; // Assert the type here
+
+          // Validate password using bcrypt
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            response.data.user.password
+          );
+
+          if (isPasswordValid) {
+            return { id, name, email, role }; // Include role in the user object
+          } else {
+            console.error('Invalid password.');
+            return null;
+          }
+        }
+
+        console.error('Invalid email or password.');
+        return null;
+      } catch (error) {
+        console.error('Error during authentication:', error);
+        return null;
+      }
+    },
+  }),
+];
+
+export const providerMap = providers.map((provider) => ({
+  id: provider.id,
+  name: provider.name,
+}));
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  providers,
   secret: process.env.AUTH_SECRET,
   pages: {
     signIn: '/auth/signin', // Redirect to this page if unauthorized
