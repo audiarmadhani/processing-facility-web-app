@@ -45,7 +45,7 @@ function FarmerInputStation() {
   const fetchFarmerData = async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/farmer`
+        "https://processing-facility-backend.onrender.com/api/farmer"
       );
       if (!response.ok) throw new Error("Failed to fetch farmer data");
 
@@ -85,7 +85,7 @@ function FarmerInputStation() {
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/farmer`, {
+      const response = await fetch("https://processing-facility-backend.onrender.com/api/farmer", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
