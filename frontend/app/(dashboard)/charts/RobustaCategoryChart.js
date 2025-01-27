@@ -88,7 +88,7 @@ const ArabicaCategoryChart = () => {
   const colorScheme = 'Set3';
 
   return (
-    <Box sx={{ height: 600 }}>
+    <Box sx={{ height: 500 }}>
       <BarChart
         dataset={data}
         xAxis={[{ scaleType: "band", dataKey: "storedDate", label: "Stored Date", disableTicks : true }]}
@@ -98,10 +98,10 @@ const ArabicaCategoryChart = () => {
           stack: "stack1", // Adding stack property to enable stacking
         }))}
         yAxis={[{ label: "Weight (kg)" }]}
-        height={600}
+        height={500}
         sx={{
           ".MuiChart-axisLeft .MuiChart-axisLabel": {
-            transform: "translate(-20px, 0)",
+            transform: "translate(0px, 0)",
           },
         }}
         colors={colorCategories[colorScheme]}

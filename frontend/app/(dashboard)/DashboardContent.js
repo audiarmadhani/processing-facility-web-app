@@ -408,7 +408,7 @@ function Dashboard() {
           </Card>
         </Grid>
 
-        {/* Row 4: Line Chart */}
+        {/* Row 4: Bar Chart */}
         <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
           <Card variant="outlined">
             <CardContent>

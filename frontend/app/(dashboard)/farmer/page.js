@@ -219,8 +219,8 @@ function FarmerInputStation() {
         </Card>
       </Grid>
 
-      {/* Data Grid for Farmer Data */}
-      {session?.user?.role === 'admin' && (
+      {/* Data Grid for Farmer Data (Staff only) */}
+      {session?.user?.role === 'staff' && (
         <Grid item xs={12} md={9}>
           <Card variant="outlined">
             <CardContent>
