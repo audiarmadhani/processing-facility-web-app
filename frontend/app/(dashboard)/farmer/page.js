@@ -170,6 +170,7 @@ function FarmerInputStation() {
                     onChange={(e) => setFarmerName(e.target.value)}
                     fullWidth
                     required
+                    input={<OutlinedInput label="Farmer Name" />}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -180,6 +181,7 @@ function FarmerInputStation() {
                     onChange={(e) => setFarmerAddress(e.target.value)}
                     fullWidth
                     required
+                    input={<OutlinedInput label="Farmer Address" />}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -190,6 +192,7 @@ function FarmerInputStation() {
                     onChange={(e) => setFarmerLandArea(e.target.value)}
                     fullWidth
                     required
+                    input={<OutlinedInput label="Farmer Land Area" />}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -200,6 +203,7 @@ function FarmerInputStation() {
                     onChange={(e) => setFarmerContact(e.target.value)}
                     fullWidth
                     required
+                    input={<OutlinedInput label="Farmer Contact" />}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -209,6 +213,7 @@ function FarmerInputStation() {
                       labelId="type-label"
                       value={farmType}
                       onChange={(e) => setFarmType(e.target.value)}
+                      input={<OutlinedInput label="Farm Type" />}
                     >
                       <MenuItem value="Arabica">Arabica</MenuItem>
                       <MenuItem value="Robusta">Robusta</MenuItem>
@@ -226,7 +231,7 @@ function FarmerInputStation() {
                       multiple
                       value={farmVarieties}
                       onChange={(e) => setFarmVarieties(e.target.value)}
-                      input={<OutlinedInput label="Varieties" />}
+                      input={<OutlinedInput label="Farm Varieties" />}
                       MenuProps={MenuProps}
                     >
                       <MenuItem value="Bourbon">Bourbon</MenuItem>
@@ -244,6 +249,7 @@ function FarmerInputStation() {
                     rows={4}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
+                    input={<OutlinedInput label="Notes" />}
                     fullWidth
                   />
                 </Grid>
