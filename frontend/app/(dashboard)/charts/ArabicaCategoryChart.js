@@ -7,6 +7,23 @@ import { Box, Typography, CircularProgress } from "@mui/material";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+const colorCategories = {
+  Set3: [
+    '#8dd3c7',
+    '#ffffb3',
+    '#bebada',
+    '#fb8072',
+    '#80b1d3',
+    '#fdb462',
+    '#b3de69',
+    '#fccde5',
+    '#d9d9d9',
+    '#bc80bd',
+    '#ccebc5',
+    '#ffed6f',
+  ],
+};
+
 const ArabicaCategoryChart = () => {
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -67,6 +84,8 @@ const ArabicaCategoryChart = () => {
     );
   }
 
+  const colorScheme = 'Set3';
+
   return (
     <Box sx={{ height: 600 }}>
       <BarChart
@@ -85,6 +104,7 @@ const ArabicaCategoryChart = () => {
             transform: "translate(-20px, 0)",
           },
         }}
+        colors={colorCategories[colorScheme]}
       />
     </Box>
   );
