@@ -86,8 +86,10 @@ function FarmerInputStation() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const farmVarietiesCSV = farmVarieties.join(", ");
+
     const payload = {
-      farmerName,
+      farmerName : farmerName.trim(),
       farmerAddress,
       farmerLandArea,
       farmerContact,
@@ -95,7 +97,7 @@ function FarmerInputStation() {
       longitude: longitude.trim() === "" ? null : parseFloat(longitude),
       farmType,
       notes,
-      farmVarieties,
+      farmVarieties : farmVarietiesCSV.trim(),
     };
 
     try {
