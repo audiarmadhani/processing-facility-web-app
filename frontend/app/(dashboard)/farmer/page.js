@@ -26,14 +26,14 @@ function FarmerInputStation() {
 
   // State Declarations
   const [farmerData, setFarmerData] = useState([]);
-  const [farmerName, setFarmerName] = useState("");
-  const [farmerAddress, setFarmerAddress] = useState("");
-  const [farmerLandArea, setFarmerLandArea] = useState("");
-  const [farmerContact, setFarmerContact] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [farmType, setFarmType] = useState("");
-  const [notes, setNotes] = useState("");
+  const [farmerName, setFarmerName] = useState('');
+  const [farmerAddress, setFarmerAddress] = useState('');
+  const [farmerLandArea, setFarmerLandArea] = useState('');
+  const [farmerContact, setFarmerContact] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [farmType, setFarmType] = useState('');
+  const [notes, setNotes] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
@@ -95,14 +95,14 @@ function FarmerInputStation() {
 
       if (response.ok) {
         // Clear form inputs after a successful submission
-        setFarmerName("");
-        setFarmerAddress("");
-        setFarmerLandArea("");
-        setFarmerContact("");
-        setLatitude("");
-        setLongitude("");
-        setFarmType("");
-        setNotes("");
+        setFarmerName('');
+        setFarmerAddress('');
+        setFarmerLandArea('');
+        setFarmerContact('');
+        setLatitude('');
+        setLongitude('');
+        setFarmType('');
+        setNotes('');
         fetchFarmerData();
         setSnackbarOpen(true);
       } else {
