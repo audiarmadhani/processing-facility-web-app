@@ -22,39 +22,36 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 function FarmerInputStation() {
-  const { data: session, status } = useSession(); // Access session data and status
-  const [farmerName, setFarmerName] = useState('');
-  const [farmerAddress, setFarmerAddress] = useState('');
-  const [farmerLandArea, setFarmerLandArea] = useState('');
-  const [farmerContact, setFarmerContact] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [farmType, setFarmType] = useState('');
-  const [notes, setNotes] = useState('');
+  const { data: session, status } = useSession();
   const [farmerData, setFarmerData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-
   useEffect(() => {
-    fetchFarmerData();
-  }, []);
+    if (session?.user?.role) {
+      fetchFarmerData();
+    }
+  }, [session?.user?.role]);
 
   const fetchFarmerData = async () => {
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/farmer');
-      if (!response.ok) throw new Error('Failed to fetch farmer data');
+      const response = await fetch(
+        "https://processing-facility-backend.onrender.com/api/farmer"
+      );
+      if (!response.ok) throw new Error("Failed to fetch farmer data");
 
       const data = await response.json();
-      console.log('Fetched data:', data); // Log the fetched data for debugging
+      console.log("Fetched data:", data);
 
-      if (data && Array.isArray(data.latestRows)) {
-        setFarmerData(data.latestRows.map((row, index) => ({ ...row, id: index }))); // Add unique id
-      } else {
-        console.error('Unexpected data format:', data);
-        setFarmerData([]);
+      if (data) {
+        // Filter rows based on user role
+        if (session.user.role === "staff") {
+          setFarmerData(data.latestRows.map((row, index) => ({ ...row, id: index })));
+        } else if (["admin", "manager"].includes(session.user.role)) {
+          setFarmerData(data.allRows.map((row, index) => ({ ...row, id: index })));
+        }
       }
     } catch (error) {
-      console.error('Error fetching farmer data:', error);
+      console.error("Error fetching farmer data:", error);
       setFarmerData([]);
     }
   };
@@ -220,21 +217,23 @@ function FarmerInputStation() {
       </Grid>
 
       {/* Data Grid for Farmer Data (Staff only) */}
-      {session?.user?.role === 'staff' && (
+
+      {/* Data Grid for Farmer Data */}
+      {["admin", "manager", "staff"].includes(session.user.role) && (
         <Grid item xs={12} md={9}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h5" gutterBottom>
                 Farmer Data
               </Typography>
-              <div style={{ height: 1000, width: '100%' }}>
+              <div style={{ height: 1000, width: "100%" }}>
                 <DataGrid
                   rows={farmerData}
                   columns={columns}
                   pageSize={5}
                   rowsPerPageOptions={[5, 10, 20]}
                   disableSelectionOnClick
-                  sortingOrder={['asc', 'desc']}
+                  sortingOrder={["asc", "desc"]}
                   slots={{ toolbar: GridToolbar }}
                 />
               </div>
