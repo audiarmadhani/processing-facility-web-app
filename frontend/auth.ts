@@ -7,10 +7,11 @@ const bcrypt = require('bcryptjs'); // Use bcryptjs for compatibility
 
 // Define the User type to match your user model
 type User = {
-  id: string; // Change to string if your database uses string IDs
+  id: string;
   email: string;
-  password: string; // Assuming this will be hashed in the database
-  name: string; // Adjust according to your User model
+  password: string;
+  name: string;
+  role: string; // Add the 'role' property
 };
 
 const providers: Provider[] = [
@@ -37,10 +38,10 @@ const providers: Provider[] = [
         );
     
         if (response.status === 200) {
-          const { id, name, email } = response.data.user;
+          const { id, name, email, role } = response.data.user; // Ensure role is returned from the API
     
           // Return the user object for the session
-          return { id, name, email };
+          return { id, name, email, role };
         }
     
         console.error('Invalid email or password.');
@@ -68,15 +69,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/auth/signin',
   },
   callbacks: {
-    authorized({ auth: session, request: { nextUrl } }) {
-      const isLoggedIn = !!session?.user;
-      const isPublicPage = nextUrl.pathname.startsWith('/public');
-
-      if (isPublicPage || isLoggedIn) {
-        return true;
+    async jwt({ token, user }) {
+      // Attach the role to the JWT token
+      if (user) {
+        token.role = user.role;
       }
-
-      return false; // Redirect unauthenticated users to login page
+      return token;
+    },
+    async session({ session, token }) {
+      // Attach the role to the session
+      if (token) {
+        session.user.role = token.role as string;
+      }
+      return session;
+    },
+    async redirect({ url, baseUrl }) {
+      return url.startsWith(baseUrl) ? url : baseUrl;
     },
   },
 });
