@@ -309,7 +309,7 @@ function ReceivingStation() {
 
       {/* Data Grid for Receiving Data */}
       {["admin", "manager", "receiving"].includes(session?.user?.role) && (
-        <Grid item xs={12} md={9}>
+        <Grid item xs={12} md={8}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h5" gutterBottom>
