@@ -308,7 +308,7 @@ function ReceivingStation() {
       </Grid>
 
       {/* Data Grid for Receiving Data */}
-      {["admin", "manager", "staff"].includes(session?.user?.role) && (
+      {["admin", "manager", "receiving"].includes(session?.user?.role) && (
         <Grid item xs={12} md={9}>
           <Card variant="outlined">
             <CardContent>
