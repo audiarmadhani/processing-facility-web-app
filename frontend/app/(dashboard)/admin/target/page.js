@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from "next-auth/react";
 import {
   TextField,
   Button,
@@ -162,7 +163,7 @@ function TargetInputStation() {
     // { field: 'endDate', headerName: 'End Date', width: 130 },
   ];
 
-  
+
   // Show loading screen while session is loading
   if (status === 'loading') {
     return <p>Loading...</p>;
