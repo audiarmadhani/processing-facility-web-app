@@ -131,8 +131,12 @@ function FarmerInputStation() {
   }
 
   // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
-  if (!session?.user || session.user.role !== 'admin') {
-    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager')) {
+    return (
+      <Typography variant="h6">
+        Access Denied. You do not have permission to view this page.
+      </Typography>
+    );
   }
 
 

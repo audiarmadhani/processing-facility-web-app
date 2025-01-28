@@ -146,11 +146,13 @@ const SchedulePage = () => {
     }
   };
 
-  if (status === "loading") {
+  // Show loading screen while session is loading
+  if (status === 'loading') {
     return <p>Loading...</p>;
   }
-  
-  if (!session || session.user.role !== "admin") {
+
+  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager')) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.

@@ -24,6 +24,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 const PreprocessingStation = () => {
+  const { data: session, status } = useSession();
   const [rfidTag, setRfidTag] = useState('');
   const [bagsProcessed, setBagsProcessed] = useState(1);
   const [batchNumber, setBatchNumber] = useState('');
@@ -320,6 +321,20 @@ const PreprocessingStation = () => {
   useEffect(() => {
     fetchPreprocessingData(); // Fetch preprocessing data only once on mount
   }, []);
+
+  // Show loading screen while session is loading
+  if (status === 'loading') {
+    return <p>Loading...</p>;
+  }
+
+  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'preprocessing')) {
+    return (
+      <Typography variant="h6">
+        Access Denied. You do not have permission to view this page.
+      </Typography>
+    );
+  }
 
   return (
     <Grid container spacing={3}>

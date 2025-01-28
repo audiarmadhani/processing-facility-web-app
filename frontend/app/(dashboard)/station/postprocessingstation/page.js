@@ -21,6 +21,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 function PostprocessingStation() {
+  const { data: session, status } = useSession();
   const [notes, setNotes] = useState('');
   const [totalBags, setTotalBags] = useState('');
   const [weight, setWeight] = useState('');
@@ -134,6 +135,19 @@ function PostprocessingStation() {
     { field: 'notes', headerName: 'Notes', width: 200, sortable: true },
   ];
 
+  // Show loading screen while session is loading
+  if (status === 'loading') {
+    return <p>Loading...</p>;
+  }
+
+  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'postprocessing')) {
+    return (
+      <Typography variant="h6">
+        Access Denied. You do not have permission to view this page.
+      </Typography>
+    );
+  }
 
   return (
     <Grid container spacing={3}>
