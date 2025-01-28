@@ -8,6 +8,8 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import axios from "axios";
 
+const { data: session, status } = useSession(); // Access session data and status
+
 // Initial data for columns and tasks
 const initialData = {
   columns: {
@@ -143,6 +145,16 @@ const SchedulePage = () => {
       // Optionally handle UI feedback for the error
     }
   };
+
+  // Show loading screen while session is loading
+  if (status === 'loading') {
+    return <p>Loading...</p>;
+  }
+
+  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
+  if (!session?.user || session.user.role !== 'admin') {
+    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
+  }
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>

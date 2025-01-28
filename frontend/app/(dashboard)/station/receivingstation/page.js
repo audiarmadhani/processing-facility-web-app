@@ -21,6 +21,9 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 function ReceivingStation() {
+
+  const { data: session, status } = useSession();
+
   const [farmerName, setFarmerName] = useState('');
   const [farmerList, setFarmerList] = useState([]);
   const [notes, setNotes] = useState('');
@@ -69,19 +72,25 @@ function ReceivingStation() {
   const fetchReceivingData = async () => {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
-      if (!response.ok) throw new Error('Failed to fetch receiving data');
+      if (!response.ok) throw new Error("Failed to fetch receiving data");
 
       const data = await response.json();
-      console.log('Fetched data:', data); // Log the fetched data for debugging
+      console.log("Fetched data:", data);
 
-      if (data && Array.isArray(data.latestRows)) {
-        setReceivingData(data.latestRows.map((row, index) => ({ ...row, id: index }))); // Add unique id
-      } else {
-        console.error('Unexpected data format:', data);
-        setReceivingData([]);
+      if (data) {
+        // Filter rows based on user role
+        if (session.user.role === "staff") {
+          setReceivingData(
+            data.latestRows.map((row, index) => ({ ...row, id: index }))
+          );
+        } else if (["admin", "manager"].includes(session.user.role)) {
+          setReceivingData(
+            data.allRows.map((row, index) => ({ ...row, id: index }))
+          );
+        }
       }
     } catch (error) {
-      console.error('Error fetching receiving data:', error);
+      console.error("Error fetching receiving data:", error);
       setReceivingData([]);
     }
   };
@@ -285,26 +294,28 @@ function ReceivingStation() {
       </Grid>
 
       {/* Data Grid for Receiving Data */}
-      <Grid item xs={12} md={8}>
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
+      {["admin", "manager", "staff"].includes(session?.user?.role) && (
+        <Grid item xs={12} md={9}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
               Receiving Data
-            </Typography>
-            <div style={{ height: 1000, width: '100%' }}>
-              <DataGrid
-                rows={receivingData}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
-                sortingOrder={['asc', 'desc']}
-                slots={{ toolbar: GridToolbar }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </Grid>
+              </Typography>
+              <div style={{ height: 500, width: "100%" }}>
+                <DataGrid
+                  rows={receivingData}
+                  columns={columns}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                  disableSelectionOnClick
+                  sortingOrder={["asc", "desc"]}
+                  slots={{ toolbar: GridToolbar }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
 
       {/* Snackbar for notifications */}
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>

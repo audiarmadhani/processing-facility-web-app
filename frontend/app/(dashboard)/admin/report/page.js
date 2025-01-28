@@ -20,6 +20,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 function FarmerInputStation() {
+  const { data: session, status } = useSession(); // Access session data and status
   const [farmerName, setFarmerName] = useState('');
   const [farmerAddress, setFarmerAddress] = useState('');
   const [farmerLandArea, setFarmerLandArea] = useState('');
@@ -122,6 +123,16 @@ function FarmerInputStation() {
     { field: 'isActive', headerName: 'Active', width: 180, sortable: true },
     { field: 'notes', headerName: 'Notes', width: 180, sortable: true },
   ];
+
+  // Show loading screen while session is loading
+  if (status === 'loading') {
+    return <p>Loading...</p>;
+  }
+
+  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
+  if (!session?.user || session.user.role !== 'admin') {
+    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
+  }
 
 
   return (

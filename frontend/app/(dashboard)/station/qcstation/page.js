@@ -586,7 +586,7 @@ const uploadImage = async (file, batchNumber) => {
 
         <Divider style={{ margin: '16px 0' }} /> {/* Add a Divider here */}
         
-        {/* Waiting QC Section */}
+        {/* Completed QC Section */}
         <Card style={{ marginTop: '16px' }} variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>

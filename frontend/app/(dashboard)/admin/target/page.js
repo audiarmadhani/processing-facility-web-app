@@ -25,6 +25,9 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api/targets'; // Define your base API URL here
 
 function TargetInputStation() {
+
+  const { data: session, status } = useSession(); // Access session data and status
+
   const [type, setType] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [quality, setQuality] = useState('');
@@ -158,6 +161,18 @@ function TargetInputStation() {
     // { field: 'startDate', headerName: 'Start Date', width: 130 },
     // { field: 'endDate', headerName: 'End Date', width: 130 },
   ];
+
+  
+  // Show loading screen while session is loading
+  if (status === 'loading') {
+    return <p>Loading...</p>;
+  }
+
+  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
+  if (!session?.user || session.user.role !== 'admin') {
+    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
+  }
+
 
   return (
     <Grid container spacing={3}>

@@ -256,9 +256,9 @@ const PreprocessingStation = () => {
       const preprocessingResult = await preprocessingResponse.json();
 
       // Extracting the relevant data from the responses
-      const receivingData = receivingRawResult.latestRows || []; // Corrected to access latestRows
-      const QCData = QCResult.latestRows || [];
-      const preprocessingData = preprocessingResult.latestRows || [];
+      const receivingData = receivingRawResult.allRows || []; // Corrected to access All Rows
+      const QCData = QCResult.allRows || [];
+      const preprocessingData = preprocessingResult.allRows || [];
 
       // Map through QCData to extract batch numbers
       const QCBatchNumbers = QCData.map(qc => qc.batchNumber.trim());
