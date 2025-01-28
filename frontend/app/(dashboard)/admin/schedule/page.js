@@ -9,8 +9,6 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import axios from "axios";
 
-const { data: session, status } = useSession(); // Access session data and status
-
 // Initial data for columns and tasks
 const initialData = {
   columns: {
@@ -46,6 +44,7 @@ const ColumnBox = styled(Box)(({ theme }) => ({
 }));
 
 const SchedulePage = () => {
+  const { data: session, status } = useSession(); // Move this here
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(true); // Loading state
 
@@ -147,14 +146,16 @@ const SchedulePage = () => {
     }
   };
 
-  // Show loading screen while session is loading
-  if (status === 'loading') {
+  if (status === "loading") {
     return <p>Loading...</p>;
   }
-
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
-  if (!session?.user || session.user.role !== 'admin') {
-    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
+  
+  if (!session || session.user.role !== "admin") {
+    return (
+      <Typography variant="h6">
+        Access Denied. You do not have permission to view this page.
+      </Typography>
+    );
   }
 
   return (
@@ -172,7 +173,7 @@ const SchedulePage = () => {
               <Droppable droppableId={columnId}>
                 {(provided) => (
                   <ColumnBox
-                    ref={provided.innerRef}
+                    ref={provided.innerRef} // Ensure this is passed
                     {...provided.droppableProps}
                   >
                     {column.tasks.map((task, index) => (
@@ -183,23 +184,11 @@ const SchedulePage = () => {
                       >
                         {(provided) => (
                           <TaskCard
-                            ref={provided.innerRef}
+                            ref={provided.innerRef} // Ensure this is passed
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-
-                            <Typography variant="h4">
-                              {task.type} {task.quality} {task.processingType}
-                            </Typography>
-
-                            <Typography variant="body1">
-                              Target: {task.targetValue} kg
-                            </Typography>
-
-                            <Typography variant="body1">
-                              Achievement: {task.achievement} kg
-                            </Typography>
-
+                            {/* Task Content */}
                           </TaskCard>
                         )}
                       </Draggable>
