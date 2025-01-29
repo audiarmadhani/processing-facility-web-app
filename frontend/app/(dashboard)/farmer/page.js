@@ -17,6 +17,7 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
+  Autocomplete,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 
@@ -29,6 +30,8 @@ function FarmerInputStation() {
   const [farmerData, setFarmerData] = useState([]);
   const [farmerName, setFarmerName] = useState('');
   const [farmerAddress, setFarmerAddress] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankName, setBankName] = useState('');
   const [farmerLandArea, setFarmerLandArea] = useState('');
   const [farmerContact, setFarmerContact] = useState('');
   const [latitude, setLatitude] = useState('');
@@ -48,6 +51,21 @@ function FarmerInputStation() {
       },
     },
   };
+
+  const bankOptions = [
+    'Bank Mandiri',
+    'Bank Rakyat Indonesia (BRI)',
+    'Bank Central Asia (BCA)',
+    'Bank Negara Indonesia (BNI)',
+    'Bank Tabungan Negara (BTN)',
+    'Bank Syariah Indonesia (BSI)',
+    'Bank CIMB Niaga',
+    'Bank OCBC NISP',
+    'Permata Bank',
+    'Bank Danamon',
+    'Bank BPD Bali',
+    // Add more banks as needed
+  ];
 
   useEffect(() => {
     if (session?.user?.role) {
@@ -91,6 +109,8 @@ function FarmerInputStation() {
     const payload = {
       farmerName : farmerName.trim(),
       farmerAddress,
+      bankAccount,
+      bankName,
       farmerLandArea,
       farmerContact,
       latitude: latitude.trim() === "" ? null : parseFloat(latitude),
@@ -113,6 +133,8 @@ function FarmerInputStation() {
         // Clear form inputs after a successful submission
         setFarmerName('');
         setFarmerAddress('');
+        setBankAccount('');
+        setBankName('');
         setFarmerLandArea('');
         setFarmerContact('');
         setLatitude('');
@@ -142,6 +164,8 @@ function FarmerInputStation() {
     { field: "farmerID", headerName: "ID", width: 140, sortable: true },
     { field: "farmerName", headerName: "Name", width: 180, sortable: true },
     { field: "farmerAddress", headerName: "Address", width: 180, sortable: true },
+    { field: "bankAccount", headerName: "Bank Account", width: 180, sortable: true },
+    { field: "bankName", headerName: "Bank Name", width: 180, sortable: true },
     { field: "farmerLandArea", headerName: "Land Area", width: 180, sortable: true },
     { field: "farmerContact", headerName: "Contact", width: 180, sortable: true },
     { field: "latitude", headerName: "Latitude", width: 180, sortable: true },
@@ -189,6 +213,7 @@ function FarmerInputStation() {
                     input={<OutlinedInput label="Farmer Name" />}
                   />
                 </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     label="Farmer Address"
@@ -200,6 +225,37 @@ function FarmerInputStation() {
                     input={<OutlinedInput label="Farmer Address" />}
                   />
                 </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="Bank Account"
+                    type="text"
+                    value={bankAccount}
+                    onChange={(e) => setBankAccount(e.target.value)}
+                    fullWidth
+                    required
+                    input={<OutlinedInput label="Bank Account" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Autocomplete
+                    freeSolo
+                    options={bankOptions}
+                    value={bankName}
+                    onChange={(event, newValue) => setBankName(newValue)}
+                    onInputChange={(event, newInputValue) => setBankName(newInputValue)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Bank Name"
+                        fullWidth
+                        required
+                      />
+                    )}
+                  />
+                </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     label="Farmer Land Area"
@@ -211,6 +267,7 @@ function FarmerInputStation() {
                     input={<OutlinedInput label="Farmer Land Area" />}
                   />
                 </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     label="Farmer Contact"
@@ -222,6 +279,7 @@ function FarmerInputStation() {
                     input={<OutlinedInput label="Farmer Contact" />}
                   />
                 </Grid>
+
                 <Grid item xs={12}>
                   <FormControl fullWidth required>
                     <InputLabel id="type-label">Farm Type</InputLabel>
@@ -269,6 +327,7 @@ function FarmerInputStation() {
                     fullWidth
                   />
                 </Grid>
+
                 <Grid item xs={12}>
                   <Button variant="contained" color="primary" type="submit">
                     Submit
