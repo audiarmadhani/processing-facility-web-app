@@ -242,6 +242,19 @@ function Dashboard() {
               </Card>
             </Grid>
 
+            {/* Arabica Yield */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Arabica Yield</Typography>
+                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.arabicaYield)} %
+                  </Typography>
+                  <Typography variant="caption">All time</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Total Arabica Production Bar Chart */}
             <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
@@ -433,6 +446,19 @@ function Dashboard() {
                   </Typography>
                   <Typography variant="caption">This Month</Typography>
                   <RobustaProductionMoM />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Robusta Yield */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Robusta Yield</Typography>
+                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.robustaYield)} %
+                  </Typography>
+                  <Typography variant="caption">All time</Typography>
                 </CardContent>
               </Card>
             </Grid>
