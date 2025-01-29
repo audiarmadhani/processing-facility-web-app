@@ -48,37 +48,20 @@ const ArabicaAvgCostChart = () => {
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
-      <svg width="0" height="0">
-        <defs>
-          <linearGradient id="thisMonthGradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#66b2b2" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#66b2b2" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="lastMonthGradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#ffbfd3" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#ffbfd3" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
-
       <LineChart
         xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
         series={[
-          {
-            data: data.map((item) => item.thisMonthCost),
-            color: "#66b2b2",
+          { 
+            data: data.map(item => item.thisMonthCost), 
+            label: 'This Month', 
             showMark: false,
-            curve: "monotoneX",
-            area: true, // Enables the gradient fill
-            fill: "url(#thisMonthGradient)", // Apply the gradient
+            color: '#66b2b2', 
           },
-          {
-            data: data.map((item) => item.lastMonthCost),
-            color: "#ffbfd3",
+          { 
+            data: data.map(item => item.lastMonthCost), 
+            label: 'Last Month', 
             showMark: false,
-            curve: "monotoneX",
-            area: true,
-            fill: "url(#lastMonthGradient)",
+            color: '#ffbfd3',
           },
         ]}
         // width={300}
