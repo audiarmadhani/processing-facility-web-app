@@ -5,7 +5,6 @@ import type { Navigation } from '@toolpad/core/AppProvider';
 import { SessionProvider, signIn, signOut } from 'next-auth/react';
 import theme from '../theme';
 import { auth } from '../auth';
-import Head from 'next/head';
 
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
@@ -20,6 +19,14 @@ import SummarizeIcon from '@mui/icons-material/Summarize';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import StorageIcon from '@mui/icons-material/Storage';
+
+export const metadata = {
+  title: "Kopi Fabriek Platform",
+  description: "Processing Facility Platform",
+  icons: {
+    icon: "/assets/icons/favicon.ico",
+  },
+};
 
 const NAVIGATION: Navigation = [
   { kind: "header", title: "Main items" },
@@ -68,10 +75,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const session = await auth();
   return (
     <html lang="en" data-toolpad-color-scheme="dark">
-      <Head>
-        <title>Kopi Fabriek Platform</title>
-        <link rel="icon" href="/assets/icons/favicon.ico" />
-      </Head>
       <body>
         <SessionProvider session={session}>
           <AppRouterCacheProvider options={{ enableCssLayer: true }}>
@@ -81,9 +84,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               session={session}
               authentication={AUTHENTICATION}
               branding={{
-                // logo: <img src="https://mui.com/static/logo.png" alt="MUI logo" />,
-                title: 'Processing Facility Platform',
-                homeUrl: '/',
+                title: "Processing Facility Platform",
+                homeUrl: "/",
               }}
             >
               {children}
