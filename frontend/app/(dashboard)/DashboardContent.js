@@ -240,8 +240,8 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Yield */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
-              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="body1">Arabica Yield</Typography>
                   <Typography
@@ -253,8 +253,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.arabicaYield)}</span>
-                    <span style={{ fontSize: '1rem' }}>%</span>
+                    {`${(100 / parseFloat(metrics.arabicaYield)).toFixed(1)}:1`}
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -540,10 +539,10 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta Yield */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
-              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
-                  <Typography variant="body1">Robusta Yield</Typography>
+                  <Typography variant="body1">Arabica Yield</Typography>
                   <Typography
                     variant="h4"
                     sx={{
@@ -553,8 +552,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.robustaYield)}</span>
-                    <span style={{ fontSize: '1rem' }}>%</span>
+                    {`${(100 / parseFloat(metrics.arabicaYield)).toFixed(1)}:1`}
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
