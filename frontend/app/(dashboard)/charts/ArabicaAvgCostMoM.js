@@ -51,8 +51,20 @@ const ArabicaAvgCostChart = () => {
       <LineChart
         xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
         series={[
-          { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
-          { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
+          { 
+            data: data.map(item => item.thisMonthCost), 
+            label: 'This Month', 
+            showMark: false,
+            color: '#66b2b2', 
+            area: true, // Enable area (gradient fill)
+          },
+          { 
+            data: data.map(item => item.lastMonthCost), 
+            label: 'Last Month', 
+            showMark: false,
+            color: '#ffbfd3',
+            area: true, // Enable area (gradient fill)
+          },
         ]}
         // width={300}
         height={70}
@@ -61,7 +73,7 @@ const ArabicaAvgCostChart = () => {
         }}
         leftAxis={null}
         bottomAxis={null}
-        margin={{ left: -5, right: 0, top: 10, bottom: 10 }} // Adjust left margin to shift left
+        margin={{ left: 0, right: 0, top: 10, bottom: 0 }} // Adjust left margin to shift left
       />
     </Box>
   );
