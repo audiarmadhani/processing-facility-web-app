@@ -32,7 +32,7 @@ const ArabicaAvgCostChart = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
         <CircularProgress />
       </Box>
     );
@@ -47,15 +47,15 @@ const ArabicaAvgCostChart = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
+    <Box sx={{ width: '100%', height: '80px' }}>
       <LineChart
         xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
         series={[
           { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
           { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
         ]}
-        width="100%" // Full width
-        height="100%" // Full height
+        width={200}
+        height={150}
         slotProps={{
           legend: { hidden: true }, // Hide legend
         }}
