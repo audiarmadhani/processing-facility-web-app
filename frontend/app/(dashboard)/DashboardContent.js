@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useSession } from "next-auth/react"; // Import useSession hook
+
 import { Grid, Card, CardContent, Typography, CircularProgress } from '@mui/material';
 import axios from 'axios';
 import TotalBatchesChart from './charts/TotalBatchesChart'; // Adjust the path as necessary
@@ -24,6 +26,10 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 function Dashboard() {
+
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "user"; // Default to "user" if role is missing
+
   // State for metrics
   const [metrics, setMetrics] = useState({
     totalBatches: 0,
@@ -110,6 +116,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Arabica Cost */}
+            {["admin", "manager"].includes(userRole) && (
             <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
@@ -138,8 +145,10 @@ function Dashboard() {
                 </CardContent>
               </Card>
             </Grid>
+            )}
             
             {/* Average Arabica Cost */}
+            {["admin", "manager"].includes(userRole) && (
             <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
@@ -168,28 +177,7 @@ function Dashboard() {
                 </CardContent>
               </Card>
             </Grid>
-
-            {/* Total Arabica Land Covered */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
-              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
-                <CardContent>
-                  <Typography variant="body1">Total Arabica Land Covered</Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontSize: '3rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
-                    <span style={{ fontSize: '1rem' }}>m&sup2;</span>
-                  </Typography>
-                  <Typography variant="caption">All time</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+            )}
 
             {/* Total Arabica Processed */}
             <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
@@ -267,6 +255,28 @@ function Dashboard() {
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.arabicaYield)}</span>
                     <span style={{ fontSize: '1rem' }}>%</span>
+                  </Typography>
+                  <Typography variant="caption">All time</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Total Arabica Land Covered */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Total Arabica Land Covered</Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '3rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
+                    <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -368,6 +378,8 @@ function Dashboard() {
           </Grid>
         </Grid>
 
+
+
         {/* Robusta Column */}
         <Grid item xs={12} md={6}>
           <Grid container spacing={3}>
@@ -404,6 +416,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Robusta Cost */}
+            {["admin", "manager"].includes(userRole) && (
             <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
@@ -432,8 +445,10 @@ function Dashboard() {
                 </CardContent>
               </Card>
             </Grid>
+            )}
 
             {/* Average Robusta Cost */}
+            {["admin", "manager"].includes(userRole) && (
             <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
@@ -462,28 +477,7 @@ function Dashboard() {
                 </CardContent>
               </Card>
             </Grid>
-
-            {/* Total Robusta Land Covered */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
-              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
-                <CardContent>
-                  <Typography variant="body1">Total Robusta Land Covered</Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontSize: '3rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
-                    <span style={{ fontSize: '1rem' }}>m&sup2;</span>
-                  </Typography>
-                  <Typography variant="caption">All time</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+            )}
 
             {/* Total Robusta Processed */}
             <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
@@ -561,6 +555,28 @@ function Dashboard() {
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.robustaYield)}</span>
                     <span style={{ fontSize: '1rem' }}>%</span>
+                  </Typography>
+                  <Typography variant="caption">All time</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Total Robusta Land Covered */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Total Robusta Land Covered</Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '3rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
+                    <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>

@@ -101,7 +101,7 @@ const ArabicaCategoryChart = () => {
         height={500}
         sx={{
           ".MuiChart-axisLeft .MuiChart-axisLabel": {
-            transform: "translate(0px, 0)",
+            transform: "translate(-50px, 0)",
           },
         }}
         colors={colorCategories[colorScheme]}
