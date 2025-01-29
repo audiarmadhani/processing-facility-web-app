@@ -58,14 +58,13 @@ const ArabicaAvgCostMoM = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
+    <Box sx={{ width: '300', height: '150' }}>
       <LineChart
       series={[
         { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
         { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
       ]}
       xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
-      yAxis={[{}]}
       slotProps={{
           legend: { hidden: true }, // Hide legend
         }}
