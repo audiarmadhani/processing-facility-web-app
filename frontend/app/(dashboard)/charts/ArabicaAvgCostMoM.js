@@ -66,9 +66,6 @@ const arabicaAvgCostMoM = () => {
             { id: "lastMonth", data: data.map((d) => d.lastMonth), label: "Last Month", color: "#ffbfd3" },
           ]}
           height={200}
-          slotProps={{
-            tooltip: { content: CustomTooltip },
-          }}
         />
       </ResponsiveChartContainer>
     </Box>
