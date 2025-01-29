@@ -15,9 +15,9 @@ const ArabicaAvgCostChart = () => {
       try {
         const response = await axios.get(API_URL);
         const transformedData = response.data.arabicaAvgCostMoM.map(item => ({
-          date: item.Date, // Keep the date for the x-axis
-          thisMonthCost: parseFloat(item.RunningAverageCostThisMonth), // Current month cost
-          lastMonthCost: parseFloat(item.RunningAverageCostLastMonth), // Last month cost
+          date: item.Date,
+          thisMonthCost: parseFloat(item.RunningAverageCostThisMonth),
+          lastMonthCost: parseFloat(item.RunningAverageCostLastMonth),
         }));
         setData(transformedData);
       } catch (error) {
@@ -32,7 +32,7 @@ const ArabicaAvgCostChart = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: '100%' }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
         <CircularProgress />
       </Box>
     );
@@ -41,7 +41,7 @@ const ArabicaAvgCostChart = () => {
   if (!data.length) {
     return (
       <Box sx={{ textAlign: "center", padding: 2 }}>
-        <Typography variant="h6">No data available</Typography>
+        <p>No data available</p>
       </Box>
     );
   }
@@ -49,26 +49,27 @@ const ArabicaAvgCostChart = () => {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <LineChart
-        xAxis={[]} // Hide x-axis
-        yAxis={[]} // Hide y-axis
+        xAxis={[{ data: [] }]} // No x-axis data
+        yAxis={[{ data: [] }]} // No y-axis data
         series={[
           {
-            data: data.map(item => item.thisMonthCost), // Current month average cost for y-axis
-            label: "Running Average Cost This Month", // Series label for current month
-            line: { style: { strokeWidth: 2 } }, // Customize line style
+            data: data.map(item => item.thisMonthCost),
+            label: "Running Average Cost This Month",
+            strokeWidth: 2,
             point: { visible: false }, // Hide dots on the line
           },
           {
-            data: data.map(item => item.lastMonthCost), // Last month average cost for y-axis
-            label: "Running Average Cost Last Month", // Series label for last month
-            line: { style: { strokeWidth: 2 } }, // Customize line style
+            data: data.map(item => item.lastMonthCost),
+            label: "Running Average Cost Last Month",
+            strokeWidth: 2,
             point: { visible: false }, // Hide dots on the line
           },
         ]}
-        width="100%" // Set width to 100%
-        height="100%" // Set height to 100%
-        sx={{ 
-          ".MuiChart-axis": { display: 'none' } // Additional style to ensure axes are hidden
+        width="100%" // Full width
+        height="100%" // Full height
+        slotProps={{
+          tooltip: { hidden: false }, // Hide tooltip
+          legend: { hidden: true }, // Hide legend
         }}
       />
     </Box>
