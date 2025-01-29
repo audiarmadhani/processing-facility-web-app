@@ -268,6 +268,34 @@ function Dashboard() {
               </Card>
             </Grid>
 
+            {/* Pending Arabica QC */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Pending Arabica QC</Typography>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)} Batch
+                  </Typography>
+                  <Typography variant="caption">All time</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Pending Arabica Processing */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Pending Arabica Processing</Typography>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaProcessing)} Batch
+                  </Typography>
+                  <Typography variant="h4" sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaWeightProcessing)} kg
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Total Arabica Production Bar Chart */}
             <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
@@ -485,6 +513,34 @@ function Dashboard() {
                     {new Intl.NumberFormat('de-DE').format(metrics.activeRobustaFarmers)} Farmers
                   </Typography>
                   <Typography variant="caption">All time</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Pending Robusta QC */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Pending Robusta QC</Typography>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)} Batch
+                  </Typography>
+                  <Typography variant="caption">All time</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Pending Robusta Processing */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+                <CardContent>
+                  <Typography variant="body1">Pending Robusta Processing</Typography>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaProcessing)} Batch
+                  </Typography>
+                  <Typography variant="h4" sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaWeightProcessing)} kg
+                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
