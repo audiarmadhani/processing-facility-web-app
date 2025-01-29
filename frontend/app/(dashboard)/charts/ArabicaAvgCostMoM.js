@@ -47,7 +47,7 @@ const ArabicaAvgCostChart = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
+    <Box sx={{ width: '100%', height: 80 }}>
       <LineChart
         xAxis={[{ data: [] }]} // No x-axis data
         yAxis={[{ data: [] }]} // No y-axis data
@@ -66,7 +66,7 @@ const ArabicaAvgCostChart = () => {
           },
         ]}
         width="100%" // Full width
-        height="100%" // Full height
+        height="80px" // Full height
         slotProps={{
           tooltip: { hidden: false }, // Hide tooltip
           legend: { hidden: true }, // Hide legend
