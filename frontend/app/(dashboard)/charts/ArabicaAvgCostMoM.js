@@ -60,20 +60,20 @@ const ArabicaAvgCostMoM = () => {
   return (
     <Box sx={{ width: '100%', height: 80 }}>
       <LineChart
-        xAxis={[{ data: data.map(item => item.date) }]} // Dates for x-axis
-        series={[
-          {
-            data: data.map(item => item.thisMonthCost), // Current month average cost for y-axis
-            label: "Running Average Cost This Month", // Series label for current month
-          },
-          {
-            data: data.map(item => item.lastMonthCost), // Last month average cost for y-axis
-            label: "Running Average Cost Last Month", // Series label for last month
-          },
-        ]}
-        width='100%'
-        height={80}
-      />
+      width={400}
+      height={150}
+      series={[
+        { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
+        { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
+      ]}
+      xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
+      yAxis={[{}]}
+      slotProps={{
+          legend: { hidden: true }, // Hide legend
+        }}
+      leftAxis={null}
+      bottomAxis={null}
+    />
     </Box>
   );
 };
