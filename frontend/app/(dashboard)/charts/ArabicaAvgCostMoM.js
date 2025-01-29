@@ -54,7 +54,8 @@ const ArabicaAvgCostChart = () => {
           { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
           { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
         ]}
-        height={80}
+        width={400}
+        height={150}
         slotProps={{
           legend: { hidden: true }, // Hide legend
         }}
