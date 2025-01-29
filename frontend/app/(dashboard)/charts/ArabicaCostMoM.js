@@ -1,65 +1,14 @@
-"use cilent";
-
 import React, { useEffect, useState } from 'react';
-import { AreaChart, Area, Tooltip, XAxis, ResponsiveContainer } from 'recharts';
+import { LineChart } from '@mui/x-charts/LineChart';
 import axios from 'axios';
-import { Box, Typography, CircularProgress } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+import { Box, CircularProgress } from '@mui/material';
+
+const API_URL = "https://processing-facility-backend.onrender.com/api/dashboard-metrics";
 
 
 const arabicaCostMoM = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const theme = useTheme(); // Access theme for dark/light mode
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const isDarkMode = theme.palette.mode === 'dark';
-      const labelMapping = {
-        thisMonth: 'This Month',
-        lastMonth: 'Last Month',
-      };
-  
-      return (
-        <div
-          style={{
-            backgroundColor: isDarkMode ? '#333' : '#fff',
-            color: isDarkMode ? '#fff' : '#000',
-            borderRadius: '4px',
-            padding: '8px',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            fontFamily: 'Roboto, sans-serif',
-            fontSize: '12px', // Smaller text
-            pointerEvents: 'none', // Prevent interfering with mouse events
-            zIndex: 1000, // Ensure it appears above other elements
-            transform: 'translate(-20px, -20px)', // Move tooltip further from cursor
-          }}
-          className="custom-tooltip"
-        >
-          <p style={{ margin: 0, fontWeight: 'bold' }}>{label}</p>
-          <hr style={{ border: 0, borderTop: '1px solid #ccc', margin: '5px 0' }} />
-          {payload.map((item, index) => (
-            <p key={index} style={{ margin: '5px 0', display: 'flex', alignItems: 'center' }}>
-              <span
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  backgroundColor: item.color, // Use the stroke color
-                  borderRadius: '50%',
-                  display: 'inline-block',
-                  marginRight: '8px',
-                }}
-              ></span>
-              {labelMapping[item.dataKey]}: {item.value}
-            </p>
-          ))}
-        </div>
-      );
-    }
-  
-    return null;
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,40 +32,48 @@ const arabicaCostMoM = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!data.length) {
     return (
-      <Box sx={{ textAlign: 'center', padding: 2 }}>
-        <Typography variant="h6">No data available</Typography>
+      <Box sx={{ textAlign: "center", padding: 2 }}>
+        <p>No data available</p>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', height: 80}}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id="colorthisMonth" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#66b2b2" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#66b2b2" stopOpacity={0}/>
-            </linearGradient>
-            <linearGradient id="colorlastMonth" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ffbfd3" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#ffbfd3" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <XAxis dataKey="date" hide/>
-          <Tooltip content={<CustomTooltip />} />
-          <Area type="monotone" dataKey="thisMonth" stroke="#66b2b2" fill="url(#colorthisMonth)" strokeWidth={2} connectNulls/>
-          <Area type="monotone" dataKey="lastMonth" stroke="#ffbfd3" fill="url(#colorlastMonth)" strokeWidth={2} connectNulls/>
-        </AreaChart>
-      </ResponsiveContainer>
+    <Box sx={{ width: '100%', height: '100%' }}>
+      <LineChart
+        xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
+        series={[
+          { 
+            data: data.map(item => item.thisMonthCost), 
+            label: 'This Month', 
+            showMark: false,
+            color: '#66b2b2', 
+            strokeWidth: 2,
+          },
+          { 
+            data: data.map(item => item.lastMonthCost), 
+            label: 'Last Month', 
+            showMark: false,
+            color: '#ffbfd3',
+          },
+        ]}
+        // width={300}
+        height={70}
+        slotProps={{
+          legend: { hidden: true }, // Hide legend
+        }}
+        leftAxis={null}
+        bottomAxis={null}
+        margin={{ left: 0, right: 0, top: 10, bottom: 0 }} // Adjust left margin to shift left
+      />
     </Box>
   );
 };
