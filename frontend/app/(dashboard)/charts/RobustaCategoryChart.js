@@ -10,18 +10,11 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 // Define your custom color palette
 const colorCategories = {
   Set3: [
-    '#8dd3c7',
-    '#ffffb3',
-    '#bebada',
-    '#fb8072',
-    '#80b1d3',
-    '#fdb462',
-    '#b3de69',
-    '#fccde5',
-    '#d9d9d9',
-    '#bc80bd',
-    '#ccebc5',
-    '#ffed6f',
+    '#C5D04B',
+    '#55BABA',
+    '#FF6354',
+    '#D93B3B',
+    '#325CA1',
   ],
 };
 
