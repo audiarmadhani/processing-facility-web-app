@@ -5,6 +5,7 @@ import type { Navigation } from '@toolpad/core/AppProvider';
 import { SessionProvider, signIn, signOut } from 'next-auth/react';
 import theme from '../theme';
 import { auth } from '../auth';
+import Head from 'next/head';
 
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
@@ -66,7 +67,11 @@ const AUTHENTICATION = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const session = await auth();
   return (
-    <html lang="en" data-toolpad-color-scheme="light">
+    <html lang="en" data-toolpad-color-scheme="dark">
+      <Head>
+        <title>Kopi Fabriek Platform</title>
+        <link rel="icon" href="/assets/icons/favicon.ico" />
+      </Head>
       <body>
         <SessionProvider session={session}>
           <AppRouterCacheProvider options={{ enableCssLayer: true }}>
