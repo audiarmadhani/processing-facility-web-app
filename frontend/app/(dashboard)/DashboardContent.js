@@ -174,8 +174,8 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Land Covered</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)} m2
+                  <Typography variant="h4" sx={{ fontSize: '3rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)} m&sup2
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -382,8 +382,8 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Land Covered</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)} m2
+                  <Typography variant="h4" sx={{ fontSize: '3rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)} m&sup2
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
