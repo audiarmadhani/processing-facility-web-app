@@ -1,36 +1,25 @@
-"use client";
-
 import React, { useEffect, useState } from 'react';
-import { LineChart, Line, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { LineChart } from '@mui/x-charts/LineChart';
 import axios from 'axios';
-import { Box, Typography, CircularProgress } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Box, CircularProgress } from '@mui/material';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_URL = "https://processing-facility-backend.onrender.com/api/dashboard-metrics";
 
-const ArabicaAvgCostMoM = () => {
+const ArabicaAvgCostChart = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const theme = useTheme();
 
+  // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `https://processing-facility-backend.onrender.com/api/dashboard-metrics`
-        );
-        console.log(response.data);
-
-        if (Array.isArray(response.data.arabicaAvgCostMoM)) {
-          const formattedData = response.data.arabicaAvgCostMoM.map((item) => ({
-            date: item.Date,
-            thisMonth: parseFloat(item.RunningAverageCostThisMonth),
-            lastMonth: parseFloat(item.RunningAverageCostLastMonth),
-          }));
-          setData(formattedData);
-        } else {
-          throw new Error("Invalid data structure");
-        }
+        const response = await axios.get(API_URL);
+        const transformedData = response.data.arabicaAvgCostMoM.map(item => ({
+          date: item.Date,
+          thisMonthCost: parseFloat(item.RunningAverageCostThisMonth),
+          lastMonthCost: parseFloat(item.RunningAverageCostLastMonth),
+        }));
+        setData(transformedData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -43,39 +32,38 @@ const ArabicaAvgCostMoM = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 80 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!data.length) {
     return (
-      <Box sx={{ textAlign: 'center', padding: 2 }}>
-        <Typography variant="h6">No data available</Typography>
+      <Box sx={{ textAlign: "center", padding: 2 }}>
+        <p>No data available</p>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ width: "100%", height: 80 }}>
-    <ResponsiveChartContainer>
+    <Box sx={{ width: '100%', height: '100%' }}>
       <LineChart
-        xAxis={[{ scaleType: "point", data: data.map((d) => d.date) }]}
+        xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
         series={[
-          { id: "thisMonth", data: data.map((d) => d.thisMonth), label: "This Month", color: "#66b2b2", showMark: false },
-          { id: "lastMonth", data: data.map((d) => d.lastMonth), label: "Last Month", color: "#ffbfd3", showMark: false },
+          { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
+          { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
         ]}
-        height={80}
+        width="100%" // Full width
+        height="100%" // Full height
         slotProps={{
           legend: { hidden: true }, // Hide legend
         }}
         leftAxis={null}
         bottomAxis={null}
       />
-    </ResponsiveChartContainer>
     </Box>
   );
 };
 
-export default ArabicaAvgCostMoM;
+export default ArabicaAvgCostChart;
