@@ -114,7 +114,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Cost</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {formatWeight(metrics.totalArabicaCost)}
                     {metrics.lastmonthArabicaCost !== 0 && (
                       <Typography
@@ -144,7 +144,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Average Arabica Cherry Cost</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     Rp {new Intl.NumberFormat('de-DE').format(metrics.avgArabicaCost)} /kg
                     {metrics.lastmonthAvgArabicaCost !== 0 && (
                       <Typography
@@ -184,7 +184,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
-                    <span style={{ fontSize: '2rem' }}>m&sup2;</span>
+                    <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -196,7 +196,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Processed</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaProcessed)} kg
                     {metrics.lastmonthArabicaProcessed !== 0 && (
                       <Typography
@@ -226,7 +226,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Production</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaProduction)} kg
                     {metrics.lastmonthArabicaProduction !== 0 && (
                       <Typography
@@ -266,7 +266,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.arabicaYield)}</span>
-                    <span style={{ fontSize: '2rem' }}>%</span>
+                    <span style={{ fontSize: '1rem' }}>%</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -288,7 +288,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.activeArabicaFarmers)}</span>
-                    <span style={{ fontSize: '2rem' }}>Farmers</span>
+                    <span style={{ fontSize: '1rem' }}>Farmers</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -310,7 +310,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)}</span>
-                    <span style={{ fontSize: '2rem' }}>Batch</span>
+                    <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -332,7 +332,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaProcessing)}</span>
-                    <span style={{ fontSize: '2rem' }}>Batch</span>
+                    <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaWeightProcessing)} kg
@@ -408,7 +408,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Cherry Cost</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {formatWeight(metrics.totalRobustaCost)}
                     {metrics.lastmonthRobustaCost !== 0 && (
                       <Typography
@@ -438,7 +438,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Average Robusta Cherry Cost</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     Rp {new Intl.NumberFormat('de-DE').format(metrics.avgRobustaCost)} /kg
                     {metrics.lastmonthAvgRobustaCost !== 0 && (
                       <Typography
@@ -478,7 +478,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
-                    <span style={{ fontSize: '2rem' }}>m&sup2;</span>
+                    <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -490,7 +490,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Processed</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaProcessed)} kg
                     {metrics.lastmonthRobustaProcessed !== 0 && (
                       <Typography
@@ -520,7 +520,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Production</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaProduction)} kg
                     {metrics.lastmonthRobustaProduction !== 0 && (
                       <Typography
@@ -560,7 +560,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.robustaYield)}</span>
-                    <span style={{ fontSize: '2rem' }}>%</span>
+                    <span style={{ fontSize: '1rem' }}>%</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -582,7 +582,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.activeRobustaFarmers)}</span>
-                    <span style={{ fontSize: '2rem' }}>Farmers</span>
+                    <span style={{ fontSize: '1rem' }}>Farmers</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -604,7 +604,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)}</span>
-                    <span style={{ fontSize: '2rem' }}>Batch</span>
+                    <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -626,7 +626,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaProcessing)}</span>
-                    <span style={{ fontSize: '2rem' }}>Batch</span>
+                    <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaWeightProcessing)} kg
