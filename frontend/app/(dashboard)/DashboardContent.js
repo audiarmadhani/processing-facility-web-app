@@ -84,7 +84,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Weight</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaWeight)} kg
                     {metrics.lastmonthArabicaWeight !== 0 && (
                       <Typography
@@ -174,8 +174,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Land Covered</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '3rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)} m&sup2;
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '3rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
+                    <span style={{ fontSize: '2rem' }}>m&sup2;</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -247,8 +256,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Arabica Yield</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.arabicaYield)} %
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.arabicaYield)}</span>
+                    <span style={{ fontSize: '2rem' }}>%</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -260,8 +278,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Arabica Farmers</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '3rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.activeArabicaFarmers)} Farmers
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.activeArabicaFarmers)}</span>
+                    <span style={{ fontSize: '2rem' }}>Farmers</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -273,8 +300,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Arabica QC</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)} Batch
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)}</span>
+                    <span style={{ fontSize: '2rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -286,10 +322,19 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Arabica Processing</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaProcessing)} Batch
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaProcessing)}</span>
+                    <span style={{ fontSize: '2rem' }}>Batch</span>
                   </Typography>
-                  <Typography variant="h4" sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaWeightProcessing)} kg
                   </Typography>
                 </CardContent>
@@ -333,7 +378,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Cherry Weight</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaWeight)} kg
                     {metrics.lastmonthRobustaWeight !== 0 && (
                       <Typography
@@ -423,8 +468,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Land Covered</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '3rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)} m&sup2;
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '3rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
+                    <span style={{ fontSize: '2rem' }}>m&sup2;</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -528,7 +582,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.activeRobustaFarmers)}</span>
-                    <span style={{ fontSize: '2rem' }}>%</span>
+                    <span style={{ fontSize: '2rem' }}>Farmers</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -550,7 +604,7 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)}</span>
-                    <span style={{ fontSize: '2rem' }}>%</span>
+                    <span style={{ fontSize: '2rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -572,9 +626,9 @@ function Dashboard() {
                     }}
                   >
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaProcessing)}</span>
-                    <span style={{ fontSize: '2rem' }}>%</span>
+                    <span style={{ fontSize: '2rem' }}>Batch</span>
                   </Typography>
-                  <Typography variant="h4" sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaWeightProcessing)} kg
                   </Typography>
                 </CardContent>
