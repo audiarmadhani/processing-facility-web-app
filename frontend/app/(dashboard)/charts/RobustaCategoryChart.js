@@ -28,37 +28,55 @@ const ArabicaCategoryChart = () => {
     const fetchData = async () => {
       try {
         const response = await axios.get("https://processing-facility-backend.onrender.com/api/dashboard-metrics");
-        const transformedData = processChartData(response.data.robustaTotalWeightbyDate);
-        setData(transformedData.dataset);
-        setCategories(transformedData.categories);
+        console.log(response.data); // Log the entire response
+  
+        // Validate that the required data is available
+        if (Array.isArray(response.data.arabicaTotalWeightbyDate)) {
+          const transformedData = processChartData(response.data.robustaTotalWeightbyDate);
+          setData(transformedData.dataset);
+          setCategories(transformedData.categories);
+        } else {
+          console.error("Invalid data format:", response.data.robustaTotalWeightbyDate);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, []);
 
   // Transform API response into chart data
   const processChartData = (data) => {
+    if (!Array.isArray(data)) {
+      console.error("Expected an array but received:", data);
+      return { dataset: [], categories: [] };
+    }
+  
     const groupedData = {};
     const categoriesSet = new Set();
-
+  
     data.forEach(({ storedDate, category, weight }) => {
+      // Check if storedDate, category, and weight exist
+      if (!storedDate || !category || typeof weight !== 'number') {
+        console.error("Invalid data item:", { storedDate, category, weight });
+        return; // Skip invalid items
+      }
+  
       if (!groupedData[storedDate]) {
         groupedData[storedDate] = {};
       }
       groupedData[storedDate][category] = (groupedData[storedDate][category] || 0) + weight;
       categoriesSet.add(category);
     });
-
+  
     const dataset = Object.keys(groupedData).map((storedDate) => ({
       storedDate,
       ...groupedData[storedDate],
     }));
-
+  
     return { dataset, categories: Array.from(categoriesSet) };
   };
 
