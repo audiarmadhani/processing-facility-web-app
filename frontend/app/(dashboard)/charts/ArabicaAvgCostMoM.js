@@ -58,10 +58,10 @@ const ArabicaAvgCostMoM = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', height: 80 }}>
+    <Box sx={{ width: '100%', height: 200 }}>
       <LineChart
       width={400}
-      height={150}
+      height={200}
       series={[
         { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
         { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
