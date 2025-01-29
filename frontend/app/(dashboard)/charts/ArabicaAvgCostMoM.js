@@ -47,7 +47,7 @@ const ArabicaAvgCostChart = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', height: '80px' }}>
+    <Box sx={{ width: '100%', height: '100%' }}>
       <LineChart
         xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
         series={[
