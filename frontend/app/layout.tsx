@@ -84,7 +84,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               session={session}
               authentication={AUTHENTICATION}
               branding={{
-                title: "Processing Facility Platform",
+                logo: <img src="./assets/icons/favicon.ico" alt="Kopi Fabriek" width={32} height={32} />,
+                title: "Kopi Fabriek Platform",
                 homeUrl: "/",
               }}
             >
