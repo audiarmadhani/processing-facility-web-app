@@ -66,7 +66,7 @@ const ArabicaAvgCostChart = () => {
           },
         ]}
         width="100%" // Full width
-        height="80px" // Full height
+        height="100%" // Full height
         slotProps={{
           tooltip: { hidden: false }, // Hide tooltip
           legend: { hidden: true }, // Hide legend
