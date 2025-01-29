@@ -24,7 +24,7 @@ export const metadata = {
   title: "Kopi Fabriek Platform",
   description: "Processing Facility Platform",
   icons: {
-    icon: "/assets/icons/favicon-32x32.png",
+    icon: "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon.ico?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbi5pY28iLCJpYXQiOjE3MzgxMzA1NTgsImV4cCI6NDg5MTczMDU1OH0.wZVenbG-M5jCkBJksWVHlNwHyR6rVtClKvSfXrkn734",
   },
 };
 
@@ -84,7 +84,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               session={session}
               authentication={AUTHENTICATION}
               branding={{
-                logo: <img src="/assets/icons/favicon.ico" alt="Kopi Fabriek" width={32} height={32} />,
+                logo: <img src="https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon-32x32.png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbi0zMngzMi5wbmciLCJpYXQiOjE3MzgxMzA1MjcsImV4cCI6NDg5MTczMDUyN30.ZjDi5VhN4muZ2Nu3DWnvU1-wETCgdo1fo8fwND9wj_o" alt="Kopi Fabriek" width={32} height={32} />,
                 title: "Kopi Fabriek Platform",
                 homeUrl: "/",
               }}
