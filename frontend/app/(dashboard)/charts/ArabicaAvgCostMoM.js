@@ -55,6 +55,7 @@ const ArabicaAvgCostChart = () => {
             data: data.map(item => item.thisMonthCost), 
             label: 'This Month', 
             showMark: false,
+            curve: "monotoneX",
             color: '#66b2b2', 
             strokeWidth: 2,
           },
@@ -62,6 +63,7 @@ const ArabicaAvgCostChart = () => {
             data: data.map(item => item.lastMonthCost), 
             label: 'Last Month', 
             showMark: false,
+            curve: "monotoneX",
             color: '#ffbfd3',
           },
         ]}

@@ -55,14 +55,16 @@ const robustaAvgCostMoM = () => {
             data: data.map(item => item.thisMonth), 
             label: 'This Month', 
             showMark: false,
-            color: '#66b2b2', 
+            curve: "monotoneX",
+            color: '#00ABC9', 
             strokeWidth: 2,
           },
           { 
             data: data.map(item => item.lastMonth), 
             label: 'Last Month', 
             showMark: false,
-            color: '#ffbfd3',
+            curve: "monotoneX",
+            color: '#F56600',
           },
         ]}
         // width={300}

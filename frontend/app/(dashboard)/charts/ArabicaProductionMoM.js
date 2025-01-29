@@ -55,6 +55,7 @@ const ArabicaProductionMoM = () => {
             data: data.map(item => item.thisMonth), 
             label: 'This Month', 
             showMark: false,
+            curve: "monotoneX",
             color: '#66b2b2', 
             strokeWidth: 2,
           },
@@ -62,6 +63,7 @@ const ArabicaProductionMoM = () => {
             data: data.map(item => item.lastMonth), 
             label: 'Last Month', 
             showMark: false,
+            curve: "monotoneX",
             color: '#ffbfd3',
           },
         ]}
