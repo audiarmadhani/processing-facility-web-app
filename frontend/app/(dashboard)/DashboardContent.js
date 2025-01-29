@@ -17,6 +17,9 @@ import ArabicaProductionMoM from './charts/ArabicaProductionMoM'; // Adjust the 
 import RobustaProductionMoM from './charts/RobustaProductionMoM'; // Adjust the path as necessary
 import ArabicaCategoryChart from './charts/ArabicaCategoryChart'; // Adjust the path as necessary
 import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the path as necessary
+import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
+import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
@@ -239,6 +242,18 @@ function Dashboard() {
               </Card>
             </Grid>
 
+            {/* Arabica TradingView Chart */}
+            <Grid item xs={12} md={12} sx={{ height: { xs: 'auto', md: '220px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Arabica Futures Price
+                  </Typography>
+                  <ArabicaTVWidget />
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Total Arabica Production Bar Chart */}
             <Grid item xs={12} md={12} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined">
@@ -417,6 +432,18 @@ function Dashboard() {
                   </Typography>
                   <Typography variant="caption">This Month</Typography>
                   <RobustaProductionMoM />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Robusta TradingView Chart */}
+            <Grid item xs={12} md={12} sx={{ height: { xs: 'auto', md: '220px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Robusta Futures Price
+                  </Typography>
+                  <RobustaTVWidget />
                 </CardContent>
               </Card>
             </Grid>
