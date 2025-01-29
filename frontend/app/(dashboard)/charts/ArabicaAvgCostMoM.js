@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import axios from 'axios';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 
 const API_URL = "https://processing-facility-backend.onrender.com/api/dashboard-metrics";
 
@@ -49,19 +49,27 @@ const ArabicaAvgCostChart = () => {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <LineChart
-        xAxis={[{ data: data.map(item => item.date) }]} // Dates for x-axis
+        xAxis={[]} // Hide x-axis
+        yAxis={[]} // Hide y-axis
         series={[
           {
             data: data.map(item => item.thisMonthCost), // Current month average cost for y-axis
             label: "Running Average Cost This Month", // Series label for current month
+            line: { style: { strokeWidth: 2 } }, // Customize line style
+            point: { visible: false }, // Hide dots on the line
           },
           {
             data: data.map(item => item.lastMonthCost), // Last month average cost for y-axis
             label: "Running Average Cost Last Month", // Series label for last month
+            line: { style: { strokeWidth: 2 } }, // Customize line style
+            point: { visible: false }, // Hide dots on the line
           },
         ]}
-        width={500}
-        height={300}
+        width="100%" // Set width to 100%
+        height="100%" // Set height to 100%
+        sx={{ 
+          ".MuiChart-axis": { display: 'none' } // Additional style to ensure axes are hidden
+        }}
       />
     </Box>
   );
