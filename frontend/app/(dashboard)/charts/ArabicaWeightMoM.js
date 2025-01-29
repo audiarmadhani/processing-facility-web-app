@@ -52,14 +52,14 @@ const ArabicaWeightMoM = () => {
         xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
         series={[
           { 
-            data: data.map(item => item.thisMonthCost), 
+            data: data.map(item => item.thisMonth), 
             label: 'This Month', 
             showMark: false,
             color: '#66b2b2', 
             strokeWidth: 2,
           },
           { 
-            data: data.map(item => item.lastMonthCost), 
+            data: data.map(item => item.lastMonth), 
             label: 'Last Month', 
             showMark: false,
             color: '#ffbfd3',
