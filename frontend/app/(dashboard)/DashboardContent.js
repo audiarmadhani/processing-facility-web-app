@@ -496,8 +496,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Robusta Yield</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.robustaYield)} %
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.robustaYield)}</span>
+                    <span style={{ fontSize: '2rem' }}>%</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -509,8 +518,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Robusta Farmers</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '3rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.activeRobustaFarmers)} Farmers
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.activeRobustaFarmers)}</span>
+                    <span style={{ fontSize: '2rem' }}>%</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -522,8 +540,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Robusta QC</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)} Batch
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)}</span>
+                    <span style={{ fontSize: '2rem' }}>%</span>
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -535,8 +562,17 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Robusta Processing</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaProcessing)} Batch
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: '4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaProcessing)}</span>
+                    <span style={{ fontSize: '2rem' }}>%</span>
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaWeightProcessing)} kg
