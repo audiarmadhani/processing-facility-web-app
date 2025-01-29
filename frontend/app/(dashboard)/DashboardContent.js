@@ -268,7 +268,7 @@ function Dashboard() {
                   <Typography
                     variant="h4"
                     sx={{
-                      fontSize: '3rem',
+                      fontSize: '4rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
@@ -277,7 +277,6 @@ function Dashboard() {
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
                     <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
-                  <Typography variant="caption">All time</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -299,7 +298,6 @@ function Dashboard() {
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.activeArabicaFarmers)}</span>
                     <span style={{ fontSize: '1rem' }}>Farmers</span>
                   </Typography>
-                  <Typography variant="caption">All time</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -321,7 +319,6 @@ function Dashboard() {
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
-                  <Typography variant="caption">All time</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -542,7 +539,7 @@ function Dashboard() {
             <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
-                  <Typography variant="body1">Arabica Yield</Typography>
+                  <Typography variant="body1">Robusta Yield</Typography>
                   <Typography
                     variant="h4"
                     sx={{
@@ -552,7 +549,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    {`${(100 / parseFloat(metrics.arabicaYield)).toFixed(1)}:1`}
+                    {`${(100 / parseFloat(metrics.robustaYield)).toFixed(1)}:1`}
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -567,7 +564,7 @@ function Dashboard() {
                   <Typography
                     variant="h4"
                     sx={{
-                      fontSize: '3rem',
+                      fontSize: '4rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
@@ -576,7 +573,6 @@ function Dashboard() {
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
                     <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
-                  <Typography variant="caption">All time</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -598,7 +594,6 @@ function Dashboard() {
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.activeRobustaFarmers)}</span>
                     <span style={{ fontSize: '1rem' }}>Farmers</span>
                   </Typography>
-                  <Typography variant="caption">All time</Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -620,7 +615,6 @@ function Dashboard() {
                     <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
-                  <Typography variant="caption">All time</Typography>
                 </CardContent>
               </Card>
             </Grid>
