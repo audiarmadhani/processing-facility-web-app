@@ -24,7 +24,7 @@ export const metadata = {
   title: "Kopi Fabriek Platform",
   description: "Processing Facility Platform",
   icons: {
-    icon: "./assets/icons/favicon.ico",
+    icon: "/assets/icons/favicon.ico",
   },
 };
 
@@ -84,7 +84,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               session={session}
               authentication={AUTHENTICATION}
               branding={{
-                logo: <img src="./assets/icons/favicon.ico" alt="Kopi Fabriek" width={32} height={32} />,
+                logo: <img src="/assets/icons/favicon.ico" alt="Kopi Fabriek" width={32} height={32} />,
                 title: "Kopi Fabriek Platform",
                 homeUrl: "/",
               }}
