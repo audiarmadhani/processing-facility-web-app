@@ -13,6 +13,47 @@ const ArabicaAvgCostMoM = () => {
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const isDarkMode = theme.palette.mode === 'dark';
+      return (
+        <div
+          style={{
+            backgroundColor: isDarkMode ? '#333' : '#fff',
+            color: isDarkMode ? '#fff' : '#000',
+            borderRadius: '4px',
+            padding: '8px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            fontFamily: 'Roboto, sans-serif',
+            fontSize: '12px',
+            pointerEvents: 'none',
+            zIndex: 1000,
+            transform: 'translate(-20px, -20px)',
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 'bold' }}>{label}</p>
+          <hr style={{ border: 0, borderTop: '1px solid #ccc', margin: '5px 0' }} />
+          {payload.map((item, index) => (
+            <p key={index} style={{ margin: '5px 0', display: 'flex', alignItems: 'center' }}>
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  backgroundColor: item.stroke,
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  marginRight: '8px',
+                }}
+              ></span>
+              {item.name}: {item.value.toFixed(2)} {/* Format as needed */}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -43,7 +84,7 @@ const ArabicaAvgCostMoM = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 80 }}>
         <CircularProgress />
       </Box>
     );
@@ -58,11 +99,12 @@ const ArabicaAvgCostMoM = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', height: 400 }}>
+    <Box sx={{ width: '100%', height: 80 }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <XAxis dataKey="date" />
           <YAxis />
+          <Tooltip content={<CustomTooltip />} />
           <Line type="monotone" dataKey="thisMonth" stroke="#66b2b2" strokeWidth={2} />
           <Line type="monotone" dataKey="lastMonth" stroke="#ffbfd3" strokeWidth={2} />
         </LineChart>
