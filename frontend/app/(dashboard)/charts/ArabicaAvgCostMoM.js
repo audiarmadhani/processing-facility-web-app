@@ -1,25 +1,36 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
-import { LineChart } from '@mui/x-charts/LineChart';
+import { LineChart, Line, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
-const API_URL = "https://processing-facility-backend.onrender.com/api/dashboard-metrics";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-const ArabicaAvgCostChart = () => {
+const ArabicaAvgCostMoM = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const theme = useTheme();
 
-  // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(API_URL);
-        const transformedData = response.data.arabicaAvgCostMoM.map(item => ({
-          date: item.Date,
-          thisMonthCost: parseFloat(item.RunningAverageCostThisMonth),
-          lastMonthCost: parseFloat(item.RunningAverageCostLastMonth),
-        }));
-        setData(transformedData);
+        const response = await axios.get(
+          `https://processing-facility-backend.onrender.com/api/dashboard-metrics`
+        );
+        console.log(response.data);
+
+        if (Array.isArray(response.data.arabicaAvgCostMoM)) {
+          const formattedData = response.data.arabicaAvgCostMoM.map((item) => ({
+            date: item.Date,
+            thisMonth: parseFloat(item.RunningAverageCostThisMonth),
+            lastMonth: parseFloat(item.RunningAverageCostLastMonth),
+          }));
+          setData(formattedData);
+        } else {
+          throw new Error("Invalid data structure");
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -32,16 +43,16 @@ const ArabicaAvgCostChart = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 80 }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (!data.length) {
+  if (!data || data.length === 0) {
     return (
-      <Box sx={{ textAlign: "center", padding: 2 }}>
-        <p>No data available</p>
+      <Box sx={{ textAlign: 'center', padding: 2 }}>
+        <Typography variant="h6">No data available</Typography>
       </Box>
     );
   }
@@ -49,31 +60,22 @@ const ArabicaAvgCostChart = () => {
   return (
     <Box sx={{ width: '100%', height: 80 }}>
       <LineChart
-        xAxis={[{ data: [] }]} // No x-axis data
-        yAxis={[{ data: [] }]} // No y-axis data
+        xAxis={[{ data: data.map(item => item.date) }]} // Dates for x-axis
         series={[
           {
-            data: data.map(item => item.thisMonthCost),
-            label: "Running Average Cost This Month",
-            strokeWidth: 2,
-            point: { visible: false }, // Hide dots on the line
+            data: data.map(item => item.thisMonthCost), // Current month average cost for y-axis
+            label: "Running Average Cost This Month", // Series label for current month
           },
           {
-            data: data.map(item => item.lastMonthCost),
-            label: "Running Average Cost Last Month",
-            strokeWidth: 2,
-            point: { visible: false }, // Hide dots on the line
+            data: data.map(item => item.lastMonthCost), // Last month average cost for y-axis
+            label: "Running Average Cost Last Month", // Series label for last month
           },
         ]}
-        width="100%" // Full width
-        height="100%" // Full height
-        slotProps={{
-          tooltip: { hidden: false }, // Hide tooltip
-          legend: { hidden: true }, // Hide legend
-        }}
+        width='100%'
+        height={80}
       />
     </Box>
   );
 };
 
-export default ArabicaAvgCostChart;
+export default ArabicaAvgCostMoM;
