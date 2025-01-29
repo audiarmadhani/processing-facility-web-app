@@ -261,7 +261,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Arabica Land Covered */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Land Covered</Typography>
@@ -282,7 +282,7 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Farmers */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Arabica Farmers</Typography>
@@ -303,7 +303,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Arabica QC */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Arabica QC</Typography>
@@ -324,7 +324,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Arabica Processing */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Arabica Processing</Typography>
@@ -557,7 +557,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Robusta Land Covered */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Land Covered</Typography>
@@ -578,7 +578,7 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta Farmers */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Robusta Farmers</Typography>
@@ -599,7 +599,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Robusta QC */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Robusta QC</Typography>
@@ -620,7 +620,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Robusta Processing */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '150px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Robusta Processing</Typography>
