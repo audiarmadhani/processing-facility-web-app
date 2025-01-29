@@ -243,7 +243,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Arabica Production Bar Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '500px', sm:'500px', md: '500px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -438,7 +438,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Robusta Production Bar Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '500px', sm:'500px', md: '500px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
