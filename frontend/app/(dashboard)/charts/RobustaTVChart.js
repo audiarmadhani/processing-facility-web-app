@@ -22,7 +22,7 @@ function TradingViewWidget() {
           "backgroundColor": "rgba(0, 0, 0, 1)",
           "gridColor": "rgba(0, 0, 0, 0.06)",
           "range": "12M",
-          "allow_symbol_change": true,
+          "allow_symbol_change": false,
           "calendar": false,
           "hide_volume": true,
           "support_host": "https://www.tradingview.com"
