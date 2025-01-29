@@ -56,14 +56,18 @@ const ArabicaAvgCostChart = () => {
             label: 'This Month', 
             showMark: false,
             color: '#66b2b2', 
-            area: true, // Enable area (gradient fill)
+            area: true, // Enable gradient
+            curve: 'monotoneX', // Smooth curve
+            fillOpacity: 0.15, // Light gradient effect
           },
           { 
             data: data.map(item => item.lastMonthCost), 
             label: 'Last Month', 
             showMark: false,
             color: '#ffbfd3',
-            area: true, // Enable area (gradient fill)
+            area: true, // Enable gradient
+            curve: 'monotoneX',
+            fillOpacity: 0.15, // Light gradient effect
           },
         ]}
         // width={300}
