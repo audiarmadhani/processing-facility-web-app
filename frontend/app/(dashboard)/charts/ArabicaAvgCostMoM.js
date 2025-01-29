@@ -61,6 +61,7 @@ const ArabicaAvgCostChart = () => {
         }}
         leftAxis={null}
         bottomAxis={null}
+        margin={{ left: -20, right: 0, top: 0, bottom: 20 }} // Adjust left margin to shift left
       />
     </Box>
   );
