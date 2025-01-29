@@ -242,6 +242,18 @@ function Dashboard() {
               </Card>
             </Grid>
 
+            {/* Total Arabica Production Bar Chart */}
+            <Grid item xs={12} md={12} sx={{ height: { xs: '500px', sm:'500px', md: '500px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Arabica Daily Production
+                  </Typography>
+                  <ArabicaCategoryChart />
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Arabica TradingView Chart */}
             <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
@@ -254,17 +266,6 @@ function Dashboard() {
               </Card>
             </Grid>
 
-            {/* Total Arabica Production Bar Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '500px', sm:'500px', md: '500px' } }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Arabica Daily Production
-                  </Typography>
-                  <ArabicaCategoryChart />
-                </CardContent>
-              </Card>
-            </Grid>
           </Grid>
         </Grid>
 
@@ -436,18 +437,6 @@ function Dashboard() {
               </Card>
             </Grid>
 
-            {/* Robusta TradingView Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Robusta Futures Price
-                  </Typography>
-                  <RobustaTVWidget />
-                </CardContent>
-              </Card>
-            </Grid>
-
             {/* Total Robusta Production Bar Chart */}
             <Grid item xs={12} md={12} sx={{ height: { xs: '500px', sm:'500px', md: '500px' } }}>
               <Card variant="outlined">
@@ -456,6 +445,18 @@ function Dashboard() {
                   Robusta Daily Production
                   </Typography>
                   <RobustaCategoryChart />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Robusta TradingView Chart */}
+            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Robusta Futures Price
+                  </Typography>
+                  <RobustaTVWidget />
                 </CardContent>
               </Card>
             </Grid>
