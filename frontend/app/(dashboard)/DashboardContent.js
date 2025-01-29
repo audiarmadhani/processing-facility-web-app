@@ -174,7 +174,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Land Covered</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)} m2
                   </Typography>
                   <Typography variant="caption">All time</Typography>
@@ -247,7 +247,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Arabica Yield</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.arabicaYield)} %
                   </Typography>
                   <Typography variant="caption">All time</Typography>
@@ -382,7 +382,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Land Covered</Typography>
-                  <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)} m2
                   </Typography>
                   <Typography variant="caption">All time</Typography>
@@ -455,7 +455,7 @@ function Dashboard() {
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Robusta Yield</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h4" sx={{ fontSize: '4rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                     {new Intl.NumberFormat('de-DE').format(metrics.robustaYield)} %
                   </Typography>
                   <Typography variant="caption">All time</Typography>
