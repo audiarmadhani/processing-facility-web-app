@@ -243,7 +243,7 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica TradingView Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '400px', md: '400px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -255,7 +255,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Arabica Production Bar Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '500px', md: '500px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -437,7 +437,7 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta TradingView Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '400px', md: '400px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -449,7 +449,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Robusta Production Bar Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '500px', md: '500px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
