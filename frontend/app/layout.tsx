@@ -24,7 +24,7 @@ export const metadata = {
   title: "Kopi Fabriek Platform",
   description: "Processing Facility Platform",
   icons: {
-    icon: "/assets/icons/favicon.ico",
+    icon: "/assets/icons/favicon-32x32.png",
   },
 };
 
