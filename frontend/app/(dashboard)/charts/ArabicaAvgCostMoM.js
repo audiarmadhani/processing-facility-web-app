@@ -25,8 +25,8 @@ const arabicaAvgCostMoM = () => {
         const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics`);
         const formattedData = response.data.arabicaAvgCostMoM.map(item => ({
           date: item.Date,
-          thisMonth: item.RunningAverageCostThisMonth,
-          lastMonth: item.RunningAverageCostLastMonth,
+          thisMonth: parseFloat(item.RunningAverageCostThisMonth), // Convert to number
+          lastMonth: parseFloat(item.RunningAverageCostLastMonth), // Convert to number
         }));
         setData(formattedData);
       } catch (error) {
