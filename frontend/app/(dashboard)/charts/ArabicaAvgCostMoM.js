@@ -54,14 +54,14 @@ const ArabicaAvgCostChart = () => {
           { data: data.map(item => item.thisMonthCost), label: 'This Month', showMark: false},
           { data: data.map(item => item.lastMonthCost), label: 'Last Month', showMark: false},
         ]}
-        width={300}
-        height={80}
+        // width={300}
+        height={70}
         slotProps={{
           legend: { hidden: true }, // Hide legend
         }}
         leftAxis={null}
         bottomAxis={null}
-        margin={{ left: -10, right: 0, top: 0, bottom: 10 }} // Adjust left margin to shift left
+        margin={{ left: -5, right: 0, top: 10, bottom: 10 }} // Adjust left margin to shift left
       />
     </Box>
   );
