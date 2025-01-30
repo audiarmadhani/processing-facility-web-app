@@ -1,319 +1,111 @@
-"use client"
+import React, { useEffect, useState } from 'react';
+import { DataGrid } from '@mui/x-data-grid';
+import { Button } from '@mui/material';
+import axios from 'axios';
 
-import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/DeleteOutlined";
-import SaveIcon from "@mui/icons-material/Save";
-import CancelIcon from "@mui/icons-material/Close";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import {
-  DataGrid,
-  GridActionsCellItem,
-  GridRowModes,
-  GridToolbarContainer,
-  GridRowEditStopReasons,
-  GridToolbar,
-} from "@mui/x-data-grid";
-import axios from "axios";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import InputLabel from "@mui/material/InputLabel";
-import FormControl from "@mui/material/FormControl";
-import {
-  Typography
-} from '@mui/material';
+const PaymentPage = () => {
+  const [notPaidData, setNotPaidData] = useState([]);
+  const [isPaidData, setIsPaidData] = useState([]);
 
-const API_BASE_URL = "https://processing-facility-backend.onrender.com"; // Replace with your backend URL
-
-function EditToolbar({ setRows, setRowModesModel }) {
-  const handleAddClick = () => {
-    const id = Math.random().toString(36).substr(2, 9); // Generate a random ID
-    setRows((prevRows) => [
-      ...prevRows,
-      { id, isNew: true }, // Add a new row with default empty fields
-    ]);
-    setRowModesModel((prev) => ({
-      ...prev,
-      [id]: { mode: GridRowModes.Edit, fieldToFocus: "id" },
-    }));
-  };
-
-  return (
-    <GridToolbarContainer>
-      <Button color="primary" startIcon={<AddIcon />} onClick={handleAddClick}>
-        Add record
-      </Button>
-    </GridToolbarContainer>
-  );
-}
-
-export default function DatabasePage() {
-  const { data: session, status } = useSession(); // Access session data and status
-  const [tables, setTables] = useState([]);
-  const [selectedTable, setSelectedTable] = useState("");
-  const [rows, setRows] = useState([]);
-  const [columns, setColumns] = useState([]);
-  const [rowModesModel, setRowModesModel] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  // State for delete confirmation dialog
-  const [openDialog, setOpenDialog] = useState(false);
-  const [rowToDelete, setRowToDelete] = useState(null);
-
-  // Fetch list of tables
   useEffect(() => {
-    const fetchTables = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/tables`);
-        setTables(response.data);
-      } catch (err) {
-        console.error("Error fetching tables:", err);
-      }
-    };
-    fetchTables();
+    fetchPaymentData();
   }, []);
 
-  // Fetch data and column structure when a table is selected
-  useEffect(() => {
-    if (!selectedTable) return;
-
-    const fetchTableData = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/tables/${selectedTable}`);
-        const { rows: tableRows, columns: tableColumns } = response.data;
-
-        setColumns(
-          tableColumns.map((col) => ({
-            field: col.field,
-            headerName: col.headerName || col.field,
-            width: col.width || 150,
-            editable: true,
-          }))
-        );
-        setRows(
-          tableRows.map((row) => ({
-            ...row,
-            id: getRowId(row),
-          }))
-        );
-      } catch (err) {
-        console.error("Error fetching table data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTableData();
-  }, [selectedTable]);
-
-  // Generate unique row identifier
-  const getRowId = (row) => {
-    return row.id || `${row[columns[0]?.field]}_${row[columns[1]?.field]}`;
-  };
-
-  const handleRowEditStop = (params, event) => {
-    if (params.reason === GridRowEditStopReasons.rowFocusOut) {
-      event.defaultMuiPrevented = true;
-    }
-  };
-
-  const processRowUpdate = async (newRow) => {
-    const id = getRowId(newRow);
+  const fetchPaymentData = async () => {
     try {
-      await axios.put(`${API_BASE_URL}/api/tables/${selectedTable}/${id}`, newRow);
-      return { ...newRow, isNew: false };
-    } catch (err) {
-      console.error("Error updating row:", err);
-      throw err;
+      const response = await axios.get('/api/payment');
+      setNotPaidData(response.data.notPaid);
+      setIsPaidData(response.data.isPaid);
+    } catch (error) {
+      console.error('Error fetching payment data:', error);
     }
   };
 
-  const handleDeleteClick = (id) => () => {
-    setRowToDelete(id);
-    setOpenDialog(true); // Open the confirmation dialog
+  const handleUpdate = async (id, field, value) => {
+    try {
+      // Update the payment data in the database
+      await axios.put(`/api/payment/${id}`, { [field]: value });
+      fetchPaymentData(); // Refresh the data
+    } catch (error) {
+      console.error('Error updating payment data:', error);
+    }
   };
 
-  const confirmDelete = async () => {
-    if (rowToDelete) {
-      try {
-        await axios.delete(`${API_BASE_URL}/api/tables/${selectedTable}/${rowToDelete}`);
-        setRows((prevRows) => prevRows.filter((row) => row.id !== rowToDelete));
-      } catch (err) {
-        console.error("Error deleting row:", err);
-      } finally {
-        setOpenDialog(false);
-        setRowToDelete(null);
+  const handleIsPaidChange = (id, value) => {
+    const updatedData = notPaidData.map((item) => {
+      if (item.id === id) {
+        const paymentDate = value === 1 ? new Date().toISOString() : null; // Set paymentDate if isPaid is 1
+        return { ...item, isPaid: value, paymentDate };
       }
-    }
-  };
-
-  const cancelDelete = () => {
-    setOpenDialog(false);
-    setRowToDelete(null);
-  };
-
-  const handleSaveClick = (id) => () => {
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-  };
-
-  const handleCancelClick = (id) => () => {
-    setRowModesModel({
-      ...rowModesModel,
-      [id]: { mode: GridRowModes.View, ignoreModifications: true },
+      return item;
     });
-    const editedRow = rows.find((row) => row.id === id);
-    if (editedRow?.isNew) {
-      setRows((prevRows) => prevRows.filter((row) => row.id !== id));
-    }
+    setNotPaidData(updatedData);
+    handleUpdate(id, 'isPaid', value); // Call to update the backend
   };
 
-  const handleEditClick = (id) => () => {
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
-  };
-
-  const columnsWithActions = [
-    ...columns,
+  const columnsNotPaid = [
+    { field: 'farmerName', headerName: 'Farmer Name', width: 200 },
+    { field: 'farmerID', headerName: 'Farmer ID', width: 150 },
+    { field: 'totalAmount', headerName: 'Total Amount', width: 150 },
+    { field: 'date', headerName: 'Date', width: 150 },
+    { field: 'paymentMethod', headerName: 'Payment Method', width: 150 },
+    { field: 'paymentDescription', headerName: 'Payment Description', width: 200 },
     {
-      field: "actions",
-      type: "actions",
-      headerName: "Actions",
+      field: 'isPaid',
+      headerName: 'Is Paid',
       width: 100,
-      getActions: ({ id }) => {
-        const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
-
-        if (isInEditMode) {
-          return [
-            <GridActionsCellItem
-              icon={<SaveIcon />}
-              label="Save"
-              onClick={handleSaveClick(id)}
-              color="primary"
-            />,
-            <GridActionsCellItem
-              icon={<CancelIcon />}
-              label="Cancel"
-              onClick={handleCancelClick(id)}
-              color="inherit"
-            />,
-          ];
-        }
-
-        return [
-          <GridActionsCellItem
-            icon={<EditIcon />}
-            label="Edit"
-            onClick={handleEditClick(id)}
-            color="inherit"
-          />,
-          <GridActionsCellItem
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={handleDeleteClick(id)}
-            color="inherit"
-          />,
-        ];
-      },
+      editable: true,
+      renderEditCell: (params) => (
+        <select
+          value={params.value}
+          onChange={(e) => handleIsPaidChange(params.id, Number(e.target.value))}
+        >
+          <option value={0}>No</option>
+          <option value={1}>Yes</option>
+        </select>
+      ),
     },
+    { field: 'paymentDate', headerName: 'Payment Date', width: 150 },
   ];
 
-  // Show loading screen while session is loading
-  if (status === 'loading') {
-    return <p>Loading...</p>;
-  }
-
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager')) {
-    return (
-      <Typography variant="h6">
-        Access Denied. You do not have permission to view this page.
-      </Typography>
-    );
-  }
+  const columnsIsPaid = [
+    { field: 'farmerName', headerName: 'Farmer Name', width: 200 },
+    { field: 'farmerID', headerName: 'Farmer ID', width: 150 },
+    { field: 'totalAmount', headerName: 'Total Amount', width: 150 },
+    { field: 'date', headerName: 'Date', width: 150 },
+    { field: 'paymentMethod', headerName: 'Payment Method', width: 150 },
+    { field: 'paymentDescription', headerName: 'Payment Description', width: 200 },
+    { field: 'isPaid', headerName: 'Is Paid', width: 100 },
+    { field: 'paymentDate', headerName: 'Payment Date', width: 150 },
+  ];
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Box sx={{ mb: 2, minWidth: 200 }}>
-        <FormControl fullWidth>
-          <InputLabel id="table-select-label">Select Table</InputLabel>
-          <Select
-            labelId="table-select-label"
-            value={selectedTable}
-            onChange={(e) => setSelectedTable(e.target.value)}
-            label="Select Table"
-          >
-            {tables.map((table) => (
-              <MenuItem key={table} value={table}>
-                {table}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
-      <Box sx={{ height: 1000, width: "100%" }}>
+    <div style={{ padding: '20px' }}>
+      <h2>Not Paid Payments</h2>
+      <div style={{ height: 400, width: '100%' }}>
         <DataGrid
-          rows={rows}
-          columns={columnsWithActions}
-          editMode="row"
-          rowModesModel={rowModesModel}
-          onRowModesModelChange={setRowModesModel}
-          onRowEditStop={handleRowEditStop}
-          processRowUpdate={processRowUpdate}
-          loading={loading}
-          slots={{
-            toolbar: () => (
-              <GridToolbarContainer>
-                <Button
-                  color="primary"
-                  startIcon={<AddIcon />}
-                  onClick={() => {
-                    const id = Math.random().toString(36).substr(2, 9); // Generate a random ID
-                    setRows((prevRows) => [
-                      ...prevRows,
-                      { id, isNew: true }, // Add a new row with default empty fields
-                    ]);
-                    setRowModesModel((prev) => ({
-                      ...prev,
-                      [id]: { mode: GridRowModes.Edit, fieldToFocus: "id" },
-                    }));
-                  }}
-                  sx={{ mr: 2 }}
-                >
-                  Add record
-                </Button>
-                <GridToolbar />
-              </GridToolbarContainer>
-            ),
-          }}
+          rows={notPaidData}
+          columns={columnsNotPaid}
+          pageSize={5}
+          rowsPerPageOptions={[5]}
+          checkboxSelection
+          disableSelectionOnClick
         />
-      </Box>
+      </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={openDialog} onClose={cancelDelete}>
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this row? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelDelete} color="inherit">
-            Cancel
-          </Button>
-          <Button onClick={confirmDelete} color="error">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      <h2>Paid Payments</h2>
+      <div style={{ height: 800, width: '100%' }}>
+        <DataGrid
+          rows={isPaidData}
+          columns={columnsIsPaid}
+          pageSize={5}
+          rowsPerPageOptions={[5]}
+          checkboxSelection
+          disableSelectionOnClick
+        />
+      </div>
+    </div>
   );
-}
+};
+
+export default PaymentPage;
