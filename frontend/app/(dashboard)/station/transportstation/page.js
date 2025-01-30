@@ -16,7 +16,8 @@ import {
   Select, 
   MenuItem,
   Chip,
-  Autocomplete
+  Autocomplete,
+  OutlinedInput
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from 'axios';
@@ -43,82 +44,84 @@ const TransportStation = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
 
+  const fetchBatchNumbers = async () => {
+    try {
+      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/receiving`);
+      const todayData = response.data.todayData;
+
+      if (Array.isArray(todayData)) {
+        const batchNumbers = todayData.map(item => item.batchNumber);
+        setBatchNumbers(batchNumbers);
+      } else {
+        console.error('todayData is not an array:', todayData);
+      }
+    } catch (error) {
+      console.error('Error fetching batch numbers:', error);
+      setSnackbarMessage('Failed to fetch batch numbers.');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const fetchFarmers = async () => {
+    try {
+      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmer`);
+      const allFarmers = response.data.allRows;
+
+      if (Array.isArray(allFarmers)) {
+        setFarmers(allFarmers);
+      } else {
+        console.error('Farmers data is not an array:', allFarmers);
+      }
+    } catch (error) {
+      console.error('Error fetching farmers:', error);
+      setSnackbarMessage('Failed to fetch farmers.');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const fetchTransportData = async () => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/transport`);
+      if (!response.ok) throw new Error("Failed to fetch transport data");
+  
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setTransportData(
+          data.map(row => ({
+            ...row,
+            cost: Number(row.cost), // Ensure cost is a number
+            createdAt: new Date(row.createdAt).toLocaleString(), // Format timestamp
+          }))
+        );
+      } else {
+        throw new Error("Invalid data format received");
+      }
+    } catch (error) {
+      console.error("Error fetching transport data:", error);
+      setTransportData([]);
+      setSnackbarMessage('Failed to fetch transport data.');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const fetchLocationData = async () => {
+    try {
+      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/location`);
+      setLocationData(response.data || []);
+    } catch (error) {
+      console.error('Error fetching location data:', error);
+      setSnackbarMessage('Failed to fetch location data.');
+      setSnackbarOpen(true);
+    }
+  };
+
   useEffect(() => {
-    const fetchBatchNumbers = async () => {
-      try {
-        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/receiving`);
-        const todayData = response.data.todayData;
-
-        if (Array.isArray(todayData)) {
-          const batchNumbers = todayData.map(item => item.batchNumber);
-          setBatchNumbers(batchNumbers);
-        } else {
-          console.error('todayData is not an array:', todayData);
-        }
-      } catch (error) {
-        console.error('Error fetching batch numbers:', error);
-        setSnackbarMessage('Failed to fetch batch numbers.');
-        setSnackbarOpen(true);
-      }
-    };
-
-    const fetchFarmers = async () => {
-      try {
-        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmer`);
-        const allFarmers = response.data.allRows;
-
-        if (Array.isArray(allFarmers)) {
-          setFarmers(allFarmers);
-        } else {
-          console.error('Farmers data is not an array:', allFarmers);
-        }
-      } catch (error) {
-        console.error('Error fetching farmers:', error);
-        setSnackbarMessage('Failed to fetch farmers.');
-        setSnackbarOpen(true);
-      }
-    };
-
-    const fetchTransportData = async () => {
-      try {
-        const response = await fetch(`https://processing-facility-backend.onrender.com/api/transport`);
-        if (!response.ok) throw new Error("Failed to fetch transport data");
-    
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setTransportData(
-            data.map(row => ({
-              ...row,
-              cost: Number(row.cost), // Ensure cost is a number
-              createdAt: new Date(row.createdAt).toLocaleString(), // Format timestamp
-            }))
-          );
-        } else {
-          throw new Error("Invalid data format received");
-        }
-      } catch (error) {
-        console.error("Error fetching transport data:", error);
-        setTransportData([]);
-        setSnackbarMessage('Failed to fetch transport data.');
-        setSnackbarOpen(true);
-      }
-    };
-
-    const fetchLocationData = async () => {
-      try {
-        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/location`);
-        setLocationData(response.data || []);
-      } catch (error) {
-        console.error('Error fetching location data:', error);
-        setSnackbarMessage('Failed to fetch location data.');
-        setSnackbarOpen(true);
-      }
-    };
-
-    fetchBatchNumbers();
-    fetchFarmers();
-    fetchTransportData();
-    fetchLocationData();
+    if (session) {
+      fetchBatchNumbers();
+      fetchFarmers();
+      fetchTransportData();
+      fetchLocationData();
+    }
   }, [session]);
 
   const handleKabupatenChange = (event, newValue) => {
@@ -155,17 +158,19 @@ const TransportStation = () => {
 
       if (response.status === 200) {
         setSelectedBatchNumbers([]); // Reset selected batch numbers
-        setDesa(null);
-        setKecamatan(null);
-        setKabupaten(null);
+        setDesa('');
+        setKecamatan('');
+        setKabupaten('');
         setCost('');
         setPaidTo('');
         setPaymentMethod('');
         setBankAccount('');
         setBankName('');
-        fetchTransportData();
         setSnackbarMessage('Transport data successfully created!');
         setSnackbarOpen(true);
+
+        fetchTransportData();
+
       } else {
         const errorData = await response.data;
         console.error(errorData.message || 'Error creating transport data.');
@@ -204,15 +209,14 @@ const TransportStation = () => {
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-    { field: 'receivingDate', headerName: 'Received Date', width: 160, sortable: true },
-    { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
-    { field: 'farmerID', headerName: 'Farmer ID', width: 100, sortable: true },
-    { field: 'type', headerName: 'Type', width: 110, sortable: true },
-    { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
-    { field: 'price', headerName: 'Price (/kg)', width: 150, sortable: true },
-    { field: 'paymentMethod', headerName: 'Payment Method', width: 180, sortable: true },
-    { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 200, sortable: true },
+    { field: 'kabupaten', headerName: 'Kabupaten', width: 150, sortable: true },
+    { field: 'kecamatan', headerName: 'Kecamatan', width: 150, sortable: true },
+    { field: 'desa', headerName: 'Desa', width: 150, sortable: true },
+    { field: 'cost', headerName: 'Cost', width: 150, sortable: true },
+    { field: 'paidTo', headerName: 'Paid To', width: 150, sortable: true },
+    { field: 'bankAccount', headerName: 'Bank Account', width: 150, sortable: true },
+    { field: 'bankName', headerName: 'Bank Name', width: 150, sortable: true },
   ];
 
   const kabupatenList = [...new Set(locationData.map(item => item.kabupaten))];
@@ -241,8 +245,10 @@ const TransportStation = () => {
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
               Transport Station Form
             </Typography>
+
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
+
                 <Grid item xs={12}>
                   <FormControl fullWidth>
                     <InputLabel>Batch Number</InputLabel>
@@ -250,6 +256,7 @@ const TransportStation = () => {
                       multiple
                       value={selectedBatchNumbers}
                       onChange={handleBatchSelect}
+                      input={<OutlinedInput label="Batch Number" />}
                       renderValue={(selected) => (
                         <div>
                           {selected.map((value) => (
@@ -309,7 +316,10 @@ const TransportStation = () => {
                 <Grid item xs={12}>
                   <FormControl fullWidth>
                     <InputLabel>Paid To</InputLabel>
-                    <Select value={paidTo} onChange={handlePaidToChange}>
+                    <Select 
+                      value={paidTo} onChange={handlePaidToChange}
+                      input={<OutlinedInput label="Paid To" />}
+                    >
                       {farmers.map((farmer) => (
                         <MenuItem key={farmer.farmerID} value={farmer.farmerName}>
                           {farmer.farmerName}
@@ -359,7 +369,10 @@ const TransportStation = () => {
                 <Grid item xs={12}>
                   <FormControl fullWidth>
                     <InputLabel>Payment Method</InputLabel>
-                    <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                    <Select 
+                      value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
+                      input={<OutlinedInput label="Payment Method" />}
+                      >
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="bank transfer">Bank Transfer</MenuItem>
                       <MenuItem value="check">Check</MenuItem>
