@@ -83,7 +83,7 @@ const PaymentPage = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2>Not Paid Payments</h2>
+      <h2>Pending Payments</h2>
       <div style={{ height: 400, width: '100%' }}>
         <DataGrid
           rows={notPaidData}
