@@ -21,7 +21,7 @@ const TransportStation = () => {
   useEffect(() => {
     const fetchBatchNumbers = async () => {
       try {
-        const response = await axios.get('/api/receiving');
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
         console.log('Batch Numbers Response:', response.data);
         const todayData = response.data.todayData;
 
@@ -38,7 +38,7 @@ const TransportStation = () => {
 
     const fetchFarmers = async () => {
       try {
-        const response = await axios.get('/api/farmers');
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmer');
         console.log('Farmers Response:', response.data);
         const allFarmers = response.data.allRows; // Use allRows to get all farmers
 
@@ -60,7 +60,7 @@ const TransportStation = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('/api/transport', {
+      const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', {
         batchNumber: selectedBatchNumbers.join(','),
         desa,
         kecamatan,
