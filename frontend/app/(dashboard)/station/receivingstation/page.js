@@ -216,9 +216,9 @@ function ReceivingStation() {
       <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Receiving Station Form
-            </Typography>
+          <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+            Receiving Station Form
+          </Typography>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
 
