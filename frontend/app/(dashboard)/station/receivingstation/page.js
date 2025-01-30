@@ -16,6 +16,7 @@ import {
   Select, 
   MenuItem,
   OutlinedInput,
+  Autocomplete
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -221,23 +222,27 @@ function ReceivingStation() {
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
 
-              <Grid item xs={12}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="farmer-label">Farmer Name</InputLabel>
-                    <Select
-                      labelId="farmer-label"
-                      id="farmer"
-                      value={farmerName}
-                      onChange={handleFarmerChange}
-                      input={<OutlinedInput label="Farmer Name" />}
-                    >
-                      {farmerList.map((farmer) => (
-                        <MenuItem key={farmer.farmerID} value={farmer.farmerName}>
-                          {farmer.farmerName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                <Grid item xs={12}>
+                  <Autocomplete
+                    options={farmerList}
+                    getOptionLabel={(option) => option.farmerName}
+                    value={farmerList.find(farmer => farmer.farmerName === farmerName) || null}
+                    onChange={(event, newValue) => {
+                      setFarmerName(newValue ? newValue.farmerName : '');
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Farmer Name"
+                        required
+                      />
+                    )}
+                    filterOptions={(options, { inputValue }) =>
+                      options.filter(option =>
+                        option.farmerName.toLowerCase().includes(inputValue.toLowerCase())
+                      )
+                    }
+                  />
                 </Grid>
 
                 {selectedFarmerDetails && (
