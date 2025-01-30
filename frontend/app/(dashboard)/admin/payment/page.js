@@ -15,7 +15,7 @@ const PaymentPage = () => {
 
   const fetchPaymentData = async () => {
     try {
-      const response = await axios.get('/api/payment');
+      const response = await axios.get('https://processing-facility-backend.onrender.com/api/payment');
       setNotPaidData(response.data.notPaid);
       setIsPaidData(response.data.isPaid);
     } catch (error) {
@@ -26,7 +26,7 @@ const PaymentPage = () => {
   const handleUpdate = async (id, field, value) => {
     try {
       // Update the payment data in the database
-      await axios.put(`/api/payment/${id}`, { [field]: value });
+      await axios.put(`https://processing-facility-backend.onrender.com/api/payment/${id}`, { [field]: value });
       fetchPaymentData(); // Refresh the data
     } catch (error) {
       console.error('Error updating payment data:', error);
