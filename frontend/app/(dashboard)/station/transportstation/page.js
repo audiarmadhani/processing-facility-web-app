@@ -41,6 +41,7 @@ const TransportStation = () => {
   const [locationData, setLocationData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
 
   useEffect(() => {
     const fetchBatchNumbers = async () => {
@@ -82,13 +83,18 @@ const TransportStation = () => {
       try {
         const response = await fetch(`https://processing-facility-backend.onrender.com/api/transport`);
         if (!response.ok) throw new Error("Failed to fetch transport data");
-  
+    
         const data = await response.json();
-        if (data) {
-          const userRole = session.user.role;
+        if (Array.isArray(data)) {
           setTransportData(
-            data.allTransportData.map((row, index) => ({ ...row, id: index }))
+            data.map(row => ({
+              ...row,
+              cost: Number(row.cost), // Ensure cost is a number
+              createdAt: new Date(row.createdAt).toLocaleString(), // Format timestamp
+            }))
           );
+        } else {
+          throw new Error("Invalid data format received");
         }
       } catch (error) {
         console.error("Error fetching transport data:", error);
@@ -180,10 +186,16 @@ const TransportStation = () => {
   const handlePaidToChange = (event) => {
     const selectedFarmer = farmers.find(farmer => farmer.farmerName === event.target.value);
     setPaidTo(event.target.value);
+    
     if (selectedFarmer) {
-      setFarmerID(selectedFarmer.farmerID);
-      setBankAccount(selectedFarmer.bankAccount);
-      setBankName(selectedFarmer.bankName);
+      setSelectedFarmerDetails({
+        farmerID: selectedFarmer.farmerID,
+        farmerAddress: selectedFarmer.farmerAddress || 'N/A',  // Ensure address is handled
+        bankAccount: selectedFarmer.bankAccount,
+        bankName: selectedFarmer.bankName,
+      });
+    } else {
+      setSelectedFarmerDetails(null);
     }
   };
 
@@ -306,6 +318,43 @@ const TransportStation = () => {
                     </Select>
                   </FormControl>
                 </Grid>
+
+                {selectedFarmerDetails && (
+                  <>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Farmer ID"
+                        value={selectedFarmerDetails.farmerID}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Farmer Address"
+                        value={selectedFarmerDetails.farmerAddress}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Bank Account"
+                        value={selectedFarmerDetails.bankAccount}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Bank Name"
+                        value={selectedFarmerDetails.bankName}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                      />
+                    </Grid>
+                  </>
+                )}
 
                 <Grid item xs={12}>
                   <FormControl fullWidth>
