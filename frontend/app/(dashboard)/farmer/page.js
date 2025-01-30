@@ -40,6 +40,10 @@ function FarmerInputStation() {
   const [notes, setNotes] = useState('');
   const [farmVarieties, setFarmVarieties] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [desa, setDesa] = useState('');
+  const [kecamatan, setKecamatan] = useState('');
+  const [kabupaten, setKabupaten] = useState('');
+  const [locationData, setLocationData] = useState([]);
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -70,6 +74,7 @@ function FarmerInputStation() {
   useEffect(() => {
     if (session?.user?.role) {
       fetchFarmerData();
+      fetchLocationData();
     }
   }, [session?.user?.role]);
 
@@ -101,6 +106,17 @@ function FarmerInputStation() {
     }
   };
 
+  const fetchLocationData = async () => {
+    try {
+      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/location`);
+      setLocationData(response.data || []);
+    } catch (error) {
+      console.error('Error fetching location data:', error);
+      setSnackbarMessage('Failed to fetch location data.');
+      setSnackbarOpen(true);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -108,6 +124,9 @@ function FarmerInputStation() {
 
     const payload = {
       farmerName : farmerName.trim(),
+      desa,
+      kecamatan,
+      kabupaten,
       farmerAddress,
       bankAccount,
       bankName,
@@ -132,6 +151,9 @@ function FarmerInputStation() {
       if (response.ok) {
         // Clear form inputs after a successful submission
         setFarmerName('');
+        setDesa('');
+        setKecamatan('');
+        setKabupaten('');
         setFarmerAddress('');
         setBankAccount('');
         setBankName('');
@@ -160,9 +182,32 @@ function FarmerInputStation() {
     setSnackbarOpen(false);
   };
 
+  const handleKabupatenChange = (event, newValue) => {
+    setKabupaten(newValue);
+    setKecamatan(null);
+    setDesa(null);
+  };
+
+  const handleKecamatanChange = (event, newValue) => {
+    setKecamatan(newValue);
+    setDesa(null);
+  };
+
+  const handleDesaChange = (event, newValue) => {
+    setDesa(newValue);
+  };
+
+  const kabupatenList = [...new Set(locationData.map(item => item.kabupaten))];
+  const kecamatanList = kabupaten ? [...new Set(locationData.filter(item => item.kabupaten === kabupaten).map(item => item.kecamatan))] : [];
+  const desaList = kecamatan ? locationData.filter(item => item.kecamatan === kecamatan).map(item => item.desa) : [];
+
+
   const columns = [
     { field: "farmerID", headerName: "ID", width: 140, sortable: true },
     { field: "farmerName", headerName: "Name", width: 180, sortable: true },
+    { field: "desa", headerName: "Desa", width: 180, sortable: true },
+    { field: "kecamatan", headerName: "Kecamatan", width: 180, sortable: true },
+    { field: "kabupaten", headerName: "Kabupaten", width: 180, sortable: true },
     { field: "farmerAddress", headerName: "Address", width: 180, sortable: true },
     { field: "bankAccount", headerName: "Bank Account", width: 180, sortable: true },
     { field: "bankName", headerName: "Bank Name", width: 180, sortable: true },
@@ -211,6 +256,35 @@ function FarmerInputStation() {
                     fullWidth
                     required
                     input={<OutlinedInput label="Farmer Name" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Autocomplete
+                    options={kabupatenList}
+                    value={kabupaten}
+                    onChange={handleKabupatenChange}
+                    renderInput={(params) => <TextField {...params} label="Kabupaten" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Autocomplete
+                    options={kecamatanList}
+                    value={kecamatan}
+                    onChange={handleKecamatanChange}
+                    disabled={!kabupaten}
+                    renderInput={(params) => <TextField {...params} label="Kecamatan" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Autocomplete
+                    options={desaList}
+                    value={desa}
+                    onChange={handleDesaChange}
+                    disabled={!kecamatan}
+                    renderInput={(params) => <TextField {...params} label="Desa" />}
                   />
                 </Grid>
 

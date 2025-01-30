@@ -38,6 +38,7 @@ const TransportStation = () => {
   const [bankAccount, setBankAccount] = useState('');
   const [bankName, setBankName] = useState('');
   const [transportData, setTransportData] = useState([]);
+  const [locationData, setLocationData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
