@@ -31,6 +31,7 @@ function ReceivingStation() {
   const [numberOfBags, setNumberOfBags] = useState(1);
   const [bagWeights, setBagWeights] = useState(['']);
   const [totalWeight, setTotalWeight] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [receivingData, setReceivingData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [price, setPrice] = useState('');
@@ -134,6 +135,7 @@ function ReceivingStation() {
       totalBags: bagWeights.length,
       price: parseFloat(price) || 0, // Include price here
       type,
+      paymentMethod,
       bagPayload: bagWeights.map((weight, index) => ({
         bagNumber: index + 1,
         weight: parseFloat(weight) || 0,
@@ -157,6 +159,7 @@ function ReceivingStation() {
         setTotalWeight(0);
         setPrice('');
         setType('');
+        setPaymentMethod('');
         fetchReceivingData();
         setSnackbarOpen(true);
       } else {
@@ -179,6 +182,7 @@ function ReceivingStation() {
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
     { field: 'price', headerName: 'Price (/kg)', width: 150, sortable: true },
+    { field: 'paymentMethod', headerName: 'Payment Method', width: 180, sortable: true },
     { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
   ];
 
