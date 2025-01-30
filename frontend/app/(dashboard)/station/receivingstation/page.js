@@ -139,7 +139,7 @@ function ReceivingStation() {
     e.preventDefault();
 
     const payload = {
-      farmerID: selectedFarmerDetails ? selectedFarmerDetails.id : null, // Include farmer ID
+      farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null, // Include farmer ID
       farmerName,
       notes,
       weight: totalWeight,
