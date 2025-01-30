@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import { TextField, Select, MenuItem, Button, InputLabel, FormControl, Chip } from '@mui/material';
@@ -17,7 +17,6 @@ const TransportStation = () => {
   const [farmers, setFarmers] = useState([]);
   const [bankAccount, setBankAccount] = useState('');
   const [bankName, setBankName] = useState('');
-
 
   useEffect(() => {
     const fetchBatchNumbers = async () => {
@@ -49,7 +48,7 @@ const TransportStation = () => {
 
     try {
       const response = await axios.post('/api/transport', {
-        batchNumber: selectedBatchNumbers.join(','),
+        batchNumber: selectedBatchNumbers.join(','), // Join selected batch numbers as a string
         desa,
         kecamatan,
         kabupaten,
@@ -63,9 +62,23 @@ const TransportStation = () => {
 
       console.log('Transport data submitted:', response.data);
       // Reset form or handle success
+      resetForm();
     } catch (error) {
       console.error('Error submitting transport data:', error);
     }
+  };
+
+  const resetForm = () => {
+    setSelectedBatchNumbers([]);
+    setDesa('');
+    setKecamatan('');
+    setKabupaten('');
+    setCost('');
+    setPaidTo('');
+    setFarmerID('');
+    setPaymentMethod('');
+    setBankAccount('');
+    setBankName('');
   };
 
   const handleBatchSelect = (event) => {
