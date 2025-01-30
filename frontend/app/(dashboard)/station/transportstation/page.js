@@ -15,18 +15,15 @@ import {
   InputLabel, 
   Select, 
   MenuItem,
-  OutlinedInput,
-  Autocomplete,
   Chip
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const TransportStation = () => {
-
   const { data: session, status } = useSession();
-
   const [batchNumbers, setBatchNumbers] = useState([]);
   const [selectedBatchNumbers, setSelectedBatchNumbers] = useState([]);
   const [desa, setDesa] = useState('');
@@ -40,12 +37,13 @@ const TransportStation = () => {
   const [bankAccount, setBankAccount] = useState('');
   const [bankName, setBankName] = useState('');
   const [transportData, setTransportData] = useState([]);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   useEffect(() => {
     const fetchBatchNumbers = async () => {
       try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
-        console.log('Batch Numbers Response:', response.data);
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/receiving`);
         const todayData = response.data.todayData;
 
         if (Array.isArray(todayData)) {
@@ -56,60 +54,58 @@ const TransportStation = () => {
         }
       } catch (error) {
         console.error('Error fetching batch numbers:', error);
+        setSnackbarMessage('Failed to fetch batch numbers.');
+        setSnackbarOpen(true);
       }
     };
 
     const fetchFarmers = async () => {
       try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmer');
-        console.log('Farmers Response:', response.data);
-        const allFarmers = response.data.allRows; // Use allRows to get all farmers
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmer`);
+        const allFarmers = response.data.allRows;
 
         if (Array.isArray(allFarmers)) {
-          setFarmers(allFarmers); // Adjust based on your response structure
+          setFarmers(allFarmers);
         } else {
           console.error('Farmers data is not an array:', allFarmers);
         }
       } catch (error) {
         console.error('Error fetching farmers:', error);
+        setSnackbarMessage('Failed to fetch farmers.');
+        setSnackbarOpen(true);
+      }
+    };
+
+    const fetchTransportData = async () => {
+      try {
+        const response = await fetch(`https://processing-facility-backend.onrender.com/api/transport`);
+        if (!response.ok) throw new Error("Failed to fetch transport data");
+  
+        const data = await response.json();
+        if (data) {
+          const userRole = session.user.role;
+          setTransportData(
+            data.allTransportData.map((row, index) => ({ ...row, id: index }))
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching transport data:", error);
+        setTransportData([]);
+        setSnackbarMessage('Failed to fetch transport data.');
+        setSnackbarOpen(true);
       }
     };
 
     fetchBatchNumbers();
     fetchFarmers();
-  }, []);
-
-  const fetchTransportData = async () => {
-    try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/transport');
-      if (!response.ok) throw new Error("Failed to fetch transport data");
-
-      const data = await response.json();
-      console.log("Fetched data:", data);
-
-      if (data) {
-        // Filter rows based on user role
-        if (session.user.role === "staff") {
-          setTransportData(
-            data.allTransportData.map((row, index) => ({ ...row, id: index }))
-          );
-        } else if (["admin", "manager"].includes(session.user.role)) {
-          setTransportData(
-            data.allTransportData.map((row, index) => ({ ...row, id: index }))
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching transport data:", error);
-      setTransportData([]);
-    }
-  };
+    fetchTransportData();
+  }, [session]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', {
+      const response = await axios.post(`${API_BASE_URL}/transport`, {
         batchNumber: selectedBatchNumbers.join(','),
         desa,
         kecamatan,
@@ -122,10 +118,29 @@ const TransportStation = () => {
         bankName,
       });
 
-      console.log('Transport data submitted:', response.data);
-      // Reset form or handle success
+      if (response.status === 200) {
+        setSelectedBatchNumbers([]); // Reset selected batch numbers
+        setDesa('');
+        setKecamatan('');
+        setKabupaten('');
+        setCost('');
+        setPaidTo('');
+        setPaymentMethod('');
+        setBankAccount('');
+        setBankName('');
+        fetchTransportData();
+        setSnackbarMessage('Transport data successfully created!');
+        setSnackbarOpen(true);
+      } else {
+        const errorData = await response.data;
+        console.error(errorData.message || 'Error creating transport data.');
+        setSnackbarMessage(errorData.message || 'Error creating transport data.');
+        setSnackbarOpen(true);
+      }
     } catch (error) {
-      console.error('Error submitting transport data:', error);
+      console.error('Failed to communicate with the backend:', error);
+      setSnackbarMessage('Failed to create transport data.');
+      setSnackbarOpen(true);
     }
   };
 
@@ -137,7 +152,7 @@ const TransportStation = () => {
     const selectedFarmer = farmers.find(farmer => farmer.farmerName === event.target.value);
     setPaidTo(event.target.value);
     if (selectedFarmer) {
-      setFarmerID(selectedFarmer.farmerID); // Set farmerID when a farmer is selected
+      setFarmerID(selectedFarmer.farmerID);
       setBankAccount(selectedFarmer.bankAccount);
       setBankName(selectedFarmer.bankName);
     }
@@ -174,17 +189,15 @@ const TransportStation = () => {
   }
 
   return (
-     <Grid container spacing={3}>
-      {/* Receiving Station Form */}
+    <Grid container spacing={3}>
       <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
-          <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-            Receiving Station Form
-          </Typography>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+              Transport Station Form
+            </Typography>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
-
                 <Grid item xs={12}>
                   <FormControl fullWidth>
                     <InputLabel>Batch Number</InputLabel>
@@ -221,12 +234,12 @@ const TransportStation = () => {
 
                 <Grid item xs={12}>
                   <TextField
-                      label="Kecamatan"
-                      value={kecamatan}
-                      onChange={(e) => setKecamatan(e.target.value)}
-                      fullWidth
-                      required
-                    />
+                    label="Kecamatan"
+                    value={kecamatan}
+                    onChange={(e) => setKecamatan(e.target.value)}
+                    fullWidth
+                    required
+                  />
                 </Grid>
                   
                 <Grid item xs={12}>
@@ -241,21 +254,17 @@ const TransportStation = () => {
                 <Grid item xs={12}>
                   <TextField
                     label="Cost"
+                    type="number"
                     value={cost}
                     onChange={(e) => setCost(e.target.value)}
                     fullWidth
-                    type="number"
-                    required
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <FormControl fullWidth>
                     <InputLabel>Paid To</InputLabel>
-                    <Select
-                      value={paidTo}
-                      onChange={handlePaidToChange}
-                    >
+                    <Select value={paidTo} onChange={handlePaidToChange}>
                       {farmers.map((farmer) => (
                         <MenuItem key={farmer.farmerID} value={farmer.farmerName}>
                           {farmer.farmerName}
@@ -263,12 +272,12 @@ const TransportStation = () => {
                       ))}
                     </Select>
                   </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
                   <FormControl fullWidth>
                     <InputLabel>Payment Method</InputLabel>
-                    <Select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    >
+                    <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="bank transfer">Bank Transfer</MenuItem>
                       <MenuItem value="check">Check</MenuItem>
@@ -277,67 +286,41 @@ const TransportStation = () => {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <TextField
-                    label="Bank Account"
-                    value={bankAccount}
-                    onChange={(e) => setBankAccount(e.target.value)}
-                    fullWidth
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Bank Name"
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    fullWidth
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Button variant="contained" color="primary" type="submit">
+                  <Button type="submit" variant="contained" color="primary">
                     Submit
                   </Button>
                 </Grid>
-
               </Grid>
             </form>
+            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+              <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+                {snackbarMessage}
+              </Alert>
+            </Snackbar>
           </CardContent>
         </Card>
       </Grid>
-
-      {/* Data Grid for Receiving Data */}
-      {["admin", "manager", "receiving"].includes(session?.user?.role) && (
-        <Grid item xs={12} md={8}>
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h5" gutterBottom>
+      <Grid item xs={12} md={8}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
               Transport Data
-              </Typography>
-              <div style={{ height: 800, width: "100%" }}>
-                <DataGrid
-                  rows={transportData}
-                  columns={columns}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 20]}
-                  disableSelectionOnClick
-                  sortingOrder={["asc", "desc"]}
-                  slots={{ toolbar: GridToolbar }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </Grid>
-      )}
-
-      {/* Snackbar for notifications */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
-          Transport data successfully created!
-        </Alert>
-      </Snackbar>
+            </Typography>
+            <div style={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={transportData}
+                columns={columns}
+                pageSize={5}
+                rowsPerPageOptions={[5]}
+                components={{ Toolbar: GridToolbar }}
+                disableSelectionOnClick
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </Grid>
     </Grid>
   );
-}
+};
 
 export default TransportStation;
