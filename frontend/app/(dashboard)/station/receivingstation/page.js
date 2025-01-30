@@ -226,9 +226,9 @@ function ReceivingStation() {
                   <Autocomplete
                     options={farmerList}
                     getOptionLabel={(option) => option.farmerName}
-                    value={selectedFarmer} // This ensures the selected value is displayed correctly
+                    value={selectedFarmerDetails} // This ensures the selected value is displayed correctly
                     onChange={(event, newValue) => {
-                      setSelectedFarmer(newValue); // Store the entire farmer object
+                      setSelectedFarmerDetails(newValue); // Store the entire farmer object
                     }}
                     renderInput={(params) => (
                       <TextField {...params} label="Farmer Name" required fullWidth />
