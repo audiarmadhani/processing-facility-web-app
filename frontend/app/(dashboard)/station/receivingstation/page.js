@@ -229,6 +229,7 @@ function ReceivingStation() {
                     value={selectedFarmerDetails} // This ensures the selected value is displayed correctly
                     onChange={(event, newValue) => {
                       setSelectedFarmerDetails(newValue); // Store the entire farmer object
+                      setFarmerName(newValue ? newValue.farmerName : ""); // Update farmerName state
                     }}
                     renderInput={(params) => (
                       <TextField {...params} label="Farmer Name" required fullWidth />
