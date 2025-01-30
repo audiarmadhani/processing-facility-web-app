@@ -139,6 +139,7 @@ function ReceivingStation() {
     e.preventDefault();
 
     const payload = {
+      farmerID: selectedFarmerDetails ? selectedFarmerDetails.id : null, // Include farmer ID
       farmerName,
       notes,
       weight: totalWeight,
@@ -189,6 +190,7 @@ function ReceivingStation() {
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
     { field: 'receivingDate', headerName: 'Received Date', width: 160, sortable: true },
     { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
+    { field: 'farmerID', headerName: 'Farmer ID', width: 100, sortable: true },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
     { field: 'price', headerName: 'Price (/kg)', width: 150, sortable: true },
@@ -239,6 +241,16 @@ function ReceivingStation() {
 
                 {selectedFarmerDetails && (
                   <>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Farmer ID"
+                        value={selectedFarmerDetails.farmerID}
+                        fullWidth
+                        InputProps={{
+                          readOnly: true,
+                        }}
+                      />
+                    </Grid>
                     <Grid item xs={12}>
                       <TextField
                         label="Farmer Address"
