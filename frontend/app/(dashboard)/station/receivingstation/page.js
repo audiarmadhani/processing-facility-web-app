@@ -228,7 +228,7 @@ function ReceivingStation() {
                       labelId="farmer-label"
                       id="farmer"
                       value={farmerName}
-                      onChange={(e) => setFarmerName(e.target.value)}
+                      onChange={handleFarmerChange}
                       input={<OutlinedInput label="Farmer Name" />}
                     >
                       {farmerList.map((farmer) => (
