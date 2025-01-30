@@ -21,7 +21,7 @@ const TransportStation = () => {
   useEffect(() => {
     const fetchBatchNumbers = async () => {
       try {
-        const response = await axios.get('/api/receiving'); // Update with your API endpoint
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving'); // Update with your API endpoint
         const todayData = response.data.todayData; // Adjust based on your response structure
         const batchNumbers = todayData.map(item => item.batchNumber);
         setBatchNumbers(batchNumbers);
@@ -32,7 +32,7 @@ const TransportStation = () => {
 
     const fetchFarmers = async () => {
       try {
-        const response = await axios.get('/api/farmers'); // Update with your API endpoint
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmers'); // Update with your API endpoint
         setFarmers(response.data); // Adjust based on your response structure
       } catch (error) {
         console.error('Error fetching farmers:', error);
@@ -47,7 +47,7 @@ const TransportStation = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('/api/transport', {
+      const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', {
         batchNumber: selectedBatchNumbers.join(','), // Join selected batch numbers as a string
         desa,
         kecamatan,
