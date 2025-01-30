@@ -226,23 +226,13 @@ function ReceivingStation() {
                   <Autocomplete
                     options={farmerList}
                     getOptionLabel={(option) => option.farmerName}
-                    value={farmerList.find(farmer => farmer.farmerName === farmerName) || null}
+                    value={selectedFarmer} // This ensures the selected value is displayed correctly
                     onChange={(event, newValue) => {
-                      setFarmerName(newValue ? newValue.farmerName : '');
-                      setSelectedFarmer(newValue || null);
+                      setSelectedFarmer(newValue); // Store the entire farmer object
                     }}
                     renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Farmer Name"
-                        required
-                      />
+                      <TextField {...params} label="Farmer Name" required fullWidth />
                     )}
-                    filterOptions={(options, { inputValue }) =>
-                      options.filter(option =>
-                        option.farmerName.toLowerCase().includes(inputValue.toLowerCase())
-                      )
-                    }
                   />
                 </Grid>
 
