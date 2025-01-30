@@ -32,7 +32,7 @@ const TransportStation = () => {
 
     const fetchFarmers = async () => {
       try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmers'); // Update with your API endpoint
+        const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmer'); // Update with your API endpoint
         setFarmers(response.data); // Adjust based on your response structure
       } catch (error) {
         console.error('Error fetching farmers:', error);
