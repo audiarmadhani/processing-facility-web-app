@@ -227,9 +227,7 @@ function ReceivingStation() {
                     options={farmerList}
                     getOptionLabel={(option) => option.farmerName}
                     value={farmerList.find(farmer => farmer.farmerName === farmerName) || null}
-                    onChange={(event, newValue) => {
-                      setFarmerName(newValue ? newValue.farmerName : '');
-                    }}
+                    onChange={handleFarmerChange}
                     renderInput={(params) => (
                       <TextField
                         {...params}
