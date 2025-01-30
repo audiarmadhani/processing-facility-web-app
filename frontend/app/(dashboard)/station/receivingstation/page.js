@@ -19,6 +19,7 @@ import {
   Autocomplete
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
@@ -137,7 +138,10 @@ function ReceivingStation() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
+    // Calculate totalAmount as weight * price
+    const totalAmount = (parseFloat(totalWeight) || 0) * (parseFloat(price) || 0); // Ensure price is a number
+  
     const payload = {
       farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null, // Include farmer ID
       farmerName,
@@ -152,7 +156,7 @@ function ReceivingStation() {
         weight: parseFloat(weight) || 0,
       })),
     };
-
+  
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
         method: 'POST',
@@ -161,18 +165,45 @@ function ReceivingStation() {
         },
         body: JSON.stringify(payload),
       });
-
+  
       if (response.ok) {
-        setFarmerName('');
-        setBagWeights(['']);
-        setNotes('');
-        setNumberOfBags(1);
-        setTotalWeight(0);
-        setPrice('');
-        setType('');
-        setPaymentMethod('');
-        fetchReceivingData();
-        setSnackbarOpen(true);
+        // Prepare the payload for the payment API
+        const paymentPayload = {
+          farmerName, // Ensure this variable holds the correct value
+          farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null, // Include farmer ID
+          totalAmount, // Calculate totalAmount based on weight and price
+          date: new Date().toISOString(), // Use the current date
+          paymentMethod,
+          paymentDescription: 'Cherry receiving', // Fixed description
+          isPaid: 0, // Set isPaid to 0
+        };
+  
+        // Post to the payment API
+        const paymentResponse = await fetch('https://processing-facility-backend.onrender.com/api/payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paymentPayload),
+        });
+  
+        if (paymentResponse.ok) {
+          // Clear form fields after successful submission to both APIs
+          setFarmerName('');
+          setBagWeights(['']);
+          setNotes('');
+          setNumberOfBags(1);
+          setTotalWeight(0);
+          setPrice('');
+          setType('');
+          setPaymentMethod('');
+          fetchReceivingData(); // Fetch updated receiving data
+          setSnackbarOpen(true); // Show success message for payment
+        } else {
+          const paymentErrorData = await paymentResponse.json();
+          console.error(paymentErrorData.message || 'Error creating payment.');
+        }
+  
       } else {
         const errorData = await response.json();
         console.error(errorData.message || 'Error creating batch.');

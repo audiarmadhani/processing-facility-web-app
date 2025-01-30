@@ -141,8 +141,9 @@ const TransportStation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
+      // Post to the transport API
       const response = await axios.post(`${API_BASE_URL}/transport`, {
         batchNumber: selectedBatchNumbers.join(','),
         desa,
@@ -155,22 +156,43 @@ const TransportStation = () => {
         bankAccount,
         bankName,
       });
-
+  
       if (response.status === 200) {
-        setSelectedBatchNumbers([]); // Reset selected batch numbers
-        setDesa('');
-        setKecamatan('');
-        setKabupaten('');
-        setCost('');
-        setPaidTo('');
-        setPaymentMethod('');
-        setBankAccount('');
-        setBankName('');
-        setSnackbarMessage('Transport data successfully created!');
-        setSnackbarOpen(true);
-
-        fetchTransportData();
-
+        // Prepare payment payload
+        const paymentPayload = {
+          farmerName: paidTo, // Assuming paidTo holds the farmer's name
+          farmerID, // Ensure farmerID is defined
+          totalAmount: parseFloat(cost) || 0, // Use the cost as totalAmount
+          date: new Date().toISOString(), // Use the current date
+          paymentMethod,
+          paymentDescription: 'Transport Cost', // Fixed description
+          isPaid: 0, // Set isPaid to 0
+        };
+  
+        // Post to the payment API
+        const paymentResponse = await axios.post(`${API_BASE_URL}/payment`, paymentPayload);
+  
+        if (paymentResponse.status === 200) {
+          // Reset form fields
+          setSelectedBatchNumbers([]); // Reset selected batch numbers
+          setDesa('');
+          setKecamatan('');
+          setKabupaten('');
+          setCost('');
+          setPaidTo('');
+          setPaymentMethod('');
+          setBankAccount('');
+          setBankName('');
+          setSnackbarMessage('Transport data and payment successfully created!');
+          setSnackbarOpen(true);
+  
+          fetchTransportData(); // Fetch updated transport data
+        } else {
+          const paymentErrorData = await paymentResponse.data;
+          console.error(paymentErrorData.message || 'Error creating payment data.');
+          setSnackbarMessage(paymentErrorData.message || 'Error creating payment data.');
+          setSnackbarOpen(true);
+        }
       } else {
         const errorData = await response.data;
         console.error(errorData.message || 'Error creating transport data.');
