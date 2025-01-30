@@ -197,7 +197,7 @@ function FarmerInputStation() {
       <Grid item xs={12} md={3}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
               Farmer Form
             </Typography>
             <form onSubmit={handleSubmit}>

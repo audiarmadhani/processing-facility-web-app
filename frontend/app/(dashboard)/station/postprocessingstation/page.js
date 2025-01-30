@@ -157,7 +157,7 @@ function PostprocessingStation() {
       <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
               Post Processing Station Form
             </Typography>
             <form onSubmit={handleSubmit}>

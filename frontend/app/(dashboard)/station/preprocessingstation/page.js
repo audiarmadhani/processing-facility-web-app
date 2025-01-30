@@ -341,7 +341,7 @@ const PreprocessingStation = () => {
       <Grid item xs={12} md={5}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
               Preprocessing Station
             </Typography>
             <form onSubmit={handleSubmit}>
