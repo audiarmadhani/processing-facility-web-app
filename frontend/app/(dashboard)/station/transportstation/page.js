@@ -15,7 +15,8 @@ import {
   InputLabel, 
   Select, 
   MenuItem,
-  Chip
+  Chip,
+  Autocomplete
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from 'axios';
@@ -26,9 +27,9 @@ const TransportStation = () => {
   const { data: session, status } = useSession();
   const [batchNumbers, setBatchNumbers] = useState([]);
   const [selectedBatchNumbers, setSelectedBatchNumbers] = useState([]);
-  const [desa, setDesa] = useState('');
-  const [kecamatan, setKecamatan] = useState('');
-  const [kabupaten, setKabupaten] = useState('');
+  const [desa, setDesa] = useState(null);
+  const [kecamatan, setKecamatan] = useState(null);
+  const [kabupaten, setKabupaten] = useState(null);
   const [cost, setCost] = useState('');
   const [paidTo, setPaidTo] = useState('');
   const [farmerID, setFarmerID] = useState('');
@@ -96,10 +97,37 @@ const TransportStation = () => {
       }
     };
 
+    const fetchLocationData = async () => {
+      try {
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/location`);
+        setLocationData(response.data || []);
+      } catch (error) {
+        console.error('Error fetching location data:', error);
+        setSnackbarMessage('Failed to fetch location data.');
+        setSnackbarOpen(true);
+      }
+    };
+
     fetchBatchNumbers();
     fetchFarmers();
     fetchTransportData();
+    fetchLocationData();
   }, [session]);
+
+  const handleKabupatenChange = (event, newValue) => {
+    setKabupaten(newValue);
+    setKecamatan(null);
+    setDesa(null);
+  };
+
+  const handleKecamatanChange = (event, newValue) => {
+    setKecamatan(newValue);
+    setDesa(null);
+  };
+
+  const handleDesaChange = (event, newValue) => {
+    setDesa(newValue);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,9 +148,9 @@ const TransportStation = () => {
 
       if (response.status === 200) {
         setSelectedBatchNumbers([]); // Reset selected batch numbers
-        setDesa('');
-        setKecamatan('');
-        setKabupaten('');
+        setDesa(null);
+        setKecamatan(null);
+        setKabupaten(null);
         setCost('');
         setPaidTo('');
         setPaymentMethod('');
@@ -174,6 +202,10 @@ const TransportStation = () => {
     { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
   ];
 
+  const kabupatenList = [...new Set(locationData.map(item => item.kabupaten))];
+  const kecamatanList = kabupaten ? [...new Set(locationData.filter(item => item.kabupaten === kabupaten).map(item => item.kecamatan))] : [];
+  const desaList = kecamatan ? locationData.filter(item => item.kecamatan === kecamatan).map(item => item.desa) : [];
+
   // Show loading screen while session is loading
   if (status === 'loading') {
     return <p>Loading...</p>;
@@ -221,36 +253,36 @@ const TransportStation = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
-                <Grid item xs={12}>
-                  <TextField
-                    label="Desa"
-                    value={desa}
-                    onChange={(e) => setDesa(e.target.value)}
-                    fullWidth
-                    required
-                  />
-                </Grid>
 
                 <Grid item xs={12}>
-                  <TextField
-                    label="Kecamatan"
-                    value={kecamatan}
-                    onChange={(e) => setKecamatan(e.target.value)}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                  
-                <Grid item xs={12}>
-                  <TextField
-                    label="Kabupaten"
+                  <Autocomplete
+                    options={kabupatenList}
                     value={kabupaten}
-                    onChange={(e) => setKabupaten(e.target.value)}
-                    fullWidth
+                    onChange={handleKabupatenChange}
+                    renderInput={(params) => <TextField {...params} label="Kabupaten" />}
                   />
                 </Grid>
 
+                <Grid item xs={12}>
+                  <Autocomplete
+                    options={kecamatanList}
+                    value={kecamatan}
+                    onChange={handleKecamatanChange}
+                    disabled={!kabupaten}
+                    renderInput={(params) => <TextField {...params} label="Kecamatan" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Autocomplete
+                    options={desaList}
+                    value={desa}
+                    onChange={handleDesaChange}
+                    disabled={!kecamatan}
+                    renderInput={(params) => <TextField {...params} label="Desa" />}
+                  />
+                </Grid>
+                
                 <Grid item xs={12}>
                   <TextField
                     label="Cost"
