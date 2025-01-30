@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from 'react';
 import { TextField, Select, MenuItem, Button, InputLabel, FormControl, Chip } from '@mui/material';
 import axios from 'axios';
@@ -12,7 +10,7 @@ const TransportStation = () => {
   const [kabupaten, setKabupaten] = useState('');
   const [cost, setCost] = useState('');
   const [paidTo, setPaidTo] = useState('');
-  const [farmerID, setFarmerID] = useState(''); // State to hold farmerID
+  const [farmerID, setFarmerID] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [farmers, setFarmers] = useState([]);
   const [bankAccount, setBankAccount] = useState('');
@@ -21,10 +19,16 @@ const TransportStation = () => {
   useEffect(() => {
     const fetchBatchNumbers = async () => {
       try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving'); // Update with your API endpoint
-        const todayData = response.data.todayData; // Adjust based on your response structure
-        const batchNumbers = todayData.map(item => item.batchNumber);
-        setBatchNumbers(batchNumbers);
+        const response = await axios.get('/api/receiving');
+        console.log('Batch Numbers Response:', response.data);
+        const todayData = response.data.todayData;
+
+        if (Array.isArray(todayData)) {
+          const batchNumbers = todayData.map(item => item.batchNumber);
+          setBatchNumbers(batchNumbers);
+        } else {
+          console.error('todayData is not an array:', todayData);
+        }
       } catch (error) {
         console.error('Error fetching batch numbers:', error);
       }
@@ -32,8 +36,15 @@ const TransportStation = () => {
 
     const fetchFarmers = async () => {
       try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmer'); // Update with your API endpoint
-        setFarmers(response.data); // Adjust based on your response structure
+        const response = await axios.get('/api/farmers');
+        console.log('Farmers Response:', response.data);
+        const allFarmers = response.data.allRows; // Use allRows to get all farmers
+
+        if (Array.isArray(allFarmers)) {
+          setFarmers(allFarmers); // Adjust based on your response structure
+        } else {
+          console.error('Farmers data is not an array:', allFarmers);
+        }
       } catch (error) {
         console.error('Error fetching farmers:', error);
       }
@@ -47,8 +58,8 @@ const TransportStation = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', {
-        batchNumber: selectedBatchNumbers.join(','), // Join selected batch numbers as a string
+      const response = await axios.post('/api/transport', {
+        batchNumber: selectedBatchNumbers.join(','),
         desa,
         kecamatan,
         kabupaten,
@@ -62,23 +73,9 @@ const TransportStation = () => {
 
       console.log('Transport data submitted:', response.data);
       // Reset form or handle success
-      resetForm();
     } catch (error) {
       console.error('Error submitting transport data:', error);
     }
-  };
-
-  const resetForm = () => {
-    setSelectedBatchNumbers([]);
-    setDesa('');
-    setKecamatan('');
-    setKabupaten('');
-    setCost('');
-    setPaidTo('');
-    setFarmerID('');
-    setPaymentMethod('');
-    setBankAccount('');
-    setBankName('');
   };
 
   const handleBatchSelect = (event) => {
@@ -86,10 +83,10 @@ const TransportStation = () => {
   };
 
   const handlePaidToChange = (event) => {
-    const selectedFarmer = farmers.find(farmer => farmer.name === event.target.value);
+    const selectedFarmer = farmers.find(farmer => farmer.farmerName === event.target.value);
     setPaidTo(event.target.value);
     if (selectedFarmer) {
-      setFarmerID(selectedFarmer.id); // Set farmerID when a farmer is selected
+      setFarmerID(selectedFarmer.farmerID); // Set farmerID when a farmer is selected
       setBankAccount(selectedFarmer.bankAccount);
       setBankName(selectedFarmer.bankName);
     }
@@ -151,8 +148,8 @@ const TransportStation = () => {
           onChange={handlePaidToChange}
         >
           {farmers.map((farmer) => (
-            <MenuItem key={farmer.id} value={farmer.name}>
-              {farmer.name}
+            <MenuItem key={farmer.farmerID} value={farmer.farmerName}>
+              {farmer.farmerName}
             </MenuItem>
           ))}
         </Select>
