@@ -27,6 +27,7 @@ function ReceivingStation() {
 
   const [farmerName, setFarmerName] = useState('');
   const [farmerList, setFarmerList] = useState([]);
+  const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [notes, setNotes] = useState('');
   const [numberOfBags, setNumberOfBags] = useState(1);
   const [bagWeights, setBagWeights] = useState(['']);
@@ -123,6 +124,14 @@ function ReceivingStation() {
   const handleWriteToCard = () => {
     console.log('Writing to RFID card:', { farmerName, notes, bagWeights, totalWeight });
     alert('RFID card written successfully!');
+  };
+
+  const handleFarmerChange = (event) => {
+    const selectedFarmerName = event.target.value;
+    setFarmerName(selectedFarmerName);
+
+    const farmerDetails = farmerList.find((farmer) => farmer.farmerName === selectedFarmerName);
+    setSelectedFarmerDetails(farmerDetails || null);
   };
 
   const handleSubmit = async (e) => {
@@ -230,6 +239,41 @@ function ReceivingStation() {
                     </Select>
                   </FormControl>
                 </Grid>
+
+                {selectedFarmerDetails && (
+                  <>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Farmer Address"
+                        value={selectedFarmerDetails.farmerAddress}
+                        fullWidth
+                        InputProps={{
+                          readOnly: true,
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Bank Account"
+                        value={selectedFarmerDetails.bankAccount}
+                        fullWidth
+                        InputProps={{
+                          readOnly: true,
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Bank Name"
+                        value={selectedFarmerDetails.bankName}
+                        fullWidth
+                        InputProps={{
+                          readOnly: true,
+                        }}
+                      />
+                    </Grid>
+                  </>
+                )}
 
                 <Grid item xs={12}>
                   <FormControl fullWidth required>
