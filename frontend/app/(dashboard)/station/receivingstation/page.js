@@ -224,7 +224,15 @@ function ReceivingStation() {
     { field: 'farmerID', headerName: 'Farmer ID', width: 100, sortable: true },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
-    { field: 'price', headerName: 'Price (/kg)', width: 150, sortable: true },
+    { 
+      field: 'price', 
+      headerName: 'Price (/kg)', 
+      width: 150, 
+      sortable: true, 
+      valueFormatter: (params) => {
+        return new Intl.NumberFormat().format(params.value); // Format with thousand separators
+      }
+    },
     { field: 'paymentMethod', headerName: 'Payment Method', width: 180, sortable: true },
     { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
   ];

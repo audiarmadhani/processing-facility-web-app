@@ -47,7 +47,15 @@ const PaymentPage = () => {
   const columnsNotPaid = [
     { field: 'farmerName', headerName: 'Farmer Name', width: 180 },
     { field: 'farmerID', headerName: 'Farmer ID', width: 120 },
-    { field: 'totalAmount', headerName: 'Total Amount', width: 150 },
+    { 
+      field: 'totalAmount', 
+      headerName: 'Total Amount', 
+      width: 150, 
+      sortable: true, 
+      valueFormatter: (params) => {
+        return new Intl.NumberFormat().format(params.value); // Format with thousand separators
+      }
+    },
     { field: 'date', headerName: 'Date', width: 150 },
     { field: 'paymentMethod', headerName: 'Payment Method', width: 150 },
     { field: 'paymentDescription', headerName: 'Payment Description', width: 200 },
@@ -74,7 +82,15 @@ const PaymentPage = () => {
   const columnsIsPaid = [
     { field: 'farmerName', headerName: 'Farmer Name', width: 180 },
     { field: 'farmerID', headerName: 'Farmer ID', width: 120 },
-    { field: 'totalAmount', headerName: 'Total Amount', width: 150 },
+    { 
+      field: 'totalAmount', 
+      headerName: 'Total Amount', 
+      width: 150, 
+      sortable: true, 
+      valueFormatter: (params) => {
+        return new Intl.NumberFormat().format(params.value); // Format with thousand separators
+      }
+    },
     { field: 'date', headerName: 'Date', width: 150 },
     { field: 'paymentMethod', headerName: 'Payment Method', width: 150 },
     { field: 'paymentDescription', headerName: 'Payment Description', width: 200 },
