@@ -8,7 +8,7 @@ const BaliMap = () => {
 
   // Load GeoJSON data (assuming bali_villages.json is in /public)
   useEffect(() => {
-    fetch("/bali_villages.json")
+    fetch("../../assets/geojson/bali_villages.json")
       .then((res) => res.json())
       .then((data) => setGeoData(data))
       .catch((err) => console.error("Error loading GeoJSON:", err));
