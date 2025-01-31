@@ -25,6 +25,8 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 
+dayjs.extend(isoWeek);
+
 const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api/targets'; // Define your base API URL here
 
 function TargetInputStation() {
@@ -53,8 +55,6 @@ function TargetInputStation() {
 
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month']; // Add more timeframes if needed
-
-  dayjs.extend(isoWeek);
 
   const getStartAndEndDates = (timeframe) => {
     const today = dayjs();
