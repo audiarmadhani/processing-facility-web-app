@@ -46,12 +46,14 @@ function TargetInputStation() {
   const [timeframeSelect, setTimeframeSelect] = useState('this-week');
   const [data, setData] = useState([]);
 
+  // Predefined options
   const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
   const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot'];
   const predefinedProducer = ['HQ', 'BTM'];
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
 
+  // Date calculation function
   const getStartAndEndDates = (timeframe) => {
     const today = dayjs();
     let startDate, endDate;
@@ -91,10 +93,11 @@ function TargetInputStation() {
     };
   };
 
+  // Fetch targets and data
   useEffect(() => {
-    const fetchTargets = async (timeframe) => {
+    const fetchTargets = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/${timeframe}`);
+        const response = await fetch(`${API_BASE_URL}/${timeframeSelect}`);
         if (!response.ok) throw new Error('Failed to fetch targets');
         const data = await response.json();
         setCurrentTargets(data);
@@ -103,18 +106,18 @@ function TargetInputStation() {
         setCurrentTargets([]);
       }
     };
-  
-    fetchTargets(timeframeSelect);
+
+    fetchTargets();
   }, [timeframeSelect]);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/${timeframeSelect}`);
         if (!response.ok) throw new Error('Failed to fetch data');
         const result = await response.json();
-  
-        // Maintain your original sorting logic
+
+        // Complex multi-field sorting
         const sortedData = result.sort((a, b) => {
           if (a.type !== b.type) return a.type.localeCompare(b.type);
           if (a.producer !== b.producer) return a.producer.localeCompare(b.producer);
@@ -124,16 +127,16 @@ function TargetInputStation() {
           if (a.metric !== b.metric) return a.metric.localeCompare(b.metric);
           return 0;
         });
-  
+
         setData(sortedData);
       } catch (error) {
         console.error('Error fetching data:', error);
         setData([]);
       }
     };
-  
+
     fetchData();
-  }, [timeframeSelect, currentTargets]); // Added currentTargets as dependency
+  }, [timeframeSelect, currentTargets]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -154,9 +157,7 @@ function TargetInputStation() {
     try {
       const response = await fetch(API_BASE_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -175,22 +176,14 @@ function TargetInputStation() {
       setEndDate(dayjs());
 
       // Refresh data
-      const { startDate, endDate } = getStartAndEndDates(timeframeSelect);
-      const refreshResponse = await fetch(
-        `${API_BASE_URL}?startDate=${startDate}&endDate=${endDate}`
-      );
-      const refreshData = await refreshResponse.json();
-      setData(refreshData.sort((a, b) => a.type.localeCompare(b.type)));
-
+      setCurrentTargets(prev => [...prev, payload]); // Optimistic update
       setSnackbarOpen(true);
     } catch (error) {
       console.error('Submission error:', error);
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-  };
+  const { startDate: displayStart, endDate: displayEnd } = getStartAndEndDates(timeframeSelect);
 
   const columns = [
     { field: 'type', headerName: 'Type', width: 80 },
@@ -203,8 +196,6 @@ function TargetInputStation() {
     { field: 'achievement', headerName: 'Achievement', width: 110 },
   ];
 
-  const { startDate: displayStart, endDate: displayEnd } = getStartAndEndDates(timeframeSelect);
-
   if (status === 'loading') return <p>Loading...</p>;
 
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager')) {
@@ -215,11 +206,9 @@ function TargetInputStation() {
     );
   }
 
-
   return (
     <Grid container spacing={3}>
-    
-      {/* Target Input Form */}
+      {/* Input Form */}
       <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
@@ -228,13 +217,12 @@ function TargetInputStation() {
             </Typography>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
-                
+                {/* Form Fields */}
                 <Grid item xs={12}>
-                  <FormControl fullWidth required sx={{ marginTop: "16px" }}>
+                  <FormControl fullWidth required>
                     <InputLabel id="type-label">Type</InputLabel>
                     <Select
                       labelId="type-label"
-                      id="type"
                       value={type}
                       onChange={({ target: { value } }) => setType(value)}
                       input={<OutlinedInput label="Type" />}
@@ -250,9 +238,10 @@ function TargetInputStation() {
                     freeSolo
                     options={predefinedProducer}
                     value={producer}
-                    onChange={(event, newValue) => setProducer(newValue)}
-                    onInputChange={(event, newValue) => setProducer(newValue)}
-                    renderInput={(params) => <TextField {...params} label="Producer" fullWidth required />}
+                    onChange={(_, newValue) => setProducer(newValue || '')}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Producer" required />
+                    )}
                   />
                 </Grid>
 
@@ -261,9 +250,10 @@ function TargetInputStation() {
                     freeSolo
                     options={predefinedProductLine}
                     value={productLine}
-                    onChange={(event, newValue) => setProductLine(newValue)}
-                    onInputChange={(event, newValue) => setProductLine(newValue)}
-                    renderInput={(params) => <TextField {...params} label="Product Line" fullWidth required />}
+                    onChange={(_, newValue) => setProductLine(newValue || '')}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Product Line" required />
+                    )}
                   />
                 </Grid>
 
@@ -272,9 +262,10 @@ function TargetInputStation() {
                     freeSolo
                     options={predefinedProcesses}
                     value={processingType}
-                    onChange={(event, newValue) => setProcessingType(newValue)}
-                    onInputChange={(event, newValue) => setProcessingType(newValue)}
-                    renderInput={(params) => <TextField {...params} label="Process" fullWidth required />}
+                    onChange={(_, newValue) => setProcessingType(newValue || '')}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Process" required />
+                    )}
                   />
                 </Grid>
 
@@ -283,7 +274,6 @@ function TargetInputStation() {
                     <InputLabel id="quality-label">Quality</InputLabel>
                     <Select
                       labelId="quality-label"
-                      id="quality"
                       value={quality}
                       onChange={({ target: { value } }) => setQuality(value)}
                       input={<OutlinedInput label="Quality" />}
@@ -302,7 +292,6 @@ function TargetInputStation() {
                     <InputLabel id="timeframe-label">Timeframe</InputLabel>
                     <Select
                       labelId="timeframe-label"
-                      id="timeframe"
                       value={timeFrame}
                       onChange={({ target: { value } }) => setTimeFrame(value)}
                       input={<OutlinedInput label="Timeframe" />}
@@ -318,16 +307,16 @@ function TargetInputStation() {
                     freeSolo
                     options={predefinedMetrics}
                     value={metric}
-                    onChange={(event, newValue) => setMetric(newValue)}
-                    onInputChange={(event, newValue) => setMetric(newValue)}
-                    renderInput={(params) => <TextField {...params} label="Metric" fullWidth required />}
+                    onChange={(_, newValue) => setMetric(newValue || '')}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Metric" required />
+                    )}
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <TextField
                     label="Target Value"
-                    type="text"
                     value={targetValue}
                     onChange={({ target: { value } }) => setTargetValue(value)}
                     fullWidth
@@ -341,7 +330,7 @@ function TargetInputStation() {
                       label="Start Date"
                       value={startDate}
                       onChange={setStartDate}
-                      renderInput={(params) => <TextField {...params} fullWidth required />}
+                      format="YYYY-MM-DD"
                     />
                   </LocalizationProvider>
                 </Grid>
@@ -352,13 +341,13 @@ function TargetInputStation() {
                       label="End Date"
                       value={endDate}
                       onChange={setEndDate}
-                      renderInput={(params) => <TextField {...params} fullWidth required />}
+                      format="YYYY-MM-DD"
                     />
                   </LocalizationProvider>
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Button variant="contained" color="primary" type="submit" fullWidth>
+                  <Button variant="contained" type="submit" fullWidth>
                     Submit Target
                   </Button>
                 </Grid>
@@ -368,61 +357,55 @@ function TargetInputStation() {
         </Card>
       </Grid>
 
-      {/* Targets Table */}
+      {/* Data Display */}
       <Grid item xs={12} md={8}>
-        {/* Timeframe Selection Dropdown */}
-        <Grid item xs={4} style={{ marginBottom: '16px' }}>
-          <FormControl fullWidth>
-            <InputLabel id="timeframe-select-label">Select Timeframe</InputLabel>
-            <Select
-              labelId="timeframe-select-label"
-              value={timeframeSelect}
-              onChange={({ target: { value } }) => setTimeframeSelect(value)}
-              input={<OutlinedInput label="Select Timeframe" />}
-            >
-              {timeframes.map((timeframe) => (
-                <MenuItem key={timeframe} value={timeframe}>
-                  {timeframe.charAt(0).toUpperCase() + timeframe.slice(1).replace('-', ' ')}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Display Start and End Dates */}
-          <Typography variant="body2" color="textSecondary" style={{ marginTop: '8px' }}>
-            Start Date: {getStartDate(timeframeSelect)} | End Date: {getEndDate(timeframeSelect)}
-          </Typography>
-        </Grid>
-
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Targets Overview
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel id="timeframe-select-label">Select Timeframe</InputLabel>
+              <Select
+                value={timeframeSelect}
+                onChange={({ target: { value } }) => setTimeframeSelect(value)}
+                input={<OutlinedInput label="Select Timeframe" />}
+              >
+                {timeframes.map((timeframe) => (
+                  <MenuItem key={timeframe} value={timeframe}>
+                    {timeframe.replace('-', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase())}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Typography variant="body2" color="textSecondary" mt={1}>
+              Date Range: {displayStart} - {displayEnd}
             </Typography>
-            <DataGrid
-              rows={data}
-              columns={columns}
-              autoHeight
-              pageSize={5}
-              rowsPerPageOptions={[5]}
-              unstable_rowSpanning
-              hideFooter
-              showCellVerticalBorder
-              showColumnVerticalBorder
-              disableRowSelectionOnClick
-              slots={{ toolbar: GridToolbar }}
-            />
-          </CardContent>
-        </Card>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  Targets Overview
+                </Typography>
+                <DataGrid
+                  rows={data}
+                  columns={columns}
+                  autoHeight
+                  pageSize={5}
+                  slots={{ toolbar: GridToolbar }}
+                  disableRowSelectionOnClick
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Grid>
 
-      {/* Snackbar for feedback */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
+        onClose={() => setSnackbarOpen(false)}
       >
-        <Alert onClose={handleCloseSnackbar} severity="success">
+        <Alert severity="success">
           Target created successfully!
         </Alert>
       </Snackbar>
