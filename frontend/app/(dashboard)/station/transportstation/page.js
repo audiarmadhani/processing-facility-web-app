@@ -36,7 +36,7 @@ const TransportStation = () => {
   const [farmerID, setFarmerID] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [farmers, setFarmers] = useState([]);
-  const [bankAccount, setBankAccount] = useState(NULL);
+  const [bankAccount, setBankAccount] = useState(null);
   const [bankName, setBankName] = useState('');
   const [transportData, setTransportData] = useState([]);
   const [locationData, setLocationData] = useState([]);
@@ -181,7 +181,7 @@ const TransportStation = () => {
           setCost('');
           setPaidTo('');
           setPaymentMethod('');
-          setBankAccount(NULL);
+          setBankAccount(null);
           setBankName('');
           setSnackbarMessage('Transport data and payment successfully created!');
           setSnackbarOpen(true);
@@ -231,14 +231,14 @@ const TransportStation = () => {
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 200, sortable: true },
-    { field: 'kabupaten', headerName: 'Kabupaten', width: 150, sortable: true },
-    { field: 'kecamatan', headerName: 'Kecamatan', width: 150, sortable: true },
-    { field: 'desa', headerName: 'Desa', width: 150, sortable: true },
-    { field: 'cost', headerName: 'Cost', width: 150, sortable: true },
-    { field: 'paidTo', headerName: 'Paid To', width: 150, sortable: true },
-    { field: 'bankAccount', headerName: 'Bank Account', width: 150, sortable: true },
-    { field: 'bankName', headerName: 'Bank Name', width: 150, sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', sortable: true },
+    { field: 'kabupaten', headerName: 'Kabupaten', sortable: true },
+    { field: 'kecamatan', headerName: 'Kecamatan', sortable: true },
+    { field: 'desa', headerName: 'Desa', sortable: true },
+    { field: 'cost', headerName: 'Cost', sortable: true },
+    { field: 'paidTo', headerName: 'Paid To', sortable: true },
+    { field: 'bankAccount', headerName: 'Bank Account', sortable: true },
+    { field: 'bankName', headerName: 'Bank Name', sortable: true },
   ];
 
   const kabupatenList = [...new Set(locationData.map(item => item.kabupaten))];
