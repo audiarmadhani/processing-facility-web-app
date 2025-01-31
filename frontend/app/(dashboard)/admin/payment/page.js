@@ -1,8 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { DataGrid } from '@mui/x-data-grid';
-import { Button } from '@mui/material';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from 'axios';
 
 const PaymentPage = () => {
@@ -96,6 +95,7 @@ const PaymentPage = () => {
           rowsPerPageOptions={[5]}
           checkboxSelection
           disableSelectionOnClick
+          slots={{ toolbar: GridToolbar }}
         />
       </div>
 
@@ -108,6 +108,7 @@ const PaymentPage = () => {
           rowsPerPageOptions={[5]}
           checkboxSelection
           disableSelectionOnClick
+          slots={{ toolbar: GridToolbar }}
         />
       </div>
     </div>

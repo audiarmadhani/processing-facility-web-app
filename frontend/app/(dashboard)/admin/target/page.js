@@ -31,6 +31,8 @@ function TargetInputStation() {
 
   const [type, setType] = useState('');
   const [processingType, setProcessingType] = useState('');
+  const [productLine, setProductLine] = useState('');
+  const [producer, setProducer] = useState('');
   const [quality, setQuality] = useState('');
   const [metric, setMetric] = useState('');
   const [targetValue, setTargetValue] = useState('');
@@ -43,7 +45,10 @@ function TargetInputStation() {
   const [timeframeSelect, setTimeframeSelect] = useState('this-week'); // State for selected timeframe
   const [data, setData] = useState([]);
 
-  const predefinedProcesses = ['Natural', 'Wet Hulled', 'Honey', 'Experimental'];
+  const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
+  const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot'];
+  const predefinedProducer = ['HQ', 'BTM'];
+
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month']; // Add more timeframes if needed
 
@@ -61,6 +66,12 @@ function TargetInputStation() {
         const sortedData = result.sort((a, b) => {
           if (a.type !== b.type) {
             return a.type.localeCompare(b.type);
+          }
+          if (a.producer !== b.producer) {
+            return a.producer.localeCompare(b.producer);
+          }
+          if (a.productLine !== b.productLine) {
+            return a.productLine.localeCompare(b.productLine);
           }
           if (a.processingType !== b.processingType) {
             return a.processingType.localeCompare(b.processingType);
@@ -101,6 +112,8 @@ function TargetInputStation() {
     const payload = {
       type,
       processingType,
+      productLine,
+      producer,
       quality,
       metric,
       timeFrame,
@@ -124,6 +137,8 @@ function TargetInputStation() {
         // Reset form
         setType('');
         setProcessingType('');
+        setProductLine('');
+        setProducer('');
         setQuality('');
         setMetric('');
         setTimeFrame('');
@@ -155,6 +170,8 @@ function TargetInputStation() {
     // { field: 'timeFrame', headerName: 'Timeframe', width: 130 },
     { field: 'type', headerName: 'Type', width: 80 },
     { field: 'processingType', headerName: 'Processing Type', width: 140 },
+    { field: 'productLine', headerName: 'Product Line', width: 140 },
+    { field: 'producer', headerName: 'Producer', width: 140 },
     { field: 'quality', headerName: 'Quality', width: 100 },
     { field: 'metric', headerName: 'Metric', width: 180, rowSpanValueGetter: () => null },
     { field: 'targetValue', headerName: 'Target', width: 90, rowSpanValueGetter: () => null },
@@ -206,6 +223,28 @@ function TargetInputStation() {
                       <MenuItem value="Robusta">Robusta</MenuItem>
                     </Select>
                   </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Autocomplete
+                    freeSolo
+                    options={predefinedProducer}
+                    value={producer}
+                    onChange={(event, newValue) => setProducer(newValue)}
+                    onInputChange={(event, newValue) => setProducer(newValue)}
+                    renderInput={(params) => <TextField {...params} label="Producer" fullWidth required />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Autocomplete
+                    freeSolo
+                    options={predefinedProductLine}
+                    value={productLine}
+                    onChange={(event, newValue) => setProductLine(newValue)}
+                    onInputChange={(event, newValue) => setProductLine(newValue)}
+                    renderInput={(params) => <TextField {...params} label="Product Line" fullWidth required />}
+                  />
                 </Grid>
 
                 <Grid item xs={12}>
