@@ -19,7 +19,7 @@ const BaliMap = () => {
         const covered = data.allRows.map((farmer) => ({
           desa: farmer.desa,
           kecamatan: farmer.kecamatan,
-          kabupaten: farmer.kabupaten,
+          kabupaten: farmer.kecamatan,
         }));
         setCoveredAreas(covered);
       } catch (error) {
@@ -39,30 +39,35 @@ const BaliMap = () => {
         );
         const villages = await response.json();
 
-        // Convert to valid GeoJSON structure
-        const geoJsonData = {
-          type: "FeatureCollection",
-          features: villages.map((village) => ({
-            type: "Feature",
-            properties: {
-              village: village.village,
-              sub_district: village.sub_district,
-              district: village.district,
-            },
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [
-                  ...village.border.map(([lng, lat]) => [lat, lng]), // Swap lat/lng
-                  // Ensure the first and last points are the same to close the polygon
-                  village.border[0].map(([lng, lat]) => [lat, lng])
+        // Check if the data is an array and handle it accordingly
+        if (Array.isArray(villages)) {
+          // Convert to valid GeoJSON structure
+          const geoJsonData = {
+            type: "FeatureCollection",
+            features: villages.map((village) => ({
+              type: "Feature",
+              properties: {
+                village: village.village,
+                sub_district: village.sub_district,
+                district: village.district,
+              },
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    ...(village.border ? village.border.map(([lng, lat]) => [lat, lng]) : []), // Swap lat/lng and check if border exists
+                    // Ensure the first and last points are the same to close the polygon
+                    ...(village.border && village.border.length ? [village.border[0].map(([lng, lat]) => [lat, lng])] : [])
+                  ],
                 ],
-              ],
-            },
-          })),
-        };
+              },
+            })),
+          };
 
-        setBaliGeoJSON(geoJsonData);
+          setBaliGeoJSON(geoJsonData);
+        } else {
+          console.error("Unexpected data format for villages:", villages);
+        }
       } catch (error) {
         console.error("Error loading Bali GeoJSON:", error);
       }
