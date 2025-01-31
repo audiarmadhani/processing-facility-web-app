@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MapContainer, GeoJSON } from "react-leaflet";
+import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const BaliMap = () => {
   const [coveredAreas, setCoveredAreas] = useState([]);
-  const [baliGeoJSON, setBaliGeoJSON] = useState([]);
+  const [baliGeoJSON, setBaliGeoJSON] = useState(null);
 
   // Fetch farmer data from the API
   useEffect(() => {
@@ -34,9 +34,29 @@ const BaliMap = () => {
   useEffect(() => {
     const loadBaliGeoJSON = async () => {
       try {
-        const response = await fetch("https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"); // Replace with your GeoJSON file path
-        const data = await response.json();
-        setBaliGeoJSON(data);
+        const response = await fetch(
+          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"
+        );
+        const villages = await response.json();
+
+        // Convert to valid GeoJSON structure
+        const geoJsonData = {
+          type: "FeatureCollection",
+          features: villages.map((village) => ({
+            type: "Feature",
+            properties: {
+              village: village.village,
+              sub_district: village.sub_district,
+              district: village.district,
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [village.border], // Leaflet expects an array of arrays
+            },
+          })),
+        };
+
+        setBaliGeoJSON(geoJsonData);
       } catch (error) {
         console.error("Error loading Bali GeoJSON:", error);
       }
@@ -47,11 +67,13 @@ const BaliMap = () => {
 
   // Style function for village borders
   const styleFeature = (feature) => {
+    const { village, sub_district, district } = feature.properties;
+
     const isCovered = coveredAreas.some(
       (area) =>
-        area.desa === feature.properties.village ||
-        area.kecamatan === feature.properties.sub_district ||
-        area.kabupaten === feature.properties.district
+        area.desa === village ||
+        area.kecamatan === sub_district ||
+        area.kabupaten === district
     );
 
     return {
@@ -71,20 +93,14 @@ const BaliMap = () => {
         zoomControl={false} // Disable zoom controls
         attributionControl={false} // Disable attribution
       >
-        {baliGeoJSON.map((feature, index) => (
-          <GeoJSON
-            key={index}
-            data={{
-              type: "Feature",
-              properties: feature.properties,
-              geometry: {
-                type: "Polygon",
-                coordinates: feature.border,
-              },
-            }}
-            style={styleFeature}
-          />
-        ))}
+        {/* Base Map Layer */}
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+
+        {/* Render GeoJSON Data */}
+        {baliGeoJSON && <GeoJSON data={baliGeoJSON} style={styleFeature} />}
       </MapContainer>
     </div>
   );
