@@ -52,7 +52,7 @@ const BaliMap = () => {
               geometry: {
                 type: "Polygon",
                 coordinates: [
-                  village.border.map(([lng, lat]) => [lat, lng]) // Swap lng, lat -> lat, lng
+                  [village.border.map(([lng, lat]) => [lat, lng])] // Swap and wrap in extra array
                 ],
               },
             })),
