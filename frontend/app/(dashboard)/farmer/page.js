@@ -215,12 +215,12 @@ function FarmerInputStation() {
     { field: "bankName", headerName: "Bank Name", width: 180, sortable: true },
     { field: "farmerLandArea", headerName: "Land Area", width: 180, sortable: true },
     { field: "farmerContact", headerName: "Contact", width: 180, sortable: true },
-    { field: "latitude", headerName: "Latitude", width: 180, sortable: true },
-    { field: "longitude", headerName: "Longitude", width: 180, sortable: true },
+    // { field: "latitude", headerName: "Latitude", width: 180, sortable: true },
+    // { field: "longitude", headerName: "Longitude", width: 180, sortable: true },
     { field: "farmType", headerName: "Type", width: 180, sortable: true },
     { field: "farmVarieties", headerName: "Varieties", width: 180, sortable: true },
     { field: "registrationDate", headerName: "Registration Date", width: 180, sortable: true },
-    { field: "isActive", headerName: "Active", width: 180, sortable: true },
+    // { field: "isActive", headerName: "Active", width: 180, sortable: true },
     { field: "notes", headerName: "Notes", width: 180, sortable: true },
   ];
 
@@ -373,7 +373,7 @@ function FarmerInputStation() {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <FormControl fullWidth required>
+                  <FormControl fullWidth>
                     <InputLabel id="variety-label">Farm Varieties</InputLabel>
                     <Select
                       labelId="variety-label"
@@ -423,7 +423,7 @@ function FarmerInputStation() {
               <Typography variant="h5" gutterBottom>
                 Farmer Data
               </Typography>
-              <div style={{ height: 500, width: "100%" }}>
+              <div style={{ height: 800, width: "100%" }}>
                 <DataGrid
                   rows={farmerData}
                   columns={columns}
