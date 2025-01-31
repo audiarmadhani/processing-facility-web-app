@@ -35,7 +35,8 @@ const BaliMap = () => {
     const loadBaliGeoJSON = async () => {
         try {
           const response = await fetch(
-            "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"          );
+            "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"
+          );
           const villages = await response.json();
       
           // Convert to valid GeoJSON structure
@@ -50,7 +51,9 @@ const BaliMap = () => {
               },
               geometry: {
                 type: "Polygon",
-                coordinates: [village.border], // Ensure it's wrapped in an extra array
+                coordinates: [
+                  village.border.map(([lng, lat]) => [lat, lng]) // Swap lng, lat -> lat, lng
+                ],
               },
             })),
           };
