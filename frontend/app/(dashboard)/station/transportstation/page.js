@@ -36,7 +36,7 @@ const TransportStation = () => {
   const [farmerID, setFarmerID] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [farmers, setFarmers] = useState([]);
-  const [bankAccount, setBankAccount] = useState('');
+  const [bankAccount, setBankAccount] = useState(NULL);
   const [bankName, setBankName] = useState('');
   const [transportData, setTransportData] = useState([]);
   const [locationData, setLocationData] = useState([]);
@@ -181,7 +181,7 @@ const TransportStation = () => {
           setCost('');
           setPaidTo('');
           setPaymentMethod('');
-          setBankAccount('');
+          setBankAccount(NULL);
           setBankName('');
           setSnackbarMessage('Transport data and payment successfully created!');
           setSnackbarOpen(true);
