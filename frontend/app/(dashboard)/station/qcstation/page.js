@@ -331,6 +331,17 @@ const uploadImage = async (file, batchNumber) => {
     { field: 'slaDays', headerName: 'SLA (Days)', width: 150 },
   ];
 
+  const getCellStyle = (value) => {
+    if (value === "None") {
+      return { backgroundColor: 'green', color: 'white' }; // Green for "None"
+    } else if (value === "Some") {
+      return { backgroundColor: 'yellow' }; // Yellow for "Some"
+    } else if (value === "Yes") {
+      return { backgroundColor: 'red', color: 'white' }; // Red for "Yes"
+    }
+    return {}; // Default style
+  };
+
   // Show loading screen while session is loading
   if (status === 'loading') {
     return <p>Loading...</p>;
@@ -615,21 +626,38 @@ const uploadImage = async (file, batchNumber) => {
               Completed QC
             </Typography>
             <div style={{ height: 1000, width: '100%' }}>
-              <DataGrid
-                rows={qcData.map((row, index) => ({
-                  id: index + 1,
-                  ...row,
-                }))}
-                columns={qcColumns}
-                pageSize={5}
-                slots={{ toolbar: GridToolbar }}
-                autosizeOnMount
-                autosizeOptions={{
-                  includeHeaders: true,
-                  includeOutliers: true,
-                  expand: true,
-                }}
-              />
+            <DataGrid
+              rows={qcData.map((row, index) => ({
+                id: index + 1,
+                ...row,
+              }))}
+              columns={qcColumns}
+              pageSize={5}
+              slots={{ toolbar: GridToolbar }}
+              autosizeOnMount
+              autosizeOptions={{
+                includeHeaders: true,
+                includeOutliers: true,
+                expand: true,
+              }}
+              getCellClassName={(params) => {
+                if (params.field === 'foreignMatter') {
+                  const style = getCellStyle(params.value);
+                  return style; // Apply inline styles
+                }
+                return ''; // Default class
+              }}
+              renderCell={(params) => {
+                if (params.field === 'foreignMatter') {
+                  return (
+                    <div style={getCellStyle(params.value)}>
+                      {params.value}
+                    </div>
+                  );
+                }
+                return params.value; // Render other cells normally
+              }}
+            />
             </div>
           </CardContent>
         </Card>
