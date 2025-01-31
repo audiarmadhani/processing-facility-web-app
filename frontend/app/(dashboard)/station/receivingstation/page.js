@@ -224,19 +224,7 @@ function ReceivingStation() {
     { field: 'farmerID', headerName: 'Farmer ID', width: 100, sortable: true },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
-    {
-      field: 'price',
-      headerName: 'Price (/kg)',
-      width: 150,
-      sortable: true,
-      valueFormatter: (params) => {
-        const priceValue = Number(params.value); // Ensure the value is a number
-        return new Intl.NumberFormat("en-US", {
-          style: "decimal",
-          minimumFractionDigits: 0,
-        }).format(priceValue);
-      },
-    },
+    { field: 'price', headerName: 'Price (/kg)', width: 150, sortable: true },
     { field: 'paymentMethod', headerName: 'Payment Method', width: 180, sortable: true },
     { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
   ];
