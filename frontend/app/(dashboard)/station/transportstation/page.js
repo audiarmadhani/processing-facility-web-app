@@ -152,7 +152,7 @@ const TransportStation = () => {
         cost,
         paidTo,
         paymentMethod,
-        farmerID,
+        farmerID: selectedFarmerDetails.farmerID,
         bankAccount,
         bankName,
       });
