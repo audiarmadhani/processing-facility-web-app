@@ -316,16 +316,31 @@ const uploadImage = async (file, batchNumber) => {
     { field: 'qcDate', headerName: 'QC Date', width: 190 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
     { field: 'color', headerName: 'Color', width: 140 },
-    { field: "foreignMatter", headerName: "Foreign Matter", width: 150, getCellClassName: (params) => {
-        if (params.value === "None") {
-          return "green-background";
-        } else if (params.value === "Some") {
-          return "yellow-background";
-        } else if (params.value === "Yes") {
-          return "red-background";
-        }
-        return ""; // Default class
-      }
+    {
+      field: "foreignMatter",
+      headerName: "Foreign Matter",
+      width: 150,
+      renderCell: (params) => {
+        const color =
+          params.value === "None"
+            ? "green"
+            : params.value === "Some"
+            ? "yellow"
+            : params.value === "Yes"
+            ? "red"
+            : "transparent";
+
+        return (
+          <div style={{
+            backgroundColor: color,
+            color: color === "red" || color === "green" ? "white" : "black", // Adjust text color for contrast
+            padding: '8px', // Optional: Add some padding for better appearance
+            borderRadius: '4px', // Optional: Add border radius
+          }}>
+            {params.value}
+          </div>
+        );
+      },
     },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 140 },
     { field: 'qcNotes', headerName: 'Notes', width: 180 },
@@ -638,20 +653,6 @@ const uploadImage = async (file, batchNumber) => {
                   includeHeaders: true,
                   includeOutliers: true,
                   expand: true,
-                }}
-                sx={{
-                  "& .green-background": {
-                    backgroundColor: "green",
-                    color: "white", // Optional: Text color
-                  },
-                  "& .yellow-background": {
-                    backgroundColor: "yellow",
-                    color: "black", // Optional: Text color
-                  },
-                  "& .red-background": {
-                    backgroundColor: "red",
-                    color: "white", // Optional: Text color
-                  },
                 }}
               />
             </div>
