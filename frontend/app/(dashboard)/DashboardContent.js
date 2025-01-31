@@ -375,7 +375,7 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Map */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            {/* <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -384,7 +384,7 @@ function Dashboard() {
                   <BaliMap />
                 </CardContent>
               </Card>
-            </Grid>
+            </Grid> */}
 
           </Grid>
         </Grid>
@@ -683,7 +683,7 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta Map */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            {/* <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -692,7 +692,7 @@ function Dashboard() {
                   <BaliMap />
                 </CardContent>
               </Card>
-            </Grid>
+            </Grid> */}
 
           </Grid>
         </Grid>
