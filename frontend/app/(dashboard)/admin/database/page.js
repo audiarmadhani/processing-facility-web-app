@@ -269,6 +269,12 @@ export default function DatabasePage() {
           onRowEditStop={handleRowEditStop}
           processRowUpdate={processRowUpdate}
           loading={loading}
+          autosizeOnMount
+          autosizeOptions={{
+            includeHeaders: true,
+            includeOutliers: true,
+            expand: true,
+          }}
           slots={{
             toolbar: () => (
               <GridToolbarContainer>

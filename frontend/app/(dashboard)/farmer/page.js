@@ -432,6 +432,12 @@ function FarmerInputStation() {
                   disableSelectionOnClick
                   sortingOrder={["asc", "desc"]}
                   slots={{ toolbar: GridToolbar }}
+                  autosizeOnMount
+                  autosizeOptions={{
+                    includeHeaders: true,
+                    includeOutliers: true,
+                    expand: true,
+                  }}
                 />
               </div>
             </CardContent>

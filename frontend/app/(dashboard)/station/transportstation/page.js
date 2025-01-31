@@ -431,6 +431,12 @@ const TransportStation = () => {
                 rowsPerPageOptions={[5]}
                 components={{ Toolbar: GridToolbar }}
                 disableSelectionOnClick
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
               />
             </div>
           </CardContent>

@@ -553,6 +553,12 @@ const PreprocessingStation = () => {
                 sortingOrder={['asc', 'desc']}
                 getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
                 slots={{ toolbar: GridToolbar }}
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
               />
             </div>
           </CardContent>

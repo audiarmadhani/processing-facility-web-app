@@ -96,6 +96,12 @@ const PaymentPage = () => {
           checkboxSelection
           disableSelectionOnClick
           slots={{ toolbar: GridToolbar }}
+          autosizeOnMount
+          autosizeOptions={{
+            includeHeaders: true,
+            includeOutliers: true,
+            expand: true,
+          }}
         />
       </div>
 
@@ -109,6 +115,12 @@ const PaymentPage = () => {
           checkboxSelection
           disableSelectionOnClick
           slots={{ toolbar: GridToolbar }}
+          autosizeOnMount
+          autosizeOptions={{
+            includeHeaders: true,
+            includeOutliers: true,
+            expand: true,
+          }}
         />
       </div>
     </div>

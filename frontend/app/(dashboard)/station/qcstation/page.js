@@ -595,6 +595,12 @@ const uploadImage = async (file, batchNumber) => {
                 columns={pendingQcColumns}
                 pageSize={5}
                 slots={{ toolbar: GridToolbar }}
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
               />
             </div>
           </CardContent>
@@ -617,6 +623,12 @@ const uploadImage = async (file, batchNumber) => {
                 columns={qcColumns}
                 pageSize={5}
                 slots={{ toolbar: GridToolbar }}
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
               />
             </div>
           </CardContent>
