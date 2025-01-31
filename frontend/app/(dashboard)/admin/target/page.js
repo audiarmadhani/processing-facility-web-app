@@ -186,14 +186,54 @@ function TargetInputStation() {
   const { startDate: displayStart, endDate: displayEnd } = getStartAndEndDates(timeframeSelect);
 
   const columns = [
-    { field: 'type', headerName: 'Type', width: 80 },
-    { field: 'processingType', headerName: 'Processing Type', width: 140 },
-    { field: 'productLine', headerName: 'Product Line', width: 140 },
-    { field: 'producer', headerName: 'Producer', width: 140 },
-    { field: 'quality', headerName: 'Quality', width: 100 },
-    { field: 'metric', headerName: 'Metric', width: 180 },
-    { field: 'targetValue', headerName: 'Target', width: 90 },
-    { field: 'achievement', headerName: 'Achievement', width: 110 },
+    { 
+      field: 'type', 
+      headerName: 'Type', 
+      flex: 1, // Makes column flexible
+      minWidth: 80, // Minimum width
+    },
+    { 
+      field: 'processingType', 
+      headerName: 'Processing Type', 
+      flex: 1,
+      minWidth: 80,
+    },
+    { 
+      field: 'productLine', 
+      headerName: 'Product Line', 
+      flex: 1,
+      minWidth: 80,
+    },
+    { 
+      field: 'producer', 
+      headerName: 'Producer', 
+      flex: 1,
+      minWidth: 80,
+    },
+    { 
+      field: 'quality', 
+      headerName: 'Quality', 
+      flex: 1,
+      minWidth: 80,
+    },
+    { 
+      field: 'metric', 
+      headerName: 'Metric', 
+      flex: 1, // Give more space to longer content
+      minWidth: 80,
+    },
+    { 
+      field: 'targetValue', 
+      headerName: 'Target', 
+      flex: 1,
+      minWidth: 80,
+    },
+    { 
+      field: 'achievement', 
+      headerName: 'Achievement', 
+      flex: 1,
+      minWidth: 80,
+    },
   ];
 
   if (status === 'loading') return <p>Loading...</p>;
@@ -386,14 +426,17 @@ function TargetInputStation() {
                 <Typography variant="h5" gutterBottom>
                   Targets Overview
                 </Typography>
-                <DataGrid
-                  rows={data}
-                  columns={columns}
-                  autoHeight
-                  pageSize={5}
-                  slots={{ toolbar: GridToolbar }}
-                  disableRowSelectionOnClick
-                />
+                <div style={{ width: '100%' }}>
+                  <DataGrid
+                    rows={data}
+                    columns={columns}
+                    autoHeight
+                    pageSize={5}
+                    slots={{ toolbar: GridToolbar }}
+                    disableRowSelectionOnClick
+                    columnBuffer={columns.length}
+                  />
+                </div>
               </CardContent>
             </Card>
           </Grid>
