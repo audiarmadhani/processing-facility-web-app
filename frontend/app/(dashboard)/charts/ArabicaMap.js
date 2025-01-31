@@ -33,33 +33,33 @@ const BaliMap = () => {
   // Load Bali GeoJSON data
   useEffect(() => {
     const loadBaliGeoJSON = async () => {
-      try {
-        const response = await fetch(
-          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"
-        );
-        const villages = await response.json();
-
-        // Convert to valid GeoJSON structure
-        const geoJsonData = {
-          type: "FeatureCollection",
-          features: villages.map((village) => ({
-            type: "Feature",
-            properties: {
-              village: village.village,
-              sub_district: village.sub_district,
-              district: village.district,
-            },
-            geometry: {
-              type: "Polygon",
-              coordinates: [village.border], // Leaflet expects an array of arrays
-            },
-          })),
-        };
-
-        setBaliGeoJSON(geoJsonData);
-      } catch (error) {
-        console.error("Error loading Bali GeoJSON:", error);
-      }
+        try {
+            const response = await fetch(
+            "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=..."
+            );
+            const villages = await response.json();
+        
+            // Convert to valid GeoJSON structure
+            const geoJsonData = {
+            type: "FeatureCollection",
+            features: villages.map((village) => ({
+                type: "Feature",
+                properties: {
+                village: village.village,
+                sub_district: village.sub_district,
+                district: village.district,
+                },
+                geometry: {
+                type: "Polygon",
+                coordinates: [ [ ...village.border ] ]  // Ensure extra array wrapper
+                },
+            })),
+            };
+        
+            setBaliGeoJSON(geoJsonData);
+        } catch (error) {
+            console.error("Error loading Bali GeoJSON:", error);
+        }
     };
 
     loadBaliGeoJSON();
