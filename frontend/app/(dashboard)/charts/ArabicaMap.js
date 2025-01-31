@@ -1,46 +1,96 @@
-import { useEffect, useState } from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const BaliMap = () => {
-  const [geoData, setGeoData] = useState(null);
-  const [coveredDesa, setCoveredDesa] = useState(new Set());
+  const [coveredAreas, setCoveredAreas] = useState([]);
+  const [baliGeoJSON, setBaliGeoJSON] = useState(null);
 
-  // Load GeoJSON data (assuming bali_villages.json is in /public)
+  // Fetch farmer data from the API
   useEffect(() => {
-    fetch("../../assets/geojson/bali_villages.json")
-      .then((res) => res.json())
-      .then((data) => setGeoData(data))
-      .catch((err) => console.error("Error loading GeoJSON:", err));
+    const fetchFarmerData = async () => {
+      try {
+        const response = await fetch(
+          "https://processing-facility-backend.onrender.com/api/farmer"
+        );
+        const data = await response.json();
+        const covered = data.allRows.map((farmer) => ({
+          desa: farmer.desa,
+          kecamatan: farmer.kecamatan,
+          kabupaten: farmer.kabupaten,
+        }));
+        setCoveredAreas(covered);
+      } catch (error) {
+        console.error("Error fetching farmer data:", error);
+      }
+    };
+
+    fetchFarmerData();
   }, []);
 
-  // Fetch API data and extract desa names
+  // Load Bali GeoJSON data (you need a GeoJSON file for Bali)
   useEffect(() => {
-    fetch("https://processing-facility-backend.onrender.com/api/farmer")
-      .then((res) => res.json())
-      .then((data) => {
-        const desaNames = new Set(data.allRows.map((row) => row.desa.toUpperCase()));
-        setCoveredDesa(desaNames);
-      })
-      .catch((err) => console.error("Error fetching farmer data:", err));
+    const loadBaliGeoJSON = async () => {
+      try {
+        const response = await fetch("../../assets/geojson/bali_villages.json"); // Replace with your GeoJSON file path
+        const data = await response.json();
+        setBaliGeoJSON(data);
+      } catch (error) {
+        console.error("Error loading Bali GeoJSON:", error);
+      }
+    };
+
+    loadBaliGeoJSON();
   }, []);
 
-  // Style function for highlighting covered desa
-  const getStyle = (feature) => {
-    const desaName = feature.properties.village.toUpperCase();
+  // Style function for highlighting covered areas
+  const styleFeature = (feature) => {
+    const isCovered = coveredAreas.some(
+      (area) =>
+        area.desa === feature.properties.desa ||
+        area.kecamatan === feature.properties.kecamatan ||
+        area.kabupaten === feature.properties.kabupaten
+    );
+
     return {
-      fillColor: coveredDesa.has(desaName) ? "green" : "gray",
-      color: "black",
+      fillColor: isCovered ? "green" : "gray",
+      fillOpacity: 0.7,
+      color: "white",
       weight: 1,
-      fillOpacity: 0.6,
     };
   };
 
+  // Handle click events on map features
+  const onEachFeature = (feature, layer) => {
+    const { desa, kecamatan, kabupaten } = feature.properties;
+    layer.bindPopup(
+      `<b>Desa:</b> ${desa}<br><b>Kecamatan:</b> ${kecamatan}<br><b>Kabupaten:</b> ${kabupaten}`
+    );
+  };
+
   return (
-    <MapContainer center={[-8.4095, 115.1889]} zoom={10} style={{ height: "500px", width: "100%" }}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      {geoData && <GeoJSON data={geoData} style={getStyle} />}
-    </MapContainer>
+    <div style={{ height: "500px", width: "100%" }}>
+      <MapContainer
+        center={[-8.4095, 115.1889]} // Center of Bali
+        zoom={9} // Zoom level for Bali
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {baliGeoJSON && (
+          <GeoJSON
+            data={baliGeoJSON}
+            style={styleFeature}
+            onEachFeature={onEachFeature}
+          />
+        )}
+      </MapContainer>
+    </div>
   );
 };
 
