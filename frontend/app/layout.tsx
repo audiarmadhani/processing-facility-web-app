@@ -21,6 +21,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import StorageIcon from '@mui/icons-material/Storage';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 export const metadata = {
   title: "Kopi Fabriek Platform",
@@ -52,6 +53,17 @@ const NAVIGATION: Navigation = [
       { segment: "postprocessingstation", title: "Post-Processing", icon: <LocalShippingOutlinedIcon /> },
     ],
   },
+
+  { kind: "divider" },
+  
+  {
+    segment: "finance",
+    title: "Finance",
+    icon: <AttachMoneyIcon />,
+    children: [
+      { segment: "payment", title: "Payment", icon: <RequestQuoteIcon /> },
+    ],
+  },
   
   { kind: "divider" },
   
@@ -63,7 +75,6 @@ const NAVIGATION: Navigation = [
       { segment: "target", title: "Target", icon: <AdjustIcon /> },
       { segment: "database", title: "Database", icon: <StorageIcon /> },
       { segment: "schedule", title: "Schedule", icon: <CalendarMonthIcon /> },
-      { segment: "payment", title: "Payment", icon: <RequestQuoteIcon /> },
       { segment: "report", title: "Report (WIP)", icon: <SummarizeIcon /> },
       { segment: "cctv", title: "CCTV (WIP)", icon: <VideocamIcon /> },
     ],
