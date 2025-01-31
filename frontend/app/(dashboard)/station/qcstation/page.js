@@ -321,34 +321,22 @@ const uploadImage = async (file, batchNumber) => {
       headerName: "Foreign Matter",
       width: 150,
       renderCell: (params) => {
-        let backgroundColor = "#ffffff"; // Default background color
-        let textColor = "#000000"; // Default text color
-
-        switch (params.value) {
-          case "None":
-            backgroundColor = "#BDEBBD"; // Green
-            textColor = "#000000"; // White text
-            break;
-          case "Some":
-            backgroundColor = "#FEF574"; // Yellow
-            textColor = "#000000"; // Black text
-            break;
-          case "Yes":
-            backgroundColor = "#F6B0B0"; // Red
-            textColor = "#000000"; // White text
-            break;
-          default:
-            backgroundColor = "#ffffff"; // Default background color
-        }
+        const color =
+          params.value === "None"
+            ? "rgba(0, 255, 0, 0.5)" // Green with 50% opacity
+            : params.value === "Some"
+            ? "rgba(255, 255, 0, 0.5)" // Yellow with 50% opacity
+            : params.value === "Yes"
+            ? "rgba(255, 0, 0, 0.5)" // Red with 50% opacity
+            : "transparent";
 
         return (
           <div
             style={{
-              backgroundColor: backgroundColor,
-              color: textColor,
-              padding: "8px",
-              borderRadius: "4px",
-              textAlign: "center", // Center align text
+              backgroundColor: color,
+              color: color === "rgba(255, 0, 0, 0.5)" || color === "rgba(0, 255, 0, 0.5)" ? "white" : "black", // Adjust text color for contrast
+              padding: "8px", // Optional: Add some padding for better appearance
+              borderRadius: "4px", // Optional: Add border radius
             }}
           >
             {params.value}
