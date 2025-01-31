@@ -218,7 +218,7 @@ function FarmerInputStation() {
     // { field: "latitude", headerName: "Latitude", sortable: true },
     // { field: "longitude", headerName: "Longitude", sortable: true },
     { field: "farmType", headerName: "Type", sortable: true },
-    { field: "farmVarieties", headerName: "Varieties", sortable: true },
+    { field: "farmVarieties", headerName: "Coffee Varieties", sortable: true },
     { field: "registrationDate", headerName: "Registration Date", sortable: true },
     // { field: "isActive", headerName: "Active", sortable: true },
     { field: "notes", headerName: "Notes", sortable: true },
@@ -262,6 +262,18 @@ function FarmerInputStation() {
                 </Grid>
 
                 <Grid item xs={12}>
+                  <TextField
+                    label="Farmer Address"
+                    type="text"
+                    value={farmerAddress}
+                    onChange={(e) => setFarmerAddress(e.target.value)}
+                    fullWidth
+                    required
+                    input={<OutlinedInput label="Farmer Address" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
                   <Autocomplete
                     options={kabupatenList}
                     value={kabupaten}
@@ -292,14 +304,61 @@ function FarmerInputStation() {
 
                 <Grid item xs={12}>
                   <TextField
-                    label="Farmer Address"
+                    label="Farmer Contact"
                     type="text"
-                    value={farmerAddress}
-                    onChange={(e) => setFarmerAddress(e.target.value)}
+                    value={farmerContact}
+                    onChange={(e) => setFarmerContact(e.target.value)}
                     fullWidth
                     required
-                    input={<OutlinedInput label="Farmer Address" />}
+                    input={<OutlinedInput label="Farmer Contact" />}
                   />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="Farmer Land Area"
+                    type="text"
+                    value={farmerLandArea}
+                    onChange={(e) => setFarmerLandArea(e.target.value)}
+                    fullWidth
+                    required
+                    input={<OutlinedInput label="Farmer Land Area" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="type-label">Farm Type</InputLabel>
+                    <Select
+                      labelId="type-label"
+                      value={farmType}
+                      onChange={(e) => setFarmType(e.target.value)}
+                      input={<OutlinedInput label="Farm Type" />}
+                    >
+                      <MenuItem value="Arabica">Arabica</MenuItem>
+                      <MenuItem value="Robusta">Robusta</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel id="variety-label">Farm Varieties</InputLabel>
+                    <Select
+                      labelId="variety-label"
+                      id="variety"
+                      multiple
+                      value={farmVarieties}
+                      onChange={(e) => setFarmVarieties(e.target.value)}
+                      input={<OutlinedInput label="Coffee Varieties" />}
+                      MenuProps={MenuProps}
+                    >
+                      <MenuItem value="Bourbon">Bourbon</MenuItem>
+                      <MenuItem value="Java">Java</MenuItem>
+                      <MenuItem value="S795">S795</MenuItem>
+                      <MenuItem value="Typica">Typica</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
 
                 <Grid item xs={12}>
@@ -330,66 +389,6 @@ function FarmerInputStation() {
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Land Area"
-                    type="text"
-                    value={farmerLandArea}
-                    onChange={(e) => setFarmerLandArea(e.target.value)}
-                    fullWidth
-                    required
-                    input={<OutlinedInput label="Farmer Land Area" />}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Contact"
-                    type="text"
-                    value={farmerContact}
-                    onChange={(e) => setFarmerContact(e.target.value)}
-                    fullWidth
-                    required
-                    input={<OutlinedInput label="Farmer Contact" />}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="type-label">Farm Type</InputLabel>
-                    <Select
-                      labelId="type-label"
-                      value={farmType}
-                      onChange={(e) => setFarmType(e.target.value)}
-                      input={<OutlinedInput label="Farm Type" />}
-                    >
-                      <MenuItem value="Arabica">Arabica</MenuItem>
-                      <MenuItem value="Robusta">Robusta</MenuItem>
-                      <MenuItem value="Mix">Mix</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel id="variety-label">Farm Varieties</InputLabel>
-                    <Select
-                      labelId="variety-label"
-                      id="variety"
-                      multiple
-                      value={farmVarieties}
-                      onChange={(e) => setFarmVarieties(e.target.value)}
-                      input={<OutlinedInput label="Farm Varieties" />}
-                      MenuProps={MenuProps}
-                    >
-                      <MenuItem value="Bourbon">Bourbon</MenuItem>
-                      <MenuItem value="Java">Java</MenuItem>
-                      <MenuItem value="S795">S795</MenuItem>
-                      <MenuItem value="Typica">Typica</MenuItem>
-                    </Select>
-                  </FormControl>
                 </Grid>
 
                 <Grid item xs={12}>
