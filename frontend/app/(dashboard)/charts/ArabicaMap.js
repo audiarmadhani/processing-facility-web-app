@@ -33,36 +33,40 @@ const BaliMap = () => {
   // Load Bali GeoJSON data
   useEffect(() => {
     const loadBaliGeoJSON = async () => {
-        try {
-          const response = await fetch(
+      try {
+        const response = await fetch(
             "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"
-          );
-          const villages = await response.json();
-      
-          // Convert to valid GeoJSON structure
-          const geoJsonData = {
-            type: "FeatureCollection",
-            features: villages.map((village) => ({
-              type: "Feature",
-              properties: {
-                village: village.village,
-                sub_district: village.sub_district,
-                district: village.district,
-              },
-              geometry: {
-                type: "Polygon",
-                coordinates: [
-                  [village.border.map(([lng, lat]) => [lat, lng])] // Swap and wrap in extra array
+        );
+        const villages = await response.json();
+
+        // Convert to valid GeoJSON structure
+        const geoJsonData = {
+          type: "FeatureCollection",
+          features: villages.map((village) => ({
+            type: "Feature",
+            properties: {
+              village: village.village,
+              sub_district: village.sub_district,
+              district: village.district,
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  ...village.border.map(([lng, lat]) => [lat, lng]), // Swap lat/lng
+                  // Ensure the first and last points are the same to close the polygon
+                  village.border[0].map(([lng, lat]) => [lat, lng])
                 ],
-              },
-            })),
-          };
-      
-          setBaliGeoJSON(geoJsonData);
-        } catch (error) {
-          console.error("Error loading Bali GeoJSON:", error);
-        }
-      };
+              ],
+            },
+          })),
+        };
+
+        setBaliGeoJSON(geoJsonData);
+      } catch (error) {
+        console.error("Error loading Bali GeoJSON:", error);
+      }
+    };
 
     loadBaliGeoJSON();
   }, []);
@@ -79,8 +83,8 @@ const BaliMap = () => {
     );
 
     return {
-      fillColor: isCovered ? "green" : "transparent", // Highlight covered villages in green
-      fillOpacity: isCovered ? 0.5 : 0, // Semi-transparent for mapped areas, invisible otherwise
+      fillColor: isCovered ? "green" : "transparent", // Highlight covered areas in green
+      fillOpacity: 0.5, // Semi-transparent fill
       color: "#333", // Border color
       weight: 1, // Border thickness
     };
@@ -95,10 +99,10 @@ const BaliMap = () => {
         zoomControl={false} // Disable zoom controls
         attributionControl={false} // Disable attribution
       >
-        {/* Plain White Background */}
+        {/* Base Map Layer */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
-          attribution="&copy; <a href='https://carto.com/'>CARTO</a>"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
         {/* Render GeoJSON Data */}
