@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSession } from "next-auth/react"; // Import useSession hook
+import dynamic from "next/dynamic";
 
 import { Grid, Card, CardContent, Typography, CircularProgress } from '@mui/material';
 import axios from 'axios';
@@ -23,6 +24,8 @@ import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if nec
 import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+const BaliMap = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 
 
 function Dashboard() {
@@ -371,6 +374,18 @@ function Dashboard() {
               </Card>
             </Grid>
 
+            {/* Arabica Map */}
+            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Arabica Coverage Map
+                  </Typography>
+                  <BaliMap />
+                </CardContent>
+              </Card>
+            </Grid>
+
           </Grid>
         </Grid>
 
@@ -663,6 +678,18 @@ function Dashboard() {
                     Robusta Futures Price
                   </Typography>
                   <RobustaTVWidget />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Robusta Map */}
+            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Robusta Coverage Map
+                  </Typography>
+                  <BaliMap />
                 </CardContent>
               </Card>
             </Grid>
