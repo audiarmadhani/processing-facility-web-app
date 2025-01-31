@@ -35,7 +35,7 @@ const BaliMap = () => {
   useEffect(() => {
     const loadBaliGeoJSON = async () => {
       try {
-        const response = await fetch("../../assets/geojson/bali_villages.json"); // Replace with your GeoJSON file path
+        const response = await fetch("https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA4ODI2LCJleHAiOjQ4OTE5MDg4MjZ9.gbHgxuvbdZSoArJ5gVP2UXrV0Xs6S0-ZGT3R2afhMN4"); // Replace with your GeoJSON file path
         const data = await response.json();
         setBaliGeoJSON(data);
       } catch (error) {
