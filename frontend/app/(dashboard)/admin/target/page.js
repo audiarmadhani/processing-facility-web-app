@@ -92,25 +92,48 @@ function TargetInputStation() {
   };
 
   useEffect(() => {
+    const fetchTargets = async (timeframe) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/${timeframe}`);
+        if (!response.ok) throw new Error('Failed to fetch targets');
+        const data = await response.json();
+        setCurrentTargets(data);
+      } catch (error) {
+        console.error('Error fetching targets:', error);
+        setCurrentTargets([]);
+      }
+    };
+  
+    fetchTargets(timeframeSelect);
+  }, [timeframeSelect]);
+  
+  useEffect(() => {
     const fetchData = async () => {
       try {
-        const { startDate, endDate } = getStartAndEndDates(timeframeSelect);
-        const response = await fetch(
-          `${API_BASE_URL}?startDate=${startDate}&endDate=${endDate}`
-        );
-        
+        const response = await fetch(`${API_BASE_URL}/${timeframeSelect}`);
         if (!response.ok) throw new Error('Failed to fetch data');
-        
         const result = await response.json();
-        const sortedData = result.sort((a, b) => a.type.localeCompare(b.type));
+  
+        // Maintain your original sorting logic
+        const sortedData = result.sort((a, b) => {
+          if (a.type !== b.type) return a.type.localeCompare(b.type);
+          if (a.producer !== b.producer) return a.producer.localeCompare(b.producer);
+          if (a.productLine !== b.productLine) return a.productLine.localeCompare(b.productLine);
+          if (a.processingType !== b.processingType) return a.processingType.localeCompare(b.processingType);
+          if (a.quality !== b.quality) return a.quality.localeCompare(b.quality);
+          if (a.metric !== b.metric) return a.metric.localeCompare(b.metric);
+          return 0;
+        });
+  
         setData(sortedData);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setData([]);
       }
     };
-
+  
     fetchData();
-  }, [timeframeSelect]);
+  }, [timeframeSelect, currentTargets]); // Added currentTargets as dependency
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -192,9 +215,11 @@ function TargetInputStation() {
     );
   }
 
+
   return (
     <Grid container spacing={3}>
-      {/* Input Form */}
+    
+      {/* Target Input Form */}
       <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
@@ -203,12 +228,13 @@ function TargetInputStation() {
             </Typography>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
-                {/* Form fields remain the same but with value corrections */}
+                
                 <Grid item xs={12}>
-                  <FormControl fullWidth required>
+                  <FormControl fullWidth required sx={{ marginTop: "16px" }}>
                     <InputLabel id="type-label">Type</InputLabel>
                     <Select
                       labelId="type-label"
+                      id="type"
                       value={type}
                       onChange={({ target: { value } }) => setType(value)}
                       input={<OutlinedInput label="Type" />}
@@ -342,50 +368,60 @@ function TargetInputStation() {
         </Card>
       </Grid>
 
-      {/* Data Grid */}
+      {/* Targets Table */}
       <Grid item xs={12} md={8}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <FormControl fullWidth>
-              <InputLabel id="timeframe-select-label">Select Timeframe</InputLabel>
-              <Select
-                value={timeframeSelect}
-                onChange={({ target: { value } }) => setTimeframeSelect(value)}
-                input={<OutlinedInput label="Select Timeframe" />}
-              >
-                {timeframes.map((timeframe) => (
-                  <MenuItem key={timeframe} value={timeframe}>
-                    {timeframe.replace('-', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase())}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Typography variant="body2" color="textSecondary" mt={1}>
-              Start Date: {displayStart} | End Date: {displayEnd}
-            </Typography>
-          </Grid>
+        {/* Timeframe Selection Dropdown */}
+        <Grid item xs={4} style={{ marginBottom: '16px' }}>
+          <FormControl fullWidth>
+            <InputLabel id="timeframe-select-label">Select Timeframe</InputLabel>
+            <Select
+              labelId="timeframe-select-label"
+              value={timeframeSelect}
+              onChange={({ target: { value } }) => setTimeframeSelect(value)}
+              input={<OutlinedInput label="Select Timeframe" />}
+            >
+              {timeframes.map((timeframe) => (
+                <MenuItem key={timeframe} value={timeframe}>
+                  {timeframe.charAt(0).toUpperCase() + timeframe.slice(1).replace('-', ' ')}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-          <Grid item xs={12}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  Targets Overview
-                </Typography>
-                <DataGrid
-                  rows={data}
-                  columns={columns}
-                  autoHeight
-                  pageSize={5}
-                  slots={{ toolbar: GridToolbar }}
-                  disableRowSelectionOnClick
-                />
-              </CardContent>
-            </Card>
-          </Grid>
+          {/* Display Start and End Dates */}
+          <Typography variant="body2" color="textSecondary" style={{ marginTop: '8px' }}>
+            Start Date: {getStartDate(timeframeSelect)} | End Date: {getEndDate(timeframeSelect)}
+          </Typography>
         </Grid>
+
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Targets Overview
+            </Typography>
+            <DataGrid
+              rows={data}
+              columns={columns}
+              autoHeight
+              pageSize={5}
+              rowsPerPageOptions={[5]}
+              unstable_rowSpanning
+              hideFooter
+              showCellVerticalBorder
+              showColumnVerticalBorder
+              disableRowSelectionOnClick
+              slots={{ toolbar: GridToolbar }}
+            />
+          </CardContent>
+        </Card>
       </Grid>
 
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+      {/* Snackbar for feedback */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
         <Alert onClose={handleCloseSnackbar} severity="success">
           Target created successfully!
         </Alert>
