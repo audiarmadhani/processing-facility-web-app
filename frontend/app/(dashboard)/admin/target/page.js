@@ -22,6 +22,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 
 const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api/targets'; // Define your base API URL here
 
@@ -51,6 +53,47 @@ function TargetInputStation() {
 
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month']; // Add more timeframes if needed
+
+  dayjs.extend(isoWeek);
+
+  const getStartAndEndDates = (timeframe) => {
+    const today = dayjs();
+    let startDate, endDate;
+
+    switch (timeframe) {
+      case 'this-week':
+        startDate = today.startOf('isoWeek'); // Monday of this week
+        endDate = today.endOf('isoWeek');
+        break;
+      case 'next-week':
+        startDate = today.add(1, 'week').startOf('isoWeek');
+        endDate = today.add(1, 'week').endOf('isoWeek');
+        break;
+      case 'previous-week':
+        startDate = today.subtract(1, 'week').startOf('isoWeek');
+        endDate = today.subtract(1, 'week').endOf('isoWeek');
+        break;
+      case 'this-month':
+        startDate = today.startOf('month');
+        endDate = today.endOf('month');
+        break;
+      case 'next-month':
+        startDate = today.add(1, 'month').startOf('month');
+        endDate = today.add(1, 'month').endOf('month');
+        break;
+      case 'previous-month':
+        startDate = today.subtract(1, 'month').startOf('month');
+        endDate = today.subtract(1, 'month').endOf('month');
+        break;
+      default:
+        return { startDateTarget: null, endDateTarget: null };
+    }
+
+    return { startDateTarget: startDateTarget.format('YYYY-MM-DD'), endDateTarget: endDateTarget.format('YYYY-MM-DD') };
+  };
+
+  // Inside your component:
+  const { startDateTarget, endDateTarget } = getStartAndEndDates(timeframeSelect);
 
   useEffect(() => {
     fetchTargets(timeframeSelect, setCurrentTargets);
@@ -367,6 +410,11 @@ function TargetInputStation() {
               ))}
             </Select>
           </FormControl>
+
+          {/* Display Start and End Dates */}
+          <Typography variant="body2" color="textSecondary" style={{ marginTop: '8px' }}>
+            Start Date: {getStartDate(timeframeSelect)} | End Date: {getEndDate(timeframeSelect)}
+          </Typography>
         </Grid>
 
         <Card variant="outlined">
