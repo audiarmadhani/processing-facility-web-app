@@ -235,14 +235,18 @@ const TransportStation = () => {
     { field: 'kabupaten', headerName: 'Kabupaten', sortable: true },
     { field: 'kecamatan', headerName: 'Kecamatan', sortable: true },
     { field: 'desa', headerName: 'Desa', sortable: true },
-    { 
-      field: 'cost', 
-      headerName: 'Total Cost', 
-      width: 150, 
-      sortable: true, 
+    {
+      field: 'cost',
+      headerName: 'Total Cost',
+      width: 150,
+      sortable: true,
       valueFormatter: (params) => {
-        return new Intl.NumberFormat().format(params.value); // Format with thousand separators
-      }
+        const priceValue = Number(params.value); // Ensure the value is a number
+        return new Intl.NumberFormat("en-US", {
+          style: "decimal",
+          minimumFractionDigits: 0,
+        }).format(priceValue);
+      },
     },
     { field: 'paidTo', headerName: 'Paid To', sortable: true },
     { field: 'bankAccount', headerName: 'Bank Account', sortable: true },
