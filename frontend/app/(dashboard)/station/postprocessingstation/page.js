@@ -124,17 +124,17 @@ function PostprocessingStation() {
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 150, sortable: true },
-    { field: 'referenceNumber', headerName: 'Ref Number', width: 150, sortable: true },
-    { field: 'storedDate', headerName: 'Stored Date', width: 120, sortable: true },
-    { field: 'processingType', headerName: 'Process', width: 180, sortable: true },
-    { field: 'productLine', headerName: 'Product Line', width: 150, sortable: true },
-    { field: 'producer', headerName: 'Producer', width: 90, sortable: true },
-    { field: 'type', headerName: 'Type', width: 90, sortable: true },
-    { field: 'quality', headerName: 'Quality', width: 90, sortable: true },
-    { field: 'weight', headerName: 'Total Weight (kg)', width: 160, sortable: true },
-    { field: 'totalBags', headerName: 'Bags Qty', width: 90, sortable: true },
-    { field: 'notes', headerName: 'Notes', width: 200, sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', sortable: true },
+    { field: 'referenceNumber', headerName: 'Ref Number', sortable: true },
+    { field: 'storedDate', headerName: 'Stored Date', sortable: true },
+    { field: 'processingType', headerName: 'Process', sortable: true },
+    { field: 'productLine', headerName: 'Product Line', sortable: true },
+    { field: 'producer', headerName: 'Producer', sortable: true },
+    { field: 'type', headerName: 'Type', sortable: true },
+    { field: 'quality', headerName: 'Quality', sortable: true },
+    { field: 'weight', headerName: 'Total Weight (kg)', sortable: true },
+    { field: 'totalBags', headerName: 'Bags Qty', sortable: true },
+    { field: 'notes', headerName: 'Notes', sortable: true },
   ];
 
   // Show loading screen while session is loading

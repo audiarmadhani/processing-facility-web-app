@@ -161,7 +161,7 @@ const TransportStation = () => {
         // Prepare payment payload
         const paymentPayload = {
           farmerName: paidTo, // Assuming paidTo holds the farmer's name
-          farmerID, // Ensure farmerID is defined
+          farmerID: selectedFarmerDetails.farmerID, // Ensure farmerID is defined
           totalAmount: parseFloat(cost) || 0, // Use the cost as totalAmount
           date: new Date().toISOString(), // Use the current date
           paymentMethod,
