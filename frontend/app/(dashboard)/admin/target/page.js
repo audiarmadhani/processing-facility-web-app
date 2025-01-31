@@ -434,12 +434,16 @@ function TargetInputStation() {
                     pageSize={5}
                     slots={{ toolbar: GridToolbar }}
                     disableRowSelectionOnClick
+                    disableColumnMenu
+                    disableColumnSelector
+                    disableDensitySelector
                     columnBuffer={columns.length}
                   />
                 </div>
               </CardContent>
             </Card>
           </Grid>
+
         </Grid>
       </Grid>
 
