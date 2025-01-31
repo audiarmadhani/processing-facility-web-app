@@ -323,18 +323,18 @@ const uploadImage = async (file, batchNumber) => {
       renderCell: (params) => {
         const color =
           params.value === "None"
-            ? "rgba(0, 255, 0, 0.5)" // Green with 50% opacity
+            ? "rgb(123, 216, 123)" // Green with 50% opacity
             : params.value === "Some"
-            ? "rgba(255, 255, 0, 0.5)" // Yellow with 50% opacity
+            ? "rgb(228, 228, 149)" // Yellow with 50% opacity
             : params.value === "Yes"
-            ? "rgba(255, 0, 0, 0.5)" // Red with 50% opacity
+            ? "rgb(241, 145, 145)" // Red with 50% opacity
             : "transparent";
 
         return (
           <div
             style={{
               backgroundColor: color,
-              color: color === "rgba(255, 0, 0, 0.5)" || color === "rgba(0, 255, 0, 0.5)" ? "white" : "black", // Adjust text color for contrast
+              color: color === "rgba(255, 0, 0, 0.5)" || color === "rgba(0, 255, 0, 0.5)" ? "black" : "black", // Adjust text color for contrast
               padding: "8px", // Optional: Add some padding for better appearance
               borderRadius: "4px", // Optional: Add border radius
             }}
