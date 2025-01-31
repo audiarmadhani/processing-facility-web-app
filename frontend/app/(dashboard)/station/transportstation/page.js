@@ -144,7 +144,7 @@ const TransportStation = () => {
   
     try {
       // Post to the transport API
-      const response = await axios.post(`${API_BASE_URL}/transport`, {
+      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/transport`, {
         batchNumber: selectedBatchNumbers.join(','),
         desa,
         kecamatan,
@@ -170,7 +170,7 @@ const TransportStation = () => {
         };
   
         // Post to the payment API
-        const paymentResponse = await axios.post(`${API_BASE_URL}/payment`, paymentPayload);
+        const paymentResponse = await axios.post(`https://processing-facility-backend.onrender.com/api/payment`, paymentPayload);
   
         if (paymentResponse.status === 200) {
           // Reset form fields
