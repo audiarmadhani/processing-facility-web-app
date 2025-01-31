@@ -22,13 +22,15 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 
-const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api/targets'; // Define your base API URL here
+dayjs.extend(isoWeek);
+
+const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api/targets';
 
 function TargetInputStation() {
-
-  const { data: session, status } = useSession(); // Access session data and status
-
+  const { data: session, status } = useSession();
   const [type, setType] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [productLine, setProductLine] = useState('');
@@ -36,75 +38,79 @@ function TargetInputStation() {
   const [quality, setQuality] = useState('');
   const [metric, setMetric] = useState('');
   const [targetValue, setTargetValue] = useState('');
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState(dayjs());
+  const [endDate, setEndDate] = useState(dayjs());
   const [timeFrame, setTimeFrame] = useState('');
   const [currentTargets, setCurrentTargets] = useState([]);
-  const [nextTargets, setNextTargets] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [timeframeSelect, setTimeframeSelect] = useState('this-week'); // State for selected timeframe
+  const [timeframeSelect, setTimeframeSelect] = useState('this-week');
   const [data, setData] = useState([]);
 
   const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
   const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot'];
   const predefinedProducer = ['HQ', 'BTM'];
-
   const predefinedMetrics = ['Total Weight Produced'];
-  const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month']; // Add more timeframes if needed
+  const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
 
-  useEffect(() => {
-    fetchTargets(timeframeSelect, setCurrentTargets);
-  }, [timeframeSelect]); // Fetch targets whenever the selected timeframe changes
+  const getStartAndEndDates = (timeframe) => {
+    const today = dayjs();
+    let startDate, endDate;
+
+    switch (timeframe) {
+      case 'this-week':
+        startDate = today.startOf('isoWeek');
+        endDate = today.endOf('isoWeek');
+        break;
+      case 'next-week':
+        startDate = today.add(1, 'week').startOf('isoWeek');
+        endDate = today.add(1, 'week').endOf('isoWeek');
+        break;
+      case 'previous-week':
+        startDate = today.subtract(1, 'week').startOf('isoWeek');
+        endDate = today.subtract(1, 'week').endOf('isoWeek');
+        break;
+      case 'this-month':
+        startDate = today.startOf('month');
+        endDate = today.endOf('month');
+        break;
+      case 'next-month':
+        startDate = today.add(1, 'month').startOf('month');
+        endDate = today.add(1, 'month').endOf('month');
+        break;
+      case 'previous-month':
+        startDate = today.subtract(1, 'month').startOf('month');
+        endDate = today.subtract(1, 'month').endOf('month');
+        break;
+      default:
+        return { startDate: null, endDate: null };
+    }
+
+    return { 
+      startDate: startDate.format('YYYY-MM-DD'), 
+      endDate: endDate.format('YYYY-MM-DD') 
+    };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/${timeframeSelect}`);
+        const { startDate, endDate } = getStartAndEndDates(timeframeSelect);
+        const response = await fetch(
+          `${API_BASE_URL}?startDate=${startDate}&endDate=${endDate}`
+        );
+        
+        if (!response.ok) throw new Error('Failed to fetch data');
+        
         const result = await response.json();
-  
-        // Manual sorting logic
-        const sortedData = result.sort((a, b) => {
-          if (a.type !== b.type) {
-            return a.type.localeCompare(b.type);
-          }
-          if (a.producer !== b.producer) {
-            return a.producer.localeCompare(b.producer);
-          }
-          if (a.productLine !== b.productLine) {
-            return a.productLine.localeCompare(b.productLine);
-          }
-          if (a.processingType !== b.processingType) {
-            return a.processingType.localeCompare(b.processingType);
-          }
-          if (a.quality !== b.quality) {
-            return a.quality.localeCompare(b.quality);
-          }
-          if (a.metric !== b.metric) {
-            return a.metric.localeCompare(b.metric);
-          }
-          return 0; // Maintain the order if all fields are equal
-        });
-  
-        setData(sortedData); // Set the manually sorted data
+        const sortedData = result.sort((a, b) => a.type.localeCompare(b.type));
+        setData(sortedData);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
-  
+
     fetchData();
   }, [timeframeSelect]);
-
-  const fetchTargets = async (timeframe, setter) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/${timeframe}`);
-      if (!response.ok) throw new Error(`Failed to fetch ${timeframe} targets`);
-      const data = await response.json();
-      setter(data);
-    } catch (error) {
-      console.error(error);
-      setter([]);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -118,11 +124,9 @@ function TargetInputStation() {
       metric,
       timeFrame,
       targetValue,
-      startDate,
-      endDate,
+      startDate: startDate.format('YYYY-MM-DD'),
+      endDate: endDate.format('YYYY-MM-DD'),
     };
-
-    console.log('Payload:', payload);
 
     try {
       const response = await fetch(API_BASE_URL, {
@@ -133,60 +137,53 @@ function TargetInputStation() {
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        // Reset form
-        setType('');
-        setProcessingType('');
-        setProductLine('');
-        setProducer('');
-        setQuality('');
-        setMetric('');
-        setTimeFrame('');
-        setTargetValue('');
-        setStartDate(null);
-        setEndDate(null);
+      if (!response.ok) throw new Error('Failed to create target');
 
-        // Fetch the updated targets
-        fetchTargets(timeframeSelect, setCurrentTargets);
-        fetchData(); // Call this to refresh the table data
+      // Reset form
+      setType('');
+      setProcessingType('');
+      setProductLine('');
+      setProducer('');
+      setQuality('');
+      setMetric('');
+      setTimeFrame('');
+      setTargetValue('');
+      setStartDate(dayjs());
+      setEndDate(dayjs());
 
-        // Show success notification
-        setSnackbarOpen(true);
-      } else {
-        const errorData = await response.json();
-        console.error(errorData.message || 'Error creating target.');
-      }
+      // Refresh data
+      const { startDate, endDate } = getStartAndEndDates(timeframeSelect);
+      const refreshResponse = await fetch(
+        `${API_BASE_URL}?startDate=${startDate}&endDate=${endDate}`
+      );
+      const refreshData = await refreshResponse.json();
+      setData(refreshData.sort((a, b) => a.type.localeCompare(b.type)));
+
+      setSnackbarOpen(true);
     } catch (error) {
-      console.error('Failed to communicate with the backend:', error);
+      console.error('Submission error:', error);
     }
-  };  
+  };
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
   };
 
   const columns = [
-    // { field: 'id', headerName: 'ID', width: 70 },
-    // { field: 'timeFrame', headerName: 'Timeframe', width: 130 },
     { field: 'type', headerName: 'Type', width: 80 },
     { field: 'processingType', headerName: 'Processing Type', width: 140 },
     { field: 'productLine', headerName: 'Product Line', width: 140 },
     { field: 'producer', headerName: 'Producer', width: 140 },
     { field: 'quality', headerName: 'Quality', width: 100 },
-    { field: 'metric', headerName: 'Metric', width: 180, rowSpanValueGetter: () => null },
-    { field: 'targetValue', headerName: 'Target', width: 90, rowSpanValueGetter: () => null },
-    { field: 'achievement', headerName: 'Achievement', width: 110, rowSpanValueGetter: () => null },
-    // { field: 'startDate', headerName: 'Start Date', width: 130 },
-    // { field: 'endDate', headerName: 'End Date', width: 130 },
+    { field: 'metric', headerName: 'Metric', width: 180 },
+    { field: 'targetValue', headerName: 'Target', width: 90 },
+    { field: 'achievement', headerName: 'Achievement', width: 110 },
   ];
 
+  const { startDate: displayStart, endDate: displayEnd } = getStartAndEndDates(timeframeSelect);
 
-  // Show loading screen while session is loading
-  if (status === 'loading') {
-    return <p>Loading...</p>;
-  }
+  if (status === 'loading') return <p>Loading...</p>;
 
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager')) {
     return (
       <Typography variant="h6">
@@ -195,11 +192,9 @@ function TargetInputStation() {
     );
   }
 
-
   return (
     <Grid container spacing={3}>
-    
-      {/* Target Input Form */}
+      {/* Input Form */}
       <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
@@ -208,13 +203,12 @@ function TargetInputStation() {
             </Typography>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
-                
+                {/* Form fields remain the same but with value corrections */}
                 <Grid item xs={12}>
-                  <FormControl fullWidth required sx={{ marginTop: "16px" }}>
+                  <FormControl fullWidth required>
                     <InputLabel id="type-label">Type</InputLabel>
                     <Select
                       labelId="type-label"
-                      id="type"
                       value={type}
                       onChange={({ target: { value } }) => setType(value)}
                       input={<OutlinedInput label="Type" />}
@@ -348,55 +342,50 @@ function TargetInputStation() {
         </Card>
       </Grid>
 
-      {/* Targets Table */}
+      {/* Data Grid */}
       <Grid item xs={12} md={8}>
-        {/* Timeframe Selection Dropdown */}
-        <Grid item xs={4} style={{ marginBottom: '16px' }}>
-          <FormControl fullWidth>
-            <InputLabel id="timeframe-select-label">Select Timeframe</InputLabel>
-            <Select
-              labelId="timeframe-select-label"
-              value={timeframeSelect}
-              onChange={({ target: { value } }) => setTimeframeSelect(value)}
-              input={<OutlinedInput label="Select Timeframe" />}
-            >
-              {timeframes.map((timeframe) => (
-                <MenuItem key={timeframe} value={timeframe}>
-                  {timeframe.charAt(0).toUpperCase() + timeframe.slice(1).replace('-', ' ')}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Targets Overview
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel id="timeframe-select-label">Select Timeframe</InputLabel>
+              <Select
+                value={timeframeSelect}
+                onChange={({ target: { value } }) => setTimeframeSelect(value)}
+                input={<OutlinedInput label="Select Timeframe" />}
+              >
+                {timeframes.map((timeframe) => (
+                  <MenuItem key={timeframe} value={timeframe}>
+                    {timeframe.replace('-', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase())}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Typography variant="body2" color="textSecondary" mt={1}>
+              Start Date: {displayStart} | End Date: {displayEnd}
             </Typography>
-            <DataGrid
-              rows={data}
-              columns={columns}
-              autoHeight
-              pageSize={5}
-              rowsPerPageOptions={[5]}
-              unstable_rowSpanning
-              hideFooter
-              showCellVerticalBorder
-              showColumnVerticalBorder
-              disableRowSelectionOnClick
-              slots={{ toolbar: GridToolbar }}
-            />
-          </CardContent>
-        </Card>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  Targets Overview
+                </Typography>
+                <DataGrid
+                  rows={data}
+                  columns={columns}
+                  autoHeight
+                  pageSize={5}
+                  slots={{ toolbar: GridToolbar }}
+                  disableRowSelectionOnClick
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Grid>
 
-      {/* Snackbar for feedback */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity="success">
           Target created successfully!
         </Alert>
