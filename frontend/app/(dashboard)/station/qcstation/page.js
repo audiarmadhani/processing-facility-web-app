@@ -316,7 +316,17 @@ const uploadImage = async (file, batchNumber) => {
     { field: 'qcDate', headerName: 'QC Date', width: 190 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
     { field: 'color', headerName: 'Color', width: 140 },
-    { field: 'foreignMatter', headerName: 'Foreign Matter', width: 140 },
+    { field: "foreignMatter", headerName: "Foreign Matter", width: 150, getCellClassName: (params) => {
+        if (params.value === "None") {
+          return "green-background";
+        } else if (params.value === "Some") {
+          return "yellow-background";
+        } else if (params.value === "Yes") {
+          return "red-background";
+        }
+        return ""; // Default class
+      }
+    },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 140 },
     { field: 'qcNotes', headerName: 'Notes', width: 180 },
   ];
@@ -330,17 +340,6 @@ const uploadImage = async (file, batchNumber) => {
     { field: 'totalBags', headerName: 'Total Bags', width: 150 },
     { field: 'slaDays', headerName: 'SLA (Days)', width: 150 },
   ];
-
-  const getCellStyle = (value) => {
-    if (value === "None") {
-      return { backgroundColor: 'green', color: 'white' }; // Green for "None"
-    } else if (value === "Some") {
-      return { backgroundColor: 'yellow' }; // Yellow for "Some"
-    } else if (value === "Yes") {
-      return { backgroundColor: 'red', color: 'white' }; // Red for "Yes"
-    }
-    return {}; // Default style
-  };
 
   // Show loading screen while session is loading
   if (status === 'loading') {
@@ -626,38 +625,35 @@ const uploadImage = async (file, batchNumber) => {
               Completed QC
             </Typography>
             <div style={{ height: 1000, width: '100%' }}>
-            <DataGrid
-              rows={qcData.map((row, index) => ({
-                id: index + 1,
-                ...row,
-              }))}
-              columns={qcColumns}
-              pageSize={5}
-              slots={{ toolbar: GridToolbar }}
-              autosizeOnMount
-              autosizeOptions={{
-                includeHeaders: true,
-                includeOutliers: true,
-                expand: true,
-              }}
-              getCellClassName={(params) => {
-                if (params.field === 'foreignMatter') {
-                  const style = getCellStyle(params.value);
-                  return style; // Apply inline styles
-                }
-                return ''; // Default class
-              }}
-              renderCell={(params) => {
-                if (params.field === 'foreignMatter') {
-                  return (
-                    <div style={getCellStyle(params.value)}>
-                      {params.value}
-                    </div>
-                  );
-                }
-                return params.value; // Render other cells normally
-              }}
-            />
+              <DataGrid
+                rows={qcData.map((row, index) => ({
+                  id: index + 1,
+                  ...row,
+                }))}
+                columns={qcColumns}
+                pageSize={5}
+                slots={{ toolbar: GridToolbar }}
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
+                sx={{
+                  "& .green-background": {
+                    backgroundColor: "green",
+                    color: "white", // Optional: Text color
+                  },
+                  "& .yellow-background": {
+                    backgroundColor: "yellow",
+                    color: "black", // Optional: Text color
+                  },
+                  "& .red-background": {
+                    backgroundColor: "red",
+                    color: "white", // Optional: Text color
+                  },
+                }}
+              />
             </div>
           </CardContent>
         </Card>
