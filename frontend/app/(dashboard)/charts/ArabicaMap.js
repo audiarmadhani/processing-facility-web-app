@@ -54,17 +54,17 @@ const BaliMap = ({ apiUrl, geoJsonUrl }) => {
           features: villages.map((village) => ({
             type: "Feature",
             properties: {
+              province: village.province,
               village: village.village,
               sub_district: village.sub_district,
               district: village.district,
             },
             geometry: {
               type: "Polygon",
-              coordinates: [
-                village.border?.map(([lng, lat]) => [lat, lng]) || [],
-              ].filter(coords => coords.length > 0),
+              // Keep coordinates in [longitude, latitude] order as they are in the original data
+              coordinates: [village.border || []]
             },
-          })),
+          })).filter(feature => feature.geometry.coordinates[0].length > 0),
         };
 
         setBaliGeoJSON(geoJsonData);
@@ -125,12 +125,13 @@ const BaliMap = ({ apiUrl, geoJsonUrl }) => {
             data={baliGeoJSON} 
             style={styleFeature}
             onEachFeature={(feature, layer) => {
-              const { village, sub_district, district } = feature.properties;
+              const { village, sub_district, district, province } = feature.properties;
               layer.bindPopup(`
                 <div class="p-2">
                   <strong>${village || 'N/A'}</strong><br/>
                   Sub-district: ${sub_district || 'N/A'}<br/>
-                  District: ${district || 'N/A'}
+                  District: ${district || 'N/A'}<br/>
+                  Province: ${province || 'N/A'}
                 </div>
               `);
             }}
