@@ -1,188 +1,117 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Dynamically import the map components with no SSR
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const GeoJSON = dynamic(
-  () => import("react-leaflet").then((mod) => mod.GeoJSON),
-  { ssr: false }
-);
-const ZoomControl = dynamic(
-  () => import("react-leaflet").then((mod) => mod.ZoomControl),
-  { ssr: false }
-);
-
-const BaliMap = ({ apiUrl, geoJsonUrl }) => {
+const BaliMap = () => {
   const [coveredAreas, setCoveredAreas] = useState([]);
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [mapReady, setMapReady] = useState(false);
-
-  useEffect(() => {
-    setMapReady(true);
-  }, []);
 
   // Fetch farmer data from the API
   useEffect(() => {
     const fetchFarmerData = async () => {
       try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        const response = await fetch(
+          "https://processing-facility-backend.onrender.com/api/farmer"
+        );
         const data = await response.json();
         const covered = data.allRows.map((farmer) => ({
-          desa: farmer.desa?.toLowerCase(),
-          kecamatan: farmer.kecamatan?.toLowerCase(),
-          kabupaten: farmer.kabupaten?.toLowerCase(),
+          desa: farmer.desa,
+          kecamatan: farmer.kecamatan,
+          kabupaten: farmer.kecamatan,
         }));
         setCoveredAreas(covered);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
-        setError("Failed to load farmer data");
       }
     };
 
-    if (apiUrl) {
-      fetchFarmerData();
-    }
-  }, [apiUrl]);
-
-  // Process coordinates to handle both single and nested arrays
-  const processCoordinates = (border) => {
-    if (!border || !Array.isArray(border)) return [];
-
-    // Check if it's already a nested array
-    if (Array.isArray(border[0]) && Array.isArray(border[0][0])) {
-      return border.map(ring => ring.map(([lng, lat]) => [lat, lng]));
-    }
-
-    // If it's a single array of coordinates
-    return [border.map(([lng, lat]) => [lat, lng])];
-  };
+    fetchFarmerData();
+  }, []);
 
   // Load Bali GeoJSON data
   useEffect(() => {
     const loadBaliGeoJSON = async () => {
       try {
-        setIsLoading(true);
-        const response = await fetch(geoJsonUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        const response = await fetch(
+          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk1MDY5LCJleHAiOjQ4OTE5OTUwNjl9.sjFW0RqmWJoOBTxnL2cyc273vHQgsZYF-7jcubP6sz4"
+        );
         const villages = await response.json();
 
-        if (!Array.isArray(villages)) {
-          throw new Error("Invalid GeoJSON format");
+        // Check if the data is an array and handle it accordingly
+        if (Array.isArray(villages)) {
+          // Convert to valid GeoJSON structure
+          const geoJsonData = {
+            type: "FeatureCollection",
+            features: villages.map((village) => ({
+              type: "Feature",
+              properties: {
+                village: village.village,
+                sub_district: village.sub_district,
+                district: village.district,
+              },
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    ...(village.border ? village.border.map(([lng, lat]) => [lat, lng]) : []), // Swap lat/lng and check if border exists
+                    // Ensure the first and last points are the same to close the polygon
+                    ...(village.border && village.border.length ? [village.border[0].map(([lng, lat]) => [lat, lng])] : [])
+                  ],
+                ],
+              },
+            })),
+          };
+
+          setBaliGeoJSON(geoJsonData);
+        } else {
+          console.error("Unexpected data format for villages:", villages);
         }
-
-        const geoJsonData = {
-          type: "FeatureCollection",
-          features: villages.map((village) => ({
-            type: "Feature",
-            properties: {
-              village: village.village,
-              sub_district: village.sub_district,
-              district: village.district,
-              province: village.province
-            },
-            geometry: {
-              type: "Polygon",
-              coordinates: processCoordinates(village.border)
-            },
-          })).filter(feature => 
-            feature.geometry.coordinates.length > 0 && 
-            feature.geometry.coordinates[0].length > 0
-          ),
-        };
-
-        setBaliGeoJSON(geoJsonData);
       } catch (error) {
         console.error("Error loading Bali GeoJSON:", error);
-        setError("Failed to load map data");
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    if (geoJsonUrl) {
-      loadBaliGeoJSON();
-    }
-  }, [geoJsonUrl]);
+    loadBaliGeoJSON();
+  }, []);
 
   // Style function for village borders
   const styleFeature = (feature) => {
     const { village, sub_district, district } = feature.properties;
-    
+
     const isCovered = coveredAreas.some(
       (area) =>
-        (village && area.desa === village.toLowerCase()) ||
-        (sub_district && area.kecamatan === sub_district.toLowerCase()) ||
-        (district && area.kabupaten === district.toLowerCase())
+        area.desa === village ||
+        area.kecamatan === sub_district ||
+        area.kabupaten === district
     );
 
     return {
-      fillColor: isCovered ? "#4CAF50" : "transparent",
-      fillOpacity: isCovered ? 0.6 : 0,
-      color: "#666",
-      weight: 1,
-      opacity: 0.8,
+      fillColor: isCovered ? "green" : "transparent", // Highlight covered areas in green
+      fillOpacity: 0.5, // Semi-transparent fill
+      color: "#333", // Border color
+      weight: 1, // Border thickness
     };
   };
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
-  }
-
-  if (isLoading) {
-    return <div className="p-4">Loading map...</div>;
-  }
-
-  if (!mapReady) {
-    return <div className="p-4">Initializing map...</div>;
-  }
-
   return (
-    <div className="w-full h-[500px] bg-gray-100 rounded-lg shadow-md overflow-hidden">
+    <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
       <MapContainer
-        center={[-8.4095, 115.1889]}
-        zoom={9}
-        className="h-full w-full"
-        zoomControl={false}
+        center={[-8.4095, 115.1889]} // Center of Bali
+        zoom={9} // Zoom level for Bali
+        style={{ height: "100%", width: "100%", backgroundColor: "#f0f0f0" }}
+        zoomControl={false} // Disable zoom controls
+        attributionControl={false} // Disable attribution
       >
-        <ZoomControl position="bottomright" />
+        {/* Base Map Layer */}
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {baliGeoJSON && (
-          <GeoJSON 
-            data={baliGeoJSON} 
-            style={styleFeature}
-            onEachFeature={(feature, layer) => {
-              const { village, sub_district, district, province } = feature.properties;
-              layer.bindPopup(`
-                <div class="p-2">
-                  <strong>${village || 'N/A'}</strong><br/>
-                  Sub-district: ${sub_district || 'N/A'}<br/>
-                  District: ${district || 'N/A'}<br/>
-                  Province: ${province || 'N/A'}
-                </div>
-              `);
-            }}
-          />
-        )}
+
+        {/* Render GeoJSON Data */}
+        {baliGeoJSON && <GeoJSON data={baliGeoJSON} style={styleFeature} />}
       </MapContainer>
     </div>
   );
