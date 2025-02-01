@@ -379,6 +379,7 @@ const PreprocessingStation = () => {
       });
   
       setPreprocessingData(sortedData);
+      setUnprocessedBatches(groupedUnprocessedBatchesArray);
     } catch (error) {
       console.error('Error fetching preprocessing data:', error);
     }
@@ -634,9 +635,7 @@ const PreprocessingStation = () => {
             </div>
           </CardContent>
         </Card>
-      </Grid>
   
-      <Grid item xs={12} md={7}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
