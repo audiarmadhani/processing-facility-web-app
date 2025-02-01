@@ -86,7 +86,7 @@ function Dashboard() {
     <div style={{ padding: '0px', flex: 1, border: 0, width: '100%', height: '100%', margin: 5 }}>
       <Grid container spacing={3}>
         {/* Arabica Column */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={12}>
           <Grid container spacing={3}>
                
             {/* Total Arabica Weight */}
@@ -393,7 +393,7 @@ function Dashboard() {
 
 
         {/* Robusta Column */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={12}>
           <Grid container spacing={3}>
 
 

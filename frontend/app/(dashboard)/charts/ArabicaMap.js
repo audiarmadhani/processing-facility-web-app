@@ -1,33 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import { MapContainer, GeoJSON, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-
-// Dynamically import the map components with no SSR
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const GeoJSON = dynamic(
-  () => import("react-leaflet").then((mod) => mod.GeoJSON),
-  { ssr: false }
-);
 
 const ArabicaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
-  const [desaStats, setDesaStats] = useState(new Map());
-  const [mapReady, setMapReady] = useState(false);
+  const [desaData, setDesaData] = useState({}); // Store total farmers and land area per desa
 
-  useEffect(() => {
-    setMapReady(true);
-  }, []);
-
-  // Fetch farmer data and process statistics
+  // Fetch farmer data and calculate aggregated info
   useEffect(() => {
     const fetchFarmerData = async () => {
       try {
@@ -36,21 +17,20 @@ const ArabicaMapComponent = () => {
         );
         const data = await response.json();
 
-        // Process farmer data to group by desa
-        const statsMap = new Map();
-        data.allRows.forEach((farmer) => {
-          if (!statsMap.has(farmer.desa)) {
-            statsMap.set(farmer.desa, {
-              totalFarmers: 0,
-              totalLandArea: 0,
-            });
+        // Aggregate farmer count and land area per desa
+        const aggregatedData = data.allRows.reduce((acc, farmer) => {
+          if (farmer.farmType === "Arabica") {
+            const desaName = farmer.desa;
+            if (!acc[desaName]) {
+              acc[desaName] = { farmerCount: 0, totalLandArea: 0 };
+            }
+            acc[desaName].farmerCount += 1;
+            acc[desaName].totalLandArea += farmer.farmerLandArea || 0;
           }
-          const stats = statsMap.get(farmer.desa);
-          stats.totalFarmers += 1;
-          stats.totalLandArea += farmer.farmerLandArea || 0;
-        });
+          return acc;
+        }, {});
 
-        setDesaStats(statsMap);
+        setDesaData(aggregatedData);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
       }
@@ -100,59 +80,48 @@ const ArabicaMapComponent = () => {
   // Style function for village borders
   const styleFeature = (feature) => {
     const desaName = feature.properties.village;
-    const hasData = desaStats.has(desaName);
 
     return {
-      fillColor: hasData ? "green" : "transparent",
+      fillColor: desaData[desaName] ? "green" : "transparent",
       fillOpacity: 0.5,
       color: "#808080",
       weight: 0.25,
     };
   };
 
-  // Function to handle popup content for each feature
-  const onEachFeature = (feature, layer) => {
-    const desaName = feature.properties.village;
-    const stats = desaStats.get(desaName);
-    
-    if (stats) {
-      layer.bindTooltip(
-        `<div class="p-2">
-          <strong>${desaName}</strong><br/>
-          Total Farmers: ${stats.totalFarmers}<br/>
-          Total Land Area: ${stats.totalLandArea.toLocaleString()} m²
-        </div>`,
-        {
-          permanent: false,
-          direction: 'top',
-          className: 'custom-tooltip'
-        }
-      );
-    }
-  };
-
-  if (!mapReady) {
-    return <div className="p-4">Initializing map...</div>;
-  }
-
   return (
-    <div className="w-full h-[500px] bg-gray-100 rounded-lg shadow-md overflow-hidden">
+    <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
       <MapContainer
         center={[-8.4095, 115.1889]}
         zoom={9}
-        className="h-full w-full"
+        style={{ height: "100%", width: "100%", backgroundColor: "#f0f0f0" }}
         zoomControl={false}
         attributionControl={false}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://carto.com/">CARTO</a> contributors'
         />
+
         {baliGeoJSON && (
-          <GeoJSON 
-            data={baliGeoJSON} 
+          <GeoJSON
+            data={baliGeoJSON}
             style={styleFeature}
-            onEachFeature={onEachFeature}
+            onEachFeature={(feature, layer) => {
+              const desaName = feature.properties.village;
+              if (desaData[desaName]) {
+                const { farmerCount, totalLandArea } = desaData[desaName];
+
+                layer.bindTooltip(
+                  `Desa: ${desaName}<br/>Total Farmers: ${farmerCount}<br/>Total Land Area: ${totalLandArea} m²`,
+                  {
+                    permanent: true, // Sticky tooltip
+                    direction: "center",
+                    className: "leaflet-tooltip-custom",
+                  }
+                );
+              }
+            }}
           />
         )}
       </MapContainer>
