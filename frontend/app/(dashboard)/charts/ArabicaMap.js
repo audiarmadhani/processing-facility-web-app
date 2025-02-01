@@ -1,14 +1,37 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MapContainer, GeoJSON, TileLayer, ZoomControl } from "react-leaflet";
+import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+
+// Dynamically import the map components with no SSR
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const GeoJSON = dynamic(
+  () => import("react-leaflet").then((mod) => mod.GeoJSON),
+  { ssr: false }
+);
+const ZoomControl = dynamic(
+  () => import("react-leaflet").then((mod) => mod.ZoomControl),
+  { ssr: false }
+);
 
 const BaliMap = ({ apiUrl, geoJsonUrl }) => {
   const [coveredAreas, setCoveredAreas] = useState([]);
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  useEffect(() => {
+    setMapReady(true);
+  }, []);
 
   // Fetch farmer data from the API
   useEffect(() => {
@@ -31,7 +54,9 @@ const BaliMap = ({ apiUrl, geoJsonUrl }) => {
       }
     };
 
-    fetchFarmerData();
+    if (apiUrl) {
+      fetchFarmerData();
+    }
   }, [apiUrl]);
 
   // Process coordinates to handle both single and nested arrays
@@ -91,7 +116,9 @@ const BaliMap = ({ apiUrl, geoJsonUrl }) => {
       }
     };
 
-    loadBaliGeoJSON();
+    if (geoJsonUrl) {
+      loadBaliGeoJSON();
+    }
   }, [geoJsonUrl]);
 
   // Style function for village borders
@@ -120,6 +147,10 @@ const BaliMap = ({ apiUrl, geoJsonUrl }) => {
 
   if (isLoading) {
     return <div className="p-4">Loading map...</div>;
+  }
+
+  if (!mapReady) {
+    return <div className="p-4">Initializing map...</div>;
   }
 
   return (
