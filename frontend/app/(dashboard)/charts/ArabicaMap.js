@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MapContainer, GeoJSON } from "react-leaflet";
+import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const BaliMap = () => {
@@ -81,13 +81,19 @@ const BaliMap = () => {
   return (
     <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
       <MapContainer
-        center={[-8.4095, 115.1889]}
-        zoom={9}
+        center={[-8.4095, 115.1889]} // Center of Bali
+        zoom={9} // Zoom level for Bali
         style={{ height: "100%", width: "100%", backgroundColor: "#f0f0f0" }}
-        zoomControl={false}
-        attributionControl={false}
+        zoomControl={false} // Disable zoom controls
+        attributionControl={false} // Disable attribution
       >
-        {/* Render GeoJSON Data (Bali Outline & Villages) */}
+        {/* Base Map Layer */}
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+
+        {/* Render GeoJSON Data */}
         {baliGeoJSON && <GeoJSON data={baliGeoJSON} style={styleFeature} />}
       </MapContainer>
     </div>
