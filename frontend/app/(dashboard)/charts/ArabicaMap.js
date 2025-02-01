@@ -1,14 +1,33 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
+import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+
+// Dynamically import the map components with no SSR
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const GeoJSON = dynamic(
+  () => import("react-leaflet").then((mod) => mod.GeoJSON),
+  { ssr: false }
+);
 
 const ArabicaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
-  const [coveredDesa, setCoveredDesa] = useState(new Set());
+  const [desaStats, setDesaStats] = useState(new Map());
+  const [mapReady, setMapReady] = useState(false);
 
-  // Fetch farmer data and store covered desa names
+  useEffect(() => {
+    setMapReady(true);
+  }, []);
+
+  // Fetch farmer data and process statistics
   useEffect(() => {
     const fetchFarmerData = async () => {
       try {
@@ -17,9 +36,21 @@ const ArabicaMapComponent = () => {
         );
         const data = await response.json();
 
-        // Extract all desa names from API response
-        const desaSet = new Set(data.arabicaFarmers.map((farmer) => farmer.desa));
-        setCoveredDesa(desaSet);
+        // Process farmer data to group by desa
+        const statsMap = new Map();
+        data.allRows.forEach((farmer) => {
+          if (!statsMap.has(farmer.desa)) {
+            statsMap.set(farmer.desa, {
+              totalFarmers: 0,
+              totalLandArea: 0,
+            });
+          }
+          const stats = statsMap.get(farmer.desa);
+          stats.totalFarmers += 1;
+          stats.totalLandArea += farmer.farmerLandArea || 0;
+        });
+
+        setDesaStats(statsMap);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
       }
@@ -49,7 +80,7 @@ const ArabicaMapComponent = () => {
               },
               geometry: {
                 type: "Polygon",
-                coordinates: [village.border], // Ensure correct polygon format
+                coordinates: [village.border],
               },
             })),
           };
@@ -69,32 +100,61 @@ const ArabicaMapComponent = () => {
   // Style function for village borders
   const styleFeature = (feature) => {
     const desaName = feature.properties.village;
+    const hasData = desaStats.has(desaName);
 
     return {
-      fillColor: coveredDesa.has(desaName) ? "green" : "transparent", // Green if covered
+      fillColor: hasData ? "green" : "transparent",
       fillOpacity: 0.5,
       color: "#808080",
       weight: 0.25,
     };
   };
 
+  // Function to handle popup content for each feature
+  const onEachFeature = (feature, layer) => {
+    const desaName = feature.properties.village;
+    const stats = desaStats.get(desaName);
+    
+    if (stats) {
+      layer.bindTooltip(
+        `<div class="p-2">
+          <strong>${desaName}</strong><br/>
+          Total Farmers: ${stats.totalFarmers}<br/>
+          Total Land Area: ${stats.totalLandArea.toLocaleString()} m²
+        </div>`,
+        {
+          permanent: false,
+          direction: 'top',
+          className: 'custom-tooltip'
+        }
+      );
+    }
+  };
+
+  if (!mapReady) {
+    return <div className="p-4">Initializing map...</div>;
+  }
+
   return (
-    <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
+    <div className="w-full h-[500px] bg-gray-100 rounded-lg shadow-md overflow-hidden">
       <MapContainer
-        center={[-8.4095, 115.1889]} // Center of Bali
-        zoom={9} // Zoom level for Bali
-        style={{ height: "100%", width: "100%", backgroundColor: "#f0f0f0" }}
-        zoomControl={false} // Disable zoom controls
-        attributionControl={false} // Disable attribution
+        center={[-8.4095, 115.1889]}
+        zoom={9}
+        className="h-full w-full"
+        zoomControl={false}
+        attributionControl={false}
       >
-        {/* Base Map Layer */}
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-
-        {/* Render GeoJSON Data */}
-        {baliGeoJSON && <GeoJSON data={baliGeoJSON} style={styleFeature} />}
+        {baliGeoJSON && (
+          <GeoJSON 
+            data={baliGeoJSON} 
+            style={styleFeature}
+            onEachFeature={onEachFeature}
+          />
+        )}
       </MapContainer>
     </div>
   );
