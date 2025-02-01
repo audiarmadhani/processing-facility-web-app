@@ -97,6 +97,8 @@ const ArabicaCategoryChart = () => {
   // Conditionally set height based on whether data is available
   const chartHeight = data && data.length > 0 ? 500 : 'auto';
 
+  const colorScheme = 'Set3';
+
   return (
     <Box sx={{ height: chartHeight }}>
       <BarChart
