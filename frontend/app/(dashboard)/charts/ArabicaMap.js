@@ -12,7 +12,7 @@ const BaliMap = () => {
     const loadBaliGeoJSON = async () => {
       try {
         const response = await fetch(
-          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk1MDY5LCJleHAiOjQ4OTE5OTUwNjl9.sjFW0RqmWJoOBTxnL2cyc273vHQgsZYF-7jcubP6sz4"
+          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk1Njk2LCJleHAiOjQ4OTE5OTU2OTZ9.P1jXPEYeltq9HFoS92-_6MJX7ar1mfKSSfqzA2Futjs"
         );
         const villages = await response.json();
 
