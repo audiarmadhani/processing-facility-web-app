@@ -1,6 +1,8 @@
 "use client";
+
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
+
 import {
   TextField,
   Button,
@@ -11,13 +13,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Grid,
   Card,
   CardContent,
   Divider,
 } from '@mui/material';
-import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
@@ -60,21 +64,27 @@ const PreprocessingStation = () => {
     { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
   ];
 
+
   const fetchAvailableBags = async (batchNumber, totalBags) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch preprocessing data');
+  
       const preprocessingResponse = await response.json();
+      
       // Log the preprocessing response
       console.log('Preprocessing Response:', preprocessingResponse);
+  
       // Check if the preprocessing response has totalBagsProcessed
       if (preprocessingResponse && typeof preprocessingResponse.totalBagsProcessed === 'number') {
         const totalProcessedBags = preprocessingResponse.totalBagsProcessed;
         const availableBags = totalBags - totalProcessedBags;
+  
         // Log total bags, total processed, and available bags
         console.log('Total Bags:', totalBags);
         console.log('Total Processed Bags:', totalProcessedBags);
         console.log('Available Bags:', availableBags);
+  
         return { availableBags, totalProcessedBags };
       } else {
         throw new Error('Total bags processed is not a valid number');
@@ -89,22 +99,28 @@ const PreprocessingStation = () => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch receiving data');
+  
       const dataArray = await response.json();
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
+  
       const data = dataArray[0];
       const { availableBags, totalProcessedBags } = await fetchAvailableBags(batchNumber, data.totalBags);
+  
       // Log the result of fetchAvailableBags
       console.log('fetchAvailableBags result:', { availableBags, totalProcessedBags });
+  
       setFarmerName(data.farmerName);
       setReceivingDate(data.receivingDate);
       setWeight(data.weight);
       setTotalBags(data.totalBags);
       setBagsAvailable(availableBags);
       setTotalProcessedBags(totalProcessedBags);
+  
       // Log total bags, total processed bags, and available bags to the console
       console.log('Total Bags:', data.totalBags);
       console.log('Total Processed Bags:', totalProcessedBags);
       console.log('Available Bags:', availableBags);
+  
       setSnackbarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
       setSnackbarSeverity('success');
     } catch (error) {
@@ -126,9 +142,11 @@ const PreprocessingStation = () => {
   const handleRfidScan = async (e) => {
     const scannedTag = e.target.value;
     setRfidTag(scannedTag);
+
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/getBatchDetails/${scannedTag}`);
       if (!response.ok) throw new Error('Failed to fetch batch details');
+      
       const data = await response.json();
       setBatchNumber(data.batchNumber);
       await fetchBatchData(data.batchNumber);
@@ -144,6 +162,7 @@ const PreprocessingStation = () => {
       setOpenSnackbar(true);
       return;
     }
+
     await fetchBatchData(batchNumber);
   };
 
@@ -153,13 +172,12 @@ const PreprocessingStation = () => {
       const batches = await batchesResponse.json();
       const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing");
       const processedBags = await processedResponse.json();
-
+  
       const historyData = batches.map((batch) => {
         const processedLogs = processedBags.filter(log => log.batchNumber === batch.batchNumber);
         const totalProcessedBags = processedLogs.reduce((acc, log) => acc + log.bagsProcessed, 0);
         const bagsAvailable = batch.totalBags - totalProcessedBags;
         return {
-          id: batch.batchNumber, // Use batchNumber as the unique id
           batchNumber: batch.batchNumber,
           totalBags: batch.totalBags,
           bagsProcessed: totalProcessedBags,
@@ -170,7 +188,7 @@ const PreprocessingStation = () => {
           })),
         };
       });
-
+  
       setBagsHistory(historyData);
       setOpenHistory(true);
     } catch (error) {
@@ -184,36 +202,43 @@ const PreprocessingStation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     // Trim the batch number and bags processed
     const trimmedBatchNumber = batchNumber.trim();
     const trimmedBagsProcessed = bagsProcessed;
+
     if (trimmedBagsProcessed > bagsAvailable) {
-      setSnackbarMessage(`Cannot process more bags than available. Available: ${bagsAvailable}`);
-      setSnackbarSeverity('warning');
-      setOpenSnackbar(true);
-      return;
+        setSnackbarMessage(`Cannot process more bags than available. Available: ${bagsAvailable}`);
+        setSnackbarSeverity('warning');
+        setOpenSnackbar(true);
+        return;
     }
+
     const preprocessingData = {
-      bagsProcessed: trimmedBagsProcessed,
-      batchNumber: trimmedBatchNumber,
+        bagsProcessed: trimmedBagsProcessed, 
+        batchNumber: trimmedBatchNumber,
     };
+
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(preprocessingData),
-      });
-      if (!response.ok) throw new Error('Failed to start processing');
-      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedBagsProcessed} bags!`);
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true); // Show the snackbar here
-      // Call fetchPreprocessingData after successful submission
-      await fetchPreprocessingData();
-      resetForm();
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(preprocessingData),
+        });
+        if (!response.ok) throw new Error('Failed to start processing');
+
+        setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedBagsProcessed} bags!`);
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true); // Show the snackbar here
+
+        // Call fetchPreprocessingData after successful submission
+        await fetchPreprocessingData();
+
+        resetForm();
     } catch (error) {
-      handleError('Failed to start preprocessing. Please try again.', error);
+        handleError('Failed to start preprocessing. Please try again.', error);
     }
-  };
+};
 
   const handleError = (message, error) => {
     console.error(message, error);
@@ -341,13 +366,15 @@ const PreprocessingStation = () => {
 
   // Show loading screen while session is loading
   if (status === 'loading') {
-    return <div>Loading...</div>;
+    return <p>Loading...</p>;
   }
 
   // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'preprocessing')) {
     return (
-      <div>Access Denied. You do not have permission to view this page.</div>
+      <Typography variant="h6">
+        Access Denied. You do not have permission to view this page.
+      </Typography>
     );
   }
 
