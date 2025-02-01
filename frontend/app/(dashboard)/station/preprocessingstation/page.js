@@ -342,9 +342,10 @@ const PreprocessingStation = () => {
 
       // Group unprocessed batches by ripeness, color, foreignMatter, and overallQuality
       const groupedUnprocessedBatches = unprocessedBatches.reduce((acc, batch) => {
-        const key = `${batch.ripeness}-${batch.color}-${batch.foreignMatter}-${batch.overallQuality}`;
+        const key = `${batch.batchNumber}-${batch.ripeness}-${batch.color}-${batch.foreignMatter}-${batch.overallQuality}`;
         if (!acc[key]) {
           acc[key] = {
+            batchNumber: batch.batchNumber,
             ripeness: batch.ripeness,
             color: batch.color,
             foreignMatter: batch.foreignMatter,
@@ -357,7 +358,7 @@ const PreprocessingStation = () => {
       }, {});
 
       const groupedUnprocessedBatchesArray = Object.values(groupedUnprocessedBatches).map(group => ({
-        id: `${group.ripeness}-${group.color}-${group.foreignMatter}-${group.overallQuality}`,
+        id: `${group.batchNumber}-${group.ripeness}-${group.color}-${group.foreignMatter}-${group.overallQuality}`,
         ripeness: group.ripeness,
         color: group.color,
         foreignMatter: group.foreignMatter,
