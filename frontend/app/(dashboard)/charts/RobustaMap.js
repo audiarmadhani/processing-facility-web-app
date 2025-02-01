@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
+import { MapContainer, GeoJSON, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const RobustaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
-  const [coveredDesa, setCoveredDesa] = useState(new Set());
+  const [desaData, setDesaData] = useState({}); // Store total farmers and land area per desa
 
-  // Fetch farmer data and store covered desa names
+  // Fetch farmer data and calculate aggregated info
   useEffect(() => {
     const fetchFarmerData = async () => {
       try {
@@ -17,9 +17,20 @@ const RobustaMapComponent = () => {
         );
         const data = await response.json();
 
-        // Extract all desa names from API response
-        const desaSet = new Set(data.robustaFarmers.map((farmer) => farmer.desa));
-        setCoveredDesa(desaSet);
+        // Aggregate farmer count and land area per desa
+        const aggregatedData = data.robustaFarmers.reduce((acc, farmer) => {
+          if (farmer.farmType === "Robusta") {
+            const desaName = farmer.desa;
+            if (!acc[desaName]) {
+              acc[desaName] = { farmerCount: 0, totalLandArea: 0 };
+            }
+            acc[desaName].farmerCount += 1;
+            acc[desaName].totalLandArea += farmer.farmerLandArea || 0;
+          }
+          return acc;
+        }, {});
+
+        setDesaData(aggregatedData);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
       }
@@ -49,7 +60,7 @@ const RobustaMapComponent = () => {
               },
               geometry: {
                 type: "Polygon",
-                coordinates: [village.border], // Ensure correct polygon format
+                coordinates: [village.border],
               },
             })),
           };
@@ -71,7 +82,7 @@ const RobustaMapComponent = () => {
     const desaName = feature.properties.village;
 
     return {
-      fillColor: coveredDesa.has(desaName) ? "green" : "transparent", // Green if covered
+      fillColor: desaData[desaName] ? "green" : "transparent",
       fillOpacity: 0.5,
       color: "#808080",
       weight: 0.25,
@@ -81,20 +92,38 @@ const RobustaMapComponent = () => {
   return (
     <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
       <MapContainer
-        center={[-8.4095, 115.1889]} // Center of Bali
-        zoom={9} // Zoom level for Bali
+        center={[-8.4095, 115.1889]}
+        zoom={9}
         style={{ height: "100%", width: "100%", backgroundColor: "#f0f0f0" }}
-        zoomControl={false} // Disable zoom controls
-        attributionControl={false} // Disable attribution
+        zoomControl={false}
+        attributionControl={false}
       >
-        {/* Base Map Layer */}
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://carto.com/">CARTO</a> contributors'
         />
 
-        {/* Render GeoJSON Data */}
-        {baliGeoJSON && <GeoJSON data={baliGeoJSON} style={styleFeature} />}
+        {baliGeoJSON && (
+          <GeoJSON
+            data={baliGeoJSON}
+            style={styleFeature}
+            onEachFeature={(feature, layer) => {
+              const desaName = feature.properties.village;
+              if (desaData[desaName]) {
+                const { farmerCount, totalLandArea } = desaData[desaName];
+
+                layer.bindTooltip(
+                  `Desa: ${desaName}<br/>Total Farmers: ${farmerCount}<br/>Total Land Area: ${totalLandArea} m²`,
+                  {
+                    sticky: true, // Tooltip follows cursor
+                    direction: "auto",
+                    className: "leaflet-tooltip-custom",
+                  }
+                );
+              }
+            }}
+          />
+        )}
       </MapContainer>
     </div>
   );

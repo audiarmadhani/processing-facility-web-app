@@ -18,7 +18,7 @@ const ArabicaMapComponent = () => {
         const data = await response.json();
 
         // Aggregate farmer count and land area per desa
-        const aggregatedData = data.allRows.reduce((acc, farmer) => {
+        const aggregatedData = data.arabicaFarmers.reduce((acc, farmer) => {
           if (farmer.farmType === "Arabica") {
             const desaName = farmer.desa;
             if (!acc[desaName]) {
