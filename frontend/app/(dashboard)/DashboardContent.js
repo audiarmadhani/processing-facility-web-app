@@ -25,7 +25,8 @@ import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if nec
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-const BaliMap = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
+const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
+const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
 
 function Dashboard() {
@@ -381,10 +382,7 @@ function Dashboard() {
                   <Typography variant="h6" gutterBottom>
                     Arabica Coverage Map
                   </Typography>
-                  <BaliMap 
-                    apiUrl="https://processing-facility-backend.onrender.com/api/farmer"
-                    geoJsonUrl="https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"
-                  />
+                  <ArabicaMapComponent />
                 </CardContent>
               </Card>
             </Grid>
@@ -686,16 +684,16 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta Map */}
-            {/* <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Robusta Coverage Map
                   </Typography>
-                  <BaliMap />
+                  <RobustaMapComponent />
                 </CardContent>
               </Card>
-            </Grid> */}
+            </Grid>
 
           </Grid>
         </Grid>

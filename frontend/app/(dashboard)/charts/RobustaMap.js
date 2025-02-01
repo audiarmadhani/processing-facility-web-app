@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-const ArabicaMapComponent = () => {
+const RobustaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
   const [coveredDesa, setCoveredDesa] = useState(new Set());
 
@@ -18,7 +18,7 @@ const ArabicaMapComponent = () => {
         const data = await response.json();
 
         // Extract all desa names from API response
-        const desaSet = new Set(data.arabicaFarmers.map((farmer) => farmer.desa));
+        const desaSet = new Set(data.robustaFarmers.map((farmer) => farmer.desa));
         setCoveredDesa(desaSet);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
@@ -100,4 +100,4 @@ const ArabicaMapComponent = () => {
   );
 };
 
-export default ArabicaMapComponent;
+export default RobustaMapComponent;
