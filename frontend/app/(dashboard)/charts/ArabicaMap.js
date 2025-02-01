@@ -26,7 +26,7 @@ const ArabicaMapComponent = () => {
         const receivingData = await receivingResponse.json();
 
         // Create a map of farmerID to receiving data (price and weight) for quick lookup
-        const receivingMap = receivingData.reduce((acc, receiving) => {
+        const receivingMap = receivingData.allRows.reduce((acc, receiving) => {
           acc[receiving.farmerID] = {
             price: receiving.price || 0,
             weight: receiving.weight || 0,
