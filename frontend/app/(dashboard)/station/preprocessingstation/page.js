@@ -69,22 +69,17 @@ const PreprocessingStation = () => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch preprocessing data');
-  
       const preprocessingResponse = await response.json();
-      
       // Log the preprocessing response
       console.log('Preprocessing Response:', preprocessingResponse);
-  
       // Check if the preprocessing response has totalBagsProcessed
-      if (preprocessingResponse && typeof preprocessingResponse.totalBagsProcessed === 'number') {
-        const totalProcessedBags = preprocessingResponse.totalBagsProcessed;
+      if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalBagsProcessed))) {
+        const totalProcessedBags = parseFloat(preprocessingResponse.totalBagsProcessed);
         const availableBags = totalBags - totalProcessedBags;
-  
         // Log total bags, total processed, and available bags
         console.log('Total Bags:', totalBags);
         console.log('Total Processed Bags:', totalProcessedBags);
         console.log('Available Bags:', availableBags);
-  
         return { availableBags, totalProcessedBags };
       } else {
         throw new Error('Total bags processed is not a valid number');
