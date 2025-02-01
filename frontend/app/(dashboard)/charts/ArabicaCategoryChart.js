@@ -94,18 +94,11 @@ const ArabicaCategoryChart = () => {
     );
   }
 
-  if (!data || data.length === 0) {
-    return (
-      <Box sx={{ textAlign: "center", padding: 2 }}>
-        <Typography variant="h6">No data available</Typography>
-      </Box>
-    );
-  }
-
-  const colorScheme = 'Set3';
+  // Conditionally set height based on whether data is available
+  const chartHeight = data && data.length > 0 ? 500 : 'auto';
 
   return (
-    <Box sx={{ height: 500 }}>
+    <Box sx={{ height: chartHeight }}>
       <BarChart
         dataset={data}
         xAxis={[{ scaleType: "band", dataKey: "storedDate", label: "Stored Date", disableTicks : true }]}

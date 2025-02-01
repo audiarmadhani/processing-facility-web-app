@@ -9,23 +9,18 @@ const ArabicaMapComponent = () => {
   const [desaData, setDesaData] = useState({}); // Store total farmers, land area, total price, and total weight per desa
   const [loading, setLoading] = useState(true);
 
-  // Fetch farmer data and calculate aggregated info
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch farmer data
         const farmerResponse = await fetch(
           "https://processing-facility-backend.onrender.com/api/farmer"
         );
         const farmerData = await farmerResponse.json();
-
-        // Fetch receiving data
         const receivingResponse = await fetch(
           "https://processing-facility-backend.onrender.com/api/receiving"
         );
         const receivingData = await receivingResponse.json();
 
-        // Create a map of farmerID to receiving data (price and weight) for quick lookup
         const receivingMap = receivingData.allRows.reduce((acc, receiving) => {
           acc[receiving.farmerID] = {
             price: receiving.price || 0,
@@ -34,38 +29,30 @@ const ArabicaMapComponent = () => {
           return acc;
         }, {});
 
-        // Aggregate data by desa
         const aggregatedData = farmerData.arabicaFarmers.reduce((acc, farmer) => {
           if (farmer.farmType === "Arabica") {
-            const desaName = farmer.desa;
-
-            if (!acc[desaName]) {
-              acc[desaName] = {
-                farmerCount: 0,
-                totalLandArea: 0,
-                totalPrice: 0,
-                totalWeight: 0,
-              };
-            }
-
+            const desaName = farmer.desaName; // Assuming 'desaName' is a property in the farmer data
+            acc[desaName] = acc[desaName] || { farmerCount: 0, totalLandArea: 0, totalPrice: 0, totalWeight: 0 };
             acc[desaName].farmerCount += 1;
-            acc[desaName].totalLandArea += farmer.farmerLandArea || 0;
-
-            // Add price and weight if available in the receivingMap
+            acc[desaName].totalLandArea += farmer.landArea;
             if (receivingMap[farmer.farmerID]) {
-              acc[desaName].totalPrice += receivingMap[farmer.farmerID].price;
+              acc[desaName].totalPrice += receivingMap[farmer.farmerID].price * receivingMap[farmer.farmerID].weight;
               acc[desaName].totalWeight += receivingMap[farmer.farmerID].weight;
             }
           }
           return acc;
         }, {});
 
-        // Calculate average price per unit weight per desa
-        for (const desaName in aggregatedData) {
-          const { totalPrice, totalWeight } = aggregatedData[desaName];
-          aggregatedData[desaName].averagePrice =
-            totalWeight > 0 ? (totalPrice / totalWeight).toFixed(2) : 0;
-        }
+        // Calculate average price per unit weight
+        Object.keys(aggregatedData).forEach(desaName => {
+          if (aggregatedData[desaName].totalWeight > 0) {
+            aggregatedData[desaName].averagePrice = Math.round(
+              (aggregatedData[desaName].totalPrice / aggregatedData[desaName].totalWeight) * 100
+            ) / 100;
+          } else {
+            aggregatedData[desaName].averagePrice = 0;
+          }
+        });
 
         setDesaData(aggregatedData);
       } catch (error) {
@@ -75,32 +62,9 @@ const ArabicaMapComponent = () => {
 
     const loadBaliGeoJSON = async () => {
       try {
-        const response = await fetch(
-          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk2NTAxLCJleHAiOjMzMjc0Mzk2NTAxfQ.4xAAjVFAwg2x-IuLba2lFlK3L_rb-GhyERWdvFXL3wo"
-        );
-        const villages = await response.json();
-
-        if (Array.isArray(villages)) {
-          const geoJsonData = {
-            type: "FeatureCollection",
-            features: villages.map((village) => ({
-              type: "Feature",
-              properties: {
-                village: village.village,
-                sub_district: village.sub_district,
-                district: village.district,
-              },
-              geometry: {
-                type: "Polygon",
-                coordinates: [village.border],
-              },
-            })),
-          };
-
-          setBaliGeoJSON(geoJsonData);
-        } else {
-          console.error("Unexpected data format:", villages);
-        }
+          await fetch("https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk2NTAxLCJleHAiOjMzMjc0Mzk2NTAxfQ.4xAAjVFAwg2x-IuLba2lFlK3L_rb-GhyERWdvFXL3wo")
+          .then(response => response.json())
+          .then(data => setBaliGeoJSON(data));
       } catch (error) {
         console.error("Error loading Bali GeoJSON:", error);
       }
@@ -109,11 +73,10 @@ const ArabicaMapComponent = () => {
     Promise.all([fetchData(), loadBaliGeoJSON()]).then(() => setLoading(false));
   }, []);
 
-  // Style function for village borders
   const styleFeature = (feature) => {
     const desaName = feature.properties.village;
     return {
-      fillColor: desaData[desaName] ? "green" : "transparent",
+      fillColor: aggregatedData[desaName] ? "green" : "transparent",
       fillOpacity: 0.5,
       color: "#808080",
       weight: 0.25,
@@ -156,26 +119,22 @@ const ArabicaMapComponent = () => {
             onEachFeature={(feature, layer) => {
               const desaName = feature.properties.village;
               if (desaData[desaName]) {
-                const { farmerCount, totalLandArea, averagePrice } = desaData[desaName];
-
+                const { farmerCount, totalLandArea, averagePrice } = aggregatedData[desaName];
                 const tooltipContent = `
                   <strong>Desa:</strong> ${desaName}<br/>
                   <strong>Total Farmers:</strong> ${farmerCount}<br/>
                   <strong>Total Land Area:</strong> ${totalLandArea} m²<br/>
                   <strong>Average Price (/kg):</strong> Rp${averagePrice}
                 `;
-
                 layer.bindTooltip(tooltipContent, {
                   direction: "auto",
                   className: "leaflet-tooltip-custom",
                   sticky: true,
                   opacity: 1,
                 });
-
                 layer.on("mouseover", function (e) {
                   this.openTooltip();
                 });
-
                 layer.on("mouseout", function (e) {
                   this.closeTooltip();
                 });
