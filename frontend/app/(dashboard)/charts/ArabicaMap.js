@@ -127,19 +127,31 @@ const ArabicaMapComponent = () => {
           <GeoJSON
             data={baliGeoJSON}
             style={styleFeature}
-            onEachFeature={(feature, layer) => {
+            oonEachFeature={(feature, layer) => {
               const desaName = feature.properties.village;
               if (desaData[desaName]) {
                 const { farmerCount, totalLandArea } = desaData[desaName];
-
-                layer.bindTooltip(
-                  `Desa: ${desaName}<br/>Total Farmers: ${farmerCount}<br/>Total Land Area: ${totalLandArea} m²`,
-                  {
-                    sticky: true, // Tooltip follows cursor
-                    direction: "auto",
-                    className: "leaflet-tooltip-custom",
-                  }
-                );
+            
+                const tooltipContent = `
+                  <strong>Desa:</strong> ${desaName}<br/>
+                  <strong>Total Farmers:</strong> ${farmerCount}<br/>
+                  <strong>Total Land Area:</strong> ${totalLandArea} m²
+                `;
+            
+                layer.bindTooltip(tooltipContent, {
+                  direction: "auto",
+                  className: "leaflet-tooltip-custom",
+                  sticky: true,
+                  opacity: 1,
+                });
+            
+                layer.on("mouseover", function (e) {
+                  this.openTooltip();
+                });
+            
+                layer.on("mouseout", function (e) {
+                  this.closeTooltip();
+                });
               }
             }}
           />
