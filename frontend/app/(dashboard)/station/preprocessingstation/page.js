@@ -1,8 +1,6 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
-
 import {
   TextField,
   Button,
@@ -13,15 +11,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
   Card,
   CardContent,
   Divider,
 } from '@mui/material';
-
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
@@ -54,47 +50,31 @@ const PreprocessingStation = () => {
   ];
 
   const unprocessedColumns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'type', headerName: 'Type', width: 150, sortable: true },
     { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
     { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
-    {
-      field: 'batches',
-      headerName: 'Batches',
-      width: 300,
-      renderCell: (params) => (
-        <div>
-          {params.row.batches.map((batch, index) => (
-            <div key={index}>
-              {batch.batchNumber} - {batch.availableBags} bags
-            </div>
-          ))}
-        </div>
-      ),
-    },
+    { field: 'totalWeight', headerName: 'Total Weight', width: 150, sortable: true },
+    { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
   ];
-
 
   const fetchAvailableBags = async (batchNumber, totalBags) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch preprocessing data');
-  
       const preprocessingResponse = await response.json();
-      
       // Log the preprocessing response
       console.log('Preprocessing Response:', preprocessingResponse);
-  
       // Check if the preprocessing response has totalBagsProcessed
       if (preprocessingResponse && typeof preprocessingResponse.totalBagsProcessed === 'number') {
         const totalProcessedBags = preprocessingResponse.totalBagsProcessed;
         const availableBags = totalBags - totalProcessedBags;
-  
         // Log total bags, total processed, and available bags
         console.log('Total Bags:', totalBags);
         console.log('Total Processed Bags:', totalProcessedBags);
         console.log('Available Bags:', availableBags);
-  
         return { availableBags, totalProcessedBags };
       } else {
         throw new Error('Total bags processed is not a valid number');
@@ -109,28 +89,22 @@ const PreprocessingStation = () => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch receiving data');
-  
       const dataArray = await response.json();
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
-  
       const data = dataArray[0];
       const { availableBags, totalProcessedBags } = await fetchAvailableBags(batchNumber, data.totalBags);
-  
       // Log the result of fetchAvailableBags
       console.log('fetchAvailableBags result:', { availableBags, totalProcessedBags });
-  
       setFarmerName(data.farmerName);
       setReceivingDate(data.receivingDate);
       setWeight(data.weight);
       setTotalBags(data.totalBags);
       setBagsAvailable(availableBags);
       setTotalProcessedBags(totalProcessedBags);
-  
       // Log total bags, total processed bags, and available bags to the console
       console.log('Total Bags:', data.totalBags);
       console.log('Total Processed Bags:', totalProcessedBags);
       console.log('Available Bags:', availableBags);
-  
       setSnackbarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
       setSnackbarSeverity('success');
     } catch (error) {
@@ -152,11 +126,9 @@ const PreprocessingStation = () => {
   const handleRfidScan = async (e) => {
     const scannedTag = e.target.value;
     setRfidTag(scannedTag);
-
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/getBatchDetails/${scannedTag}`);
       if (!response.ok) throw new Error('Failed to fetch batch details');
-      
       const data = await response.json();
       setBatchNumber(data.batchNumber);
       await fetchBatchData(data.batchNumber);
@@ -172,7 +144,6 @@ const PreprocessingStation = () => {
       setOpenSnackbar(true);
       return;
     }
-
     await fetchBatchData(batchNumber);
   };
 
@@ -182,12 +153,13 @@ const PreprocessingStation = () => {
       const batches = await batchesResponse.json();
       const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing");
       const processedBags = await processedResponse.json();
-  
+
       const historyData = batches.map((batch) => {
         const processedLogs = processedBags.filter(log => log.batchNumber === batch.batchNumber);
         const totalProcessedBags = processedLogs.reduce((acc, log) => acc + log.bagsProcessed, 0);
         const bagsAvailable = batch.totalBags - totalProcessedBags;
         return {
+          id: batch.batchNumber, // Use batchNumber as the unique id
           batchNumber: batch.batchNumber,
           totalBags: batch.totalBags,
           bagsProcessed: totalProcessedBags,
@@ -198,7 +170,7 @@ const PreprocessingStation = () => {
           })),
         };
       });
-  
+
       setBagsHistory(historyData);
       setOpenHistory(true);
     } catch (error) {
@@ -212,43 +184,36 @@ const PreprocessingStation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     // Trim the batch number and bags processed
     const trimmedBatchNumber = batchNumber.trim();
     const trimmedBagsProcessed = bagsProcessed;
-
     if (trimmedBagsProcessed > bagsAvailable) {
-        setSnackbarMessage(`Cannot process more bags than available. Available: ${bagsAvailable}`);
-        setSnackbarSeverity('warning');
-        setOpenSnackbar(true);
-        return;
+      setSnackbarMessage(`Cannot process more bags than available. Available: ${bagsAvailable}`);
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
     }
-
     const preprocessingData = {
-        bagsProcessed: trimmedBagsProcessed, 
-        batchNumber: trimmedBatchNumber,
+      bagsProcessed: trimmedBagsProcessed,
+      batchNumber: trimmedBatchNumber,
     };
-
     try {
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(preprocessingData),
-        });
-        if (!response.ok) throw new Error('Failed to start processing');
-
-        setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedBagsProcessed} bags!`);
-        setSnackbarSeverity('success');
-        setOpenSnackbar(true); // Show the snackbar here
-
-        // Call fetchPreprocessingData after successful submission
-        await fetchPreprocessingData();
-
-        resetForm();
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preprocessingData),
+      });
+      if (!response.ok) throw new Error('Failed to start processing');
+      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedBagsProcessed} bags!`);
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true); // Show the snackbar here
+      // Call fetchPreprocessingData after successful submission
+      await fetchPreprocessingData();
+      resetForm();
     } catch (error) {
-        handleError('Failed to start preprocessing. Please try again.', error);
+      handleError('Failed to start preprocessing. Please try again.', error);
     }
-};
+  };
 
   const handleError = (message, error) => {
     console.error(message, error);
@@ -273,16 +238,16 @@ const PreprocessingStation = () => {
       const receivingResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
       const QCResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const preprocessingResponse = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing');
-  
+
       const receivingRawResult = await receivingResponse.json();
       const QCResult = await QCResponse.json();
       const preprocessingResult = await preprocessingResponse.json();
-  
+
       // Extracting the relevant data from the responses
       const receivingData = receivingRawResult.allRows || []; // Corrected to access All Rows
       const QCData = QCResult.allRows || [];
       const preprocessingData = preprocessingResult.allRows || [];
-  
+
       // Create a map for QC data for quick lookup
       const QCDataMap = QCData.reduce((acc, qc) => {
         acc[qc.batchNumber.trim()] = {
@@ -293,20 +258,20 @@ const PreprocessingStation = () => {
         };
         return acc;
       }, {});
-  
+
       // Filter receiving data based on QC batch numbers
       const receivingResult = receivingData.filter(item => QCDataMap[item.batchNumber.trim()]); // Use trim to ensure matching
-  
+
       const joinedData = receivingResult.map((receiving) => {
         const relatedPreprocessingLogs = preprocessingData.filter(log => log.batchNumber === receiving.batchNumber);
-  
+
         const totalProcessedBags = relatedPreprocessingLogs.reduce((sum, log) => sum + log.bagsProcessed, 0);
         const bagsAvailable = receiving.totalBags - totalProcessedBags;
-  
+
         const dates = relatedPreprocessingLogs.map(log => new Date(log.processingDate));
         const startProcessingDate = dates.length > 0 ? new Date(Math.min(...dates)) : 'N/A';
         const lastProcessingDate = dates.length > 0 ? new Date(Math.max(...dates)) : 'N/A';
-  
+
         // Calculate SLA
         let sla = 'N/A';
         const receivingDateObj = new Date(receiving.receivingDate);
@@ -315,10 +280,10 @@ const PreprocessingStation = () => {
           const diffTime = Math.abs(today - receivingDateObj);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-  
+
         // Get QC data for the current batch
         const qcData = QCDataMap[receiving.batchNumber.trim()] || {};
-  
+
         return {
           id: receiving.batchNumber, // Use batchNumber as the unique id
           batchNumber: receiving.batchNumber,
@@ -332,35 +297,28 @@ const PreprocessingStation = () => {
           color: qcData.color || 'N/A',
           foreignMatter: qcData.foreignMatter || 'N/A',
           overallQuality: qcData.overallQuality || 'N/A',
+          type: receiving.type || 'N/A', // Assuming there's a type field in receiving data
+          totalWeight: receiving.weight || 'N/A', // Assuming there's a weight field in receiving data
         };
       });
-  
+
       // Filter out batches with available bags
       const unprocessedBatches = joinedData.filter(batch => batch.availableBags > 0);
-  
-      // Group unprocessed batches by ripeness, color, foreignMatter, and overallQuality
-      const groupedUnprocessedBatches = unprocessedBatches.reduce((acc, batch) => {
-        const key = `${batch.ripeness}-${batch.color}-${batch.foreignMatter}-${batch.overallQuality}`;
-        if (!acc[key]) {
-          acc[key] = {
-            id: key, // Use the key as the unique id for the group
-            ripeness: batch.ripeness,
-            color: batch.color,
-            foreignMatter: batch.foreignMatter,
-            overallQuality: batch.overallQuality,
-            batches: [],
-          };
-        }
-        acc[key].batches.push(batch);
-        return acc;
-      }, {});
-  
-      const groupedUnprocessedBatchesArray = Object.values(groupedUnprocessedBatches);
-  
+
+      // Sort unprocessed batches by type, ripeness, color, foreignMatter, and overallQuality
+      const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
+        if (a.type !== b.type) return a.type.localeCompare(b.type);
+        if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
+        if (a.color !== b.color) return a.color.localeCompare(b.color);
+        if (a.foreignMatter !== b.foreignMatter) return a.foreignMatter.localeCompare(b.foreignMatter);
+        if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
+        return 0;
+      });
+
       const sortedData = joinedData.sort((a, b) => {
         const availableBagsA = a.totalBags - a.processedBags;
         const availableBagsB = b.totalBags - b.processedBags;
-  
+
         if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') {
           return -1;
         }
@@ -369,9 +327,9 @@ const PreprocessingStation = () => {
         }
         return availableBagsB - availableBagsA;
       });
-  
+
       setPreprocessingData(sortedData);
-      setUnprocessedBatches(groupedUnprocessedBatchesArray);
+      setUnprocessedBatches(sortedUnprocessedBatches);
     } catch (error) {
       console.error('Error fetching preprocessing data:', error);
     }
@@ -383,15 +341,13 @@ const PreprocessingStation = () => {
 
   // Show loading screen while session is loading
   if (status === 'loading') {
-    return <p>Loading...</p>;
+    return <div>Loading...</div>;
   }
 
   // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'preprocessing')) {
     return (
-      <Typography variant="h6">
-        Access Denied. You do not have permission to view this page.
-      </Typography>
+      <div>Access Denied. You do not have permission to view this page.</div>
     );
   }
 
