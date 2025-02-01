@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
+import { MapContainer, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const BaliMap = () => {
-  const [coveredAreas, setCoveredAreas] = useState([]);
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
+  const [coveredDesa, setCoveredDesa] = useState(new Set());
 
-  // Fetch farmer data from the API
+  // Fetch farmer data and store covered desa names
   useEffect(() => {
     const fetchFarmerData = async () => {
       try {
@@ -16,12 +16,10 @@ const BaliMap = () => {
           "https://processing-facility-backend.onrender.com/api/farmer"
         );
         const data = await response.json();
-        const covered = data.allRows.map((farmer) => ({
-          desa: farmer.desa,
-          kecamatan: farmer.kecamatan,
-          kabupaten: farmer.kecamatan,
-        }));
-        setCoveredAreas(covered);
+
+        // Extract all desa names from API response
+        const desaSet = new Set(data.allRows.map((farmer) => farmer.desa));
+        setCoveredDesa(desaSet);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
       }
@@ -35,13 +33,11 @@ const BaliMap = () => {
     const loadBaliGeoJSON = async () => {
       try {
         const response = await fetch(
-          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk1Njk2LCJleHAiOjQ4OTE5OTU2OTZ9.P1jXPEYeltq9HFoS92-_6MJX7ar1mfKSSfqzA2Futjs"
+          "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk2NTAxLCJleHAiOjMzMjc0Mzk2NTAxfQ.4xAAjVFAwg2x-IuLba2lFlK3L_rb-GhyERWdvFXL3wo"
         );
         const villages = await response.json();
 
-        // Check if the data is an array and handle it accordingly
         if (Array.isArray(villages)) {
-          // Convert to valid GeoJSON structure
           const geoJsonData = {
             type: "FeatureCollection",
             features: villages.map((village) => ({
@@ -53,20 +49,14 @@ const BaliMap = () => {
               },
               geometry: {
                 type: "Polygon",
-                coordinates: [
-                  [
-                    ...(village.border ? village.border.map(([lng, lat]) => [lat, lng]) : []), // Swap lat/lng and check if border exists
-                    // Ensure the first and last points are the same to close the polygon
-                    ...(village.border && village.border.length ? [village.border[0].map(([lng, lat]) => [lat, lng])] : [])
-                  ],
-                ],
+                coordinates: [village.border], // Ensure correct polygon format
               },
             })),
           };
 
           setBaliGeoJSON(geoJsonData);
         } else {
-          console.error("Unexpected data format for villages:", villages);
+          console.error("Unexpected data format:", villages);
         }
       } catch (error) {
         console.error("Error loading Bali GeoJSON:", error);
@@ -78,39 +68,26 @@ const BaliMap = () => {
 
   // Style function for village borders
   const styleFeature = (feature) => {
-    const { village, sub_district, district } = feature.properties;
-
-    const isCovered = coveredAreas.some(
-      (area) =>
-        area.desa === village ||
-        area.kecamatan === sub_district ||
-        area.kabupaten === district
-    );
+    const desaName = feature.properties.village;
 
     return {
-      fillColor: isCovered ? "green" : "transparent", // Highlight covered areas in green
-      fillOpacity: 0.5, // Semi-transparent fill
-      color: "#333", // Border color
-      weight: 1, // Border thickness
+      fillColor: coveredDesa.has(desaName) ? "green" : "transparent", // Green if covered
+      fillOpacity: 0.5,
+      color: "#000", // Black border
+      weight: 1,
     };
   };
 
   return (
     <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
       <MapContainer
-        center={[-8.4095, 115.1889]} // Center of Bali
-        zoom={9} // Zoom level for Bali
+        center={[-8.4095, 115.1889]}
+        zoom={9}
         style={{ height: "100%", width: "100%", backgroundColor: "#f0f0f0" }}
-        zoomControl={false} // Disable zoom controls
-        attributionControl={false} // Disable attribution
+        zoomControl={false}
+        attributionControl={false}
       >
-        {/* Base Map Layer */}
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-
-        {/* Render GeoJSON Data */}
+        {/* Render GeoJSON Data (Bali Outline & Villages) */}
         {baliGeoJSON && <GeoJSON data={baliGeoJSON} style={styleFeature} />}
       </MapContainer>
     </div>
