@@ -594,66 +594,71 @@ const PreprocessingStation = () => {
       </Grid>
 
       <Grid item xs={12} md={7}>
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Pending Processing
-            </Typography>
+
+        <Grid item xs={12} md={12}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Pending Processing
+              </Typography>
+    
+              {/* Table for Preprocessing Data */}
+              <div style={{ height: 600, width: '100%' }}>
+                <DataGrid
+                  rows={unprocessedBatches}
+                  columns={unprocessedColumns}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                  disableSelectionOnClick
+                  sortingOrder={['asc', 'desc']}
+                  getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
+                  slots={{ toolbar: GridToolbar }}
+                  autosizeOnMount
+                  autosizeOptions={{
+                    includeHeaders: true,
+                    includeOutliers: true,
+                    expand: true,
+                  }}
+                  initialState={{
+                    sorting: {
+                      sortModel: [{ field: 'ripeness', sort: 'asc' }],
+                    },
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
   
-            {/* Table for Preprocessing Data */}
-            <div style={{ height: 600, width: '100%' }}>
-              <DataGrid
-                rows={unprocessedBatches}
-                columns={unprocessedColumns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
-                sortingOrder={['asc', 'desc']}
-                getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
-                slots={{ toolbar: GridToolbar }}
-                autosizeOnMount
-                autosizeOptions={{
-                  includeHeaders: true,
-                  includeOutliers: true,
-                  expand: true,
-                }}
-                initialState={{
-                  sorting: {
-                    sortModel: [{ field: 'ripeness', sort: 'asc' }],
-                  },
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-  
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Processing Data
-            </Typography>
-  
-            {/* Table for Preprocessing Data */}
-            <div style={{ height: 1000, width: '100%' }}>
-              <DataGrid
-                rows={preprocessingData}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
-                sortingOrder={['asc', 'desc']}
-                getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
-                slots={{ toolbar: GridToolbar }}
-                autosizeOnMount
-                autosizeOptions={{
-                  includeHeaders: true,
-                  includeOutliers: true,
-                  expand: true,
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <Grid item xs={12} md={12}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Processing Data
+              </Typography>
+    
+              {/* Table for Preprocessing Data */}
+              <div style={{ height: 1000, width: '100%' }}>
+                <DataGrid
+                  rows={preprocessingData}
+                  columns={columns}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                  disableSelectionOnClick
+                  sortingOrder={['asc', 'desc']}
+                  getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
+                  slots={{ toolbar: GridToolbar }}
+                  autosizeOnMount
+                  autosizeOptions={{
+                    includeHeaders: true,
+                    includeOutliers: true,
+                    expand: true,
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
     </Grid>
   );
