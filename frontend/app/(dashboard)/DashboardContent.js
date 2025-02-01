@@ -363,18 +363,6 @@ function Dashboard() {
               </Card>
             </Grid>
 
-            {/* Arabica TradingView Chart */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Arabica Futures Price
-                  </Typography>
-                  <ArabicaTVWidget />
-                </CardContent>
-              </Card>
-            </Grid>
-
             {/* Arabica Map */}
             <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
@@ -383,6 +371,18 @@ function Dashboard() {
                     Arabica Coverage Map
                   </Typography>
                   <ArabicaMapComponent />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Arabica TradingView Chart */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Arabica Futures Price
+                  </Typography>
+                  <ArabicaTVWidget />
                 </CardContent>
               </Card>
             </Grid>
@@ -671,18 +671,6 @@ function Dashboard() {
               </Card>
             </Grid>
 
-            {/* Robusta TradingView Chart */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Robusta Futures Price
-                  </Typography>
-                  <RobustaTVWidget />
-                </CardContent>
-              </Card>
-            </Grid>
-
             {/* Robusta Map */}
             <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
@@ -691,6 +679,18 @@ function Dashboard() {
                     Robusta Coverage Map
                   </Typography>
                   <RobustaMapComponent />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Robusta TradingView Chart */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Robusta Futures Price
+                  </Typography>
+                  <RobustaTVWidget />
                 </CardContent>
               </Card>
             </Grid>

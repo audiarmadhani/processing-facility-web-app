@@ -6,7 +6,7 @@ import { Box, Typography, CircularProgress } from "@mui/material";
 
 const ArabicaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
-  const [desaData, setDesaData] = useState({}); // Store total farmers, land area, total price, and total weight per desa
+  const [desaData, setDesaData] = useState({}); // Store total farmers, land area, total value, and total weight per desa
   const [loading, setLoading] = useState(true);
 
   // Fetch farmer data and calculate aggregated info
@@ -48,17 +48,18 @@ const ArabicaMapComponent = () => {
               acc[desaName] = {
                 farmerCount: 0,
                 totalLandArea: 0,
-                totalPrice: 0,
+                totalValue: 0,
                 totalWeight: 0,
               };
             }
             acc[desaName].farmerCount += 1;
             acc[desaName].totalLandArea += parseFloat(farmer.farmerLandArea) || 0;
 
-            // Add price and weight if available in the receivingMap
+            // Add value and weight if available in the receivingMap
             if (receivingMap[farmer.farmerID]) {
-              acc[desaName].totalPrice += receivingMap[farmer.farmerID].price;
-              acc[desaName].totalWeight += receivingMap[farmer.farmerID].weight;
+              const { price, weight } = receivingMap[farmer.farmerID];
+              acc[desaName].totalValue += price * weight;
+              acc[desaName].totalWeight += weight;
             }
           }
           return acc;
@@ -69,9 +70,9 @@ const ArabicaMapComponent = () => {
 
         // Calculate average price per unit weight per desa
         for (const desaName in aggregatedData) {
-          const { totalPrice, totalWeight } = aggregatedData[desaName];
+          const { totalValue, totalWeight } = aggregatedData[desaName];
           aggregatedData[desaName].averagePrice =
-            totalWeight > 0 ? (totalPrice / totalWeight).toFixed(2) : 0;
+            totalWeight > 0 ? (totalValue / totalWeight).toFixed(2) : 0;
         }
 
         // Log the final desa data to check the average price
