@@ -73,8 +73,8 @@ const ArabicaMapComponent = () => {
     return {
       fillColor: coveredDesa.has(desaName) ? "green" : "transparent", // Green if covered
       fillOpacity: 0.5,
-      color: "#000", // Black border
-      weight: 0.5,
+      color: "#808080",
+      weight: 0.25,
     };
   };
 
