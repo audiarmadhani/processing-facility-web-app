@@ -41,6 +41,7 @@ const PreprocessingStation = () => {
   const [openHistory, setOpenHistory] = useState(false);
   const [bagsHistory, setBagsHistory] = useState([]);
   const [preprocessingData, setPreprocessingData] = useState([]);
+  const [unprocessedBatches, setUnprocessedBatches] = useState([]);
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
@@ -50,6 +51,28 @@ const PreprocessingStation = () => {
     { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
     { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
     { field: 'sla', headerName: 'SLA (days)', width: 130, sortable: true },
+  ];
+
+  const unprocessedColumns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
+    { field: 'color', headerName: 'Color', width: 150, sortable: true },
+    { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
+    { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
+    {
+      field: 'batches',
+      headerName: 'Batches',
+      width: 300,
+      renderCell: (params) => (
+        <div>
+          {params.row.batches.map((batch, index) => (
+            <div key={index}>
+              {batch.batchNumber} - {batch.availableBags} bags
+            </div>
+          ))}
+        </div>
+      ),
+    },
   ];
 
 
@@ -263,18 +286,26 @@ const PreprocessingStation = () => {
       const QCData = QCResult.allRows || [];
       const preprocessingData = preprocessingResult.allRows || [];
 
-      // Map through QCData to extract batch numbers
-      const QCBatchNumbers = QCData.map(qc => qc.batchNumber.trim());
+      // Create a map for QC data for quick lookup
+      const QCDataMap = QCData.reduce((acc, qc) => {
+        acc[qc.batchNumber.trim()] = {
+          ripeness: qc.ripeness,
+          color: qc.color,
+          foreignMatter: qc.foreignMatter,
+          overallQuality: qc.overallQuality,
+        };
+        return acc;
+      }, {});
 
       // Filter receiving data based on QC batch numbers
-      const receivingResult = receivingData.filter(item => QCBatchNumbers.includes(item.batchNumber.trim())); // Use trim to ensure matching
-  
+      const receivingResult = receivingData.filter(item => QCDataMap[item.batchNumber.trim()]); // Use trim to ensure matching
+
       const joinedData = receivingResult.map((receiving) => {
         const relatedPreprocessingLogs = preprocessingData.filter(log => log.batchNumber === receiving.batchNumber);
-  
+
         const totalProcessedBags = relatedPreprocessingLogs.reduce((sum, log) => sum + log.bagsProcessed, 0);
         const bagsAvailable = receiving.totalBags - totalProcessedBags;
-  
+
         const dates = relatedPreprocessingLogs.map(log => new Date(log.processingDate));
         const startProcessingDate = dates.length > 0 ? new Date(Math.min(...dates)) : 'N/A';
         const lastProcessingDate = dates.length > 0 ? new Date(Math.max(...dates)) : 'N/A';
@@ -287,7 +318,10 @@ const PreprocessingStation = () => {
           const diffTime = Math.abs(today - receivingDateObj);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-  
+
+        // Get QC data for the current batch
+        const qcData = QCDataMap[receiving.batchNumber.trim()] || {};
+
         return {
           batchNumber: receiving.batchNumber,
           startProcessingDate: startProcessingDate === 'N/A' ? 'N/A' : startProcessingDate.toISOString().slice(0, 10),
@@ -296,8 +330,40 @@ const PreprocessingStation = () => {
           processedBags: totalProcessedBags,
           availableBags: bagsAvailable,
           sla,
+          ripeness: qcData.ripeness || 'N/A',
+          color: qcData.color || 'N/A',
+          foreignMatter: qcData.foreignMatter || 'N/A',
+          overallQuality: qcData.overallQuality || 'N/A',
         };
       });
+
+      // Filter out batches with available bags
+      const unprocessedBatches = joinedData.filter(batch => batch.availableBags > 0);
+
+      // Group unprocessed batches by ripeness, color, foreignMatter, and overallQuality
+      const groupedUnprocessedBatches = unprocessedBatches.reduce((acc, batch) => {
+        const key = `${batch.ripeness}-${batch.color}-${batch.foreignMatter}-${batch.overallQuality}`;
+        if (!acc[key]) {
+          acc[key] = {
+            ripeness: batch.ripeness,
+            color: batch.color,
+            foreignMatter: batch.foreignMatter,
+            overallQuality: batch.overallQuality,
+            batches: [],
+          };
+        }
+        acc[key].batches.push(batch);
+        return acc;
+      }, {});
+
+      const groupedUnprocessedBatchesArray = Object.values(groupedUnprocessedBatches).map(group => ({
+        id: `${group.ripeness}-${group.color}-${group.foreignMatter}-${group.overallQuality}`,
+        ripeness: group.ripeness,
+        color: group.color,
+        foreignMatter: group.foreignMatter,
+        overallQuality: group.overallQuality,
+        batches: group.batches,
+      }));
   
       const sortedData = joinedData.sort((a, b) => {
         const availableBagsA = a.totalBags - a.processedBags;
@@ -531,6 +597,41 @@ const PreprocessingStation = () => {
                 </Button>
               </DialogActions>
             </Dialog>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} md={7}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Pending Processing
+            </Typography>
+  
+            {/* Table for Preprocessing Data */}
+            <div style={{ height: 600, width: '100%' }}>
+              <DataGrid
+                rows={unprocessedBatches}
+                columns={unprocessedColumns}
+                pageSize={5}
+                rowsPerPageOptions={[5, 10, 20]}
+                disableSelectionOnClick
+                sortingOrder={['asc', 'desc']}
+                getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
+                slots={{ toolbar: GridToolbar }}
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
+                initialState={{
+                  sorting: {
+                    sortModel: [{ field: 'ripeness', sort: 'asc' }],
+                  },
+                }}
+              />
+            </div>
           </CardContent>
         </Card>
       </Grid>
