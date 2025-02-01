@@ -20,8 +20,7 @@ const ArabicaMapComponent = () => {
           "https://processing-facility-backend.onrender.com/api/farmer"
         );
         const data = await response.json();
-
-        // Aggregate farmer count and land area per desa
+  
         const aggregatedData = data.arabicaFarmers.reduce((acc, farmer) => {
           if (farmer.farmType === "Arabica") {
             const desaName = farmer.desa;
@@ -33,25 +32,20 @@ const ArabicaMapComponent = () => {
           }
           return acc;
         }, {});
-
+  
         setDesaData(aggregatedData);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
       }
     };
-
-    fetchFarmerData();
-  }, []);
-
-  // Load Bali GeoJSON data
-  useEffect(() => {
+  
     const loadBaliGeoJSON = async () => {
       try {
         const response = await fetch(
           "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk2NTAxLCJleHAiOjMzMjc0Mzk2NTAxfQ.4xAAjVFAwg2x-IuLba2lFlK3L_rb-GhyERWdvFXL3wo"
         );
         const villages = await response.json();
-
+  
         if (Array.isArray(villages)) {
           const geoJsonData = {
             type: "FeatureCollection",
@@ -68,7 +62,7 @@ const ArabicaMapComponent = () => {
               },
             })),
           };
-
+  
           setBaliGeoJSON(geoJsonData);
         } else {
           console.error("Unexpected data format:", villages);
@@ -77,8 +71,8 @@ const ArabicaMapComponent = () => {
         console.error("Error loading Bali GeoJSON:", error);
       }
     };
-
-    loadBaliGeoJSON();
+  
+    Promise.all([fetchFarmerData(), loadBaliGeoJSON()]).then(() => setLoading(false));
   }, []);
 
   // Style function for village borders
@@ -101,7 +95,7 @@ const ArabicaMapComponent = () => {
       );
     }
   
-    if (!data || data.length === 0) {
+    if (Object.keys(desaData).length === 0) {
       return (
         <Box sx={{ textAlign: "center", padding: 2 }}>
           <Typography variant="h6">No data available</Typography>
@@ -127,7 +121,7 @@ const ArabicaMapComponent = () => {
           <GeoJSON
             data={baliGeoJSON}
             style={styleFeature}
-            oonEachFeature={(feature, layer) => {
+            onEachFeature={(feature, layer) => {
               const desaName = feature.properties.village;
               if (desaData[desaName]) {
                 const { farmerCount, totalLandArea } = desaData[desaName];
