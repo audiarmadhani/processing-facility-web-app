@@ -375,16 +375,19 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Map */}
-            {/* <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Arabica Coverage Map
                   </Typography>
-                  <BaliMap />
+                  <BaliMap 
+                    apiUrl="https://processing-facility-backend.onrender.com/api/farmer"
+                    geoJsonUrl="https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlcy5nZW9qc29uIiwiaWF0IjoxNzM4MzA5MjY1LCJleHAiOjQ4OTE5MDkyNjV9.CwU9ps72ntnaG2Z_bDieyzxZxFj98KnEZH5luLCZpyI"
+                  />
                 </CardContent>
               </Card>
-            </Grid> */}
+            </Grid>
 
           </Grid>
         </Grid>
