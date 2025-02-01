@@ -54,7 +54,6 @@ const PreprocessingStation = () => {
   ];
 
   const unprocessedColumns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
     { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
     { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
@@ -181,27 +180,25 @@ const PreprocessingStation = () => {
     try {
       const batchesResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving");
       const batches = await batchesResponse.json();
-
       const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing");
       const processedBags = await processedResponse.json();
-
+  
       const historyData = batches.map((batch) => {
-        const processedLogs = processedBags.filter(
-          (log) => log.batchNumber === batch.batchNumber
-        );
-
+        const processedLogs = processedBags.filter(log => log.batchNumber === batch.batchNumber);
         const totalProcessedBags = processedLogs.reduce((acc, log) => acc + log.bagsProcessed, 0);
         const bagsAvailable = batch.totalBags - totalProcessedBags;
-
         return {
           batchNumber: batch.batchNumber,
           totalBags: batch.totalBags,
           bagsProcessed: totalProcessedBags,
           bagsAvailable,
-          processedDate: processedLogs.length > 0 ? processedLogs[0].date : "N/A",
+          processedLogs: processedLogs.map(log => ({
+            processingDate: log.processingDate,
+            bagsProcessed: log.bagsProcessed,
+          })),
         };
       });
-
+  
       setBagsHistory(historyData);
       setOpenHistory(true);
     } catch (error) {
@@ -276,16 +273,16 @@ const PreprocessingStation = () => {
       const receivingResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
       const QCResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const preprocessingResponse = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing');
-
+  
       const receivingRawResult = await receivingResponse.json();
       const QCResult = await QCResponse.json();
       const preprocessingResult = await preprocessingResponse.json();
-
+  
       // Extracting the relevant data from the responses
       const receivingData = receivingRawResult.allRows || []; // Corrected to access All Rows
       const QCData = QCResult.allRows || [];
       const preprocessingData = preprocessingResult.allRows || [];
-
+  
       // Create a map for QC data for quick lookup
       const QCDataMap = QCData.reduce((acc, qc) => {
         acc[qc.batchNumber.trim()] = {
@@ -296,20 +293,20 @@ const PreprocessingStation = () => {
         };
         return acc;
       }, {});
-
+  
       // Filter receiving data based on QC batch numbers
       const receivingResult = receivingData.filter(item => QCDataMap[item.batchNumber.trim()]); // Use trim to ensure matching
-
+  
       const joinedData = receivingResult.map((receiving) => {
         const relatedPreprocessingLogs = preprocessingData.filter(log => log.batchNumber === receiving.batchNumber);
-
+  
         const totalProcessedBags = relatedPreprocessingLogs.reduce((sum, log) => sum + log.bagsProcessed, 0);
         const bagsAvailable = receiving.totalBags - totalProcessedBags;
-
+  
         const dates = relatedPreprocessingLogs.map(log => new Date(log.processingDate));
         const startProcessingDate = dates.length > 0 ? new Date(Math.min(...dates)) : 'N/A';
         const lastProcessingDate = dates.length > 0 ? new Date(Math.max(...dates)) : 'N/A';
-
+  
         // Calculate SLA
         let sla = 'N/A';
         const receivingDateObj = new Date(receiving.receivingDate);
@@ -318,11 +315,12 @@ const PreprocessingStation = () => {
           const diffTime = Math.abs(today - receivingDateObj);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-
+  
         // Get QC data for the current batch
         const qcData = QCDataMap[receiving.batchNumber.trim()] || {};
-
+  
         return {
+          id: receiving.batchNumber, // Use batchNumber as the unique id
           batchNumber: receiving.batchNumber,
           startProcessingDate: startProcessingDate === 'N/A' ? 'N/A' : startProcessingDate.toISOString().slice(0, 10),
           lastProcessingDate: lastProcessingDate === 'N/A' ? 'N/A' : lastProcessingDate.toISOString().slice(0, 10),
@@ -336,16 +334,16 @@ const PreprocessingStation = () => {
           overallQuality: qcData.overallQuality || 'N/A',
         };
       });
-
+  
       // Filter out batches with available bags
       const unprocessedBatches = joinedData.filter(batch => batch.availableBags > 0);
-
+  
       // Group unprocessed batches by ripeness, color, foreignMatter, and overallQuality
       const groupedUnprocessedBatches = unprocessedBatches.reduce((acc, batch) => {
-        const key = `${batch.batchNumber}-${batch.ripeness}-${batch.color}-${batch.foreignMatter}-${batch.overallQuality}`;
+        const key = `${batch.ripeness}-${batch.color}-${batch.foreignMatter}-${batch.overallQuality}`;
         if (!acc[key]) {
           acc[key] = {
-            batchNumber: batch.batchNumber,
+            id: key, // Use the key as the unique id for the group
             ripeness: batch.ripeness,
             color: batch.color,
             foreignMatter: batch.foreignMatter,
@@ -356,15 +354,8 @@ const PreprocessingStation = () => {
         acc[key].batches.push(batch);
         return acc;
       }, {});
-
-      const groupedUnprocessedBatchesArray = Object.values(groupedUnprocessedBatches).map(group => ({
-        id: `${group.batchNumber}-${group.ripeness}-${group.color}-${group.foreignMatter}-${group.overallQuality}`,
-        ripeness: group.ripeness,
-        color: group.color,
-        foreignMatter: group.foreignMatter,
-        overallQuality: group.overallQuality,
-        batches: group.batches,
-      }));
+  
+      const groupedUnprocessedBatchesArray = Object.values(groupedUnprocessedBatches);
   
       const sortedData = joinedData.sort((a, b) => {
         const availableBagsA = a.totalBags - a.processedBags;
@@ -587,9 +578,25 @@ const PreprocessingStation = () => {
                   <Typography>No processing history available.</Typography>
                 ) : (
                   bagsHistory.map((history, index) => (
-                    <Typography key={index}>
-                      Batch: {history.batchNumber}, Total Bags: {history.totalBags}, Bags Processed: {history.bagsProcessed}, Bags Available: {history.bagsAvailable}, Processed Date: {history.processedDate}
-                    </Typography>
+                    <div key={index} style={{ marginBottom: '16px' }}>
+                      <Typography variant="h6">Batch: {history.batchNumber}</Typography>
+                      <Typography>Total Bags: {history.totalBags}</Typography>
+                      <Typography>Processed Bags: {history.bagsProcessed}</Typography>
+                      <Typography>Available Bags: {history.bagsAvailable}</Typography>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <Typography variant="subtitle1">Processing Logs:</Typography>
+                      {history.processedLogs.length === 0 ? (
+                        <Typography>No processing logs available for this batch.</Typography>
+                      ) : (
+                        history.processedLogs.map((log, logIndex) => (
+                          <div key={logIndex} style={{ marginLeft: '16px' }}>
+                            <Typography>Processing Date: {new Date(log.processingDate).toISOString().slice(0, 10)}</Typography>
+                            <Typography>Bags Processed: {log.bagsProcessed}</Typography>
+                            <Divider style={{ margin: '4px 0' }} />
+                          </div>
+                        ))
+                      )}
+                    </div>
                   ))
                 )}
               </DialogContent>
