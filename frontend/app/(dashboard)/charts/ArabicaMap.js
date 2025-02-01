@@ -34,6 +34,19 @@ const BaliMap = ({ apiUrl, geoJsonUrl }) => {
     fetchFarmerData();
   }, [apiUrl]);
 
+  // Process coordinates to handle both single and nested arrays
+  const processCoordinates = (border) => {
+    if (!border || !Array.isArray(border)) return [];
+
+    // Check if it's already a nested array
+    if (Array.isArray(border[0]) && Array.isArray(border[0][0])) {
+      return border.map(ring => ring.map(([lng, lat]) => [lat, lng]));
+    }
+
+    // If it's a single array of coordinates
+    return [border.map(([lng, lat]) => [lat, lng])];
+  };
+
   // Load Bali GeoJSON data
   useEffect(() => {
     const loadBaliGeoJSON = async () => {
@@ -54,17 +67,19 @@ const BaliMap = ({ apiUrl, geoJsonUrl }) => {
           features: villages.map((village) => ({
             type: "Feature",
             properties: {
-              province: village.province,
               village: village.village,
               sub_district: village.sub_district,
               district: village.district,
+              province: village.province
             },
             geometry: {
               type: "Polygon",
-              // Keep coordinates in [longitude, latitude] order as they are in the original data
-              coordinates: [village.border || []]
+              coordinates: processCoordinates(village.border)
             },
-          })).filter(feature => feature.geometry.coordinates[0].length > 0),
+          })).filter(feature => 
+            feature.geometry.coordinates.length > 0 && 
+            feature.geometry.coordinates[0].length > 0
+          ),
         };
 
         setBaliGeoJSON(geoJsonData);
