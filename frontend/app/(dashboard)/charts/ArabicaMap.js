@@ -3,10 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, GeoJSON, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { Box, Typography, CircularProgress } from "@mui/material";
+
 
 const ArabicaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
   const [desaData, setDesaData] = useState({}); // Store total farmers and land area per desa
+    const [loading, setLoading] = useState(true);
+  
 
   // Fetch farmer data and calculate aggregated info
   useEffect(() => {
@@ -88,6 +92,22 @@ const ArabicaMapComponent = () => {
       weight: 0.25,
     };
   };
+
+  if (loading) {
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+  
+    if (!data || data.length === 0) {
+      return (
+        <Box sx={{ textAlign: "center", padding: 2 }}>
+          <Typography variant="h6">No data available</Typography>
+        </Box>
+      );
+    }
 
   return (
     <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
