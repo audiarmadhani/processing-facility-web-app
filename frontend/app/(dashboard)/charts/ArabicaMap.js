@@ -115,8 +115,8 @@ const ArabicaMapComponent = () => {
                 layer.bindTooltip(
                   `Desa: ${desaName}<br/>Total Farmers: ${farmerCount}<br/>Total Land Area: ${totalLandArea} m²`,
                   {
-                    permanent: true, // Sticky tooltip
-                    direction: "center",
+                    sticky: true, // Tooltip follows cursor
+                    direction: "auto",
                     className: "leaflet-tooltip-custom",
                   }
                 );

@@ -90,7 +90,7 @@ function Dashboard() {
           <Grid container spacing={3}>
                
             {/* Total Arabica Weight */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Weight</Typography>
@@ -121,7 +121,7 @@ function Dashboard() {
 
             {/* Total Arabica Cost */}
             {["admin", "manager"].includes(userRole) && (
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Cost</Typography>
@@ -153,7 +153,7 @@ function Dashboard() {
             
             {/* Average Arabica Cost */}
             {["admin", "manager"].includes(userRole) && (
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Average Arabica Cherry Cost</Typography>
@@ -184,7 +184,7 @@ function Dashboard() {
             )}
 
             {/* Total Arabica Processed */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Processed</Typography>
@@ -214,7 +214,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Arabica Production */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Production</Typography>
@@ -244,7 +244,7 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Yield */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="body1">Arabica Yield</Typography>
@@ -265,7 +265,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Arabica Land Covered */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Arabica Land Covered</Typography>
@@ -286,7 +286,7 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Farmers */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Arabica Farmers</Typography>
@@ -307,7 +307,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Arabica QC */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Arabica QC</Typography>
@@ -328,7 +328,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Arabica Processing */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Arabica Processing</Typography>
@@ -352,7 +352,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Arabica Production Bar Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -364,7 +364,7 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica TradingView Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -376,7 +376,7 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Map */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -398,7 +398,7 @@ function Dashboard() {
 
 
             {/* Total Robusta Weight */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Cherry Weight</Typography>
@@ -429,7 +429,7 @@ function Dashboard() {
 
             {/* Total Robusta Cost */}
             {["admin", "manager"].includes(userRole) && (
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Cherry Cost</Typography>
@@ -461,7 +461,7 @@ function Dashboard() {
 
             {/* Average Robusta Cost */}
             {["admin", "manager"].includes(userRole) && (
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Average Robusta Cherry Cost</Typography>
@@ -492,7 +492,7 @@ function Dashboard() {
             )}
 
             {/* Total Robusta Processed */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Processed</Typography>
@@ -522,7 +522,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Robusta Production */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Production</Typography>
@@ -552,7 +552,7 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta Yield */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="body1">Robusta Yield</Typography>
@@ -573,7 +573,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Robusta Land Covered */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Total Robusta Land Covered</Typography>
@@ -594,7 +594,7 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta Farmers */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Robusta Farmers</Typography>
@@ -615,7 +615,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Robusta QC */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Robusta QC</Typography>
@@ -636,7 +636,7 @@ function Dashboard() {
             </Grid>
 
             {/* Pending Robusta Processing */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
               <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Pending Robusta Processing</Typography>
@@ -660,7 +660,7 @@ function Dashboard() {
             </Grid>
 
             {/* Total Robusta Production Bar Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -672,7 +672,7 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta TradingView Chart */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -684,7 +684,7 @@ function Dashboard() {
             </Grid>
 
             {/* Robusta Map */}
-            <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
