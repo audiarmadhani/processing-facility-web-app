@@ -3,10 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, GeoJSON, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { Box, Typography, CircularProgress } from "@mui/material";
+
 
 const RobustaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
   const [desaData, setDesaData] = useState({}); // Store total farmers and land area per desa
+    const [loading, setLoading] = useState(true);
+  
 
   // Fetch farmer data and calculate aggregated info
   useEffect(() => {
@@ -16,8 +20,7 @@ const RobustaMapComponent = () => {
           "https://processing-facility-backend.onrender.com/api/farmer"
         );
         const data = await response.json();
-
-        // Aggregate farmer count and land area per desa
+  
         const aggregatedData = data.robustaFarmers.reduce((acc, farmer) => {
           if (farmer.farmType === "Robusta") {
             const desaName = farmer.desa;
@@ -29,25 +32,20 @@ const RobustaMapComponent = () => {
           }
           return acc;
         }, {});
-
+  
         setDesaData(aggregatedData);
       } catch (error) {
         console.error("Error fetching farmer data:", error);
       }
     };
-
-    fetchFarmerData();
-  }, []);
-
-  // Load Bali GeoJSON data
-  useEffect(() => {
+  
     const loadBaliGeoJSON = async () => {
       try {
         const response = await fetch(
           "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/bali_villages_minified.geojson?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvYmFsaV92aWxsYWdlc19taW5pZmllZC5nZW9qc29uIiwiaWF0IjoxNzM4Mzk2NTAxLCJleHAiOjMzMjc0Mzk2NTAxfQ.4xAAjVFAwg2x-IuLba2lFlK3L_rb-GhyERWdvFXL3wo"
         );
         const villages = await response.json();
-
+  
         if (Array.isArray(villages)) {
           const geoJsonData = {
             type: "FeatureCollection",
@@ -64,7 +62,7 @@ const RobustaMapComponent = () => {
               },
             })),
           };
-
+  
           setBaliGeoJSON(geoJsonData);
         } else {
           console.error("Unexpected data format:", villages);
@@ -73,8 +71,8 @@ const RobustaMapComponent = () => {
         console.error("Error loading Bali GeoJSON:", error);
       }
     };
-
-    loadBaliGeoJSON();
+  
+    Promise.all([fetchFarmerData(), loadBaliGeoJSON()]).then(() => setLoading(false));
   }, []);
 
   // Style function for village borders
@@ -88,6 +86,22 @@ const RobustaMapComponent = () => {
       weight: 0.25,
     };
   };
+
+  if (loading) {
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+  
+    if (Object.keys(desaData).length === 0) {
+      return (
+        <Box sx={{ textAlign: "center", padding: 2 }}>
+          <Typography variant="h6">No data available</Typography>
+        </Box>
+      );
+    }
 
   return (
     <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
@@ -111,15 +125,27 @@ const RobustaMapComponent = () => {
               const desaName = feature.properties.village;
               if (desaData[desaName]) {
                 const { farmerCount, totalLandArea } = desaData[desaName];
-
-                layer.bindTooltip(
-                  `Desa: ${desaName}<br/>Total Farmers: ${farmerCount}<br/>Total Land Area: ${totalLandArea} m²`,
-                  {
-                    sticky: true, // Tooltip follows cursor
-                    direction: "auto",
-                    className: "leaflet-tooltip-custom",
-                  }
-                );
+            
+                const tooltipContent = `
+                  <strong>Desa:</strong> ${desaName}<br/>
+                  <strong>Total Farmers:</strong> ${farmerCount}<br/>
+                  <strong>Total Land Area:</strong> ${totalLandArea} m²
+                `;
+            
+                layer.bindTooltip(tooltipContent, {
+                  direction: "auto",
+                  className: "leaflet-tooltip-custom",
+                  sticky: true,
+                  opacity: 1,
+                });
+            
+                layer.on("mouseover", function (e) {
+                  this.openTooltip();
+                });
+            
+                layer.on("mouseout", function (e) {
+                  this.closeTooltip();
+                });
               }
             }}
           />
