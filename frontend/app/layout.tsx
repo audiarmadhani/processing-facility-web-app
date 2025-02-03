@@ -62,6 +62,7 @@ const NAVIGATION: Navigation = [
     icon: <AttachMoneyIcon />,
     children: [
       { segment: "payment", title: "Payment", icon: <RequestQuoteIcon /> },
+      { segment: "expenses", title: "Expenses", icon: <AttachMoneyIcon /> },
     ],
   },
   
