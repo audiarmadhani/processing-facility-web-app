@@ -48,9 +48,10 @@ const NAVIGATION: Navigation = [
     children: [
       { segment: "receivingstation", title: "Receiving", icon: <WarehouseIcon /> },
       { segment: "transportstation", title: "Transport", icon: <LocalShippingIcon /> },
-      { segment: "qcstation", title: "Quality Control", icon: <NoteAltIcon /> },
+      { segment: "qcstation", title: "Cherry Quality Control", icon: <NoteAltIcon /> },
       { segment: "preprocessingstation", title: "Pre-Processing", icon: <FactoryIcon /> },
       { segment: "postprocessingstation", title: "Post-Processing", icon: <LocalShippingOutlinedIcon /> },
+      { segment: "postprocessingqcstation", title: "GB Quality Control", icon: <NoteAltIcon /> },
     ],
   },
 
