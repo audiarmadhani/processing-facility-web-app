@@ -217,6 +217,7 @@ function PostprocessingStation() {
                       <MenuItem value="Regional Lot">Regional Lot</MenuItem>
                       <MenuItem value="Micro Lot">Micro Lot</MenuItem>
                       <MenuItem value="Competition Lot">Competition Lot</MenuItem>
+                      <MenuItem value="Competition Lot">Commercial Lot</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
