@@ -10,10 +10,10 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
     "@emotion/cache": "^11",
-    "@emotion/react": "^11",
-    "@emotion/styled": "^11",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6",
-    "@mui/material": "^6",
+    "@mui/material": "^6.4.2",
     "@mui/material-nextjs": "^6",
     "@mui/x-charts": "^7",
     "@mui/x-data-grid": "^7",
@@ -31,6 +31,7 @@
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.3.1",
+    "react-dropzone": "^14.3.5",
     "react-leaflet": "^4.2.1",
     "react-webcam": "^7.2.0",
     "recharts": "^2.15.0"
