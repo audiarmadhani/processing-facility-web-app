@@ -5,6 +5,7 @@ import { TextField, MenuItem, Button, Grid, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useEffect } from "react";
 import axios from "axios";
+import FileUpload from '../../components/FileUpload';
 
 const expenseTypes = {
   Operations: ["Vollers/Warehouse", "Accountant", "Tax", "Bank", "Office", "Flight", "Hotel", "Travel", "Packaging", "PostNL", "Others"],
