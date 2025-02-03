@@ -63,7 +63,7 @@ const PostProcessingQCPage = () => {
 
   const fetchQCData = async () => {
     try {
-      const res = await axios.get("/api/postproqc");
+      const res = await axios.get("https://processing-facility-backend.onrender.com/api/postproqc");
       setQcData(res.data);
     } catch (error) {
       console.error("Error fetching QC data:", error);
@@ -72,7 +72,7 @@ const PostProcessingQCPage = () => {
 
   const handleBatchNumberSearch = async () => {
     try {
-      const res = await axios.get(`/api/postprocessing/${batchNumber}`);
+      const res = await axios.get(`https://processing-facility-backend.onrender.com/api/postprocessing/${batchNumber}`);
       setBatchData(res.data);
     } catch (error) {
       console.error("Batch not found:", error);
@@ -88,7 +88,7 @@ const PostProcessingQCPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("/api/postproqc", { batchNumber, ...formData });
+      await axios.post("https://processing-facility-backend.onrender.com/api/postproqc", { batchNumber, ...formData });
       setSnackbar({ open: true, message: "QC Data Saved!", severity: "success" });
       fetchQCData();
     } catch (error) {
