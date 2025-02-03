@@ -256,11 +256,11 @@ const PreprocessingStation = () => {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/pendingpreprocessing');
       const result = await response.json();
-      const preprocessingData = result.allRows || [];
+      const pendingPreprocessingData = result.allRows || [];
   
       // Calculate SLA (days since receiving)
       const today = new Date();
-      const formattedData = preprocessingData.map(batch => {
+      const formattedData = pendingPreprocessingData.map(batch => {
         const receivingDate = new Date(batch.receivingDateData);
         let sla = 'N/A';
   
