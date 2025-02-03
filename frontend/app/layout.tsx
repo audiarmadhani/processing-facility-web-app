@@ -27,7 +27,7 @@ export const metadata = {
   title: "Kopi Fabriek Platform",
   description: "Processing Facility Platform",
   icons: {
-    icon: "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon.ico?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbi5pY28iLCJpYXQiOjE3MzgxMzA1NTgsImV4cCI6NDg5MTczMDU1OH0.wZVenbG-M5jCkBJksWVHlNwHyR6rVtClKvSfXrkn734",
+    icon: "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon%20(1).ico?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbiAoMSkuaWNvIiwiaWF0IjoxNzM4NTU1NTU5LCJleHAiOjEwMzc4NTU1NTU5fQ.rqew4VRFFxA7l_Q6sgpYAVOpHkTbG_h9F0CqIKQODd8",
   },
 };
 

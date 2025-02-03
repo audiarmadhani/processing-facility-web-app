@@ -569,11 +569,6 @@ const PreprocessingStation = () => {
                   includeOutliers: true,
                   expand: true,
                 }}
-                initialState={{
-                  sorting: {
-                    sortModel: [{ field: 'ripeness', sort: 'asc' }],
-                  },
-                }}
               />
             </div>
           </CardContent>
