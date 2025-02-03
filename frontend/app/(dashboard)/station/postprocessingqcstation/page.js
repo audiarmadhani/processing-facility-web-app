@@ -201,7 +201,7 @@ const PostProcessingQCPage = () => {
             <form onSubmit={handleSubmit}>
 
             <Grid item xs={4}>
-              <FormControl fullWidth sx={{ mt: 2 }}>
+              <FormControl sx={{ mt: 2 }}>
                 <InputLabel>Serangga Hidup</InputLabel>
                 <Select name="seranggaHidup" value={formData.seranggaHidup} onChange={handleFormChange} input={<OutlinedInput label="Serangga Hidup" />}>
                   <MenuItem value={false}>No</MenuItem>
@@ -211,7 +211,7 @@ const PostProcessingQCPage = () => {
             </Grid>
 
             <Grid item xs={4}>
-              <FormControl fullWidth sx={{ mt: 2 }}>
+              <FormControl sx={{ mt: 2 }}>
                 <InputLabel>Biji Berbau Busuk</InputLabel>
                 <Select name="bijiBauBusuk" value={formData.bijiBauBusuk} onChange={handleFormChange} input={<OutlinedInput label="Biji Berbau Busuk" />}>
                   <MenuItem value={false}>No</MenuItem>
@@ -228,7 +228,6 @@ const PostProcessingQCPage = () => {
                     value={formData.kelembapan}
                     onChange={handleFormChange}
                     sx={{ mt: 2 }}
-                    fullWidth
                 />
               </Grid>
 
@@ -240,7 +239,6 @@ const PostProcessingQCPage = () => {
                 value={formData.bijiHitam}
                 onChange={handleFormChange}
                 sx={{ mt: 2 }}
-                fullWidth
                 />
               </Grid>
 
@@ -252,7 +250,6 @@ const PostProcessingQCPage = () => {
                 value={formData.bijiHitamSebagian}
                 onChange={handleFormChange}
                 sx={{ mt: 2 }}
-                fullWidth
                 />
               </Grid>
 
