@@ -1,39 +1,39 @@
-// FileUpload.js
 import React from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Button, Typography } from '@mui/material';
+import { Button, Typography, Box } from '@mui/material';
 
 const FileUpload = ({ onDrop }) => {
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     accept: {
       'image/jpeg': [],
       'image/png': [],
       'application/pdf': [],
     },
     onDrop,
+    noClick: true, // Prevents opening file explorer when clicking anywhere in the drop zone
   });
 
   return (
-    <div {...getRootProps()} style={dropzoneStyle}>
+    <Box {...getRootProps()} sx={dropzoneStyle}>
       <input {...getInputProps()} />
-      {isDragActive ? (
-        <Typography variant="body1">Drop the files here ...</Typography>
-      ) : (
-        <Typography variant="body1">Drag and drop some files here, or click to select files</Typography>
-      )}
-      <Button variant="contained" style={{ marginTop: '10px' }}>
-        Browse Files
-      </Button>
-    </div>
+      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Drag & Drop</Typography>
+      <Typography variant="body2" sx={{ mb: 2, color: 'gray' }}>or</Typography>
+      <Button variant="contained" onClick={open}>Browse</Button>
+    </Box>
   );
 };
 
 const dropzoneStyle = {
-  border: '2px dashed rgb(144, 144, 144)',
+  border: '2px solid rgb(144, 144, 144)',
   borderRadius: '16px',
-  padding: '20px',
+  padding: '40px', // Increased padding for taller height
   textAlign: 'center',
   cursor: 'pointer',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '160px', // Adjusted for double height
 };
 
 export default FileUpload;
