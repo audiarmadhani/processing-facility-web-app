@@ -200,7 +200,7 @@ const PostProcessingQCPage = () => {
             </Typography>
             <form onSubmit={handleSubmit}>
 
-              <FormControl fullWidth sx={{ mt: 2 }}>
+              <FormControl xs={4} sx={{ mt: 2 }}>
                 <InputLabel>Serangga Hidup</InputLabel>
                 <Select name="seranggaHidup" value={formData.seranggaHidup} onChange={handleFormChange} input={<OutlinedInput label="Serangga Hidup" />}>
                   <MenuItem value={false}>No</MenuItem>
@@ -208,7 +208,7 @@ const PostProcessingQCPage = () => {
                 </Select>
               </FormControl>
 
-              <FormControl fullWidth sx={{ mt: 2 }}>
+              <FormControl xs={4} sx={{ mt: 2 }}>
                 <InputLabel>Biji Berbau Busuk</InputLabel>
                 <Select name="bijiBauBusuk" value={formData.bijiBauBusuk} onChange={handleFormChange} input={<OutlinedInput label="Biji Berbau Busuk" />}>
                   <MenuItem value={false}>No</MenuItem>
@@ -222,7 +222,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kelembapan}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -232,7 +232,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiHitam}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -242,7 +242,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiHitamSebagian}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -252,7 +252,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiHitamPecah}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -262,7 +262,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kopiGelondong}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -272,7 +272,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiCoklat}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -282,7 +282,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kulitKopiBesar}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -292,7 +292,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kulitKopiSedang}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -302,7 +302,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kulitKopiKecil}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -312,7 +312,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiBerKulitTanduk}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -322,7 +322,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kulitTandukBesar}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -332,7 +332,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kulitTandukSedang}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -342,7 +342,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.kulitTandukKecil}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -352,7 +352,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiPecah}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -362,7 +362,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiMuda}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -372,7 +372,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiBerlubangSatu}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -382,7 +382,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiBerlubangLebihSatu}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -392,7 +392,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.bijiBertutul}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -402,7 +402,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.rantingBesar}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -412,7 +412,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.rantingSedang}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -422,7 +422,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.rantingKecil}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
@@ -432,7 +432,7 @@ const PostProcessingQCPage = () => {
                 type="number"
                 value={formData.totalBobotKotoran}
                 onChange={handleFormChange}
-                fullWidth
+                xs={4}
                 sx={{ mt: 2 }}
               />
 
