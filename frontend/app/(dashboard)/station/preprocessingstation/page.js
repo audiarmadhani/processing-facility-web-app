@@ -61,6 +61,8 @@ const PreprocessingStation = () => {
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
     { field: 'totalWeight', headerName: 'Total Weight', width: 150, sortable: true },
     { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
+    { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
+    { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
   ];
 
 
