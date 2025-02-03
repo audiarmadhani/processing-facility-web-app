@@ -278,7 +278,7 @@ const PreprocessingStation = () => {
       });
   
       // Filter out batches with available bags
-      const unprocessedBatches = formattedData.filter(batch => batch.bagsAvailable > 0);
+      const unprocessedBatches = formattedData.filter(batch => batch.availableBags > 0);
   
       // Sort unprocessed batches by type, ripeness, color, foreignMatter, and overallQuality
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
@@ -299,7 +299,7 @@ const PreprocessingStation = () => {
         if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') {
           return 1;
         }
-        return b.bagsAvailable - a.bagsAvailable;
+        return b.availableBags - a.availableBags;
       });
   
       setPreprocessingData(sortedData);
