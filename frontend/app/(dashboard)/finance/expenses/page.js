@@ -7,12 +7,12 @@ import { useEffect } from "react";
 import axios from "axios";
 
 const expenseTypes = {
-  operations: ["Vollers/Warehouse", "Accountant", "Tax", "Bank", "Office", "Flight", "Hotel", "Travel", "Packaging", "PostNL", "Others"],
-  marketing: ["Website", "Marketing Materials", "Competition", "Booth"],
-  legal: ["Notary", "Others"],
-  inventory: ["Coffee Beans", "Coffee Sample", "Tools", "Jute Bag", "Grainpro", "Packaging", "Office", "Packaging Exotic", "Consumables"],
-  freight: ["ID Shipment", "NL Shipment", "ID-NL Shipment", "Gojek", "Jastip", "Document"],
-  others: ["Others"],
+  Operations: ["Vollers/Warehouse", "Accountant", "Tax", "Bank", "Office", "Flight", "Hotel", "Travel", "Packaging", "PostNL", "Others"],
+  Marketing: ["Website", "Marketing Materials", "Competition", "Booth"],
+  Legal: ["Notary", "Others"],
+  Inventory: ["Coffee Beans", "Coffee Sample", "Tools", "Jute Bag", "Grainpro", "Packaging", "Office", "Packaging Exotic", "Consumables"],
+  Freight: ["ID Shipment", "NL Shipment", "ID-NL Shipment", "Gojek", "Jastip", "Document"],
+  Others: ["Others"],
 };
 
 const invoiceRecipients = ["PT Berkas Tuaian Melimpah", "Fabriek Group Indonesia BV"];
@@ -60,6 +60,10 @@ export default function ExpensesPage() {
       ...prev,
       invoiceFiles: event.target.files,
     }));
+  };
+
+  const handleDrop = (acceptedFiles) => {
+    setFiles(acceptedFiles);
   };
 
   const handleSubmit = async (event) => {
@@ -148,7 +152,7 @@ export default function ExpensesPage() {
 
           <TextField fullWidth label="Expense Detail" name="detail" value={formData.detail} onChange={handleChange} margin="normal" />
 
-          <input type="file" multiple onChange={handleFileChange} />
+          <FileUpload onDrop={handleDrop} />
 
           <TextField fullWidth label="Invoice Amount" name="invoiceAmount" value={formData.invoiceAmount} onChange={handleChange} margin="normal" />
           <TextField
