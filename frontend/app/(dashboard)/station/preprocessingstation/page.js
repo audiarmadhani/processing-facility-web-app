@@ -255,78 +255,35 @@ const PreprocessingStation = () => {
 
   const fetchPreprocessingData = async () => {
     try {
-      const receivingResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
-      const QCResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
-      const preprocessingResponse = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing');
-
-      const receivingRawResult = await receivingResponse.json();
-      const QCResult = await QCResponse.json();
-      const preprocessingResult = await preprocessingResponse.json();
-
-      // Extracting the relevant data from the responses
-      const receivingData = receivingRawResult.allRows || []; // Corrected to access All Rows
-      const QCData = QCResult.allRows || [];
-      const preprocessingData = preprocessingResult.allRows || [];
-
-      // Create a map for QC data for quick lookup
-      const QCDataMap = QCData.reduce((acc, qc) => {
-        acc[qc.batchNumber.trim()] = {
-          ripeness: qc.ripeness,
-          color: qc.color,
-          foreignMatter: qc.foreignMatter,
-          overallQuality: qc.overallQuality,
-        };
-        return acc;
-      }, {});
-
-      // Filter receiving data based on QC batch numbers
-      const receivingResult = receivingData.filter(item => QCDataMap[item.batchNumber.trim()]); // Use trim to ensure matching
-
-      const joinedData = receivingResult.map((receiving) => {
-        const relatedPreprocessingLogs = preprocessingData.filter(log => log.batchNumber === receiving.batchNumber);
-
-        const totalProcessedBags = relatedPreprocessingLogs.reduce((sum, log) => sum + log.bagsProcessed, 0);
-        const bagsAvailable = receiving.totalBags - totalProcessedBags;
-
-        const dates = relatedPreprocessingLogs.map(log => new Date(log.processingDate));
-        const startProcessingDate = dates.length > 0 ? new Date(Math.min(...dates)) : 'N/A';
-        const lastProcessingDate = dates.length > 0 ? new Date(Math.max(...dates)) : 'N/A';
-
-        // Calculate SLA
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/pendingpreprocessing');
+      const result = await response.json();
+      const preprocessingData = result.allRows || [];
+  
+      // Calculate SLA (days since receiving)
+      const today = new Date();
+      const formattedData = preprocessingData.map(batch => {
+        const receivingDate = new Date(batch.receivingDateData);
         let sla = 'N/A';
-        const receivingDateObj = new Date(receiving.receivingDate);
-        if (!isNaN(receivingDateObj)) {
-          const today = new Date();
-          const diffTime = Math.abs(today - receivingDateObj);
+  
+        if (!isNaN(receivingDate)) {
+          const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-
-        // Get QC data for the current batch
-        const qcData = QCDataMap[receiving.batchNumber.trim()] || {};
-
+  
         return {
-          id: receiving.batchNumber, // Use batchNumber as the unique id
-          batchNumber: receiving.batchNumber,
-          startProcessingDate: startProcessingDate === 'N/A' ? 'N/A' : startProcessingDate.toISOString().slice(0, 10),
-          lastProcessingDate: lastProcessingDate === 'N/A' ? 'N/A' : lastProcessingDate.toISOString().slice(0, 10),
-          totalBags: receiving.totalBags,
-          processedBags: totalProcessedBags,
-          availableBags: bagsAvailable,
-          sla,
-          ripeness: qcData.ripeness || 'N/A',
-          color: qcData.color || 'N/A',
-          foreignMatter: qcData.foreignMatter || 'N/A',
-          overallQuality: qcData.overallQuality || 'N/A',
-          type: receiving.type || 'N/A', // Assuming there's a type field in receiving data
-          totalWeight: receiving.weight || 'N/A', // Assuming there's a weight field in receiving data
+          ...batch,
+          sla, // Add SLA to batch data
+          startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
+          lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A'
         };
       });
-
+  
       // Filter out batches with available bags
-      const unprocessedBatches = joinedData.filter(batch => batch.availableBags > 0);
-
+      const unprocessedBatches = formattedData.filter(batch => batch.bagsAvailable > 0);
+  
       // Sort unprocessed batches by type, ripeness, color, foreignMatter, and overallQuality
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
+        if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
         if (a.color !== b.color) return a.color.localeCompare(b.color);
@@ -334,20 +291,18 @@ const PreprocessingStation = () => {
         if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
         return 0;
       });
-
-      const sortedData = joinedData.sort((a, b) => {
-        const availableBagsA = a.totalBags - a.processedBags;
-        const availableBagsB = b.totalBags - b.processedBags;
-
+  
+      // Sort all batches by available bags and startProcessingDate
+      const sortedData = formattedData.sort((a, b) => {
         if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') {
           return -1;
         }
         if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') {
           return 1;
         }
-        return availableBagsB - availableBagsA;
+        return b.bagsAvailable - a.bagsAvailable;
       });
-
+  
       setPreprocessingData(sortedData);
       setUnprocessedBatches(sortedUnprocessedBatches);
     } catch (error) {
