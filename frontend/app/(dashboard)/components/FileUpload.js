@@ -19,7 +19,7 @@ const FileUpload = ({ onDrop }) => {
       {isDragActive ? (
         <Typography variant="body1">Drop the files here ...</Typography>
       ) : (
-        <Typography variant="body1">Drag 'n' drop some files here, or click to select files</Typography>
+        <Typography variant="body1">Drag and drop some files here, or click to select files</Typography>
       )}
       <Button variant="contained" style={{ marginTop: '10px' }}>
         Browse Files
@@ -29,8 +29,8 @@ const FileUpload = ({ onDrop }) => {
 };
 
 const dropzoneStyle = {
-  border: '2px dashed #cccccc',
-  borderRadius: '5px',
+  border: '2px rgb(144, 144, 144)',
+  borderRadius: '16px',
   padding: '20px',
   textAlign: 'center',
   cursor: 'pointer',
