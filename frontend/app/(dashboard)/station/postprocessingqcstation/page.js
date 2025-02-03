@@ -72,7 +72,7 @@ const PostProcessingQCPage = () => {
 
   const handleBatchNumberSearch = async () => {
     try {
-      const res = await axios.get(`/api/postprocessing/${batchNumber}`);
+      const res = await axios.get(`https://processing-facility-backend.onrender.com/api/postprocessing/${batchNumber}`);
       
       // Since response is an array, take the first item
       if (res.data.length > 0) {
