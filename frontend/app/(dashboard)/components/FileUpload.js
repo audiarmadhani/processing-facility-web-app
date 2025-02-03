@@ -29,7 +29,7 @@ const FileUpload = ({ onDrop }) => {
 };
 
 const dropzoneStyle = {
-  border: '2px rgb(144, 144, 144)',
+  border: '2px dashed rgb(144, 144, 144)',
   borderRadius: '16px',
   padding: '20px',
   textAlign: 'center',

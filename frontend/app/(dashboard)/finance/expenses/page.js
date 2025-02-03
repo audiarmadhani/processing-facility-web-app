@@ -153,9 +153,8 @@ export default function ExpensesPage() {
 
           <TextField fullWidth label="Expense Detail" name="detail" value={formData.detail} onChange={handleChange} margin="normal" />
 
-          <FileUpload onDrop={handleDrop} />
-
           <TextField fullWidth label="Invoice Amount" name="invoiceAmount" value={formData.invoiceAmount} onChange={handleChange} margin="normal" />
+          
           <TextField
             select
             fullWidth
@@ -173,7 +172,10 @@ export default function ExpensesPage() {
           </TextField>
 
           <TextField fullWidth label="Amount Paid" name="amountPaid" value={formData.amountPaid} onChange={handleChange} margin="normal" />
+
           <TextField fullWidth label="Account Details" name="accountDetails" value={formData.accountDetails} onChange={handleChange} margin="normal" />
+
+          <FileUpload onDrop={handleDrop} />
 
           <Button type="submit" variant="contained" color="primary" fullWidth>
             Submit
