@@ -99,7 +99,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               session={session}
               authentication={AUTHENTICATION}
               branding={{
-                logo: <img src="https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon-32x32.png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbi0zMngzMi5wbmciLCJpYXQiOjE3MzgxMzA1MjcsImV4cCI6NDg5MTczMDUyN30.ZjDi5VhN4muZ2Nu3DWnvU1-wETCgdo1fo8fwND9wj_o" alt="Kopi Fabriek" width={32} height={32} />,
+                logo: <img src="https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon%20(1).ico?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbiAoMSkuaWNvIiwiaWF0IjoxNzM4NTU1NTU5LCJleHAiOjEwMzc4NTU1NTU5fQ.rqew4VRFFxA7l_Q6sgpYAVOpHkTbG_h9F0CqIKQODd8" alt="Kopi Fabriek" width={32} height={32} />,
                 title: "Kopi Fabriek Platform",
                 homeUrl: "/",
               }}
