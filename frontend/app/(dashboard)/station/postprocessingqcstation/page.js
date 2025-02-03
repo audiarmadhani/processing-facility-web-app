@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   Grid,
@@ -209,7 +211,7 @@ const PostProcessingQCPage = () => {
               <Button type="submit" variant="contained" color="primary" sx={{ mt: 3 }}>
                 Submit QC Data
               </Button>
-              
+
             </form>
           </CardContent>
         </Card>
