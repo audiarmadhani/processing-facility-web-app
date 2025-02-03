@@ -72,13 +72,22 @@ const PostProcessingQCPage = () => {
 
   const handleBatchNumberSearch = async () => {
     try {
-      const res = await axios.get(`https://processing-facility-backend.onrender.com/api/postprocessing/${batchNumber}`);
-      setBatchData(res.data);
+      const res = await axios.get(`/api/postprocessing/${batchNumber}`);
+      
+      // Since response is an array, take the first item
+      if (res.data.length > 0) {
+        setBatchData(res.data[0]); 
+      } else {
+        setBatchData(null);
+        setSnackbar({ open: true, message: "Batch not found!", severity: "error" });
+      }
     } catch (error) {
       console.error("Batch not found:", error);
       setBatchData(null);
+      setSnackbar({ open: true, message: "Batch not found!", severity: "error" });
     }
   };
+
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -145,16 +154,38 @@ const PostProcessingQCPage = () => {
                     <TextField label="Reference Number" value={batchData.referenceNumber} InputProps={{ readOnly: true }} fullWidth />
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField label="Stored Date" value={batchData.storedDate} InputProps={{ readOnly: true }} fullWidth />
+                    <TextField label="Stored Date" value={new Date(batchData.storedDate).toLocaleDateString()} InputProps={{ readOnly: true }} fullWidth />
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField label="Process" value={batchData.process} InputProps={{ readOnly: true }} fullWidth />
+                    <TextField label="Processing Type" value={batchData.processingType} InputProps={{ readOnly: true }} fullWidth />
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField label="Total Weight" value={batchData.totalWeight} InputProps={{ readOnly: true }} fullWidth />
+                    <TextField label="Total Weight (kg)" value={batchData.weight} InputProps={{ readOnly: true }} fullWidth />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField label="Total Bags" value={batchData.totalBags} InputProps={{ readOnly: true }} fullWidth />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField label="Quality" value={batchData.quality} InputProps={{ readOnly: true }} fullWidth />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField label="Producer" value={batchData.producer} InputProps={{ readOnly: true }} fullWidth />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField label="Product Line" value={batchData.productLine} InputProps={{ readOnly: true }} fullWidth />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Notes"
+                      value={batchData.notes}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      multiline
+                      rows={2}
+                    />
                   </Grid>
                 </Grid>
-                <Divider style={{ margin: "16px 0" }} />
+                <Divider sx={{ my: 2 }} />
               </>
             )}
           </CardContent>
