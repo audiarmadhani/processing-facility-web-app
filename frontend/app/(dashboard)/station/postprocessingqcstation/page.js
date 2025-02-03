@@ -185,7 +185,6 @@ const PostProcessingQCPage = () => {
                     />
                   </Grid>
                 </Grid>
-                <Divider sx={{ my: 2 }} />
               </>
             )}
           </CardContent>
@@ -203,7 +202,15 @@ const PostProcessingQCPage = () => {
 
               <FormControl fullWidth sx={{ mt: 2 }}>
                 <InputLabel>Serangga Hidup</InputLabel>
-                <Select name="seranggaHidup" value={formData.seranggaHidup} onChange={handleFormChange}>
+                <Select name="seranggaHidup" value={formData.seranggaHidup} onChange={handleFormChange} input={<OutlinedInput label="Serangga Hidup" />}>
+                  <MenuItem value={false}>No</MenuItem>
+                  <MenuItem value={true}>Yes</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel>Biji Berbau Busuk</InputLabel>
+                <Select name="bijiBauBusuk" value={formData.bijiBauBusuk} onChange={handleFormChange} input={<OutlinedInput label="Biji Berbau Busuk" />}>
                   <MenuItem value={false}>No</MenuItem>
                   <MenuItem value={true}>Yes</MenuItem>
                 </Select>
@@ -224,6 +231,196 @@ const PostProcessingQCPage = () => {
                 label="Biji Hitam"
                 type="number"
                 value={formData.bijiHitam}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiHitamSebagian"
+                label="Biji Hitam Sebagian"
+                type="number"
+                value={formData.bijiHitamSebagian}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiHitamPecah"
+                label="Biji Hitam Pecah"
+                type="number"
+                value={formData.bijiHitamPecah}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="kopiGelondong"
+                label="Kopi Gelondong"
+                type="number"
+                value={formData.kopiGelondong}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiCoklat"
+                label="Biji Coklat"
+                type="number"
+                value={formData.bijiCoklat}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="kulitKopiBesar"
+                label="Kulit Kopi Besar"
+                type="number"
+                value={formData.kulitKopiBesar}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="kulitKopiSedang"
+                label="Kulit Kopi Sedang"
+                type="number"
+                value={formData.kulitKopiSedang}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="kulitKopiKecil"
+                label="Kulit Kopi Kecil"
+                type="number"
+                value={formData.kulitKopiKecil}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiBerkulitTanduk"
+                label="Biji Berkulit Tanduk"
+                type="number"
+                value={formData.bijiBerKulitTanduk}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="kulitTandukBesar"
+                label="Kulit Tanduk Besar"
+                type="number"
+                value={formData.kulitTandukBesar}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="kulitTandukSedang"
+                label="Kulit Tanduk Sedang"
+                type="number"
+                value={formData.kulitTandukSedang}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="kulitTandukKecil"
+                label="Kulit Tanduk Kecil"
+                type="number"
+                value={formData.kulitTandukKecil}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiPecah"
+                label="Biji Pecah"
+                type="number"
+                value={formData.bijiPecah}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiMuda"
+                label="Biji Muda"
+                type="number"
+                value={formData.bijiMuda}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiBerlubangSatu"
+                label="Biji Berlubang Satu"
+                type="number"
+                value={formData.bijiBerlubangSatu}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiBerlubangLebihSatu"
+                label="Biji Berlubang Lebih dari Satu"
+                type="number"
+                value={formData.bijiBerlubangLebihSatu}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="bijiBertutul"
+                label="Biji Bertutul"
+                type="number"
+                value={formData.bijiBertutul}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="rantingBesar"
+                label="Ranting Besar"
+                type="number"
+                value={formData.rantingBesar}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="rantingSedang"
+                label="Ranting Sedang"
+                type="number"
+                value={formData.rantingSedang}
+                onChange={handleFormChange}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+
+              <TextField
+                name="rantingKecil"
+                label="Ranting Kecil"
+                type="number"
+                value={formData.rantingKecil}
                 onChange={handleFormChange}
                 fullWidth
                 sx={{ mt: 2 }}
