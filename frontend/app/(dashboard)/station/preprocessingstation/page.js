@@ -50,7 +50,6 @@ const PreprocessingStation = () => {
     { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
     { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
     { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
-    { field: 'sla', headerName: 'SLA (days)', width: 130, sortable: true },
   ];
 
   const unprocessedColumns = [
