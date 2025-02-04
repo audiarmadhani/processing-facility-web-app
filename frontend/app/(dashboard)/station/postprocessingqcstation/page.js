@@ -105,8 +105,44 @@ const PostProcessingQCPage = () => {
     e.preventDefault();
     try {
       await axios.post("https://processing-facility-backend.onrender.com/api/postproqc", { batchNumber, ...formData });
+  
       setSnackbar({ open: true, message: "QC Data Saved!", severity: "success" });
+  
+      // Fetch updated QC data
       fetchQCData();
+  
+      // Reset batch search
+      setBatchNumber("");
+      setBatchData(null);
+  
+      // Reset QC input form
+      setFormData({
+        seranggaHidup: false,
+        bijiBauBusuk: false,
+        kelembapan: 0,
+        bijiHitam: 0,
+        bijiHitamSebagian: 0,
+        bijiHitamPecah: 0,
+        kopiGelondong: 0,
+        bijiCoklat: 0,
+        kulitKopiBesar: 0,
+        kulitKopiSedang: 0,
+        kulitKopiKecil: 0,
+        bijiBerKulitTanduk: 0,
+        kulitTandukBesar: 0,
+        kulitTandukSedang: 0,
+        kulitTandukKecil: 0,
+        bijiPecah: 0,
+        bijiMuda: 0,
+        bijiBerlubangSatu: 0,
+        bijiBerlubangLebihSatu: 0,
+        bijiBertutul: 0,
+        rantingBesar: 0,
+        rantingSedang: 0,
+        rantingKecil: 0,
+        totalBobotKotoran: 0,
+      });
+  
     } catch (error) {
       console.error("Error submitting QC data:", error);
       setSnackbar({ open: true, message: "Failed to Save!", severity: "error" });
@@ -315,7 +351,7 @@ const PostProcessingQCPage = () => {
 
                 {/* Submit Button */}
                 <Grid item xs={12}>
-                    <Button type="submit" variant="contained" color="primary">
+                    <Button type="submit" variant="contained" color="primary" style={{ marginTop: "12px" }}>
                     Submit QC Data
                     </Button>
                 </Grid>
