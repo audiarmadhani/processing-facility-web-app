@@ -170,7 +170,7 @@ const PostProcessingQCPage = () => {
 		doc.text(`Lot Number:        ${row.batchNumber}`, 14, 35);
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
-		doc.text(`Reference Number:  ${row.referenceNumber}`, 14, 47);
+		doc.text(`Reference Number:  ${row.referenceNumber}`, 14, 42);
 	
 		// Table headers mapping (Use headerName instead of field names)
 		const columnHeaders = [
@@ -222,11 +222,15 @@ const PostProcessingQCPage = () => {
 			alternateRowStyles: { fillColor: [240, 240, 240] }, // Light grey rows
 			margin: { top: 20 },
 		});
+
+		function formatDate(date) {
+			const options = { day: '2-digit', month: 'short', year: 'numeric' };
+			return new Intl.DateTimeFormat('en-US', options).format(date).replace(/,/, '').replace(/\s+/g, '-');
+		}
 	
 		// Add printed date and user name at the bottom center
-		const date = new Date().toLocaleDateString();
 		const userName = session?.user?.name || 'User'; // Fallback to 'User' if name is not available
-		const printedText = `Printed on: ${date} by: ${userName}`;
+		const printedText = `Printed on: ${formatDate(new Date())} by: ${userName}`;
 		const printedTextWidth = doc.getStringUnitWidth(printedText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
 		const printedTextX = (doc.internal.pageSize.getWidth() - printedTextWidth) / 2; // Center the printed text
 		doc.text(printedText, printedTextX, doc.internal.pageSize.getHeight() - 5);
