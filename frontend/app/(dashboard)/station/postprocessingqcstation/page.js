@@ -21,6 +21,7 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { useSession } from "next-auth/react";
 
 const PostProcessingQCPage = () => {
 	const { data: session, status } = useSession();
@@ -216,14 +217,14 @@ const PostProcessingQCPage = () => {
 	
 		// Create the table
 		doc.autoTable({
-			startY: 70, // Adjust starting Y position for the table
+			startY: 60, // Adjust starting Y position for the table
 			head: [["Quality Parameter", "Value"]],
 			body: tableRows,
 			theme: "grid",
 			styles: { font: "helvetica", fontSize: 10 },
 			headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] }, // Blue header
 			alternateRowStyles: { fillColor: [240, 240, 240] }, // Light grey rows
-			margin: { top: 50 },
+			margin: { top: 20 },
 		});
 	
 		// Add printed date and user name at the bottom center
