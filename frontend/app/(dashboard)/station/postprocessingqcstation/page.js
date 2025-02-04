@@ -194,299 +194,81 @@ const PostProcessingQCPage = () => {
       {/* QC Input Form (7u width) */}
       <Grid item xs={12} md={7}>
         <Card variant="outlined">
-          <CardContent>
+            <CardContent>
             <Typography variant="h5" gutterBottom>
-              QC Input Form
+                QC Input Form
             </Typography>
             <form onSubmit={handleSubmit}>
+                <Grid container spacing={2}> {/* Container for 3-column grid */}
 
-            <Grid item xs={4}>
-              <FormControl sx={{ mt: 2 }}>
-                <InputLabel>Serangga Hidup</InputLabel>
-                <Select name="seranggaHidup" value={formData.seranggaHidup} onChange={handleFormChange} input={<OutlinedInput label="Serangga Hidup" />}>
-                  <MenuItem value={false}>No</MenuItem>
-                  <MenuItem value={true}>Yes</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+                {/* Dropdown Fields */}
+                <Grid item xs={4}>
+                    <FormControl fullWidth>
+                    <InputLabel>Serangga Hidup</InputLabel>
+                    <Select name="seranggaHidup" value={formData.seranggaHidup} onChange={handleFormChange} input={<OutlinedInput label="Serangga Hidup" />}>
+                        <MenuItem value={false}>No</MenuItem>
+                        <MenuItem value={true}>Yes</MenuItem>
+                    </Select>
+                    </FormControl>
+                </Grid>
 
-            <Grid item xs={4}>
-              <FormControl sx={{ mt: 2 }}>
-                <InputLabel>Biji Berbau Busuk</InputLabel>
-                <Select name="bijiBauBusuk" value={formData.bijiBauBusuk} onChange={handleFormChange} input={<OutlinedInput label="Biji Berbau Busuk" />}>
-                  <MenuItem value={false}>No</MenuItem>
-                  <MenuItem value={true}>Yes</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+                <Grid item xs={4}>
+                    <FormControl fullWidth>
+                    <InputLabel>Biji Berbau Busuk</InputLabel>
+                    <Select name="bijiBauBusuk" value={formData.bijiBauBusuk} onChange={handleFormChange} input={<OutlinedInput label="Biji Berbau Busuk" />}>
+                        <MenuItem value={false}>No</MenuItem>
+                        <MenuItem value={true}>Yes</MenuItem>
+                    </Select>
+                    </FormControl>
+                </Grid>
 
-              <Grid item xs={4}>
-                <TextField
-                    name="kelembapan"
-                    label="Kelembapan (%)"
-                    type="number"
-                    value={formData.kelembapan}
-                    onChange={handleFormChange}
-                    sx={{ mt: 2 }}
-                />
-              </Grid>
+                {/* Numeric Input Fields */}
+                {[
+                    { name: "kelembapan", label: "Kelembapan (%)" },
+                    { name: "bijiHitam", label: "Biji Hitam" },
+                    { name: "bijiHitamSebagian", label: "Biji Hitam Sebagian" },
+                    { name: "bijiHitamPecah", label: "Biji Hitam Pecah" },
+                    { name: "kopiGelondong", label: "Kopi Gelondong" },
+                    { name: "bijiCoklat", label: "Biji Coklat" },
+                    { name: "kulitKopiBesar", label: "Kulit Kopi Besar" },
+                    { name: "kulitKopiSedang", label: "Kulit Kopi Sedang" },
+                    { name: "kulitKopiKecil", label: "Kulit Kopi Kecil" },
+                    { name: "bijiBerkulitTanduk", label: "Biji Berkulit Tanduk" },
+                    { name: "kulitTandukBesar", label: "Kulit Tanduk Besar" },
+                    { name: "kulitTandukSedang", label: "Kulit Tanduk Sedang" },
+                    { name: "kulitTandukKecil", label: "Kulit Tanduk Kecil" },
+                    { name: "bijiPecah", label: "Biji Pecah" },
+                    { name: "bijiMuda", label: "Biji Muda" },
+                    { name: "bijiBerlubangSatu", label: "Biji Berlubang Satu" },
+                    { name: "bijiBerlubangLebihSatu", label: "Biji Berlubang Lebih dari Satu" },
+                    { name: "bijiBertutul", label: "Biji Bertutul" },
+                    { name: "rantingBesar", label: "Ranting Besar" },
+                    { name: "rantingSedang", label: "Ranting Sedang" },
+                    { name: "rantingKecil", label: "Ranting Kecil" },
+                    { name: "totalBobotKotoran", label: "Total Bobot Kotoran (g)" },
+                ].map((field) => (
+                    <Grid item xs={4} key={field.name}>
+                    <TextField
+                        name={field.name}
+                        label={field.label}
+                        type="number"
+                        value={formData[field.name]}
+                        onChange={handleFormChange}
+                        fullWidth
+                    />
+                    </Grid>
+                ))}
 
-              <Grid item xs={4}>
-                <TextField
-                name="bijiHitam"
-                label="Biji Hitam"
-                type="number"
-                value={formData.bijiHitam}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                />
-              </Grid>
+                {/* Submit Button */}
+                <Grid item xs={12}>
+                    <Button type="submit" variant="contained" color="primary">
+                    Submit QC Data
+                    </Button>
+                </Grid>
 
-              <Grid item xs={4}>
-                <TextField
-                name="bijiHitamSebagian"
-                label="Biji Hitam Sebagian"
-                type="number"
-                value={formData.bijiHitamSebagian}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiHitamPecah"
-                label="Biji Hitam Pecah"
-                type="number"
-                value={formData.bijiHitamPecah}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="kopiGelondong"
-                label="Kopi Gelondong"
-                type="number"
-                value={formData.kopiGelondong}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiCoklat"
-                label="Biji Coklat"
-                type="number"
-                value={formData.bijiCoklat}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="kulitKopiBesar"
-                label="Kulit Kopi Besar"
-                type="number"
-                value={formData.kulitKopiBesar}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="kulitKopiSedang"
-                label="Kulit Kopi Sedang"
-                type="number"
-                value={formData.kulitKopiSedang}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="kulitKopiKecil"
-                label="Kulit Kopi Kecil"
-                type="number"
-                value={formData.kulitKopiKecil}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiBerkulitTanduk"
-                label="Biji Berkulit Tanduk"
-                type="number"
-                value={formData.bijiBerKulitTanduk}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="kulitTandukBesar"
-                label="Kulit Tanduk Besar"
-                type="number"
-                value={formData.kulitTandukBesar}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="kulitTandukSedang"
-                label="Kulit Tanduk Sedang"
-                type="number"
-                value={formData.kulitTandukSedang}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="kulitTandukKecil"
-                label="Kulit Tanduk Kecil"
-                type="number"
-                value={formData.kulitTandukKecil}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiPecah"
-                label="Biji Pecah"
-                type="number"
-                value={formData.bijiPecah}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiMuda"
-                label="Biji Muda"
-                type="number"
-                value={formData.bijiMuda}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiBerlubangSatu"
-                label="Biji Berlubang Satu"
-                type="number"
-                value={formData.bijiBerlubangSatu}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiBerlubangLebihSatu"
-                label="Biji Berlubang Lebih dari Satu"
-                type="number"
-                value={formData.bijiBerlubangLebihSatu}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="bijiBertutul"
-                label="Biji Bertutul"
-                type="number"
-                value={formData.bijiBertutul}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="rantingBesar"
-                label="Ranting Besar"
-                type="number"
-                value={formData.rantingBesar}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="rantingSedang"
-                label="Ranting Sedang"
-                type="number"
-                value={formData.rantingSedang}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="rantingKecil"
-                label="Ranting Kecil"
-                type="number"
-                value={formData.rantingKecil}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Grid item xs={4}>
-                <TextField
-                name="totalBobotKotoran"
-                label="Total Bobot Kotoran (g)"
-                type="number"
-                value={formData.totalBobotKotoran}
-                onChange={handleFormChange}
-                sx={{ mt: 2 }}
-                fullWidth
-                />
-              </Grid>
-
-              <Button type="submit" variant="contained" color="primary" sx={{ mt: 3 }}>
-                Submit QC Data
-              </Button>
-
+                </Grid>
             </form>
-          </CardContent>
+            </CardContent>
         </Card>
       </Grid>
 
