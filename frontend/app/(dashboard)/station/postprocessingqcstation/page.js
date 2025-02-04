@@ -156,8 +156,12 @@ const PostProcessingQCPage = () => {
 	
 		// Set title
 		doc.setFont("helvetica", "bold");
-		doc.setFontSize(18);
+		doc.setFontSize(16);
 		doc.text("Quality Control Report", 14, 20);
+
+		// Batch Number
+		doc.setFontSize(12);
+		doc.text(`Batch Number: ${row.batchNumber}`, 14, 30);
 	
 		// Add a subtitle (batch number)
 		doc.setFontSize(12);
@@ -197,19 +201,18 @@ const PostProcessingQCPage = () => {
 			{ field: "rantingKecil", headerName: "Ranting Kecil"},
 		];
 	
-		// Extract column names and data
-		const tableColumn = columnHeaders.map((col) => col.headerName);
+		// Extract rows in "label : value" format
 		const tableRows = columnHeaders.map((col) => [
 			col.headerName,
 			row[col.field] !== undefined ? row[col.field] : "-",
 		]);
 	
-		// Create table
+		// Create the table
 		doc.autoTable({
 			startY: 45,
-			head: [tableColumn],
+			head: [["Quality Parameter", "Value"]],
 			body: tableRows,
-			theme: "grid", // modern styling
+			theme: "grid",
 			styles: { font: "helvetica", fontSize: 10 },
 			headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] }, // Blue header
 			alternateRowStyles: { fillColor: [240, 240, 240] }, // Light grey rows
