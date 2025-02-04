@@ -19,6 +19,7 @@
     "@mui/material": "^6.4.2",
     "axios": "^1.7.9",
     "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
     "next": "^15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

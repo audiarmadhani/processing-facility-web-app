@@ -65,7 +65,7 @@ const PostProcessingQCPage = () => {
 
   const fetchQCData = async () => {
     try {
-      const res = await axios.get("https://processing-facility-backend.onrender.com/api/postproqc");
+      const res = await axios.get("https://processing-facility-backend.onrender.com/api/postproqcfin");
       setQcData(res.data);
     } catch (error) {
       console.error("Error fetching QC data:", error);
