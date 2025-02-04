@@ -221,6 +221,7 @@ const PostProcessingQCPage = () => {
 			headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] }, // Blue header
 			alternateRowStyles: { fillColor: [240, 240, 240] }, // Light grey rows
 			margin: { top: 20 },
+			tableWidth
 		});
 
 		function formatDate(date) {
@@ -502,7 +503,7 @@ const PostProcessingQCPage = () => {
               QC Data
             </Typography>
             <div style={{ height: 600, width: "100%" }}>
-              <DataGrid rows={qcData.map((row, index) => ({ id: index + 1, ...row }))} columns={qcColumns} pageSize={5} slots={{ toolbar: GridToolbar }} />
+              <DataGrid rows={qcData.map((row, index) => ({ id: index + 1, ...row }))} columns={qcColumns} pageSize={5} slots={{ toolbar: GridToolbar }} rowHeight={35} />
             </div>
           </CardContent>
         </Card>
