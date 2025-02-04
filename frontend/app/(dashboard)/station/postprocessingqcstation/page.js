@@ -156,29 +156,21 @@ const PostProcessingQCPage = () => {
   const handleExportToPDF = (row) => {
 		const doc = new jsPDF();
 	
-		// Set header on the left
-		doc.setFont("helvetica", "bold");
-		doc.setFontSize(12);
-		doc.text("PT. Berkas Tuaian Melimpah", 14, 15);
-		doc.setFont("helvetica", "normal");
-		doc.text("lorem ipsum", 14, 22);
-		doc.text("dolor sit amet", 14, 29);
-	
 		// Set title
 		doc.setFont("helvetica", "bold");
 		doc.setFontSize(18);
 		const title = "Quality Control Report";
 		const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
 		const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2; // Center the title
-		doc.text(title, titleX, 37); // Adjusted Y position for title
+		doc.text(title, titleX, 20); // Adjusted Y position for title
 	
 		// Add a line break for better spacing
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
-		doc.text(`Lot Number:        ${row.batchNumber}`, 14, 45);
+		doc.text(`Lot Number:        ${row.batchNumber}`, 14, 35);
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
-		doc.text(`Reference Number:  ${row.referenceNumber}`, 14, 50);
+		doc.text(`Reference Number:  ${row.referenceNumber}`, 14, 47);
 	
 		// Table headers mapping (Use headerName instead of field names)
 		const columnHeaders = [
@@ -221,7 +213,7 @@ const PostProcessingQCPage = () => {
 	
 		// Create the table
 		doc.autoTable({
-			startY: 57, // Adjust starting Y position for the table
+			startY: 50, // Adjust starting Y position for the table
 			head: [["Quality Parameter", "Value"]],
 			body: tableRows,
 			theme: "grid",
