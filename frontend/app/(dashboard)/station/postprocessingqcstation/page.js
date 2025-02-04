@@ -23,6 +23,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 
 const PostProcessingQCPage = () => {
+	const { data: session, status } = useSession();
   const [batchNumber, setBatchNumber] = useState("");
   const [batchData, setBatchData] = useState(null);
   const [qcData, setQcData] = useState([]);
@@ -225,11 +226,13 @@ const PostProcessingQCPage = () => {
 			margin: { top: 50 },
 		});
 	
-		// Add printed date at the bottom center
-		const printedDate = `Printed on: ${new Date().toLocaleDateString()}`;
-		const printedDateWidth = doc.getStringUnitWidth(printedDate) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-		const printedDateX = (doc.internal.pageSize.getWidth() - printedDateWidth) / 2; // Center the printed date
-		doc.text(printedDate, printedDateX, doc.internal.pageSize.getHeight() - 20);
+		// Add printed date and user name at the bottom center
+		const date = new Date().toLocaleDateString();
+		const userName = session?.user?.name || 'User'; // Fallback to 'User' if name is not available
+		const printedText = `Printed on: ${date} by: ${userName}`;
+		const printedTextWidth = doc.getStringUnitWidth(printedText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+		const printedTextX = (doc.internal.pageSize.getWidth() - printedTextWidth) / 2; // Center the printed text
+		doc.text(printedText, printedTextX, doc.internal.pageSize.getHeight() - 20);
 	
 		// Save PDF
 		doc.save(`QC_Report_${row.batchNumber}.pdf`);
