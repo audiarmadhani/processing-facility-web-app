@@ -156,26 +156,24 @@ const PostProcessingQCPage = () => {
 	
 		// Set header on the left
 		doc.setFont("helvetica", "bold");
-		doc.setFontSize(11);
+		doc.setFontSize(12);
 		doc.text("PT. Berkas Tuaian Melimpah", 14, 15);
 		doc.setFont("helvetica", "normal");
 		doc.text("lorem ipsum", 14, 22);
-		doc.setFont("helvetica", "normal");
 		doc.text("dolor sit amet", 14, 29);
-		doc.setFont("helvetica", "normal");
-
+	
 		// Set title
 		doc.setFont("helvetica", "bold");
 		doc.setFontSize(18);
 		const title = "Quality Control Report";
 		const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
 		const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2; // Center the title
-		doc.text(title, titleX, 20);
-
-		// Add a subtitle (batch number)
+		doc.text(title, titleX, 45); // Adjusted Y position for title
+	
+		// Add a line break for better spacing
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
-		doc.text(`Batch Number: ${row.batchNumber}`, 14, 30);
+		doc.text(`Batch Number: ${row.batchNumber}`, 14, 55);
 	
 		// Table headers mapping (Use headerName instead of field names)
 		const columnHeaders = [
@@ -217,7 +215,7 @@ const PostProcessingQCPage = () => {
 	
 		// Create the table
 		doc.autoTable({
-			startY: 45,
+			startY: 70, // Adjust starting Y position for the table
 			head: [["Quality Parameter", "Value"]],
 			body: tableRows,
 			theme: "grid",
@@ -226,7 +224,7 @@ const PostProcessingQCPage = () => {
 			alternateRowStyles: { fillColor: [240, 240, 240] }, // Light grey rows
 			margin: { top: 50 },
 		});
-
+	
 		// Add printed date at the bottom center
 		const printedDate = `Printed on: ${new Date().toLocaleDateString()}`;
 		const printedDateWidth = doc.getStringUnitWidth(printedDate) * doc.internal.getFontSize() / doc.internal.scaleFactor;
