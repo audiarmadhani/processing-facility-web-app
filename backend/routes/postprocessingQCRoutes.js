@@ -108,12 +108,13 @@ router.get('/postproqcfin', async (req, res) => {
                 "rantingSedang" * 2 +
                 "rantingKecil" * 1
                 )::float AS "defectScore",
-                ROUND(CAST(("totalBobotKotoran" / 300.0) * 100 AS numeric), 1)::FLOAT AS "defectWeightPercentage" AS "defectWeightPercentage"
+                ROUND(CAST(("totalBobotKotoran" / 300.0) * 100 AS numeric), 1)::FLOAT AS "defectWeightPercentage"
             FROM "PostprocessingQCData" a
             )
 
             SELECT 
-            "batchNumber",
+            a."batchNumber",
+            b."referenceNumber",
             "generalQuality",
             CASE
                 WHEN "defectScore" <= 5 THEN 'Specialty'
@@ -152,7 +153,8 @@ router.get('/postproqcfin', async (req, res) => {
             "rantingBesar",
             "rantingSedang",
             "rantingKecil"
-            FROM MAIN a;
+            FROM MAIN a
+            LEFT JOIN "PostprocessingData" b on a."batchNumber" = b."batchNumber";
         `);
       res.json(qcData);
     } catch (err) {

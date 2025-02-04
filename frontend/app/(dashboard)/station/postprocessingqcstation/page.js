@@ -170,16 +170,20 @@ const PostProcessingQCPage = () => {
 		const title = "Quality Control Report";
 		const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
 		const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2; // Center the title
-		doc.text(title, titleX, 30); // Adjusted Y position for title
+		doc.text(title, titleX, 40); // Adjusted Y position for title
 	
 		// Add a line break for better spacing
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
-		doc.text(`Batch Number: ${row.batchNumber}`, 14, 55);
+		doc.text(`Lot Number: ${row.batchNumber}`, 14, 50);
+		doc.setFontSize(12);
+		doc.setFont("helvetica", "normal");
+		doc.text(`Reference Number: ${row.referenceNumber}`, 14, 55);
 	
 		// Table headers mapping (Use headerName instead of field names)
 		const columnHeaders = [
-			{ field: "batchNumber", headerName: "Batch Number" },
+			{ field: "batchNumber", headerName: "Lot Number" },
+			{ field: "referenceNumber", headerName: "Reference Number" },
 			{ field: "generalQuality", headerName: "General Quality" },
 			{ field: "actualGrade", headerName: "Actual Grade" },
 			{ field: "kelembapan", headerName: "Kelembapan (%)" },
@@ -240,7 +244,8 @@ const PostProcessingQCPage = () => {
 	};
 
   const qcColumns = [
-    { field: "batchNumber", headerName: "Batch Number", width: 150 },
+    { field: "batchNumber", headerName: "Lot Number", width: 150 },
+		{ field: "referenceNumber", headerName: "Reference Number", width: 150 },
     { field: "generalQuality", headerName: "General Quality", width: 180 },
     { field: "actualGrade", headerName: "Actual Grade", width: 150 },
     { field: "kelembapan", headerName: "Kelembapan (%)", width: 130 },
