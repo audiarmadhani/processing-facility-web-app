@@ -102,6 +102,7 @@ const PaymentPage = () => {
             includeOutliers: true,
             expand: true,
           }}
+          rowHeight={35}
         />
       </div>
 
@@ -121,6 +122,7 @@ const PaymentPage = () => {
             includeOutliers: true,
             expand: true,
           }}
+          rowHeight={35}
         />
       </div>
     </div>

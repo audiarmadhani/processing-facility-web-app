@@ -569,6 +569,7 @@ const PreprocessingStation = () => {
                   includeOutliers: true,
                   expand: true,
                 }}
+                rowHeight={35}
               />
             </div>
           </CardContent>
@@ -599,6 +600,7 @@ const PreprocessingStation = () => {
                   includeOutliers: true,
                   expand: true,
                 }}
+                rowHeight={35}
               />
             </div>
           </CardContent>

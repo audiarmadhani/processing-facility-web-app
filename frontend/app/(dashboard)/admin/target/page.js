@@ -444,6 +444,7 @@ function TargetInputStation() {
                       includeOutliers: true,
                       expand: true,
                     }}
+                    rowHeight={35}
                   />
                 </div>
               </CardContent>

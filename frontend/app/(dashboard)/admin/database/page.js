@@ -275,6 +275,7 @@ export default function DatabasePage() {
             includeOutliers: true,
             expand: true,
           }}
+          rowHeight={35}
           slots={{
             toolbar: () => (
               <GridToolbarContainer>

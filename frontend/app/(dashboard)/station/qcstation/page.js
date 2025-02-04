@@ -628,6 +628,7 @@ const uploadImage = async (file, batchNumber) => {
                   includeOutliers: true,
                   expand: true,
                 }}
+                rowHeight={35}
               />
             </div>
           </CardContent>
@@ -656,6 +657,7 @@ const uploadImage = async (file, batchNumber) => {
                   includeOutliers: true,
                   expand: true,
                 }}
+                rowHeight={35}
               />
             </div>
           </CardContent>

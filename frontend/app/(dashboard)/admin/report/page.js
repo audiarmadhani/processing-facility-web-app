@@ -249,6 +249,7 @@ function FarmerInputStation() {
                 rowsPerPageOptions={[5, 10, 20]}
                 disableSelectionOnClick
                 sortingOrder={['asc', 'desc']}
+                rowHeight={35}
               />
             </div>
           </CardContent>

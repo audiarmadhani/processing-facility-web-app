@@ -192,6 +192,7 @@ export default function ExpensesPage() {
           checkboxSelection
           disableSelectionOnClick
           autoHeight
+          rowHeight={35}
         />
       </Grid>
     </Grid>
