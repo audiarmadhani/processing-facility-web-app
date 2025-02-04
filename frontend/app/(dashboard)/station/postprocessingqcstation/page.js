@@ -167,10 +167,10 @@ const PostProcessingQCPage = () => {
 		// Add a line break for better spacing
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
-		doc.text(`Lot Number:        ${row.batchNumber}`, 14, 35);
+		doc.text(`Lot Number        : ${row.batchNumber}`, 14, 35);
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
-		doc.text(`Reference Number:  ${row.referenceNumber}`, 14, 42);
+		doc.text(`Reference Number  : ${row.referenceNumber}`, 14, 42);
 	
 		// Table headers mapping (Use headerName instead of field names)
 		const columnHeaders = [
