@@ -126,7 +126,7 @@ const PostProcessingQCPage = () => {
                 Batch Search
                 </Typography>
                 <Grid container spacing={2}>
-                <Grid item xs={8}>
+                <Grid item xs={10}>
                     <TextField
                     label="Batch Number"
                     value={batchNumber}
@@ -136,7 +136,7 @@ const PostProcessingQCPage = () => {
                     margin="normal"
                     />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={2}>
                     <Button
                     variant="contained"
                     color="secondary"
@@ -227,7 +227,7 @@ const PostProcessingQCPage = () => {
                     InputProps={{ readOnly: true }}
                     fullWidth
                     multiline
-                    rows={2}
+                    rows={6}
                     disabled={!batchData}
                     />
                 </Grid>
