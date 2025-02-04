@@ -118,81 +118,126 @@ const PostProcessingQCPage = () => {
 
   return (
     <Grid container spacing={3}>
-      {/* Batch Search Section (5u width) */}
-      <Grid item xs={12} md={5}>
+    {/* Batch Search Section (5u width) */}
+    <Grid item xs={12} md={5}>
         <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-              Batch Search
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={8}>
-                <TextField
-                  label="Batch Number"
-                  value={batchNumber}
-                  onChange={(e) => setBatchNumber(e.target.value)}
-                  fullWidth
-                  required
-                  margin="normal"
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={handleBatchNumberSearch}
-                  style={{ marginTop: "24px" }}
-                >
-                  Search
-                </Button>
-              </Grid>
-            </Grid>
-            {batchData && (
-              <>
-                <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item xs={6}>
-                    <TextField label="Reference Number" value={batchData.referenceNumber} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField label="Stored Date" value={new Date(batchData.storedDate).toLocaleDateString()} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField label="Processing Type" value={batchData.processingType} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField label="Total Weight (kg)" value={batchData.weight} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField label="Total Bags" value={batchData.totalBags} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField label="Quality" value={batchData.quality} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField label="Producer" value={batchData.producer} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField label="Product Line" value={batchData.productLine} InputProps={{ readOnly: true }} fullWidth />
-                  </Grid>
-                  <Grid item xs={12}>
+            <CardContent>
+                <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+                Batch Search
+                </Typography>
+                <Grid container spacing={2}>
+                <Grid item xs={8}>
                     <TextField
-                      label="Notes"
-                      value={batchData.notes}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      multiline
-                      rows={2}
+                    label="Batch Number"
+                    value={batchNumber}
+                    onChange={(e) => setBatchNumber(e.target.value)}
+                    fullWidth
+                    required
+                    margin="normal"
                     />
-                  </Grid>
                 </Grid>
-              </>
-            )}
-          </CardContent>
+                <Grid item xs={4}>
+                    <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleBatchNumberSearch}
+                    style={{ marginTop: "24px" }}
+                    >
+                    Search
+                    </Button>
+                </Grid>
+                </Grid>
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Reference Number"
+                    value={batchData ? batchData.referenceNumber : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Stored Date"
+                    value={batchData ? new Date(batchData.storedDate).toLocaleDateString() : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Processing Type"
+                    value={batchData ? batchData.processingType : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Total Weight (kg)"
+                    value={batchData ? batchData.weight : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Total Bags"
+                    value={batchData ? batchData.totalBags : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Quality"
+                    value={batchData ? batchData.quality : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Producer"
+                    value={batchData ? batchData.producer : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <TextField
+                    label="Product Line"
+                    value={batchData ? batchData.productLine : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    disabled={!batchData}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <TextField
+                    label="Notes"
+                    value={batchData ? batchData.notes : ""}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    multiline
+                    rows={2}
+                    disabled={!batchData}
+                    />
+                </Grid>
+                </Grid>
+            </CardContent>
         </Card>
-      </Grid>
+    </Grid>
 
       {/* QC Input Form (7u width) */}
-      <Grid item xs={12} md={7}>
+    <Grid item xs={12} md={7}>
         <Card variant="outlined">
             <CardContent>
             <Typography variant="h5" gutterBottom>
@@ -270,10 +315,10 @@ const PostProcessingQCPage = () => {
             </form>
             </CardContent>
         </Card>
-      </Grid>
+    </Grid>
 
-      {/* QC Data Table */}
-      <Grid item xs={12}>
+    {/* QC Data Table */}
+    <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
@@ -284,11 +329,12 @@ const PostProcessingQCPage = () => {
             </div>
           </CardContent>
         </Card>
-      </Grid>
+    </Grid>
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+    <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
-      </Snackbar>
+    </Snackbar>
+
     </Grid>
   );
 };
