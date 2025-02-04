@@ -152,33 +152,73 @@ const PostProcessingQCPage = () => {
   };
 
   const handleExportToPDF = (row) => {
-    const doc = new jsPDF();
-  
-    // Title
-    doc.setFontSize(16);
-    doc.text("Quality Control Report", 14, 20);
-  
-    // Batch Number
-    doc.setFontSize(12);
-    doc.text(`Batch Number: ${row.batchNumber}`, 14, 30);
-  
-    // Table Data
-    const tableColumn = ["Field", "Value"];
-    const tableRows = [];
-  
-    Object.entries(row).forEach(([key, value]) => {
-      tableRows.push([key, value]);
-    });
-  
-    doc.autoTable({
-      startY: 40,
-      head: [tableColumn],
-      body: tableRows,
-    });
-  
-    // Save PDF
-    doc.save(`QC_Report_${row.batchNumber}.pdf`);
-  };
+		const doc = new jsPDF();
+	
+		// Set title
+		doc.setFont("helvetica", "bold");
+		doc.setFontSize(18);
+		doc.text("Quality Control Report", 14, 20);
+	
+		// Add a subtitle (batch number)
+		doc.setFontSize(12);
+		doc.setFont("helvetica", "normal");
+		doc.text(`Batch Number: ${row.batchNumber}`, 14, 30);
+		doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 38);
+	
+		// Table headers mapping (Use headerName instead of field names)
+		const columnHeaders = [
+			{ field: "batchNumber", headerName: "Batch Number" },
+			{ field: "generalQuality", headerName: "General Quality" },
+			{ field: "actualGrade", headerName: "Actual Grade" },
+			{ field: "kelembapan", headerName: "Kelembapan (%)" },
+			{ field: "defectScore", headerName: "Defect Score" },
+			{ field: "defectWeightPercentage", headerName: "Defect Weight (%)" },
+			{ field: "bijiHitam", headerName: "Biji Hitam" },
+			{ field: "bijiHitamSebagian", headerName: "Biji Hitam Sebagian" },
+			{ field: "bijiPecah", headerName: "Biji Pecah" },
+			{ field: "bijiHitam", headerName: "Biji Hitam"},
+			{ field: "bijiHitamSebagian", headerName: "Biji Hitam Sebagian"},
+			{ field: "bijiPecah", headerName: "Biji Pecah"},
+			{ field: "kopiGelondong", headerName: "Kopi Gelondong"},
+			{ field: "bijiCoklat", headerName: "Biji Coklat"},
+			{ field: "kulitKopiBesar", headerName: "Kulit Kopi Besar"},
+			{ field: "kulitKopiSedang", headerName: "Kulit Kopi Sedang"},
+			{ field: "kulitKopiKecil", headerName: "Kulit Kopi Kecil"},
+			{ field: "bijiBerKulitTanduk", headerName: "Biji Berkulit Tanduk"},
+			{ field: "kulitTandukBesar", headerName: "Kulit Tanduk Besar"},
+			{ field: "kulitTandukSedang", headerName: "Kulit Tanduk Sedang"},
+			{ field: "kulitTandukKecil", headerName: "Kulit Tanduk Kecil"},
+			{ field: "bijiMuda", headerName: "Biji Muda"},
+			{ field: "bijiBerlubangSatu", headerName: "Biji Berlubang Satu"},
+			{ field: "bijiBerlubangLebihSatu", headerName: "Biji Berlubang >1"},
+			{ field: "bijiBertutul", headerName: "Biji Bertutul"},
+			{ field: "rantingBesar", headerName: "Ranting Besar"},
+			{ field: "rantingSedang", headerName: "Ranting Sedang"},
+			{ field: "rantingKecil", headerName: "Ranting Kecil"},
+		];
+	
+		// Extract column names and data
+		const tableColumn = columnHeaders.map((col) => col.headerName);
+		const tableRows = columnHeaders.map((col) => [
+			col.headerName,
+			row[col.field] !== undefined ? row[col.field] : "-",
+		]);
+	
+		// Create table
+		doc.autoTable({
+			startY: 45,
+			head: [tableColumn],
+			body: tableRows,
+			theme: "grid", // modern styling
+			styles: { font: "helvetica", fontSize: 10 },
+			headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] }, // Blue header
+			alternateRowStyles: { fillColor: [240, 240, 240] }, // Light grey rows
+			margin: { top: 50 },
+		});
+	
+		// Save PDF
+		doc.save(`QC_Report_${row.batchNumber}.pdf`);
+	};
 
   const qcColumns = [
     { field: "batchNumber", headerName: "Batch Number", width: 150 },
@@ -190,26 +230,7 @@ const PostProcessingQCPage = () => {
     { field: "defectScore", headerName: "Defect Score", width: 140 },
     { field: "totalBobotKotoran", headerName: "Total Bobot Kotoran", width: 180 },
     { field: "defectWeightPercentage", headerName: "Defect Weight (%)", width: 180 },
-    { field: "bijiHitam", headerName: "Biji Hitam", width: 130 },
-    { field: "bijiHitamSebagian", headerName: "Biji Hitam Sebagian", width: 160 },
-    { field: "bijiPecah", headerName: "Biji Pecah", width: 130 },
-    { field: "kopiGelondong", headerName: "Kopi Gelondong", width: 150 },
-    { field: "bijiCoklat", headerName: "Biji Coklat", width: 130 },
-    { field: "kulitKopiBesar", headerName: "Kulit Kopi Besar", width: 150 },
-    { field: "kulitKopiSedang", headerName: "Kulit Kopi Sedang", width: 150 },
-    { field: "kulitKopiKecil", headerName: "Kulit Kopi Kecil", width: 150 },
-    { field: "bijiBerKulitTanduk", headerName: "Biji Berkulit Tanduk", width: 180 },
-    { field: "kulitTandukBesar", headerName: "Kulit Tanduk Besar", width: 160 },
-    { field: "kulitTandukSedang", headerName: "Kulit Tanduk Sedang", width: 160 },
-    { field: "kulitTandukKecil", headerName: "Kulit Tanduk Kecil", width: 160 },
-    { field: "bijiMuda", headerName: "Biji Muda", width: 130 },
-    { field: "bijiBerlubangSatu", headerName: "Biji Berlubang Satu", width: 170 },
-    { field: "bijiBerlubangLebihSatu", headerName: "Biji Berlubang >1", width: 180 },
-    { field: "bijiBertutul", headerName: "Biji Bertutul", width: 140 },
-    { field: "rantingBesar", headerName: "Ranting Besar", width: 150 },
-    { field: "rantingSedang", headerName: "Ranting Sedang", width: 150 },
-    { field: "rantingKecil", headerName: "Ranting Kecil", width: 150 },
-    {
+		{
 			field: "export",
 			headerName: "Export",
 			width: 130,
@@ -229,6 +250,25 @@ const PostProcessingQCPage = () => {
 					</button>
 			),
 			},
+    { field: "bijiHitam", headerName: "Biji Hitam", width: 130 },
+    { field: "bijiHitamSebagian", headerName: "Biji Hitam Sebagian", width: 160 },
+    { field: "bijiPecah", headerName: "Biji Pecah", width: 130 },
+    { field: "kopiGelondong", headerName: "Kopi Gelondong", width: 150 },
+    { field: "bijiCoklat", headerName: "Biji Coklat", width: 130 },
+    { field: "kulitKopiBesar", headerName: "Kulit Kopi Besar", width: 150 },
+    { field: "kulitKopiSedang", headerName: "Kulit Kopi Sedang", width: 150 },
+    { field: "kulitKopiKecil", headerName: "Kulit Kopi Kecil", width: 150 },
+    { field: "bijiBerKulitTanduk", headerName: "Biji Berkulit Tanduk", width: 180 },
+    { field: "kulitTandukBesar", headerName: "Kulit Tanduk Besar", width: 160 },
+    { field: "kulitTandukSedang", headerName: "Kulit Tanduk Sedang", width: 160 },
+    { field: "kulitTandukKecil", headerName: "Kulit Tanduk Kecil", width: 160 },
+    { field: "bijiMuda", headerName: "Biji Muda", width: 130 },
+    { field: "bijiBerlubangSatu", headerName: "Biji Berlubang Satu", width: 170 },
+    { field: "bijiBerlubangLebihSatu", headerName: "Biji Berlubang >1", width: 180 },
+    { field: "bijiBertutul", headerName: "Biji Bertutul", width: 140 },
+    { field: "rantingBesar", headerName: "Ranting Besar", width: 150 },
+    { field: "rantingSedang", headerName: "Ranting Sedang", width: 150 },
+    { field: "rantingKecil", headerName: "Ranting Kecil", width: 150 },
 	];
 
   return (
