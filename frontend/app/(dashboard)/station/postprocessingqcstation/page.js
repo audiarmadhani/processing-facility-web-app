@@ -233,7 +233,7 @@ const PostProcessingQCPage = () => {
 		const printedText = `Printed on: ${date} by: ${userName}`;
 		const printedTextWidth = doc.getStringUnitWidth(printedText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
 		const printedTextX = (doc.internal.pageSize.getWidth() - printedTextWidth) / 2; // Center the printed text
-		doc.text(printedText, printedTextX, doc.internal.pageSize.getHeight() - 40);
+		doc.text(printedText, printedTextX, doc.internal.pageSize.getHeight() - 5);
 	
 		// Save PDF
 		doc.save(`QC_Report_${row.batchNumber}.pdf`);
