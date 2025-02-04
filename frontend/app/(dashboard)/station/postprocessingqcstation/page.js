@@ -126,7 +126,7 @@ const PostProcessingQCPage = () => {
                 Batch Search
                 </Typography>
                 <Grid container spacing={2}>
-                <Grid item xs={10}>
+                <Grid item xs={9}>
                     <TextField
                     label="Batch Number"
                     value={batchNumber}
@@ -136,12 +136,13 @@ const PostProcessingQCPage = () => {
                     margin="normal"
                     />
                 </Grid>
-                <Grid item xs={2}>
+                <Grid item xs={3}>
                     <Button
                     variant="contained"
                     color="secondary"
                     onClick={handleBatchNumberSearch}
                     style={{ marginTop: "24px" }}
+                    fullWidth
                     >
                     Search
                     </Button>
@@ -227,7 +228,7 @@ const PostProcessingQCPage = () => {
                     InputProps={{ readOnly: true }}
                     fullWidth
                     multiline
-                    rows={6}
+                    rows={10}
                     disabled={!batchData}
                     />
                 </Grid>
@@ -243,6 +244,7 @@ const PostProcessingQCPage = () => {
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }} > 
                 QC Input Form
             </Typography>
+
             <form onSubmit={handleSubmit}>
                 <Grid container spacing={2}> {/* Container for 3-column grid */}
 
