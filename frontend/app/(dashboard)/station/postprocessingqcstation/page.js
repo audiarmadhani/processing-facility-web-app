@@ -170,7 +170,7 @@ const PostProcessingQCPage = () => {
 		const title = "Quality Control Report";
 		const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
 		const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2; // Center the title
-		doc.text(title, titleX, 45); // Adjusted Y position for title
+		doc.text(title, titleX, 30); // Adjusted Y position for title
 	
 		// Add a line break for better spacing
 		doc.setFontSize(12);
@@ -233,7 +233,7 @@ const PostProcessingQCPage = () => {
 		const printedText = `Printed on: ${date} by: ${userName}`;
 		const printedTextWidth = doc.getStringUnitWidth(printedText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
 		const printedTextX = (doc.internal.pageSize.getWidth() - printedTextWidth) / 2; // Center the printed text
-		doc.text(printedText, printedTextX, doc.internal.pageSize.getHeight() - 20);
+		doc.text(printedText, printedTextX, doc.internal.pageSize.getHeight() - 40);
 	
 		// Save PDF
 		doc.save(`QC_Report_${row.batchNumber}.pdf`);
