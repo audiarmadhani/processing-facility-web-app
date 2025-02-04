@@ -240,7 +240,7 @@ const PostProcessingQCPage = () => {
     <Grid item xs={12} md={7}>
         <Card variant="outlined">
             <CardContent>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }} > 
                 QC Input Form
             </Typography>
             <form onSubmit={handleSubmit}>
