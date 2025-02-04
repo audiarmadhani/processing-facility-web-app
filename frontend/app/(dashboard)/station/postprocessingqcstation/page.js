@@ -154,20 +154,28 @@ const PostProcessingQCPage = () => {
   const handleExportToPDF = (row) => {
 		const doc = new jsPDF();
 	
+		// Set header on the left
+		doc.setFont("helvetica", "bold");
+		doc.setFontSize(11);
+		doc.text("PT. Berkas Tuaian Melimpah", 14, 15);
+		doc.setFont("helvetica", "normal");
+		doc.text("lorem ipsum", 14, 22);
+		doc.setFont("helvetica", "normal");
+		doc.text("dolor sit amet", 14, 29);
+		doc.setFont("helvetica", "normal");
+
 		// Set title
 		doc.setFont("helvetica", "bold");
-		doc.setFontSize(16);
-		doc.text("Quality Control Report", 14, 20);
+		doc.setFontSize(18);
+		const title = "Quality Control Report";
+		const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+		const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2; // Center the title
+		doc.text(title, titleX, 20);
 
-		// Batch Number
-		doc.setFontSize(12);
-		doc.text(`Batch Number: ${row.batchNumber}`, 14, 30);
-	
 		// Add a subtitle (batch number)
 		doc.setFontSize(12);
 		doc.setFont("helvetica", "normal");
 		doc.text(`Batch Number: ${row.batchNumber}`, 14, 30);
-		doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 38);
 	
 		// Table headers mapping (Use headerName instead of field names)
 		const columnHeaders = [
@@ -218,6 +226,12 @@ const PostProcessingQCPage = () => {
 			alternateRowStyles: { fillColor: [240, 240, 240] }, // Light grey rows
 			margin: { top: 50 },
 		});
+
+		// Add printed date at the bottom center
+		const printedDate = `Printed on: ${new Date().toLocaleDateString()}`;
+		const printedDateWidth = doc.getStringUnitWidth(printedDate) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+		const printedDateX = (doc.internal.pageSize.getWidth() - printedDateWidth) / 2; // Center the printed date
+		doc.text(printedDate, printedDateX, doc.internal.pageSize.getHeight() - 20);
 	
 		// Save PDF
 		doc.save(`QC_Report_${row.batchNumber}.pdf`);
