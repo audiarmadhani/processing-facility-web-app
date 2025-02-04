@@ -19,6 +19,8 @@ import {
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const PostProcessingQCPage = () => {
   const [batchNumber, setBatchNumber] = useState("");
@@ -149,6 +151,35 @@ const PostProcessingQCPage = () => {
     }
   };
 
+  const handleExportToPDF = (row) => {
+    const doc = new jsPDF();
+  
+    // Title
+    doc.setFontSize(16);
+    doc.text("Quality Control Report", 14, 20);
+  
+    // Batch Number
+    doc.setFontSize(12);
+    doc.text(`Batch Number: ${row.batchNumber}`, 14, 30);
+  
+    // Table Data
+    const tableColumn = ["Field", "Value"];
+    const tableRows = [];
+  
+    Object.entries(row).forEach(([key, value]) => {
+      tableRows.push([key, value]);
+    });
+  
+    doc.autoTable({
+      startY: 40,
+      head: [tableColumn],
+      body: tableRows,
+    });
+  
+    // Save PDF
+    doc.save(`QC_Report_${row.batchNumber}.pdf`);
+  };
+
   const qcColumns = [
     { field: "batchNumber", headerName: "Batch Number", width: 150 },
     { field: "generalQuality", headerName: "General Quality", width: 180 },
@@ -178,7 +209,27 @@ const PostProcessingQCPage = () => {
     { field: "rantingBesar", headerName: "Ranting Besar", width: 150 },
     { field: "rantingSedang", headerName: "Ranting Sedang", width: 150 },
     { field: "rantingKecil", headerName: "Ranting Kecil", width: 150 },
-  ];
+    {
+			field: "export",
+			headerName: "Export",
+			width: 130,
+			renderCell: (params) => (
+					<button
+					onClick={() => handleExportToPDF(params.row)}
+					style={{
+							padding: "6px 12px",
+							backgroundColor: "#1976d2",
+							color: "#fff",
+							border: "none",
+							borderRadius: "4px",
+							cursor: "pointer",
+					}}
+					>
+					Export PDF
+					</button>
+			),
+			},
+	];
 
   return (
     <Grid container spacing={3}>
