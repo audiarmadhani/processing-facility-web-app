@@ -27,28 +27,28 @@ const PostProcessingQCPage = () => {
   const [formData, setFormData] = useState({
     seranggaHidup: false,
     bijiBauBusuk: false,
-    kelembapan: "",
-    bijiHitam: "",
-    bijiHitamSebagian: "",
-    bijiHitamPecah: "",
-    kopiGelondong: "",
-    bijiCoklat: "",
-    kulitKopiBesar: "",
-    kulitKopiSedang: "",
-    kulitKopiKecil: "",
-    bijiBerKulitTanduk: "",
-    kulitTandukBesar: "",
-    kulitTandukSedang: "",
-    kulitTandukKecil: "",
-    bijiPecah: "",
-    bijiMuda: "",
-    bijiBerlubangSatu: "",
-    bijiBerlubangLebihSatu: "",
-    bijiBertutul: "",
-    rantingBesar: "",
-    rantingSedang: "",
-    rantingKecil: "",
-    totalBobotKotoran: "",
+    kelembapan: 0,
+    bijiHitam: 0,
+    bijiHitamSebagian: 0,
+    bijiHitamPecah: 0,
+    kopiGelondong: 0,
+    bijiCoklat: 0,
+    kulitKopiBesar: 0,
+    kulitKopiSedang: 0,
+    kulitKopiKecil: 0,
+    bijiBerKulitTanduk: 0,
+    kulitTandukBesar: 0,
+    kulitTandukSedang: 0,
+    kulitTandukKecil: 0,
+    bijiPecah: 0,
+    bijiMuda: 0,
+    bijiBerlubangSatu: 0,
+    bijiBerlubangLebihSatu: 0,
+    bijiBertutul: 0,
+    rantingBesar: 0,
+    rantingSedang: 0,
+    rantingKecil: 0,
+    totalBobotKotoran: 0,
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -91,7 +91,14 @@ const PostProcessingQCPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  
+    // Convert input value to a number (float or integer)
+    const numericValue = value === "" ? 0 : parseFloat(value);
+
+    setFormData((prevData) => ({
+        ...prevData,
+        [name]: numericValue,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -228,7 +235,7 @@ const PostProcessingQCPage = () => {
                     InputProps={{ readOnly: true }}
                     fullWidth
                     multiline
-                    rows={10}
+                    rows={9}
                     disabled={!batchData}
                     />
                 </Grid>
