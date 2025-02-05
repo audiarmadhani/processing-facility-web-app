@@ -114,39 +114,73 @@ const QCStation = () => {
 };
 
 const handleCapture = async () => {
-    const video = webcamRef.current.video;
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
+  const video = webcamRef.current.video; // Get the video element
+  const canvas = document.createElement("canvas"); // Create a canvas element
+  const context = canvas.getContext("2d"); // Get the 2D drawing context
 
-    // Capture full-size image
-    canvas.width = 3840;
-    canvas.height = 2160;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  // Set canvas dimensions to match the video
+  canvas.width = 3840;
+  canvas.height = 2160;
 
-    // Create a smaller image for Roboflow API
-    const smallCanvas = document.createElement("canvas");
-    const smallContext = smallCanvas.getContext("2d");
-    smallCanvas.width = 640; // Resize to 640x360 for API
-    smallCanvas.height = 360;
-    smallContext.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+  // Draw the video frame on the canvas
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    smallCanvas.toBlob(async (blob) => {
-        // Send captured image to Roboflow API
-        const analysisResult = await analyzeWithRoboflow(blob);
+  // Get today's date and format it
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+  });
 
-        if (analysisResult) {
-            const { unripe, semi_ripe, ripe, overripe } = analysisResult;
+  // Set overlay text properties
+  context.fillStyle = "rgba(255, 255, 255, 0.7)"; // Background for the text
+  context.fillRect(10, canvas.height - 100, 400, 240); // Draw background rectangle
+  context.fillStyle = "#fff"; // Text color
+  context.font = "20px Arial"; // Font size and family
+  context.fillText(`Batch Number: ${batchNumber}`, 20, canvas.height - 210); // Batch number
+  context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180); // Farmer name
+  context.fillText(`Date: ${formattedDate}`, 20, canvas.height - 30); // Today's date
 
-            // Draw overlay with results
-            context.fillStyle = "rgba(0, 0, 0, 0.7)";
-            context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
-            context.fillStyle = "#fff";
-            context.fillText(`Unripe: ${unripe}%`, canvas.width - 290, canvas.height - 120);
-            context.fillText(`Semi-Ripe: ${semi_ripe}%`, canvas.width - 290, canvas.height - 90);
-            context.fillText(`Ripe: ${ripe}%`, canvas.width - 290, canvas.height - 60);
-            context.fillText(`Overripe: ${overripe}%`, canvas.width - 290, canvas.height - 30);
-        }
-    }, "image/jpeg", 0.8);
+  // Capture the image from the canvas
+  const imageSrc = canvas.toDataURL("image/jpeg", 1); // Get the image data as a JPEG
+
+  // Convert the Base64 image to a Blob for uploading
+  const byteString = atob(imageSrc.split(",")[1]); // Decode the Base64 string to binary
+  const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0]; // Extract MIME type
+  const ab = new ArrayBuffer(byteString.length); // Create an ArrayBuffer to hold the binary data
+  const ia = new Uint8Array(ab); // Create a typed array for the ArrayBuffer
+  for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i); // Fill the typed array with the binary data
+  }
+  const file = new Blob([ab], { type: mimeString }); // Create a Blob from the typed array
+
+  // Clean the batch number by removing whitespace
+  const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
+
+  // Create a File object with a cleaned batch number
+  const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: "image/jpeg" });
+
+  // Send the captured image to Roboflow API for analysis
+  const analysisResult = await analyzeWithRoboflow(blob);
+
+  if (analysisResult) {
+      const { unripe, semi_ripe, ripe, overripe } = analysisResult;
+
+      // Draw overlay with results
+      context.fillStyle = "rgba(0, 0, 0, 0.7)";
+      context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
+      context.fillStyle = "#fff";
+      context.fillText(`Unripe: ${unripe}%`, canvas.width - 290, canvas.height - 120);
+      context.fillText(`Semi-Ripe: ${semi_ripe}%`, canvas.width - 290, canvas.height - 90);
+      context.fillText(`Ripe: ${ripe}%`, canvas.width - 290, canvas.height - 60);
+      context.fillText(`Overripe: ${overripe}%`, canvas.width - 290, canvas.height - 30);
+  }
+
+  // Upload the JPEG file
+  await uploadImage(jpegFile, cleanBatchNumber); // Upload the JPEG file
+
+  setOpen(false); // Close the dialog after capturing
 };
 
 const uploadImage = async (file, batchNumber) => {
