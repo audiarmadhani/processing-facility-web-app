@@ -105,68 +105,75 @@ const QCStation = () => {
 
   const handleCapture = async () => {
     const video = webcamRef.current.video;
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+  
+    // Capture full-size image
     canvas.width = 3840;
     canvas.height = 2160;
-
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Get today's date
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-    // Draw overlay (existing info on left)
-    context.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    context.fillRect(10, canvas.height - 240, 400, 240);
-    context.fillStyle = '#fff';
-    context.font = '20px Arial';
-    context.fillText(`Batch Number: ${batchNumber}`, 20, canvas.height - 210);
-    context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180);
-    context.fillText(`Ripeness: ${ripeness}`, 20, canvas.height - 150);
-    context.fillText(`Color: ${color}`, 20, canvas.height - 120);
-    context.fillText(`Foreign Matter: ${foreignMatter}`, 20, canvas.height - 90);
-    context.fillText(`Overall Quality: ${overallQuality}`, 20, canvas.height - 60);
-    context.fillText(`Date: ${formattedDate}`, 20, canvas.height - 30);
-
-    // Convert canvas to Base64 image
-    const imageSrc = canvas.toDataURL('image/jpeg', 1);
-    setImageSrc(imageSrc);
-
-    // Convert Base64 to Blob
-    const byteString = atob(imageSrc.split(',')[1]);
-    const mimeString = imageSrc.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-    const file = new Blob([ab], { type: mimeString });
-
-    // Send image to Roboflow for inference
-    const roboflowResult = await analyzeWithRoboflow(file);
-
-    // Draw Roboflow results (bottom right)
-    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    context.fillRect(canvas.width - 400, canvas.height - 120, 380, 100);
-    context.fillStyle = '#fff';
-    context.fillText(`Unripe: ${roboflowResult.unripe}%`, canvas.width - 380, canvas.height - 90);
-    context.fillText(`Semi Ripe: ${roboflowResult.semiripe}%`, canvas.width - 380, canvas.height - 90);
-    context.fillText(`Ripe: ${roboflowResult.ripe}%`, canvas.width - 380, canvas.height - 60);
-    context.fillText(`Overripe: ${roboflowResult.overripe}%`, canvas.width - 380, canvas.height - 30);
-
-    // Convert the updated canvas back to an image
-    const finalImageSrc = canvas.toDataURL('image/jpeg', 1);
-    setImageSrc(finalImageSrc);
-
-    // Upload the final image
-    const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, '');
-    const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: 'image/jpeg' });
-
-    await uploadImage(jpegFile, cleanBatchNumber);
-    setOpen(false);
-};
+  
+    // Create a smaller image for Roboflow API
+    const smallCanvas = document.createElement("canvas");
+    const smallContext = smallCanvas.getContext("2d");
+    smallCanvas.width = 640; // Resize to 640x360 for API
+    smallCanvas.height = 360;
+    smallContext.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+  
+    smallCanvas.toBlob(async (blob) => {
+      const formData = new FormData();
+      formData.append("file", blob);
+  
+      try {
+        const response = await fetch(
+          "https://detect.roboflow.com/coffee-cherry-ripeness/1",
+          {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer ynuuAcMjAI6jxTNKshV1", // Replace with your API key
+            },
+            body: formData,
+          }
+        );
+  
+        const data = await response.json();
+        console.log("Roboflow Response:", data);
+  
+        if (data.predictions.length > 0) {
+          let unripeCount = 0,
+            semiRipeCount = 0,
+            ripeCount = 0,
+            overripeCount = 0;
+  
+          // Count detections per class
+          data.predictions.forEach((prediction) => {
+            if (prediction.class === "unripe") unripeCount++;
+            if (prediction.class === "semi_ripe") semiRipeCount++;
+            if (prediction.class === "ripe") ripeCount++;
+            if (prediction.class === "overripe") overripeCount++;
+          });
+  
+          // Calculate percentages
+          const total = unripeCount + semiRipeCount + ripeCount + overripeCount;
+          const unripePercentage = ((unripeCount / total) * 100).toFixed(2);
+          const semiRipePercentage = ((semiRipeCount / total) * 100).toFixed(2);
+          const ripePercentage = ((ripeCount / total) * 100).toFixed(2);
+          const overripePercentage = ((overripeCount / total) * 100).toFixed(2);
+  
+          // Draw results on bottom right of the original canvas
+          context.fillStyle = "rgba(0, 0, 0, 0.7)"; // Semi-transparent background
+          context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
+          context.fillStyle = "#fff";
+          context.fillText(`Unripe: ${unripePercentage}%`, canvas.width - 290, canvas.height - 120);
+          context.fillText(`Semi-Ripe: ${semiRipePercentage}%`, canvas.width - 290, canvas.height - 90);
+          context.fillText(`Ripe: ${ripePercentage}%`, canvas.width - 290, canvas.height - 60);
+          context.fillText(`Overripe: ${overripePercentage}%`, canvas.width - 290, canvas.height - 30);
+        }
+      } catch (error) {
+        console.error("Error detecting ripeness:", error);
+      }
+    }, "image/jpeg", 0.8); // Lower quality to reduce file size
+  };
 
 const uploadImage = async (file, batchNumber) => {
   try {
