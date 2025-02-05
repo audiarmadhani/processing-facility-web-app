@@ -24,6 +24,11 @@ import {
 import Alert from '@mui/material/Alert';
 import Webcam from 'react-webcam';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import axios from "axios";
+
+
+const ROBOFLOW_API_KEY = "YOUR_API_KEY";  // Replace with your Roboflow API key
+const MODEL_ID = "alfito-dwi-putra/dataset-kopi-8/4"; // Replace with your model ID
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
@@ -62,63 +67,106 @@ const QCStation = () => {
     },
   };
 
+  const analyzeWithRoboflow = async (file) => {
+    const apiUrl = `https://detect.roboflow.com/coffee-cherry-ripeness/1?api_key=ynuuAcMjAI6jxTNKshV1`;
 
-  const handleCapture = () => {
-    const video = webcamRef.current.video; // Get the video element
-    const canvas = document.createElement('canvas'); // Create a canvas element
-    const context = canvas.getContext('2d'); // Get the 2D drawing context
-  
-    // Set canvas dimensions to match the video
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await axios.post(apiUrl, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const detections = response.data.predictions;
+
+      // Count cherries based on class
+      let unripeCount = 0, ripeCount = 0, overripeCount = 0;
+      detections.forEach((obj) => {
+          if (obj.class === "unripe") unripeCount++;
+          if (obj.class === "semi_ripe") semiripeCount++;
+          if (obj.class === "ripe") ripeCount++;
+          if (obj.class === "overripe") overripeCount++;
+      });
+
+      const total = unripeCount + semiripeCount + ripeCount + overripeCount;
+      return {
+          unripe: ((unripeCount / total) * 100).toFixed(2),
+          semiripe: ((semiripeCount / total) * 100).toFixed(2),
+          ripe: ((ripeCount / total) * 100).toFixed(2),
+          overripe: ((overripeCount / total) * 100).toFixed(2),
+      };
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      return { unripe: 0, semiripe: 0, ripe: 0, overripe: 0 };
+    }
+  };
+
+
+  const handleCapture = async () => {
+    const video = webcamRef.current.video;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
     canvas.width = 3840;
     canvas.height = 2160;
-  
-    // Draw the video frame on the canvas
+
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Get today's date and format it
+    // Get today's date
     const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  
-    // Set overlay text properties
-    context.fillStyle = 'rgba(255, 255, 255, 0.7)'; // Background for the text
-    context.fillRect(10, canvas.height - 100, 400, 240); // Draw background rectangle
-    context.fillStyle = '#fff'; // Text color
-    context.font = '20px Arial'; // Font size and family
-    context.fillText(`Batch Number: ${batchNumber}`, 20, canvas.height - 210); // Batch number
-    context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180); // farmerName
-    context.fillText(`Ripeness: ${ripeness}`, 20, canvas.height - 150); // Ripeness
-    context.fillText(`Color: ${color}`, 20, canvas.height - 120); // Ripeness
-    context.fillText(`Foreign Matter: ${foreignMatter}`, 20, canvas.height - 90); // Ripeness
-    context.fillText(`Overall Quality: ${overallQuality}`, 20, canvas.height - 60); // overallQuality
-    context.fillText(`Date: ${formattedDate}`, 20, canvas.height - 30); // Today's date
-  
-    // Capture the image from the canvas
-    const imageSrc = canvas.toDataURL('image/jpeg', 1); // Get the image data as a JPEG
-    setImageSrc(imageSrc); // Set the image source for preview/display
-  
-    // Convert the Base64 image to a Blob for uploading
-    const byteString = atob(imageSrc.split(',')[1]); // Decode the Base64 string to binary
-    const mimeString = imageSrc.split(',')[0].split(':')[1].split(';')[0]; // Extract MIME type
-    const ab = new ArrayBuffer(byteString.length); // Create an ArrayBuffer to hold the binary data
-    const ia = new Uint8Array(ab); // Create a typed array for the ArrayBuffer
+    const formattedDate = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Draw overlay (existing info on left)
+    context.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    context.fillRect(10, canvas.height - 240, 400, 240);
+    context.fillStyle = '#fff';
+    context.font = '20px Arial';
+    context.fillText(`Batch Number: ${batchNumber}`, 20, canvas.height - 210);
+    context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180);
+    context.fillText(`Ripeness: ${ripeness}`, 20, canvas.height - 150);
+    context.fillText(`Color: ${color}`, 20, canvas.height - 120);
+    context.fillText(`Foreign Matter: ${foreignMatter}`, 20, canvas.height - 90);
+    context.fillText(`Overall Quality: ${overallQuality}`, 20, canvas.height - 60);
+    context.fillText(`Date: ${formattedDate}`, 20, canvas.height - 30);
+
+    // Convert canvas to Base64 image
+    const imageSrc = canvas.toDataURL('image/jpeg', 1);
+    setImageSrc(imageSrc);
+
+    // Convert Base64 to Blob
+    const byteString = atob(imageSrc.split(',')[1]);
+    const mimeString = imageSrc.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
     for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i); // Fill the typed array with the binary data
+        ia[i] = byteString.charCodeAt(i);
     }
-    const file = new Blob([ab], { type: mimeString }); // Create a Blob from the typed array
-  
-    // Clean the batch number by removing whitespace
+    const file = new Blob([ab], { type: mimeString });
+
+    // Send image to Roboflow for inference
+    const roboflowResult = await analyzeWithRoboflow(file);
+
+    // Draw Roboflow results (bottom right)
+    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    context.fillRect(canvas.width - 400, canvas.height - 120, 380, 100);
+    context.fillStyle = '#fff';
+    context.fillText(`Unripe: ${roboflowResult.unripe}%`, canvas.width - 380, canvas.height - 90);
+    context.fillText(`Semi Ripe: ${roboflowResult.semiripe}%`, canvas.width - 380, canvas.height - 90);
+    context.fillText(`Ripe: ${roboflowResult.ripe}%`, canvas.width - 380, canvas.height - 60);
+    context.fillText(`Overripe: ${roboflowResult.overripe}%`, canvas.width - 380, canvas.height - 30);
+
+    // Convert the updated canvas back to an image
+    const finalImageSrc = canvas.toDataURL('image/jpeg', 1);
+    setImageSrc(finalImageSrc);
+
+    // Upload the final image
     const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, '');
-  
-    // Create a File object with a cleaned batch number
     const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: 'image/jpeg' });
-  
-    uploadImage(jpegFile, cleanBatchNumber); // Upload the JPEG file
-    setOpen(false); // Close the dialog after capturing
-  };
+
+    await uploadImage(jpegFile, cleanBatchNumber);
+    setOpen(false);
+};
 
 const uploadImage = async (file, batchNumber) => {
   try {
