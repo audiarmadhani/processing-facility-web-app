@@ -142,43 +142,53 @@ const handleCapture = async () => {
   context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180); // Farmer name
   context.fillText(`Date: ${formattedDate}`, 20, canvas.height - 30); // Today's date
 
-  // Capture the image from the canvas
-  const imageSrc = canvas.toDataURL("image/jpeg", 1); // Get the image data as a JPEG
+  // Create a smaller image for Roboflow API
+  const smallCanvas = document.createElement("canvas");
+  const smallContext = smallCanvas.getContext("2d");
+  smallCanvas.width = 640; // Resize to 640x360 for API
+  smallCanvas.height = 360;
+  smallContext.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
 
-  // Convert the Base64 image to a Blob for uploading
-  const byteString = atob(imageSrc.split(",")[1]); // Decode the Base64 string to binary
-  const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0]; // Extract MIME type
-  const ab = new ArrayBuffer(byteString.length); // Create an ArrayBuffer to hold the binary data
-  const ia = new Uint8Array(ab); // Create a typed array for the ArrayBuffer
-  for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i); // Fill the typed array with the binary data
-  }
-  const file = new Blob([ab], { type: mimeString }); // Create a Blob from the typed array
+  // Convert the smallCanvas to a blob for uploading to Roboflow
+  smallCanvas.toBlob(async (blob) => {
+      // Send captured image to Roboflow API for analysis
+      const analysisResult = await analyzeWithRoboflow(blob);
 
-  // Clean the batch number by removing whitespace
-  const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
+      if (analysisResult) {
+          const { unripe, semi_ripe, ripe, overripe } = analysisResult;
 
-  // Create a File object with a cleaned batch number
-  const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: "image/jpeg" });
+          // Draw overlay with results
+          context.fillStyle = "rgba(0, 0, 0, 0.7)";
+          context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
+          context.fillStyle = "#fff";
+          context.fillText(`Unripe: ${unripe}%`, canvas.width - 290, canvas.height - 120);
+          context.fillText(`Semi-Ripe: ${semi_ripe}%`, canvas.width - 290, canvas.height - 90);
+          context.fillText(`Ripe: ${ripe}%`, canvas.width - 290, canvas.height - 60);
+          context.fillText(`Overripe: ${overripe}%`, canvas.width - 290, canvas.height - 30);
+      }
 
-  // Send the captured image to Roboflow API for analysis
-  const analysisResult = await analyzeWithRoboflow(blob);
+      // Capture the image from the canvas
+      const imageSrc = canvas.toDataURL("image/jpeg", 1); // Get the image data as a JPEG
 
-  if (analysisResult) {
-      const { unripe, semi_ripe, ripe, overripe } = analysisResult;
+      // Convert the Base64 image to a Blob for uploading
+      const byteString = atob(imageSrc.split(",")[1]); // Decode the Base64 string to binary
+      const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0]; // Extract MIME type
+      const ab = new ArrayBuffer(byteString.length); // Create an ArrayBuffer to hold the binary data
+      const ia = new Uint8Array(ab); // Create a typed array for the ArrayBuffer
+      for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i); // Fill the typed array with the binary data
+      }
+      const file = new Blob([ab], { type: mimeString }); // Create a Blob from the typed array
 
-      // Draw overlay with results
-      context.fillStyle = "rgba(0, 0, 0, 0.7)";
-      context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
-      context.fillStyle = "#fff";
-      context.fillText(`Unripe: ${unripe}%`, canvas.width - 290, canvas.height - 120);
-      context.fillText(`Semi-Ripe: ${semi_ripe}%`, canvas.width - 290, canvas.height - 90);
-      context.fillText(`Ripe: ${ripe}%`, canvas.width - 290, canvas.height - 60);
-      context.fillText(`Overripe: ${overripe}%`, canvas.width - 290, canvas.height - 30);
-  }
+      // Clean the batch number by removing whitespace
+      const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
 
-  // Upload the JPEG file
-  await uploadImage(jpegFile, cleanBatchNumber); // Upload the JPEG file
+      // Create a File object with a cleaned batch number
+      const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: "image/jpeg" });
+
+      // Upload the JPEG file
+      await uploadImage(jpegFile, cleanBatchNumber); // Upload the JPEG file
+  }, "image/jpeg", 0.8);
 
   setOpen(false); // Close the dialog after capturing
 };
