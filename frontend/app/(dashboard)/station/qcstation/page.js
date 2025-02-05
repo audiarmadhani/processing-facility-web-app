@@ -71,109 +71,83 @@ const QCStation = () => {
     const apiUrl = `https://detect.roboflow.com/coffee-cherry-ripeness/1?api_key=ynuuAcMjAI6jxTNKshV1`;
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const response = await axios.post(apiUrl, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-      });
+        const response = await axios.post(apiUrl, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
 
-      const detections = response.data.predictions;
+        const data = response.data;
+        if (!data || !data.predictions) {
+            console.error("Invalid API response:", data);
+            return { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
+        }
 
-      // Count cherries based on class
-      let unripeCount = 0, ripeCount = 0, overripeCount = 0;
-      detections.forEach((obj) => {
-          if (obj.class === "unripe") unripeCount++;
-          if (obj.class === "semi_ripe") semiripeCount++;
-          if (obj.class === "ripe") ripeCount++;
-          if (obj.class === "overripe") overripeCount++;
-      });
+        let unripeCount = 0,
+            semiRipeCount = 0,
+            ripeCount = 0,
+            overripeCount = 0;
 
-      const total = unripeCount + semiripeCount + ripeCount + overripeCount;
-      return {
-          unripe: ((unripeCount / total) * 100).toFixed(2),
-          semiripe: ((semiripeCount / total) * 100).toFixed(2),
-          ripe: ((ripeCount / total) * 100).toFixed(2),
-          overripe: ((overripeCount / total) * 100).toFixed(2),
-      };
+        // Count detections per class
+        data.predictions.forEach((obj) => {
+            if (obj.class === "unripe") unripeCount++;
+            if (obj.class === "semi_ripe") semiRipeCount++;
+            if (obj.class === "ripe") ripeCount++;
+            if (obj.class === "overripe") overripeCount++;
+        });
+
+        // Calculate percentages
+        const total = unripeCount + semiRipeCount + ripeCount + overripeCount;
+        if (total === 0) return { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
+
+        return {
+            unripe: ((unripeCount / total) * 100).toFixed(2),
+            semi_ripe: ((semiRipeCount / total) * 100).toFixed(2),
+            ripe: ((ripeCount / total) * 100).toFixed(2),
+            overripe: ((overripeCount / total) * 100).toFixed(2),
+        };
     } catch (error) {
-      console.error("Error analyzing image:", error);
-      return { unripe: 0, semiripe: 0, ripe: 0, overripe: 0 };
+        console.error("Error analyzing image:", error);
+        return { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
     }
-  };
+};
 
-
-  const handleCapture = async () => {
+const handleCapture = async () => {
     const video = webcamRef.current.video;
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
-  
+
     // Capture full-size image
     canvas.width = 3840;
     canvas.height = 2160;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
+
     // Create a smaller image for Roboflow API
     const smallCanvas = document.createElement("canvas");
     const smallContext = smallCanvas.getContext("2d");
     smallCanvas.width = 640; // Resize to 640x360 for API
     smallCanvas.height = 360;
     smallContext.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
-  
+
     smallCanvas.toBlob(async (blob) => {
-      const formData = new FormData();
-      formData.append("file", blob);
-  
-      try {
-        const response = await fetch(
-          "https://detect.roboflow.com/coffee-cherry-ripeness/1",
-          {
-            method: "POST",
-            headers: {
-              Authorization: "Bearer ynuuAcMjAI6jxTNKshV1", // Replace with your API key
-            },
-            body: formData,
-          }
-        );
-  
-        const data = await response.json();
-        console.log("Roboflow Response:", data);
-  
-        if (data.predictions.length > 0) {
-          let unripeCount = 0,
-            semiRipeCount = 0,
-            ripeCount = 0,
-            overripeCount = 0;
-  
-          // Count detections per class
-          data.predictions.forEach((prediction) => {
-            if (prediction.class === "unripe") unripeCount++;
-            if (prediction.class === "semi_ripe") semiRipeCount++;
-            if (prediction.class === "ripe") ripeCount++;
-            if (prediction.class === "overripe") overripeCount++;
-          });
-  
-          // Calculate percentages
-          const total = unripeCount + semiRipeCount + ripeCount + overripeCount;
-          const unripePercentage = ((unripeCount / total) * 100).toFixed(2);
-          const semiRipePercentage = ((semiRipeCount / total) * 100).toFixed(2);
-          const ripePercentage = ((ripeCount / total) * 100).toFixed(2);
-          const overripePercentage = ((overripeCount / total) * 100).toFixed(2);
-  
-          // Draw results on bottom right of the original canvas
-          context.fillStyle = "rgba(0, 0, 0, 0.7)"; // Semi-transparent background
-          context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
-          context.fillStyle = "#fff";
-          context.fillText(`Unripe: ${unripePercentage}%`, canvas.width - 290, canvas.height - 120);
-          context.fillText(`Semi-Ripe: ${semiRipePercentage}%`, canvas.width - 290, canvas.height - 90);
-          context.fillText(`Ripe: ${ripePercentage}%`, canvas.width - 290, canvas.height - 60);
-          context.fillText(`Overripe: ${overripePercentage}%`, canvas.width - 290, canvas.height - 30);
+        // Send captured image to Roboflow API
+        const analysisResult = await analyzeWithRoboflow(blob);
+
+        if (analysisResult) {
+            const { unripe, semi_ripe, ripe, overripe } = analysisResult;
+
+            // Draw overlay with results
+            context.fillStyle = "rgba(0, 0, 0, 0.7)";
+            context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
+            context.fillStyle = "#fff";
+            context.fillText(`Unripe: ${unripe}%`, canvas.width - 290, canvas.height - 120);
+            context.fillText(`Semi-Ripe: ${semi_ripe}%`, canvas.width - 290, canvas.height - 90);
+            context.fillText(`Ripe: ${ripe}%`, canvas.width - 290, canvas.height - 60);
+            context.fillText(`Overripe: ${overripe}%`, canvas.width - 290, canvas.height - 30);
         }
-      } catch (error) {
-        console.error("Error detecting ripeness:", error);
-      }
-    }, "image/jpeg", 0.8); // Lower quality to reduce file size
-  };
+    }, "image/jpeg", 0.8);
+};
 
 const uploadImage = async (file, batchNumber) => {
   try {
