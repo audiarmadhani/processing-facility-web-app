@@ -628,6 +628,7 @@ const QCStation = () => {
                   MenuProps={MenuProps}
                 >
                   <MenuItem value="Unripe">Unripe</MenuItem>
+                  <MenuItem value="Semiripe">Semi-ripe</MenuItem>
                   <MenuItem value="Ripe">Ripe</MenuItem>
                   <MenuItem value="Overripe">Overripe</MenuItem>
                 </Select>
