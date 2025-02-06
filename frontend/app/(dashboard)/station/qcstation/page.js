@@ -112,43 +112,79 @@ const QCStation = () => {
     const video = webcamRef.current.video;
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
-
+  
+    // Set canvas dimensions for high-resolution capture
     canvas.width = 3840;
     canvas.height = 2160;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Overlay text (batch, farmer, date)
-    drawOverlayText(context, canvas, batchNumber, farmerName, ripeness, color, foreignMatter, overallQuality);
-
-    // Create a resized version for Roboflow
-    const smallCanvas = document.createElement("canvas");
-    smallCanvas.width = 640;
-    smallCanvas.height = 360;
-    smallCanvas.getContext("2d").drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
-
-    // Convert to Blob and analyze with Roboflow
-    smallCanvas.toBlob(async (blob) => {
-        const analysisResult = await analyzeWithRoboflow(blob);
-        if (analysisResult.predictions.length > 0) {
-          drawBoundingBoxes(context, canvas, analysisResult.predictions);
-          drawRipenessCounts(context, canvas, analysisResult);
-          
-          // Update Roboflow results state
-          setRoboflowResults({
-            unripe: analysisResult.unripe,
-            semi_ripe: analysisResult.semi_ripe,
-            ripe: analysisResult.ripe,
-            overripe: analysisResult.overripe,
-          });
-        }
-
-        // Convert final image to Blob & Upload
-        // Save and upload the final image
-      saveAndUploadImage(canvas, batchNumber);
-
-      // Close the dialog after capturing the image
-      setOpen(false); // Automatically close the pop-up window
-    }, "image/jpeg", 0.8);
+  
+    // Array to store analysis results from three images
+    const analysisResults = [];
+  
+    // Capture and analyze three consecutive images
+    for (let i = 0; i < 3; i++) {
+      // Draw the current frame from the webcam onto the canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+      // Create a resized version for Roboflow
+      const smallCanvas = document.createElement("canvas");
+      smallCanvas.width = 640;
+      smallCanvas.height = 360;
+      smallCanvas.getContext("2d").drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+  
+      // Convert the resized canvas to a Blob and analyze with Roboflow
+      const blob = await new Promise((resolve) => {
+        smallCanvas.toBlob(resolve, "image/jpeg", 0.8);
+      });
+  
+      const analysisResult = await analyzeWithRoboflow(blob);
+      analysisResults.push(analysisResult);
+  
+      // Optional: Add a small delay between captures to account for motion
+      if (i < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 300)); // 300ms delay
+      }
+    }
+  
+    // Calculate the average results from the three analyses
+    const averagedResults = {
+      unripe: 0,
+      semi_ripe: 0,
+      ripe: 0,
+      overripe: 0,
+    };
+  
+    analysisResults.forEach((result) => {
+      averagedResults.unripe += parseFloat(result.unripe || 0);
+      averagedResults.semi_ripe += parseFloat(result.semi_ripe || 0);
+      averagedResults.ripe += parseFloat(result.ripe || 0);
+      averagedResults.overripe += parseFloat(result.overripe || 0);
+    });
+  
+    // Divide by the number of images to get the average
+    averagedResults.unripe /= analysisResults.length;
+    averagedResults.semi_ripe /= analysisResults.length;
+    averagedResults.ripe /= analysisResults.length;
+    averagedResults.overripe /= analysisResults.length;
+  
+    // Update Roboflow results state with the averaged values
+    setRoboflowResults({
+      unripe: averagedResults.unripe.toFixed(2),
+      semi_ripe: averagedResults.semi_ripe.toFixed(2),
+      ripe: averagedResults.ripe.toFixed(2),
+      overripe: averagedResults.overripe.toFixed(2),
+    });
+  
+    // Draw bounding boxes and ripeness counts using the last captured image
+    if (analysisResults[analysisResults.length - 1].predictions.length > 0) {
+      drawBoundingBoxes(context, canvas, analysisResults[analysisResults.length - 1].predictions);
+      drawRipenessCounts(context, canvas, averagedResults);
+    }
+  
+    // Save and upload the final image
+    saveAndUploadImage(canvas, batchNumber);
+  
+    // Close the dialog after capturing the image
+    setOpen(false); // Automatically close the pop-up window
   };
 
   const drawOverlayText = (ctx, canvas, batch, farmer, ripeness, color, foreignMatter, quality) => {
