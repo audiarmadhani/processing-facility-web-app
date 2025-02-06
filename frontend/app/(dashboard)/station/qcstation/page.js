@@ -135,7 +135,7 @@ const handleCapture = async () => {
 
   // Overlay text (batch number, farmer name, date)
   context.fillStyle = "rgba(255, 255, 255, 0.7)";
-  context.fillRect(10, canvas.height - 100, 400, 240);
+  context.fillRect(10, canvas.height - 240, 400, 240);
   context.fillStyle = "#fff";
   context.font = "20px Arial";
   context.fillText(`Batch Number: ${batchNumber}`, 20, canvas.height - 210); // Batch number
@@ -154,11 +154,17 @@ const handleCapture = async () => {
   smallCanvas.height = 360;
   smallContext.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
 
+  console.log("Captured image and created small version for Roboflow");
+
   // Convert to Blob and send to Roboflow
   smallCanvas.toBlob(async (blob) => {
     const analysisResult = await analyzeWithRoboflow(blob);
 
-    if (analysisResult && analysisResult.predictions) {
+    console.log("Received Roboflow Analysis Result:", analysisResult);
+
+    if (analysisResult && analysisResult.predictions.length > 0) {
+      console.log("Predictions Found:", analysisResult.predictions);
+
       // Bounding box color map
       const colorMap = {
         unripe: "#00FF00", // Green
@@ -174,7 +180,7 @@ const handleCapture = async () => {
       // Draw bounding boxes on the original image
       analysisResult.predictions
         .filter((pred) => pred.confidence > 0.5) // Filter out low-confidence detections
-        .forEach((pred) => {
+        .forEach((pred, index) => {
           const { x, y, width, height, class: ripeness, confidence } = pred;
 
           const color = colorMap[ripeness] || "#FFFFFF"; // Default to white if not mapped
@@ -185,9 +191,13 @@ const handleCapture = async () => {
           const widthScaled = width * scaleX;
           const heightScaled = height * scaleY;
 
+          console.log(
+            `Drawing box ${index + 1}: (${xScaled}, ${yScaled}, ${widthScaled}, ${heightScaled}) - ${ripeness} (${(confidence * 100).toFixed(1)}%)`
+          );
+
           // Draw bounding box
           context.strokeStyle = color;
-          context.lineWidth = 5;
+          context.lineWidth = 8;
           context.strokeRect(
             xScaled - widthScaled / 2,
             yScaled - heightScaled / 2,
@@ -197,15 +207,15 @@ const handleCapture = async () => {
 
           // Draw label with confidence score
           context.fillStyle = color;
-          context.font = "24px Arial";
+          context.font = "bold 36px Arial";
           context.fillText(
-            `${ripeness} (${(confidence * 100).toFixed(1)}%)`,
+            `${ripeness} ${(confidence * 100).toFixed(1)}%`,
             xScaled - widthScaled / 2,
             yScaled - heightScaled / 2 - 10
           );
         });
 
-      // Draw summary overlay
+      // Draw ripeness counts overlay
       const ripenessCounts = analysisResult.predictions.reduce(
         (acc, pred) => {
           if (pred.confidence > 0.5) acc[pred.class] += 1;
@@ -214,13 +224,18 @@ const handleCapture = async () => {
         { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 }
       );
 
+      console.log("Final ripeness counts:", ripenessCounts);
+
       context.fillStyle = "rgba(0, 0, 0, 0.7)";
-      context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
+      context.fillRect(canvas.width - 400, canvas.height - 180, 380, 160);
       context.fillStyle = "#fff";
-      context.fillText(`Unripe: ${ripenessCounts.unripe}`, canvas.width - 290, canvas.height - 120);
-      context.fillText(`Semi-Ripe: ${ripenessCounts.semi_ripe}`, canvas.width - 290, canvas.height - 90);
-      context.fillText(`Ripe: ${ripenessCounts.ripe}`, canvas.width - 290, canvas.height - 60);
-      context.fillText(`Overripe: ${ripenessCounts.overripe}`, canvas.width - 290, canvas.height - 30);
+      context.font = "bold 36px Arial";
+      context.fillText(`Unripe: ${ripenessCounts.unripe}`, canvas.width - 380, canvas.height - 140);
+      context.fillText(`Semi-Ripe: ${ripenessCounts.semi_ripe}`, canvas.width - 380, canvas.height - 100);
+      context.fillText(`Ripe: ${ripenessCounts.ripe}`, canvas.width - 380, canvas.height - 60);
+      context.fillText(`Overripe: ${ripenessCounts.overripe}`, canvas.width - 380, canvas.height - 20);
+    } else {
+      console.warn("No valid predictions found!");
     }
 
     // Convert final image to Blob
