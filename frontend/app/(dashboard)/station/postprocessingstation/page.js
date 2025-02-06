@@ -124,15 +124,15 @@ function PostprocessingStation() {
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', sortable: true },
-    { field: 'referenceNumber', headerName: 'Ref Number', sortable: true },
-    { field: 'storedDateTrunc', headerName: 'Stored Date', sortable: true },
-    { field: 'processingType', headerName: 'Process', sortable: true },
-    { field: 'productLine', headerName: 'Product Line', sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'referenceNumber', headerName: 'Ref Number', width: 180, sortable: true },
+    { field: 'storeddatetrunc', headerName: 'Stored Date', sortable: true },
+    { field: 'processingType', headerName: 'Process', width: 180, sortable: true },
+    { field: 'productLine', headerName: 'Product Line', width: 180, sortable: true },
     { field: 'producer', headerName: 'Producer', sortable: true },
     { field: 'type', headerName: 'Type', sortable: true },
     { field: 'quality', headerName: 'Quality', sortable: true },
-    { field: 'weight', headerName: 'Total Weight (kg)', sortable: true },
+    { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
     { field: 'totalBags', headerName: 'Bags Qty', sortable: true },
     { field: 'notes', headerName: 'Notes', sortable: true },
   ];
