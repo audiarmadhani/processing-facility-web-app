@@ -130,24 +130,28 @@ const QCStation = () => {
         }
 
         // Convert final image to Blob & Upload
-        saveAndUploadImage(canvas, batchNumber);
+        // Save and upload the final image
+      saveAndUploadImage(canvas, batchNumber);
+
+      // Close the dialog after capturing the image
+      setOpen(false); // Automatically close the pop-up window
     }, "image/jpeg", 0.8);
   };
 
   const drawOverlayText = (ctx, canvas, batch, farmer, ripeness, color, foreignMatter, quality) => {
-    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.fillRect(10, canvas.height - 240, 400, 240);
     ctx.fillStyle = "#fff";
     ctx.font = "20px Arial";
 
     const labels = [
-        `Batch Number: ${batch}`,
-        `Farmer Name: ${farmer}`,
-        `Ripeness: ${ripeness}`,
-        `Color: ${color}`,
-        `Foreign Matter: ${foreignMatter}`,
-        `Overall Quality: ${quality}`,
-        `Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
+      `Batch Number: ${batch}`,
+      `Farmer Name: ${farmer}`,
+      `Ripeness: ${ripeness}`,
+      `Color: ${color}`,
+      `Foreign Matter: ${foreignMatter}`,
+      `Overall Quality: ${quality}`,
+      `Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
     ];
 
     labels.forEach((text, i) => ctx.fillText(text, 20, canvas.height - 210 + i * 30));
@@ -179,9 +183,9 @@ const QCStation = () => {
 
   const drawRipenessCounts = (ctx, canvas, { unripe, semi_ripe, ripe, overripe }) => {
     ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    ctx.fillRect(canvas.width - 400, canvas.height - 180, 380, 160);
+    ctx.fillRect(canvas.width - 400, canvas.height - 180, 400, 240);
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 36px Arial";
+    ctx.font = "36px Arial";
 
     const labels = [`Unripe: ${unripe}`, `Semi-Ripe: ${semi_ripe}`, `Ripe: ${ripe}`, `Overripe: ${overripe}`];
     labels.forEach((text, i) => ctx.fillText(text, canvas.width - 380, canvas.height - 140 + i * 40));
