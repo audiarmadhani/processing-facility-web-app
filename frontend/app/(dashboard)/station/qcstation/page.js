@@ -368,10 +368,10 @@ const QCStation = () => {
       overallQuality: overallQuality.trim(), // Trim whitespace from overallQuality
       qcNotes: qcNotes.trim(), // Trim whitespace from qcNotes
       // Include Roboflow results in the payload
-      unripePercentage: roboflowResults.unripe,
-      semiripePercentage: roboflowResults.semi_ripe,
-      ripePercentage: roboflowResults.ripe,
-      overripePercentage: roboflowResults.overripe,
+      unripePercentage: parseFloat(roboflowResults.unripe) || 0.0,
+      semiripePercentage: parseFloat(roboflowResults.semi_ripe) || 0.0,
+      ripePercentage: parseFloat(roboflowResults.ripe) || 0.0,
+      overripePercentage: parseFloat(roboflowResults.overripe) || 0.0,
     };
 
     try {
