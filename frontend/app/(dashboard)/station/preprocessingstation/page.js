@@ -36,10 +36,10 @@ const PreprocessingStation = () => {
   const [rfidVisible, setRfidVisible] = useState(false);
   const [farmerName, setFarmerName] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
-  const [receivingDateData, setReceivingDateData] = useState('');
+  const [receivingdatedata, setreceivingdatedata] = useState('');
   const [receivingDateTrunc, setReceivingDateTrunc] = useState('');
   const [qcDate, setQCDate] = useState('');
-  const [qcDateData, setQCDateData] = useState('');
+  const [qcdatedata, setqcdatedata] = useState('');
   const [qcDateTrunc, setQCDateTrunc] = useState('');
   const [weight, setWeight] = useState('');
   const [totalBags, setTotalBags] = useState('');
@@ -50,8 +50,8 @@ const PreprocessingStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'receivingDateData', headerName: 'Receiving Date', width: 180, sortable: true },
-    { field: 'qcDateData', headerName: 'QC Date', width: 180, sortable: true },
+    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
     { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
@@ -61,8 +61,8 @@ const PreprocessingStation = () => {
 
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'receivingDateData', headerName: 'Receiving Date', width: 180, sortable: true },
-    { field: 'qcDateData', headerName: 'QC Date', width: 180, sortable: true },
+    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 150, sortable: true },
     { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
