@@ -26,9 +26,6 @@ import Webcam from 'react-webcam';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from "axios";
 
-
-const ROBOFLOW_API_KEY = "YOUR_API_KEY";  // Replace with your Roboflow API key
-const MODEL_ID = "alfito-dwi-putra/dataset-kopi-8/4"; // Replace with your model ID
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
@@ -55,6 +52,14 @@ const QCStation = () => {
   const [open, setOpen] = useState(false);
   const webcamRef = useRef(null);
   const [imageSrc, setImageSrc] = useState(null);
+
+  // New state variables for Roboflow results
+  const [roboflowResults, setRoboflowResults] = useState({
+    unripe: null,
+    semi_ripe: null,
+    ripe: null,
+    overripe: null,
+  });
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -354,6 +359,11 @@ const QCStation = () => {
       foreignMatter: foreignMatter.trim(), // Trim whitespace from foreignMatter
       overallQuality: overallQuality.trim(), // Trim whitespace from overallQuality
       qcNotes: qcNotes.trim(), // Trim whitespace from qcNotes
+      // Include Roboflow results in the payload
+      unripe: roboflowResults.unripe,
+      semi_ripe: roboflowResults.semi_ripe,
+      ripe: roboflowResults.ripe,
+      overripe: roboflowResults.overripe,
     };
 
     try {
@@ -379,6 +389,7 @@ const QCStation = () => {
       setForeignMatter('');
       setOverallQuality('');
       setQcNotes('');
+      setRoboflowResults({ unripe: null, semi_ripe: null, ripe: null, overripe: null }); // Reset Roboflow results
 
       // Refresh the QC data
       const refreshQCData = await fetch('https://processing-facility-backend.onrender.com/api/qc');
@@ -637,6 +648,57 @@ const QCStation = () => {
                 fullWidth
                 margin="normal"
               />
+
+              {/* Conditionally render Roboflow results */}
+
+              {roboflowResults.unripe !== null && (
+                <TextField
+                  label="Unripe"
+                  value={roboflowResults.unripe}
+                  fullWidth
+                  margin="normal"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              )}
+
+              {roboflowResults.semi_ripe !== null && (
+                <TextField
+                  label="Semi-Ripe"
+                  value={roboflowResults.semi_ripe}
+                  fullWidth
+                  margin="normal"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              )}
+
+              {roboflowResults.ripe !== null && (
+                <TextField
+                  label="Ripe"
+                  value={roboflowResults.ripe}
+                  fullWidth
+                  margin="normal"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              )}
+              
+              {roboflowResults.overripe !== null && (
+                <TextField
+                  label="Overripe"
+                  value={roboflowResults.overripe}
+                  fullWidth
+                  margin="normal"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              )}
+
               <Button 
                 variant="contained" 
                 color="secondary" 
