@@ -81,7 +81,7 @@ const QCStation = () => {
         const data = response.data;
         if (!data || !data.predictions) {
             console.error("Invalid API response:", data);
-            return { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
+            return { predictions: [], unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
         }
 
         let unripeCount = 0,
@@ -91,25 +91,29 @@ const QCStation = () => {
 
         // Count detections per class
         data.predictions.forEach((obj) => {
-            if (obj.class === "unripe") unripeCount++;
-            if (obj.class === "semi_ripe") semiRipeCount++;
-            if (obj.class === "ripe") ripeCount++;
-            if (obj.class === "overripe") overripeCount++;
+            if (obj.confidence >= 0.5) { // Filter by confidence
+                if (obj.class === "unripe") unripeCount++;
+                if (obj.class === "semi_ripe") semiRipeCount++;
+                if (obj.class === "ripe") ripeCount++;
+                if (obj.class === "overripe") overripeCount++;
+            }
         });
 
         // Calculate percentages
         const total = unripeCount + semiRipeCount + ripeCount + overripeCount;
-        if (total === 0) return { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
-
-        return {
-            unripe: ((unripeCount / total) * 100).toFixed(2),
-            semi_ripe: ((semiRipeCount / total) * 100).toFixed(2),
-            ripe: ((ripeCount / total) * 100).toFixed(2),
-            overripe: ((overripeCount / total) * 100).toFixed(2),
+        const percentages = {
+            unripe: total ? ((unripeCount / total) * 100).toFixed(2) : 0,
+            semi_ripe: total ? ((semiRipeCount / total) * 100).toFixed(2) : 0,
+            ripe: total ? ((ripeCount / total) * 100).toFixed(2) : 0,
+            overripe: total ? ((overripeCount / total) * 100).toFixed(2) : 0,
         };
+
+        // ✅ Return both predictions & percentage breakdown
+        return { predictions: data.predictions, ...percentages };
+
     } catch (error) {
         console.error("Error analyzing image:", error);
-        return { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
+        return { predictions: [], unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
     }
 };
 
