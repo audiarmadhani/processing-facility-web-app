@@ -114,83 +114,135 @@ const QCStation = () => {
 };
 
 const handleCapture = async () => {
-  const video = webcamRef.current.video; // Get the video element
-  const canvas = document.createElement("canvas"); // Create a canvas element
-  const context = canvas.getContext("2d"); // Get the 2D drawing context
+  const video = webcamRef.current.video;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
 
-  // Set canvas dimensions to match the video
+  // Set canvas dimensions to match video resolution
   canvas.width = 3840;
   canvas.height = 2160;
 
-  // Draw the video frame on the canvas
+  // Draw the video frame onto the canvas
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   // Get today's date and format it
   const today = new Date();
   const formattedDate = today.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
-  // Set overlay text properties
-  context.fillStyle = "rgba(255, 255, 255, 0.7)"; // Background for the text
-  context.fillRect(10, canvas.height - 100, 400, 240); // Draw background rectangle
-  context.fillStyle = "#fff"; // Text color
-  context.font = "20px Arial"; // Font size and family
+  // Overlay text (batch number, farmer name, date)
+  context.fillStyle = "rgba(255, 255, 255, 0.7)";
+  context.fillRect(10, canvas.height - 100, 400, 240);
+  context.fillStyle = "#fff";
+  context.font = "20px Arial";
   context.fillText(`Batch Number: ${batchNumber}`, 20, canvas.height - 210); // Batch number
-  context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180); // Farmer name
+  context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180); // farmerName
+  context.fillText(`Ripeness: ${ripeness}`, 20, canvas.height - 150); // Ripeness
+  context.fillText(`Color: ${color}`, 20, canvas.height - 120); // Ripeness
+  context.fillText(`Foreign Matter: ${foreignMatter}`, 20, canvas.height - 90); // Ripeness
+  context.fillText(`Overall Quality: ${overallQuality}`, 20, canvas.height - 60); // overallQuality
   context.fillText(`Date: ${formattedDate}`, 20, canvas.height - 30); // Today's date
+  
 
-  // Create a smaller image for Roboflow API
+  // Create a resized version for Roboflow API
   const smallCanvas = document.createElement("canvas");
   const smallContext = smallCanvas.getContext("2d");
-  smallCanvas.width = 640; // Resize to 640x360 for API
+  smallCanvas.width = 640;
   smallCanvas.height = 360;
   smallContext.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
 
-  // Convert the smallCanvas to a blob for uploading to Roboflow
+  // Convert to Blob and send to Roboflow
   smallCanvas.toBlob(async (blob) => {
-      // Send captured image to Roboflow API for analysis
-      const analysisResult = await analyzeWithRoboflow(blob);
+    const analysisResult = await analyzeWithRoboflow(blob);
 
-      if (analysisResult) {
-          const { unripe, semi_ripe, ripe, overripe } = analysisResult;
+    if (analysisResult && analysisResult.predictions) {
+      // Bounding box color map
+      const colorMap = {
+        unripe: "#00FF00", // Green
+        semi_ripe: "#FFFF00", // Yellow
+        ripe: "#FF0000", // Red
+        overripe: "#8B0000", // Dark Red
+      };
 
-          // Draw overlay with results
-          context.fillStyle = "rgba(0, 0, 0, 0.7)";
-          context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
-          context.fillStyle = "#fff";
-          context.fillText(`Unripe: ${unripe}%`, canvas.width - 290, canvas.height - 120);
-          context.fillText(`Semi-Ripe: ${semi_ripe}%`, canvas.width - 290, canvas.height - 90);
-          context.fillText(`Ripe: ${ripe}%`, canvas.width - 290, canvas.height - 60);
-          context.fillText(`Overripe: ${overripe}%`, canvas.width - 290, canvas.height - 30);
-      }
+      const { width: smallWidth, height: smallHeight } = analysisResult.image;
+      const scaleX = canvas.width / smallWidth;
+      const scaleY = canvas.height / smallHeight;
 
-      // Capture the image from the canvas
-      const imageSrc = canvas.toDataURL("image/jpeg", 1); // Get the image data as a JPEG
+      // Draw bounding boxes on the original image
+      analysisResult.predictions
+        .filter((pred) => pred.confidence > 0.5) // Filter out low-confidence detections
+        .forEach((pred) => {
+          const { x, y, width, height, class: ripeness, confidence } = pred;
 
-      // Convert the Base64 image to a Blob for uploading
-      const byteString = atob(imageSrc.split(",")[1]); // Decode the Base64 string to binary
-      const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0]; // Extract MIME type
-      const ab = new ArrayBuffer(byteString.length); // Create an ArrayBuffer to hold the binary data
-      const ia = new Uint8Array(ab); // Create a typed array for the ArrayBuffer
-      for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i); // Fill the typed array with the binary data
-      }
-      const file = new Blob([ab], { type: mimeString }); // Create a Blob from the typed array
+          const color = colorMap[ripeness] || "#FFFFFF"; // Default to white if not mapped
 
-      // Clean the batch number by removing whitespace
-      const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
+          // Scale bounding box coordinates
+          const xScaled = x * scaleX;
+          const yScaled = y * scaleY;
+          const widthScaled = width * scaleX;
+          const heightScaled = height * scaleY;
 
-      // Create a File object with a cleaned batch number
-      const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: "image/jpeg" });
+          // Draw bounding box
+          context.strokeStyle = color;
+          context.lineWidth = 5;
+          context.strokeRect(
+            xScaled - widthScaled / 2,
+            yScaled - heightScaled / 2,
+            widthScaled,
+            heightScaled
+          );
 
-      // Upload the JPEG file
-      await uploadImage(jpegFile, cleanBatchNumber); // Upload the JPEG file
+          // Draw label with confidence score
+          context.fillStyle = color;
+          context.font = "24px Arial";
+          context.fillText(
+            `${ripeness} (${(confidence * 100).toFixed(1)}%)`,
+            xScaled - widthScaled / 2,
+            yScaled - heightScaled / 2 - 10
+          );
+        });
+
+      // Draw summary overlay
+      const ripenessCounts = analysisResult.predictions.reduce(
+        (acc, pred) => {
+          if (pred.confidence > 0.5) acc[pred.class] += 1;
+          return acc;
+        },
+        { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 }
+      );
+
+      context.fillStyle = "rgba(0, 0, 0, 0.7)";
+      context.fillRect(canvas.width - 310, canvas.height - 150, 300, 130);
+      context.fillStyle = "#fff";
+      context.fillText(`Unripe: ${ripenessCounts.unripe}`, canvas.width - 290, canvas.height - 120);
+      context.fillText(`Semi-Ripe: ${ripenessCounts.semi_ripe}`, canvas.width - 290, canvas.height - 90);
+      context.fillText(`Ripe: ${ripenessCounts.ripe}`, canvas.width - 290, canvas.height - 60);
+      context.fillText(`Overripe: ${ripenessCounts.overripe}`, canvas.width - 290, canvas.height - 30);
+    }
+
+    // Convert final image to Blob
+    const imageSrc = canvas.toDataURL("image/jpeg", 1);
+    const byteString = atob(imageSrc.split(",")[1]);
+    const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const file = new Blob([ab], { type: mimeString });
+
+    // Clean batch number for file naming
+    const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
+    const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: "image/jpeg" });
+
+    // Upload final image
+    await uploadImage(jpegFile, cleanBatchNumber);
   }, "image/jpeg", 0.8);
 
-  setOpen(false); // Close the dialog after capturing
+  setOpen(false);
 };
 
 const uploadImage = async (file, batchNumber) => {
