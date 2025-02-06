@@ -441,6 +441,10 @@ const QCStation = () => {
     },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 140 },
     { field: 'qcNotes', headerName: 'Notes', width: 180 },
+    { field: 'unripePercentage', headerName: 'Unripe (%)', width: 180 },
+    { field: 'semiripePercentage', headerName: 'Semi Ripe (%)', width: 180 },
+    { field: 'ripePercentage', headerName: 'Ripe (%)', width: 180 },
+    { field: 'overripePercentage', headerName: 'Overripe (%)', width: 180 },
   ];
 
   const pendingQcColumns = [
@@ -686,7 +690,7 @@ const QCStation = () => {
                   }}
                 />
               )}
-              
+
               {roboflowResults.overripe !== null && (
                 <TextField
                   label="Overripe"
