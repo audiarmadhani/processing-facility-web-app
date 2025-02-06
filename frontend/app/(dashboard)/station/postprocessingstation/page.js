@@ -126,7 +126,7 @@ function PostprocessingStation() {
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', sortable: true },
     { field: 'referenceNumber', headerName: 'Ref Number', sortable: true },
-    { field: 'storedDate', headerName: 'Stored Date', sortable: true },
+    { field: 'storedDateTrunc', headerName: 'Stored Date', sortable: true },
     { field: 'processingType', headerName: 'Process', sortable: true },
     { field: 'productLine', headerName: 'Product Line', sortable: true },
     { field: 'producer', headerName: 'Producer', sortable: true },

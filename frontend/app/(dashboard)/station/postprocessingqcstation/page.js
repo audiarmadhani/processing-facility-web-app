@@ -243,6 +243,8 @@ const PostProcessingQCPage = () => {
   const qcColumns = [
     { field: "batchNumber", headerName: "Lot Number", width: 150 },
 		{ field: "referenceNumber", headerName: "Reference Number", width: 150 },
+    { field: "storedDate", headerName: "Stored Date", width: 150 },
+    { field: "qcDate", headerName: "QC Date", width: 150 },
     { field: "generalQuality", headerName: "General Quality", width: 180 },
     { field: "actualGrade", headerName: "Actual Grade", width: 150 },
     { field: "kelembapan", headerName: "Kelembapan (%)", width: 130 },

@@ -219,7 +219,7 @@ function ReceivingStation() {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-    { field: 'receivingDate', headerName: 'Received Date', width: 160, sortable: true },
+    { field: 'receivingDateTrunc', headerName: 'Received Date', width: 160, sortable: true },
     { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
     { field: 'farmerID', headerName: 'Farmer ID', width: 100, sortable: true },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },

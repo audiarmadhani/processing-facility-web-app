@@ -370,7 +370,7 @@ const QCStation = () => {
       if (Array.isArray(data) && data.length > 0) {
         const batchData = data[0];
         setFarmerName(batchData.farmerName || '');
-        setReceivingDate(batchData.receivingDate || '');
+        setReceivingDate(batchData.receivingDateTrunc || '');
         setWeight(batchData.weight || '');
         setTotalBags(batchData.totalBags || '');
         setSnackbarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
@@ -452,7 +452,7 @@ const QCStation = () => {
   const qcColumns = [
     // { field: 'id', headerName: 'ID', width: 80 },
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
-    { field: 'qcDate', headerName: 'QC Date', width: 190 },
+    { field: 'qcDateTrunc', headerName: 'QC Date', width: 190 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
     { field: 'color', headerName: 'Color', width: 140 },
     {
@@ -495,7 +495,7 @@ const QCStation = () => {
     // { field: 'id', headerName: 'ID', width: 80 },
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-    { field: 'receivingDate', headerName: 'Receiving Date', width: 250 },
+    { field: 'receivingDateTrunc', headerName: 'Receiving Date', width: 250 },
     { field: 'weight', headerName: 'Weight (kg)', width: 150 },
     { field: 'totalBags', headerName: 'Total Bags', width: 150 },
     { field: 'slaDays', headerName: 'SLA (Days)', width: 150 },

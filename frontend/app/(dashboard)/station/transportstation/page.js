@@ -232,6 +232,7 @@ const TransportStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', sortable: true },
+    { field: 'createdAtTrunc', headerName: 'Created At', sortable: true },
     { field: 'kabupaten', headerName: 'Kabupaten', sortable: true },
     { field: 'kecamatan', headerName: 'Kecamatan', sortable: true },
     { field: 'desa', headerName: 'Desa', sortable: true },

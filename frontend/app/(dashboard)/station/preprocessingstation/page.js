@@ -36,6 +36,9 @@ const PreprocessingStation = () => {
   const [rfidVisible, setRfidVisible] = useState(false);
   const [farmerName, setFarmerName] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
+  const [receivingDateData, setReceivingDateData] = useState('');
+  const [qcDate, setQCDate] = useState('');
+  const [qcDateData, setQCDateData] = useState('');
   const [weight, setWeight] = useState('');
   const [totalBags, setTotalBags] = useState('');
   const [openHistory, setOpenHistory] = useState(false);
@@ -45,6 +48,8 @@ const PreprocessingStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'receivingDateData', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcDateData', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
     { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
@@ -54,6 +59,8 @@ const PreprocessingStation = () => {
 
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'receivingDateData', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcDateData', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 150, sortable: true },
     { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
@@ -106,7 +113,8 @@ const PreprocessingStation = () => {
       console.log('fetchAvailableBags result:', { availableBags, totalProcessedBags });
   
       setFarmerName(data.farmerName);
-      setReceivingDate(data.receivingDate);
+      setReceivingDate(data.receivingDateTrunc);
+      setQCDate(data.qcDateTrunc);
       setWeight(data.weight);
       setTotalBags(data.totalBags);
       setBagsAvailable(availableBags);
@@ -391,7 +399,7 @@ const PreprocessingStation = () => {
   
               {/* Farmer and Batch Details */}
               <Grid container spacing={2} style={{ marginTop: '16px' }}>
-                <Grid item xs={6}>
+                <Grid item xs={12}>
                   <TextField
                     label="Farmer Name"
                     value={farmerName || ''}
@@ -403,7 +411,16 @@ const PreprocessingStation = () => {
                 <Grid item xs={6}>
                   <TextField
                     label="Date Received"
-                    value={receivingDate || ''}
+                    value={receivingDateTrunc || ''}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    margin="normal"
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Date QC"
+                    value={qcDateTrunc || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
                     margin="normal"
