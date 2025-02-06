@@ -130,8 +130,16 @@ const QCStation = () => {
     smallCanvas.toBlob(async (blob) => {
         const analysisResult = await analyzeWithRoboflow(blob);
         if (analysisResult.predictions.length > 0) {
-            drawBoundingBoxes(context, canvas, analysisResult.predictions);
-            drawRipenessCounts(context, canvas, analysisResult);
+          drawBoundingBoxes(context, canvas, analysisResult.predictions);
+          drawRipenessCounts(context, canvas, analysisResult);
+          
+          // Update Roboflow results state
+          setRoboflowResults({
+            unripe: analysisResult.unripe,
+            semi_ripe: analysisResult.semi_ripe,
+            ripe: analysisResult.ripe,
+            overripe: analysisResult.overripe,
+          });
         }
 
         // Convert final image to Blob & Upload
