@@ -79,212 +79,148 @@ const QCStation = () => {
         });
 
         const data = response.data;
-        if (!data || !data.predictions) {
-            console.error("Invalid API response:", data);
+        if (!data?.predictions?.length) {
+            console.warn("No predictions found in API response.");
             return { predictions: [], unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
         }
 
-        let unripeCount = 0,
-            semiRipeCount = 0,
-            ripeCount = 0,
-            overripeCount = 0;
-
-        // Count detections per class
-        data.predictions.forEach((obj) => {
-            if (obj.confidence >= 0.5) { // Filter by confidence
-                if (obj.class === "unripe") unripeCount++;
-                if (obj.class === "semi_ripe") semiRipeCount++;
-                if (obj.class === "ripe") ripeCount++;
-                if (obj.class === "overripe") overripeCount++;
-            }
+        // Count classifications
+        const ripenessCounts = { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
+        data.predictions.forEach(({ confidence, class: ripeness }) => {
+            if (confidence >= 0.5) ripenessCounts[ripeness]++;
         });
 
         // Calculate percentages
-        const total = unripeCount + semiRipeCount + ripeCount + overripeCount;
-        const percentages = {
-            unripe: total ? ((unripeCount / total) * 100).toFixed(2) : 0,
-            semi_ripe: total ? ((semiRipeCount / total) * 100).toFixed(2) : 0,
-            ripe: total ? ((ripeCount / total) * 100).toFixed(2) : 0,
-            overripe: total ? ((overripeCount / total) * 100).toFixed(2) : 0,
-        };
+        const total = Object.values(ripenessCounts).reduce((sum, count) => sum + count, 0);
+        const percentages = Object.fromEntries(
+            Object.entries(ripenessCounts).map(([key, count]) => [key, total ? ((count / total) * 100).toFixed(2) : 0])
+        );
 
-        // ✅ Return both predictions & percentage breakdown
         return { predictions: data.predictions, ...percentages };
-
     } catch (error) {
         console.error("Error analyzing image:", error);
         return { predictions: [], unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
     }
-};
+  };
 
-const handleCapture = async () => {
-  const video = webcamRef.current.video;
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
+  const handleCapture = async () => {
+    const video = webcamRef.current.video;
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
 
-  // Set canvas dimensions to match video resolution
-  canvas.width = 3840;
-  canvas.height = 2160;
+    canvas.width = 3840;
+    canvas.height = 2160;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Draw the video frame onto the canvas
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Overlay text (batch, farmer, date)
+    drawOverlayText(context, canvas, batchNumber, farmerName, ripeness, color, foreignMatter, overallQuality);
 
-  // Get today's date and format it
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+    // Create a resized version for Roboflow
+    const smallCanvas = document.createElement("canvas");
+    smallCanvas.width = 640;
+    smallCanvas.height = 360;
+    smallCanvas.getContext("2d").drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
 
-  // Overlay text (batch number, farmer name, date)
-  context.fillStyle = "rgba(255, 255, 255, 0.7)";
-  context.fillRect(10, canvas.height - 240, 400, 240);
-  context.fillStyle = "#fff";
-  context.font = "20px Arial";
-  context.fillText(`Batch Number: ${batchNumber}`, 20, canvas.height - 210); // Batch number
-  context.fillText(`Farmer Name: ${farmerName}`, 20, canvas.height - 180); // farmerName
-  context.fillText(`Ripeness: ${ripeness}`, 20, canvas.height - 150); // Ripeness
-  context.fillText(`Color: ${color}`, 20, canvas.height - 120); // Ripeness
-  context.fillText(`Foreign Matter: ${foreignMatter}`, 20, canvas.height - 90); // Ripeness
-  context.fillText(`Overall Quality: ${overallQuality}`, 20, canvas.height - 60); // overallQuality
-  context.fillText(`Date: ${formattedDate}`, 20, canvas.height - 30); // Today's date
-  
+    // Convert to Blob and analyze with Roboflow
+    smallCanvas.toBlob(async (blob) => {
+        const analysisResult = await analyzeWithRoboflow(blob);
+        if (analysisResult.predictions.length > 0) {
+            drawBoundingBoxes(context, canvas, analysisResult.predictions);
+            drawRipenessCounts(context, canvas, analysisResult);
+        }
 
-  // Create a resized version for Roboflow API
-  const smallCanvas = document.createElement("canvas");
-  const smallContext = smallCanvas.getContext("2d");
-  smallCanvas.width = 640;
-  smallCanvas.height = 360;
-  smallContext.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+        // Convert final image to Blob & Upload
+        saveAndUploadImage(canvas, batchNumber);
+    }, "image/jpeg", 0.8);
+  };
 
-  console.log("Captured image and created small version for Roboflow");
+  const drawOverlayText = (ctx, canvas, batch, farmer, ripeness, color, foreignMatter, quality) => {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.fillRect(10, canvas.height - 240, 400, 240);
+    ctx.fillStyle = "#fff";
+    ctx.font = "20px Arial";
 
-  // Convert to Blob and send to Roboflow
-  smallCanvas.toBlob(async (blob) => {
-    const analysisResult = await analyzeWithRoboflow(blob);
+    const labels = [
+        `Batch Number: ${batch}`,
+        `Farmer Name: ${farmer}`,
+        `Ripeness: ${ripeness}`,
+        `Color: ${color}`,
+        `Foreign Matter: ${foreignMatter}`,
+        `Overall Quality: ${quality}`,
+        `Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
+    ];
 
-    console.log("Received Roboflow Analysis Result:", analysisResult);
+    labels.forEach((text, i) => ctx.fillText(text, 20, canvas.height - 210 + i * 30));
+  };
 
-    if (analysisResult && analysisResult.predictions.length > 0) {
-      console.log("Predictions Found:", analysisResult.predictions);
+  const drawBoundingBoxes = (ctx, canvas, predictions) => {
+    const colorMap = { unripe: "#00FF00", semi_ripe: "#FFFF00", ripe: "#FF0000", overripe: "#8B0000" };
 
-      // Bounding box color map
-      const colorMap = {
-        unripe: "#00FF00", // Green
-        semi_ripe: "#FFFF00", // Yellow
-        ripe: "#FF0000", // Red
-        overripe: "#8B0000", // Dark Red
-      };
+    const { width: smallWidth, height: smallHeight } = predictions[0].image || { width: 640, height: 360 };
+    const scaleX = canvas.width / smallWidth;
+    const scaleY = canvas.height / smallHeight;
 
-      const { width: smallWidth, height: smallHeight } = analysisResult.image;
-      const scaleX = canvas.width / smallWidth;
-      const scaleY = canvas.height / smallHeight;
+    predictions
+        .filter(({ confidence }) => confidence > 0.5)
+        .forEach(({ x, y, width, height, class: ripeness, confidence }) => {
+            const color = colorMap[ripeness] || "#FFFFFF";
+            const xScaled = x * scaleX, yScaled = y * scaleY;
+            const widthScaled = width * scaleX, heightScaled = height * scaleY;
 
-      // Draw bounding boxes on the original image
-      analysisResult.predictions
-        .filter((pred) => pred.confidence > 0.5) // Filter out low-confidence detections
-        .forEach((pred, index) => {
-          const { x, y, width, height, class: ripeness, confidence } = pred;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 8;
+            ctx.strokeRect(xScaled - widthScaled / 2, yScaled - heightScaled / 2, widthScaled, heightScaled);
 
-          const color = colorMap[ripeness] || "#FFFFFF"; // Default to white if not mapped
-
-          // Scale bounding box coordinates
-          const xScaled = x * scaleX;
-          const yScaled = y * scaleY;
-          const widthScaled = width * scaleX;
-          const heightScaled = height * scaleY;
-
-          console.log(
-            `Drawing box ${index + 1}: (${xScaled}, ${yScaled}, ${widthScaled}, ${heightScaled}) - ${ripeness} (${(confidence * 100).toFixed(1)}%)`
-          );
-
-          // Draw bounding box
-          context.strokeStyle = color;
-          context.lineWidth = 8;
-          context.strokeRect(
-            xScaled - widthScaled / 2,
-            yScaled - heightScaled / 2,
-            widthScaled,
-            heightScaled
-          );
-
-          // Draw label with confidence score
-          context.fillStyle = color;
-          context.font = "bold 36px Arial";
-          context.fillText(
-            `${ripeness} ${(confidence * 100).toFixed(1)}%`,
-            xScaled - widthScaled / 2,
-            yScaled - heightScaled / 2 - 10
-          );
+            ctx.fillStyle = color;
+            ctx.font = "bold 36px Arial";
+            ctx.fillText(`${ripeness} ${(confidence * 100).toFixed(1)}%`, xScaled - widthScaled / 2, yScaled - heightScaled / 2 - 10);
         });
+  };
 
-      // Draw ripeness counts overlay
-      const ripenessCounts = analysisResult.predictions.reduce(
-        (acc, pred) => {
-          if (pred.confidence > 0.5) acc[pred.class] += 1;
-          return acc;
-        },
-        { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 }
-      );
+  const drawRipenessCounts = (ctx, canvas, { unripe, semi_ripe, ripe, overripe }) => {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillRect(canvas.width - 400, canvas.height - 180, 380, 160);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 36px Arial";
 
-      console.log("Final ripeness counts:", ripenessCounts);
+    const labels = [`Unripe: ${unripe}`, `Semi-Ripe: ${semi_ripe}`, `Ripe: ${ripe}`, `Overripe: ${overripe}`];
+    labels.forEach((text, i) => ctx.fillText(text, canvas.width - 380, canvas.height - 140 + i * 40));
+  };
 
-      context.fillStyle = "rgba(0, 0, 0, 0.7)";
-      context.fillRect(canvas.width - 400, canvas.height - 180, 380, 160);
-      context.fillStyle = "#fff";
-      context.font = "bold 36px Arial";
-      context.fillText(`Unripe: ${ripenessCounts.unripe}`, canvas.width - 380, canvas.height - 140);
-      context.fillText(`Semi-Ripe: ${ripenessCounts.semi_ripe}`, canvas.width - 380, canvas.height - 100);
-      context.fillText(`Ripe: ${ripenessCounts.ripe}`, canvas.width - 380, canvas.height - 60);
-      context.fillText(`Overripe: ${ripenessCounts.overripe}`, canvas.width - 380, canvas.height - 20);
-    } else {
-      console.warn("No valid predictions found!");
-    }
-
-    // Convert final image to Blob
+  const saveAndUploadImage = async (canvas, batchNumber) => {
     const imageSrc = canvas.toDataURL("image/jpeg", 1);
     const byteString = atob(imageSrc.split(",")[1]);
     const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
     const file = new Blob([ab], { type: mimeString });
 
-    // Clean batch number for file naming
     const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
     const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: "image/jpeg" });
 
-    // Upload final image
     await uploadImage(jpegFile, cleanBatchNumber);
-  }, "image/jpeg", 0.8);
+  };
 
-  setOpen(false);
-};
+  const uploadImage = async (file, batchNumber) => {
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("batchNumber", batchNumber);
 
-const uploadImage = async (file, batchNumber) => {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('batchNumber', batchNumber);
+        const response = await fetch("https://processing-facility-backend.onrender.com/api/upload-image", {
+            method: "POST",
+            body: formData,
+        });
 
-    const response = await fetch('https://processing-facility-backend.onrender.com/api/upload-image', {
-      method: 'POST',
-      body: formData,
-    });
+        if (!response.ok) throw new Error("Failed to upload image");
 
-    if (!response.ok) {
-      throw new Error('Failed to upload image');
+        const data = await response.json();
+        console.log("Image uploaded successfully:", data);
+    } catch (error) {
+        console.error("Error uploading image:", error);
     }
-
-    const data = await response.json();
-    console.log('Image uploaded successfully:', data);
-  } catch (error) {
-    console.error('Error uploading image:', error);
-  }
-};
+  };
 
   // Effect to fetch QC data on component mount
   useEffect(() => {
