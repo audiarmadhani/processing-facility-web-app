@@ -37,8 +37,10 @@ const PreprocessingStation = () => {
   const [farmerName, setFarmerName] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
   const [receivingDateData, setReceivingDateData] = useState('');
+  const [receivingDateTrunc, setReceivingDateTrunc] = useState('');
   const [qcDate, setQCDate] = useState('');
   const [qcDateData, setQCDateData] = useState('');
+  const [qcDateTrunc, setQCDateTrunc] = useState('');
   const [weight, setWeight] = useState('');
   const [totalBags, setTotalBags] = useState('');
   const [openHistory, setOpenHistory] = useState(false);

@@ -452,7 +452,7 @@ const QCStation = () => {
   const qcColumns = [
     // { field: 'id', headerName: 'ID', width: 80 },
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
-    { field: 'qcDateTrunc', headerName: 'QC Date', width: 190 },
+    { field: 'qcDateTrunc', headerName: 'QC Date', width: 110 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
     { field: 'color', headerName: 'Color', width: 140 },
     {
@@ -495,7 +495,7 @@ const QCStation = () => {
     // { field: 'id', headerName: 'ID', width: 80 },
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-    { field: 'receivingDateTrunc', headerName: 'Receiving Date', width: 250 },
+    { field: 'receivingDateTrunc', headerName: 'Receiving Date', width: 120 },
     { field: 'weight', headerName: 'Weight (kg)', width: 150 },
     { field: 'totalBags', headerName: 'Total Bags', width: 150 },
     { field: 'slaDays', headerName: 'SLA (Days)', width: 150 },

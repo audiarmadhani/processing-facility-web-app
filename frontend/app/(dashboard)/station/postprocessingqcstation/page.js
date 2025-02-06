@@ -241,21 +241,9 @@ const PostProcessingQCPage = () => {
 	};
 
   const qcColumns = [
-    { field: "batchNumber", headerName: "Lot Number", width: 150 },
-		{ field: "referenceNumber", headerName: "Reference Number", width: 150 },
-    { field: "storedDate", headerName: "Stored Date", width: 150 },
-    { field: "qcDate", headerName: "QC Date", width: 150 },
-    { field: "generalQuality", headerName: "General Quality", width: 180 },
-    { field: "actualGrade", headerName: "Actual Grade", width: 150 },
-    { field: "kelembapan", headerName: "Kelembapan (%)", width: 130 },
-    { field: "seranggaHidup", headerName: "Serangga Hidup", width: 150 },
-    { field: "bijiBauBusuk", headerName: "Biji Bau Busuk", width: 150 },
-    { field: "defectScore", headerName: "Defect Score", width: 140 },
-    { field: "totalBobotKotoran", headerName: "Total Bobot Kotoran", width: 180 },
-    { field: "defectWeightPercentage", headerName: "Defect Weight (%)", width: 180 },
-		{
+    {
 			field: "export",
-			headerName: "Export",
+			headerName: "Export Data",
 			width: 130,
 			renderCell: (params) => (
 					<button
@@ -273,6 +261,18 @@ const PostProcessingQCPage = () => {
 					</button>
 			),
 			},
+    { field: "batchNumber", headerName: "Lot Number", width: 150 },
+		{ field: "referenceNumber", headerName: "Reference Number", width: 150 },
+    { field: "storedDate", headerName: "Stored Date", width: 150 },
+    { field: "qcDate", headerName: "QC Date", width: 150 },
+    { field: "generalQuality", headerName: "General Quality", width: 180 },
+    { field: "actualGrade", headerName: "Actual Grade", width: 150 },
+    { field: "kelembapan", headerName: "Kelembapan (%)", width: 130 },
+    { field: "seranggaHidup", headerName: "Serangga Hidup", width: 150 },
+    { field: "bijiBauBusuk", headerName: "Biji Bau Busuk", width: 150 },
+    { field: "defectScore", headerName: "Defect Score", width: 140 },
+    { field: "totalBobotKotoran", headerName: "Total Bobot Kotoran", width: 180 },
+    { field: "defectWeightPercentage", headerName: "Defect Weight (%)", width: 180 },
     { field: "bijiHitam", headerName: "Biji Hitam", width: 130 },
     { field: "bijiHitamSebagian", headerName: "Biji Hitam Sebagian", width: 160 },
     { field: "bijiPecah", headerName: "Biji Pecah", width: 130 },
