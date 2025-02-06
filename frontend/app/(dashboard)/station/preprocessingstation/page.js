@@ -284,17 +284,19 @@ const PreprocessingStation = () => {
   
       // Sort unprocessed batches by type, ripeness, color, foreignMatter, and overallQuality
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
-        if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
         if (a.type !== b.type) return a.type.localeCompare(b.type);
+        if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
         if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
         if (a.color !== b.color) return a.color.localeCompare(b.color);
         if (a.foreignMatter !== b.foreignMatter) return a.foreignMatter.localeCompare(b.foreignMatter);
         if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
         return 0;
       });
+
+      const processedBatches = formattedData.filter(batch => batch.processedBags > 0);
   
       // Sort all batches by available bags and startProcessingDate
-      const sortedData = formattedData.sort((a, b) => {
+      const sortedData = processedBatches.sort((a, b) => {
         if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') {
           return -1;
         }
