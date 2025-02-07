@@ -67,7 +67,7 @@ function Dashboard() {
   };
 
   const [data, setData] = useState(null);
-  const [timeframe, setTimeframe] = useState('this_month');
+  const [timeframe, setTimeframe] = useState('last_month');
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [startDatePrevious, setStartDatePrevious] = useState(null);
