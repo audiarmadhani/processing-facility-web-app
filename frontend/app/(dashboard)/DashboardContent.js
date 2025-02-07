@@ -80,47 +80,55 @@ function Dashboard() {
   // Fetch metrics from the backend
   useEffect(() => {
     const fetchData = async () => {
-        setLoading(true);
-        setError(null); // Clear any previous errors
-
-        let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
-
-        if (timeframe === 'custom') {
-            if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
-                setLoading(false);
-                return; // Don't fetch if custom dates are missing
-            }
-            apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
+      setLoading(true);
+      setError(null); // Clear any previous errors
+      let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
+      if (timeframe === 'custom') {
+        if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
+          setLoading(false);
+          return; // Don't fetch if custom dates are missing
         }
-
-        try {
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const jsonData = await response.json();
-            setData(jsonData);
-        } catch (err) {
-            console.error("Error fetching data:", err);
-            setError(err.message);
-        } finally {
-            setLoading(false);
+        apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
+      }
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        const jsonData = await response.json();
+
+        // Log the entire JSON response for debugging
+        console.log("Fetched Metrics Data:", jsonData);
+
+        // Optionally, log specific fields within the jsonData object
+        console.log("Total Arabica Land Covered:", jsonData.landCoveredArabica);
+        console.log("Total Robusta Land Covered:", jsonData.landCoveredRobusta);
+        console.log("Total Arabica Weight:", jsonData.totalArabicaWeight);
+        console.log("Total Robusta Weight:", jsonData.totalRobustaWeight);
+        console.log("Average Arabica Cost:", jsonData.avgArabicaCost);
+        console.log("Average Robusta Cost:", jsonData.avgRobustaCost);
+
+        setData(jsonData);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     };
-
     fetchData(); // Call the async function
-}, [timeframe, startDate, endDate, startDatePrevious, endDatePrevious]);
+  }, [timeframe, startDate, endDate, startDatePrevious, endDatePrevious]);
 
-const handleTimeframeChange = (event) => {
-  setTimeframe(event.target.value);
-  setIsCustomRange(event.target.value === 'custom');
-  if (event.target.value !== 'custom') {
-      setStartDate(null);
-      setEndDate(null);
-      setStartDatePrevious(null);
-      setEndDatePrevious(null);
-  }
-};
+  const handleTimeframeChange = (event) => {
+    setTimeframe(event.target.value);
+    setIsCustomRange(event.target.value === 'custom');
+    if (event.target.value !== 'custom') {
+        setStartDate(null);
+        setEndDate(null);
+        setStartDatePrevious(null);
+        setEndDatePrevious(null);
+    }
+  };
 
   if (loading) {
     return (
