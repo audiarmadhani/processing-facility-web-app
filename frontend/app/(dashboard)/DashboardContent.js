@@ -67,14 +67,14 @@ function Dashboard() {
   };
 
   const [data, setData] = useState(null);
-  const [timeframe, setTimeframe] = useState('thisMonth');
+  const [timeframe, setTimeframe] = useState('this_month');
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [startDatePrevious, setStartDatePrevious] = useState(null);
   const [endDatePrevious, setEndDatePrevious] = useState(null);
   const [isCustomRange, setIsCustomRange] = useState(false);
 
-  const timeframes = ['thisMonth', 'previousMonth', 'thisYear', 'previousWeek', 'custom'];
+  const timeframes = ['this_week', 'this_month', 'this_year', 'last_week', 'last_month', 'last_year', 'custom'];
 
 
   // Fetch metrics from the backend
