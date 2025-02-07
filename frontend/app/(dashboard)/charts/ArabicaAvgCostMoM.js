@@ -12,23 +12,33 @@ const ArabicaAvgCostChart = () => {
   // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        const transformedData = response.data.arabicaAvgCostMoM.map(item => ({
-          date: item.Date,
-          thisMonthCost: parseFloat(item.RunningAverageCostThisMonth),
-          lastMonthCost: parseFloat(item.RunningAverageCostLastMonth),
-        }));
-        setData(transformedData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
+        try {
+            const response = await axios.get(API_URL);
+            let transformedData = []; // Initialize as an empty array
+
+            if (Array.isArray(response.data.arabicaAvgCostMoM)) { // Check if it's an array
+                transformedData = response.data.arabicaAvgCostMoM.map(item => ({
+                    date: item.Date,
+                    thisMonthCost: parseFloat(item.RunningAverageCostThisMonth),
+                    lastMonthCost: parseFloat(item.RunningAverageCostLastMonth),
+                }));
+            } else if (response.data.arabicaAvgCostMoM) { // Handle the case where the data is a single object
+              transformedData = [{
+                date: response.data.arabicaAvgCostMoM.Date,
+                thisMonthCost: parseFloat(response.data.arabicaAvgCostMoM.RunningAverageCostThisMonth),
+                lastMonthCost: parseFloat(response.data.arabicaAvgCostMoM.RunningAverageCostLastMonth),
+              }];
+            }
+            setData(transformedData);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     fetchData();
-  }, []);
+}, []);
 
   if (loading) {
     return (

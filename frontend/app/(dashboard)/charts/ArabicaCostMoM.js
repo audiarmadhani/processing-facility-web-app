@@ -1,29 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { LineChart } from '@mui/x-charts/LineChart';
+"use client";
+
+import React, { useEffect, useState } from 'react';import { LineChart } from '@mui/x-charts/LineChart';
 import axios from 'axios';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material'; // Import Typography
 
 const API_URL = "https://processing-facility-backend.onrender.com/api/dashboard-metrics";
 
-
-const arabicaCostMoM = () => {
+const ArabicaCostMoM = () => {  // Capitalize component name
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Add error state
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/dashboard-metrics');
-        const formattedData = response.data.arabicaCostMoM.map(item => ({
-          date: item.Date,
-          thisMonth: item.TotalCostThisMonth,
-          lastMonth: item.TotalCostLastMonth,
-        }));
-        setData(formattedData);
+        const response = await axios.get(API_URL);
+
+        if (Array.isArray(response.data.arabicaCostMoM)) {
+          const formattedData = response.data.arabicaCostMoM.map(item => ({
+            date: item.Date,
+            thisMonth: parseFloat(item.TotalCostThisMonth), // Parse to number
+            lastMonth: parseFloat(item.TotalCostLastMonth),   // Parse to number
+          }));
+          setData(formattedData);
+        } else if (response.data.arabicaCostMoM) { // Handle single object case
+          const formattedData = [{
+            date: response.data.arabicaCostMoM.Date,
+            thisMonth: parseFloat(response.data.arabicaCostMoM.TotalCostThisMonth),
+            lastMonth: parseFloat(response.data.arabicaCostMoM.TotalCostLastMonth),
+          }];
+          setData(formattedData);
+        } else {
+          console.error("Invalid data format:", response.data.arabicaCostMoM);
+          setError("Invalid data format received from API.");
+        }
+
       } catch (error) {
         console.error('Error fetching data:', error);
+        setError("Error fetching data from API."); // Set error message
       } finally {
-        setLoading(false); // Stop loading indicator
+        setLoading(false);
       }
     };
 
@@ -38,10 +54,18 @@ const arabicaCostMoM = () => {
     );
   }
 
-  if (!data.length) {
+  if (error) { // Display error message
+    return (
+      <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+        <Typography variant="body1">{error}</Typography>
+      </Box>
+    );
+  }
+
+  if (data.length === 0) {
     return (
       <Box sx={{ textAlign: "center", padding: 2 }}>
-        <p>No data available</p>
+        <Typography variant="body1">No data available</Typography>
       </Box>
     );
   }
@@ -49,35 +73,34 @@ const arabicaCostMoM = () => {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <LineChart
-        xAxis={[{scaleType: 'point', data: data.map(item => item.date) }]}
+        xAxis={[{ scaleType: 'point', data: data.map(item => item.date) }]}
         series={[
-          { 
-            data: data.map(item => item.thisMonth), 
-            label: 'This Month', 
+          {
+            data: data.map(item => item.thisMonth),
+            label: 'This Month',
             showMark: false,
             curve: "monotoneX",
-            color: '#66b2b2', 
+            color: '#66b2b2',
             strokeWidth: 2,
           },
-          { 
-            data: data.map(item => item.lastMonth), 
-            label: 'Last Month', 
+          {
+            data: data.map(item => item.lastMonth),
+            label: 'Last Month',
             showMark: false,
             curve: "monotoneX",
             color: '#ffbfd3',
           },
         ]}
-        // width={300}
         height={70}
         slotProps={{
-          legend: { hidden: true }, // Hide legend
+          legend: { hidden: true },
         }}
         leftAxis={null}
         bottomAxis={null}
-        margin={{ left: 0, right: 0, top: 10, bottom: 0 }} // Adjust left margin to shift left
+        margin={{ left: 0, right: 0, top: 10, bottom: 0 }}
       />
     </Box>
   );
 };
 
-export default arabicaCostMoM;
+export default ArabicaCostMoM; // Correct export name
