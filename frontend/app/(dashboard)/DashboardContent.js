@@ -143,7 +143,7 @@ const handleTimeframeChange = (event) => {
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Weight</Typography>
                   <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaWeight)} kg
+                    {new Intl.NumberFormat('de-DE').format(Number(metrics.totalArabicaWeight) ?? 0)} kg
                     {metrics.lastmonthArabicaWeight !== 0 && (
                       <Typography
                         variant="subtitle2"
@@ -305,7 +305,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    {`${(100 / parseFloat(metrics.arabicaYield)).toFixed(1)}:1`}
+                    {`${(100 / parseFloat(Number(metrics.arabicaYield) ?? 0)).toFixed(1)}:1`}
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -326,7 +326,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.landCoveredArabica) ?? 0)}</span>
                     <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                 </CardContent>
@@ -347,7 +347,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.activeArabicaFarmers)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.activeArabicaFarmers) ?? 0)}</span>
                     <span style={{ fontSize: '1rem' }}>Farmers</span>
                   </Typography>
                 </CardContent>
@@ -368,7 +368,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.pendingArabicaQC) ?? 0)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                 </CardContent>
@@ -389,7 +389,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaProcessing)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.pendingArabicaProcessing) ?? 0)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -613,7 +613,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    {`${(100 / parseFloat(metrics.robustaYield)).toFixed(1)}:1`}
+                    {`${(100 / parseFloat(Number(metrics.robustaYield) ?? 0)).toFixed(1)}:1`}
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -634,7 +634,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.landCoveredRobusta) ?? 0)}</span>
                     <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                 </CardContent>
@@ -676,7 +676,7 @@ const handleTimeframeChange = (event) => {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.pendingRobustaQC) ?? 0)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                 </CardContent>
@@ -701,7 +701,7 @@ const handleTimeframeChange = (event) => {
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaWeightProcessing)} kg
+                    {new Intl.NumberFormat('de-DE').format(Number(metrics.pendingRobustaWeightProcessing) ?? 0)} kg
                   </Typography>
                 </CardContent>
               </Card>
