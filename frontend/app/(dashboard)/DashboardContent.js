@@ -4,6 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { useSession } from "next-auth/react"; // Import useSession hook
 import dynamic from "next/dynamic";
 
+import { TextField } from '@mui/material'; // Import TextField
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'; // Import AdapterDayjs
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'; // Import LocalizationProvider
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'; // Import DatePicker
+import dayjs from 'dayjs'; // Install: npm install dayjs
+
 import { Grid, Card, CardContent, Typography, CircularProgress } from '@mui/material';
 import axios from 'axios';
 import TotalBatchesChart from './charts/TotalBatchesChart'; // Adjust the path as necessary
@@ -58,21 +64,61 @@ function Dashboard() {
     }
   };
 
+  const [data, setData] = useState(null);
+  const [timeframe, setTimeframe] = useState('thisMonth');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [startDatePrevious, setStartDatePrevious] = useState(null);
+  const [endDatePrevious, setEndDatePrevious] = useState(null);
+  const [isCustomRange, setIsCustomRange] = useState(false);
+
+  const timeframes = ['thisMonth', 'previousMonth', 'thisYear', 'previousWeek', 'custom'];
+
+
   // Fetch metrics from the backend
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const response = await axios.get('https://processing-facility-backend.onrender.com/api/dashboard-metrics');
-        setMetrics(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching metrics:', error);
-        setLoading(false);
-      }
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null); // Clear any previous errors
+
+        let apiUrl = `/api/dashboard-metrics?timeframe=${timeframe}`;
+
+        if (timeframe === 'custom') {
+            if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
+                setLoading(false);
+                return; // Don't fetch if custom dates are missing
+            }
+            apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
+        }
+
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const jsonData = await response.json();
+            setData(jsonData);
+        } catch (err) {
+            console.error("Error fetching data:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    fetchMetrics();
-  }, []);
+    fetchData(); // Call the async function
+}, [timeframe, startDate, endDate, startDatePrevious, endDatePrevious]);
+
+const handleTimeframeChange = (event) => {
+  setTimeframe(event.target.value);
+  setIsCustomRange(event.target.value === 'custom');
+  if (event.target.value !== 'custom') {
+      setStartDate(null);
+      setEndDate(null);
+      setStartDatePrevious(null);
+      setEndDatePrevious(null);
+  }
+};
 
   if (loading) {
     return (
