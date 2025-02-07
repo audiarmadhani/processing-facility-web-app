@@ -83,7 +83,7 @@ function Dashboard() {
         setLoading(true);
         setError(null); // Clear any previous errors
 
-        let apiUrl = `/api/dashboard-metrics?timeframe=${timeframe}`;
+        let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
 
         if (timeframe === 'custom') {
             if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
