@@ -29,8 +29,6 @@ import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the 
 import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
 import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
@@ -342,8 +340,8 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Farmers */}
-            <Grid item xs={12} md={2.4} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
-              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
+            <Grid item xs={12} md={2.4} sx={{ height: { xs: 'auto', md: '220px' } }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="body1">Arabica Farmers</Typography>
                   <Typography
@@ -355,8 +353,17 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.activeArabicaFarmers) ?? 0)}</span>
-                    <span style={{ fontSize: '1rem' }}>Farmers</span>
+                    {/* Ensure proper parsing and formatting */}
+                    {(() => {
+                      const activeArabicaFarmers = Number(metrics.activeArabicaFarmers) || 0;
+                      console.log("Parsed Active Arabica Farmers:", activeArabicaFarmers);
+                      return (
+                        <>
+                          <span>{new Intl.NumberFormat('de-DE').format(activeArabicaFarmers)}</span>
+                          <span style={{ fontSize: '1rem' }}>Farmers</span>
+                        </>
+                      );
+                    })()}
                   </Typography>
                 </CardContent>
               </Card>
