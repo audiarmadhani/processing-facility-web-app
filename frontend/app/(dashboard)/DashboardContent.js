@@ -51,6 +51,8 @@ function Dashboard() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Define error state and setError function
+
 
   const formatWeight = (weight) => {
     if (weight >= 1e9) {
