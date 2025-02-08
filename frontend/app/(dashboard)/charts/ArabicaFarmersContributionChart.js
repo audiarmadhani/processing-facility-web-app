@@ -97,7 +97,6 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
         // y-axis: linear scale for the numeric totalWeight.
         yAxis={[
           {
-            scaleType: "linear",
             dataKey: "totalWeight",
             label: "Weight (kg)",
           },
@@ -107,7 +106,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           {
             dataKey: "totalWeight",
             label: "Total Weight",
-            // Removed the hard-coded colors so the top-level colors array is used.
+            colors: "cheerfulFiesta", // You can change this or remove if not needed
           },
         ]}
         height={500}
