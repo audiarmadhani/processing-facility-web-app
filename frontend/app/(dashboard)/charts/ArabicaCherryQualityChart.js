@@ -79,10 +79,10 @@ const ArabicaCherryQualityChart = () => {
         dataset={data}
         xAxis={[{ scaleType: "band", dataKey: "qcDate", label: "QC Date", disableTicks : true }]}
         series={[
-            { dataKey: "unripe", label: "Unripe", stack: "stack1" },
-            { dataKey: "semiripe", label: "Semi-Ripe", stack: "stack1" },
-            { dataKey: "ripe", label: "Ripe", stack: "stack1" },
-            { dataKey: "overripe", label: "Overripe", stack: "stack1" },
+            { dataKey: "unripe", label: "Unripe" },
+            { dataKey: "semiripe", label: "Semi-Ripe" },
+            { dataKey: "ripe", label: "Ripe" },
+            { dataKey: "overripe", label: "Overripe" },
           ]}
         yAxis={[{ label: "Percentage (%)" }]}
         height={500}
