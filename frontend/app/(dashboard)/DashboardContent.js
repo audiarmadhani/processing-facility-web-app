@@ -159,7 +159,7 @@ function Dashboard() {
         <Grid container spacing={3}>
 
           {/* Timeframe Selector */}
-          <Grid item xs={4}>
+          <Grid item xs={6} md={2.4}>
             <FormControl fullWidth>
               <InputLabel id="timeframe-label">Select Timeframe</InputLabel>
               <Select
