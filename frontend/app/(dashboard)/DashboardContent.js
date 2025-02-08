@@ -29,6 +29,8 @@ import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the 
 import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
 import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
@@ -65,7 +67,7 @@ function Dashboard() {
   };
 
   const [data, setData] = useState(null);
-  const [timeframe, setTimeframe] = useState('last_month');
+  const [timeframe, setTimeframe] = useState('this_month');
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [startDatePrevious, setStartDatePrevious] = useState(null);
@@ -76,68 +78,49 @@ function Dashboard() {
 
 
   // Fetch metrics from the backend
-  const fetchData = async () => {
-  setLoading(true);
-  setError(null); // Clear any previous errors
-  let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
-  if (timeframe === 'custom') {
-    if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
-      setLoading(false);
-      return; // Don't fetch if custom dates are missing
-    }
-    apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
-  }
-  try {
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const jsonData = await response.json();
+  useEffect(() => {
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null); // Clear any previous errors
 
-    // Log the entire JSON response for debugging
-    console.log("Fetched Metrics Data:", jsonData);
+        let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
 
-    // Update the metrics state with the fetched data
-    setMetrics({
-      totalBatches: jsonData.totalBatches || 0,
-      totalArabicaWeight: jsonData.totalArabicaWeight || 0,
-      lastmonthArabicaWeight: jsonData.lastmonthArabicaWeight || 0,
-      totalRobustaWeight: jsonData.totalRobustaWeight || 0,
-      totalArabicaCost: jsonData.totalArabicaCost || 0,
-      lastmonthArabicaCost: jsonData.lastmonthArabicaCost || 0,
-      totalRobustaCost: jsonData.totalRobustaCost || 0,
-      activeArabicaFarmers: jsonData.activeArabicaFarmers || 0,
-      activeRobustaFarmers: jsonData.activeRobustaFarmers || 0,
-      pendingArabicaQC: jsonData.pendingArabicaQC || 0,
-      pendingRobustaQC: jsonData.pendingRobustaQC || 0,
-      pendingArabicaProcessing: jsonData.pendingArabicaProcessing || 0,
-      pendingRobustaProcessing: jsonData.pendingRobustaProcessing || 0,
-      totalWeight: jsonData.totalArabicaWeight + jsonData.totalRobustaWeight || 0,
-      totalCost: jsonData.totalArabicaCost + jsonData.totalRobustaCost || 0,
-      activeFarmers: jsonData.activeArabicaFarmers + jsonData.activeRobustaFarmers || 0,
-      pendingQC: jsonData.pendingArabicaQC + jsonData.pendingRobustaQC || 0,
-      pendingProcessing: jsonData.pendingArabicaProcessing + jsonData.pendingRobustaProcessing || 0,
-    });
+        if (timeframe === 'custom') {
+            if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
+                setLoading(false);
+                return; // Don't fetch if custom dates are missing
+            }
+            apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
+        }
 
-    setData(jsonData); // Set the full data for other components
-  } catch (err) {
-    console.error("Error fetching data:", err);
-    setError(err.message);
-  } finally {
-    setLoading(false);
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const jsonData = await response.json();
+            setData(jsonData);
+        } catch (err) {
+            console.error("Error fetching data:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchData(); // Call the async function
+}, [timeframe, startDate, endDate, startDatePrevious, endDatePrevious]);
+
+const handleTimeframeChange = (event) => {
+  setTimeframe(event.target.value);
+  setIsCustomRange(event.target.value === 'custom');
+  if (event.target.value !== 'custom') {
+      setStartDate(null);
+      setEndDate(null);
+      setStartDatePrevious(null);
+      setEndDatePrevious(null);
   }
 };
-
-  const handleTimeframeChange = (event) => {
-    setTimeframe(event.target.value);
-    setIsCustomRange(event.target.value === 'custom');
-    if (event.target.value !== 'custom') {
-        setStartDate(null);
-        setEndDate(null);
-        setStartDatePrevious(null);
-        setEndDatePrevious(null);
-    }
-  };
 
   if (loading) {
     return (
@@ -160,7 +143,7 @@ function Dashboard() {
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Weight</Typography>
                   <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(Number(metrics.totalArabicaWeight) ?? 0)} kg
+                    {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaWeight)} kg
                     {metrics.lastmonthArabicaWeight !== 0 && (
                       <Typography
                         variant="subtitle2"
@@ -322,7 +305,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    {`${(100 / parseFloat(Number(metrics.arabicaYield) ?? 0)).toFixed(1)}:1`}
+                    {`${(100 / parseFloat(metrics.arabicaYield)).toFixed(1)}:1`}
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -343,7 +326,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.landCoveredArabica) ?? 0)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
                     <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                 </CardContent>
@@ -351,8 +334,8 @@ function Dashboard() {
             </Grid>
 
             {/* Arabica Farmers */}
-            <Grid item xs={12} md={2.4} sx={{ height: { xs: 'auto', md: '220px' } }}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
+            <Grid item xs={12} md={2.4} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
+              <Card variant="outlined" sx={{ height: '100%' }}> {/* Ensures the Card takes full height */}
                 <CardContent>
                   <Typography variant="body1">Arabica Farmers</Typography>
                   <Typography
@@ -364,17 +347,8 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    {/* Ensure proper parsing and formatting */}
-                    {(() => {
-                      const activeArabicaFarmers = Number(metrics.activeArabicaFarmers) || 0;
-                      console.log("Parsed Active Arabica Farmers:", activeArabicaFarmers);
-                      return (
-                        <>
-                          <span>{new Intl.NumberFormat('de-DE').format(activeArabicaFarmers)}</span>
-                          <span style={{ fontSize: '1rem' }}>Farmers</span>
-                        </>
-                      );
-                    })()}
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.activeArabicaFarmers)}</span>
+                    <span style={{ fontSize: '1rem' }}>Farmers</span>
                   </Typography>
                 </CardContent>
               </Card>
@@ -394,7 +368,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.pendingArabicaQC) ?? 0)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                 </CardContent>
@@ -415,7 +389,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.pendingArabicaProcessing) ?? 0)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaProcessing)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -639,7 +613,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    {`${(100 / parseFloat(Number(metrics.robustaYield) ?? 0)).toFixed(1)}:1`}
+                    {`${(100 / parseFloat(metrics.robustaYield)).toFixed(1)}:1`}
                   </Typography>
                   <Typography variant="caption">All time</Typography>
                 </CardContent>
@@ -660,7 +634,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.landCoveredRobusta) ?? 0)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
                     <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                   </Typography>
                 </CardContent>
@@ -702,7 +676,7 @@ function Dashboard() {
                       gap: 1,
                     }}
                   >
-                    <span>{new Intl.NumberFormat('de-DE').format(Number(metrics.pendingRobustaQC) ?? 0)}</span>
+                    <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)}</span>
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                 </CardContent>
@@ -727,7 +701,7 @@ function Dashboard() {
                     <span style={{ fontSize: '1rem' }}>Batch</span>
                   </Typography>
                   <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(Number(metrics.pendingRobustaWeightProcessing) ?? 0)} kg
+                    {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaWeightProcessing)} kg
                   </Typography>
                 </CardContent>
               </Card>
