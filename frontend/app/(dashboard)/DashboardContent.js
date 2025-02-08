@@ -9,10 +9,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; // Import DatePicker
 import dayjs from 'dayjs'; // Install: npm install dayjs
 import { Grid, Card, CardContent, Typography, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import axios from 'axios';
 
-import { Grid, Card, CardContent, Typography, CircularProgress } from '@mui/material';
-import axios from 'axios';
 import TotalBatchesChart from './charts/TotalBatchesChart'; // Adjust the path as necessary
 import TotalCostChart from './charts/TotalCostChart'; // Adjust the path as necessary
 import ArabicaWeightMoM from './charts/ArabicaWeightMoM'; // Adjust the path as necessary
@@ -29,8 +26,6 @@ import ArabicaCategoryChart from './charts/ArabicaCategoryChart'; // Adjust the 
 import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the path as necessary
 import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
 import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
