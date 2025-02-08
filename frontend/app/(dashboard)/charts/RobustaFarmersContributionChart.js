@@ -27,7 +27,7 @@ const RobustaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   const [loading, setLoading] = useState(true);
 
   // Process the API response into chart-friendly format.
-  // In this case, we sort the array by totalWeight in descending order.
+  // We sort the array by totalWeight in descending order.
   const processChartData = (data) => {
     if (!Array.isArray(data)) {
       console.error("Expected an array but received:", data);
@@ -85,16 +85,8 @@ const RobustaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     <Box sx={{ height: chartHeight }}>
       <BarChart
         dataset={data}
-        // For a horizontal bar chart, the x-axis represents the numeric weight.
+        // x-axis: now set to band type to display categories (farmer names)
         xAxis={[
-          {
-            scaleType: "linear",
-            dataKey: "totalWeight",
-            label: "Weight (kg)",
-          },
-        ]}
-        // The y-axis displays the farmer names (categorical).
-        yAxis={[
           {
             scaleType: "band",
             dataKey: "farmerName",
@@ -102,7 +94,15 @@ const RobustaFarmersContributionChart = ({ timeframe = "this_month" }) => {
             disableTicks: true,
           },
         ]}
-        // Define a single series for totalWeight.
+        // y-axis: set to linear type for numeric values (totalWeight)
+        yAxis={[
+          {
+            scaleType: "linear",
+            dataKey: "totalWeight",
+            label: "Weight (kg)",
+          },
+        ]}
+        // Series using totalWeight for the bar lengths.
         series={[
           {
             dataKey: "totalWeight",

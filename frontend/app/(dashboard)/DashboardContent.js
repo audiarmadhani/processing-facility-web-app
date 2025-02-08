@@ -82,10 +82,12 @@ function Dashboard() {
   // User-friendly labels for timeframes
   const timeframes = [
     { value: 'this_week', label: 'This Week' },
-    { value: 'this_month', label: 'This Month' },
-    { value: 'this_year', label: 'This Year' },
     { value: 'last_week', label: 'Last Week' },
+
+    { value: 'this_month', label: 'This Month' },
     { value: 'last_month', label: 'Last Month' },
+    
+    { value: 'this_year', label: 'This Year' },
     { value: 'last_year', label: 'Last Year' },
   ];
 
