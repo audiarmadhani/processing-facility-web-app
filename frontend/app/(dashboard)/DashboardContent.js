@@ -37,6 +37,9 @@ import ArabicaCategoryChart from './charts/ArabicaCategoryChart'; // Adjust the 
 import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the path as necessary
 import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
 import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
+import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
+import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
+
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
@@ -462,6 +465,18 @@ function Dashboard() {
                 </Card>
               </Grid>
 
+              {/* Arabica Cherry Quality Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Cherry Quality
+                    </Typography>
+                    <ArabicaCherryQualityChart />
+                  </CardContent>
+                </Card>
+              </Grid>
+
               {/* Arabica Map */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
@@ -770,6 +785,18 @@ function Dashboard() {
                     Robusta Daily Production
                     </Typography>
                     <RobustaCategoryChart />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Robusta Cherry Quality Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Cherry Quality
+                    </Typography>
+                    <RobustaCherryQualityChart />
                   </CardContent>
                 </Card>
               </Grid>
