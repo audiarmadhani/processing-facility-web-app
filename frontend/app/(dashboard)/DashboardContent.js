@@ -88,6 +88,18 @@ function Dashboard() {
     { value: 'last_year', label: 'Last Year' },
   ];
 
+  const timeframeLabels = {
+    this_week: 'This Week',
+    last_week: 'Last Week',
+    this_month: 'This Month',
+    last_month: 'Last Month',
+    this_year: 'This Year',
+    last_year: 'Last Year',
+  };
+
+  // Get the human-readable label for the selected timeframe
+  const selectedRangeLabel = timeframeLabels[timeframe] || 'Custom Range';
+
   // Fetch metrics from the backend
   useEffect(() => {
     const fetchData = async () => {
@@ -196,7 +208,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <ArabicaWeightMoM />
                   </CardContent>
                 </Card>
@@ -227,7 +239,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <ArabicaCostMoM />
                   </CardContent>
                 </Card>
@@ -259,7 +271,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <ArabicaAvgCostMoM />
                   </CardContent>
                 </Card>
@@ -290,7 +302,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <ArabicaProcessedMoM />
                   </CardContent>
                 </Card>
@@ -320,7 +332,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <ArabicaProductionMoM />
                   </CardContent>
                 </Card>
@@ -364,6 +376,7 @@ function Dashboard() {
                       <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredArabica)}</span>
                       <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -385,6 +398,7 @@ function Dashboard() {
                       <span>{new Intl.NumberFormat('de-DE').format(metrics.activeArabicaFarmers)}</span>
                       <span style={{ fontSize: '1rem' }}>Farmers</span>
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -406,6 +420,7 @@ function Dashboard() {
                       <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaQC)}</span>
                       <span style={{ fontSize: '1rem' }}>Batch</span>
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -430,6 +445,7 @@ function Dashboard() {
                     <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.pendingArabicaWeightProcessing)} kg
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -504,7 +520,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <RobustaWeightMoM />
                   </CardContent>
                 </Card>
@@ -535,7 +551,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <RobustaCostMoM />
                   </CardContent>
                 </Card>
@@ -567,7 +583,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <RobustaAvgCostMoM />
                   </CardContent>
                 </Card>
@@ -598,7 +614,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <RobustaProcessedMoM />
                   </CardContent>
                 </Card>
@@ -628,7 +644,7 @@ function Dashboard() {
                         </Typography>
                       )}
                     </Typography>
-                    <Typography variant="caption">This Month</Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
                     <RobustaProductionMoM />
                   </CardContent>
                 </Card>
@@ -672,6 +688,7 @@ function Dashboard() {
                       <span>{new Intl.NumberFormat('de-DE').format(metrics.landCoveredRobusta)}</span>
                       <span style={{ fontSize: '1rem' }}>m&sup2;</span>
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -693,6 +710,7 @@ function Dashboard() {
                       <span>{new Intl.NumberFormat('de-DE').format(metrics.activeRobustaFarmers)}</span>
                       <span style={{ fontSize: '1rem' }}>Farmers</span>
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -714,6 +732,7 @@ function Dashboard() {
                       <span>{new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaQC)}</span>
                       <span style={{ fontSize: '1rem' }}>Batch</span>
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -738,6 +757,7 @@ function Dashboard() {
                     <Typography variant="h4" sx={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.pendingRobustaWeightProcessing)} kg
                     </Typography>
+                    <Typography variant="caption">All time</Typography>
                   </CardContent>
                 </Card>
               </Grid>
