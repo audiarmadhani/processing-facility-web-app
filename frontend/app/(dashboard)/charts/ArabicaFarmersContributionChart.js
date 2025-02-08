@@ -85,7 +85,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     <Box sx={{ height: chartHeight }}>
       <BarChart
         dataset={data}
-        // x-axis: now set to band type to display categories (farmer names)
+        // x-axis: band scale for the categorical farmer names.
         xAxis={[
           {
             scaleType: "band",
@@ -94,7 +94,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
             disableTicks: true,
           },
         ]}
-        // y-axis: set to linear type for numeric values (totalWeight)
+        // y-axis: linear scale for the numeric totalWeight.
         yAxis={[
           {
             scaleType: "linear",
@@ -107,7 +107,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           {
             dataKey: "totalWeight",
             label: "Total Weight",
-            colors: "cheerfulFiesta", // You can adjust or remove this as needed.
+            // Removed the hard-coded colors so the top-level colors array is used.
           },
         ]}
         height={500}
