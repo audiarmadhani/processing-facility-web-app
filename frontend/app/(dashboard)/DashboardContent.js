@@ -76,46 +76,45 @@ function Dashboard() {
 
 
   // Fetch metrics from the backend
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null); // Clear any previous errors
-      let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
-      if (timeframe === 'custom') {
-        if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
-          setLoading(false);
-          return; // Don't fetch if custom dates are missing
-        }
-        apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
-      }
-      try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const jsonData = await response.json();
+  const fetchData = async () => {
+  setLoading(true);
+  setError(null); // Clear any previous errors
+  let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
+  if (timeframe === 'custom') {
+    if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
+      setLoading(false);
+      return; // Don't fetch if custom dates are missing
+    }
+    apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
+  }
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const jsonData = await response.json();
 
-        // Log the entire JSON response for debugging
-        console.log("Fetched Metrics Data:", jsonData);
+    // Log the entire JSON response for debugging
+    console.log("Fetched Metrics Data:", jsonData);
 
-        // Optionally, log specific fields within the jsonData object
-        console.log("Total Arabica Land Covered:", jsonData.landCoveredArabica);
-        console.log("Total Robusta Land Covered:", jsonData.landCoveredRobusta);
-        console.log("Total Arabica Weight:", jsonData.totalArabicaWeight);
-        console.log("Total Robusta Weight:", jsonData.totalRobustaWeight);
-        console.log("Average Arabica Cost:", jsonData.avgArabicaCost);
-        console.log("Average Robusta Cost:", jsonData.avgRobustaCost);
+    // Update the metrics state with the fetched data
+    setMetrics({
+      totalBatches: jsonData.totalBatches || 0,
+      totalWeight: jsonData.totalArabicaWeight + jsonData.totalRobustaWeight || 0,
+      totalCost: jsonData.totalArabicaCost + jsonData.totalRobustaCost || 0,
+      activeFarmers: jsonData.activeArabicaFarmers + jsonData.activeRobustaFarmers || 0,
+      pendingQC: jsonData.pendingArabicaQC + jsonData.pendingRobustaQC || 0,
+      pendingProcessing: jsonData.pendingArabicaProcessing + jsonData.pendingRobustaProcessing || 0,
+    });
 
-        setData(jsonData);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData(); // Call the async function
-  }, [timeframe, startDate, endDate, startDatePrevious, endDatePrevious]);
+    setData(jsonData); // Set the full data for other components
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
@@ -149,21 +148,21 @@ function Dashboard() {
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Weight</Typography>
                   <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(Number(metrics.totalArabicaWeight) ?? 0)} kg
-                    {metrics.lastmonthArabicaWeight !== 0 && (
+                    {new Intl.NumberFormat('de-DE').format(Number(jsonData.totalArabicaWeight) ?? 0)} kg
+                    {jsonData.lastmonthArabicaWeight !== 0 && (
                       <Typography
                         variant="subtitle2"
-                        color={metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? 'green' : 'red'}
+                        color={jsonData.totalArabicaWeight >= jsonData.lastmonthArabicaWeight ? 'green' : 'red'}
                         sx={{
                           fontWeight: 'bold',
-                          backgroundColor: metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? '#e0f4e0' : '#f4e0e0', // Light background color
+                          backgroundColor: jsonData.totalArabicaWeight >= jsonData.lastmonthArabicaWeight ? '#e0f4e0' : '#f4e0e0', // Light background color
                           borderRadius: '12px', // Pill shape
                           padding: '4px 8px', // Padding for the pill
                           marginLeft: 'auto', // Push to the far right
                         }}
                       >
-                        {metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? '+' : '-'}
-                        {Math.abs(((metrics.totalArabicaWeight - metrics.lastmonthArabicaWeight) / metrics.lastmonthArabicaWeight * 100).toFixed(2))}%
+                        {jsonData.totalArabicaWeight >= jsonData.lastmonthArabicaWeight ? '+' : '-'}
+                        {Math.abs(((jsonData.totalArabicaWeight - jsonData.lastmonthArabicaWeight) / jsonData.lastmonthArabicaWeight * 100).toFixed(2))}%
                       </Typography>
                     )}
                   </Typography>
