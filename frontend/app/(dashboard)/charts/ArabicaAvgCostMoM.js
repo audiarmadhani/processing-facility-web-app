@@ -5,9 +5,7 @@ import { LineChart } from '@mui/x-charts/LineChart';
 import axios from 'axios';
 import { Box, CircularProgress } from '@mui/material';
 
-const API_URL = "https://processing-facility-backend.onrender.com/api/dashboard-metrics";
-
-const ArabicaAvgCostChart = () => {
+const ArabicaAvgCostChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +13,7 @@ const ArabicaAvgCostChart = () => {
   useEffect(() => {
     const fetchData = async () => {
         try {
-            const response = await axios.get(API_URL);
+          const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
             let transformedData = []; // Initialize as an empty array
 
             if (Array.isArray(response.data.arabicaAvgCostMoM)) { // Check if it's an array
@@ -40,7 +38,7 @@ const ArabicaAvgCostChart = () => {
     };
 
     fetchData();
-}, []);
+  }, [timeframe]);
 
   if (loading) {
     return (

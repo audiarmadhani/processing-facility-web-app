@@ -4,9 +4,7 @@ import React, { useEffect, useState } from 'react';import { LineChart } from '@m
 import axios from 'axios';
 import { Box, CircularProgress, Typography } from '@mui/material'; // Import Typography
 
-const API_URL = "https://processing-facility-backend.onrender.com/api/dashboard-metrics";
-
-const RobustaAvgCostMoM = () => { // Capitalize component name
+const RobustaAvgCostMoM = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // Add error state
@@ -14,7 +12,7 @@ const RobustaAvgCostMoM = () => { // Capitalize component name
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(API_URL);
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
 
         if (Array.isArray(response.data.robustaAvgCostMoM)) {
           const formattedData = response.data.robustaAvgCostMoM.map(item => ({
@@ -44,7 +42,7 @@ const RobustaAvgCostMoM = () => { // Capitalize component name
     };
 
     fetchData();
-  }, []);
+  }, [timeframe]);
 
   if (loading) {
     return (

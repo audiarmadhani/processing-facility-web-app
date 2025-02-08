@@ -39,6 +39,8 @@ import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if nec
 import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
 import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
+import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
+import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
 
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
@@ -76,10 +78,6 @@ function Dashboard() {
 
   const [data, setData] = useState(null);
   const [timeframe, setTimeframe] = useState('this_month');
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [startDatePrevious, setStartDatePrevious] = useState(null);
-  const [endDatePrevious, setEndDatePrevious] = useState(null);
 
   // User-friendly labels for timeframes
   const timeframes = [
@@ -101,7 +99,7 @@ function Dashboard() {
   };
 
   // Get the human-readable label for the selected timeframe
-  const selectedRangeLabel = timeframeLabels[timeframe] || 'Custom Range';
+  const selectedRangeLabel = timeframeLabels[timeframe];
 
   // Fetch metrics from the backend
   useEffect(() => {
@@ -110,14 +108,6 @@ function Dashboard() {
       setError(null); // Clear any previous errors
 
       let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
-
-      if (timeframe === 'custom') {
-        if (!startDate || !endDate || !startDatePrevious || !endDatePrevious) {
-          setLoading(false);
-          return; // Don't fetch if custom dates are missing
-        }
-        apiUrl += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&startDatePrevious=${startDatePrevious.toISOString()}&endDatePrevious=${endDatePrevious.toISOString()}`;
-      }
 
       try {
         const response = await fetch(apiUrl);
@@ -136,16 +126,10 @@ function Dashboard() {
     };
 
     fetchData(); // Call the async function
-  }, [timeframe, startDate, endDate, startDatePrevious, endDatePrevious]);
+  }, [timeframe]);
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
-    if (event.target.value !== 'custom') {
-      setStartDate(null);
-      setEndDate(null);
-      setStartDatePrevious(null);
-      setEndDatePrevious(null);
-    }
   };
 
   if (loading) {
@@ -212,7 +196,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <ArabicaWeightMoM />
+                    <ArabicaWeightMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -243,7 +227,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <ArabicaCostMoM />
+                    <ArabicaCostMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -275,7 +259,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <ArabicaAvgCostMoM />
+                    <ArabicaAvgCostMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -306,7 +290,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <ArabicaProcessedMoM />
+                    <ArabicaProcessedMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -336,7 +320,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <ArabicaProductionMoM />
+                    <ArabicaProductionMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -453,14 +437,14 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Total Arabica Production Bar Chart */}
+              {/* Arabica Farmers Contribution Bar Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                      Arabica Daily Production
+                      Arabica Farmers Contribution
                     </Typography>
-                    <ArabicaCategoryChart />
+                    <ArabicaFarmersContributionChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -472,7 +456,19 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Arabica Cherry Quality
                     </Typography>
-                    <ArabicaCherryQualityChart />
+                    <ArabicaCherryQualityChart timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Total Arabica Production Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Daily Production
+                    </Typography>
+                    <ArabicaCategoryChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -536,7 +532,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <RobustaWeightMoM />
+                    <RobustaWeightMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -567,7 +563,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <RobustaCostMoM />
+                    <RobustaCostMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -599,7 +595,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <RobustaAvgCostMoM />
+                    <RobustaAvgCostMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -630,7 +626,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <RobustaProcessedMoM />
+                    <RobustaProcessedMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -660,7 +656,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <RobustaProductionMoM />
+                    <RobustaProductionMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -777,14 +773,14 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Total Robusta Production Bar Chart */}
+              {/* Robusta Farmers Contribution Bar Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                    Robusta Daily Production
+                      Robusta Farmers Contribution
                     </Typography>
-                    <RobustaCategoryChart />
+                    <RobustaFarmersContributionChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -796,7 +792,19 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Robusta Cherry Quality
                     </Typography>
-                    <RobustaCherryQualityChart />
+                    <RobustaCherryQualityChart timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Total Robusta Production Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                    Robusta Daily Production
+                    </Typography>
+                    <RobustaCategoryChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>

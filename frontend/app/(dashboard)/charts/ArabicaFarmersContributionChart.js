@@ -22,44 +22,21 @@ const colorCategories = {
   ],
 };
 
-const ArabicaCategoryChart = ({ timeframe = "this_month" }) => {
+const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Transform API response into chart data
+  // Process the API response into chart-friendly format.
+  // In this case, we sort the array by totalWeight in descending order.
   const processChartData = (data) => {
     if (!Array.isArray(data)) {
       console.error("Expected an array but received:", data);
-      return { dataset: [], categories: [] };
+      return [];
     }
-
-    const groupedData = {};
-    const categoriesSet = new Set();
-
-    data.forEach(({ storedDate, category, weight }) => {
-      // Validate each item before processing
-      if (!storedDate || !category || typeof weight !== "number") {
-        console.error("Invalid data item:", { storedDate, category, weight });
-        return; // Skip invalid items
-      }
-
-      if (!groupedData[storedDate]) {
-        groupedData[storedDate] = {};
-      }
-      groupedData[storedDate][category] = (groupedData[storedDate][category] || 0) + weight;
-      categoriesSet.add(category);
-    });
-
-    const dataset = Object.keys(groupedData).map((storedDate) => ({
-      storedDate,
-      ...groupedData[storedDate],
-    }));
-
-    return { dataset, categories: Array.from(categoriesSet) };
+    return data.sort((a, b) => b.totalWeight - a.totalWeight);
   };
 
-  // Fetch data from the API whenever the timeframe changes
+  // Fetch data from the API whenever the timeframe changes.
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -69,13 +46,11 @@ const ArabicaCategoryChart = ({ timeframe = "this_month" }) => {
         );
         console.log(response.data); // Log the full response for debugging
 
-        // Check that the expected data exists before processing
-        if (Array.isArray(response.data.arabicaTotalWeightbyDate)) {
-          const transformedData = processChartData(response.data.arabicaTotalWeightbyDate);
-          setData(transformedData.dataset);
-          setCategories(transformedData.categories);
+        if (Array.isArray(response.data.arabicaFarmersContribution)) {
+          const transformedData = processChartData(response.data.arabicaFarmersContribution);
+          setData(transformedData);
         } else {
-          console.error("Invalid data format:", response.data.arabicaTotalWeightbyDate);
+          console.error("Invalid data format:", response.data.arabicaFarmersContribution);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -102,7 +77,7 @@ const ArabicaCategoryChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  // Set the chart height based on the available data
+  // Set the chart height based on available data.
   const chartHeight = data && data.length > 0 ? 500 : "auto";
   const colorScheme = "Set3";
 
@@ -110,21 +85,31 @@ const ArabicaCategoryChart = ({ timeframe = "this_month" }) => {
     <Box sx={{ height: chartHeight }}>
       <BarChart
         dataset={data}
+        // For a horizontal bar chart, the x-axis represents the numeric weight.
         xAxis={[
           {
+            scaleType: "linear",
+            dataKey: "totalWeight",
+            label: "Weight (kg)",
+          },
+        ]}
+        // The y-axis displays the farmer names (categorical).
+        yAxis={[
+          {
             scaleType: "band",
-            dataKey: "storedDate",
-            label: "Stored Date",
+            dataKey: "farmerName",
+            label: "Farmer",
             disableTicks: true,
           },
         ]}
-        series={categories.map((category) => ({
-          dataKey: category,
-          label: category,
-          stack: "stack1", // Enables stacking for the series
-          colors: "cheerfulFiesta", // You can change this or remove if not needed
-        }))}
-        yAxis={[{ label: "Weight (kg)" }]}
+        // Define a single series for totalWeight.
+        series={[
+          {
+            dataKey: "totalWeight",
+            label: "Total Weight",
+            colors: "cheerfulFiesta", // You can adjust or remove this as needed.
+          },
+        ]}
         height={500}
         sx={{
           ".MuiChart-axisLeft .MuiChart-axisLabel": {
@@ -139,4 +124,4 @@ const ArabicaCategoryChart = ({ timeframe = "this_month" }) => {
   );
 };
 
-export default ArabicaCategoryChart;
+export default ArabicaFarmersContributionChart;

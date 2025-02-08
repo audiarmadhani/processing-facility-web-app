@@ -22,7 +22,7 @@ const colorCategories = {
   ],
 };
 
-const RobustaCherryQualityChart = () => {
+const RobustaCherryQualityChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +30,7 @@ const RobustaCherryQualityChart = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("https://processing-facility-backend.onrender.com/api/dashboard-metrics");
+        const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
   
         const processedData = processData(response.data.robustaCherryQualitybyDate);
         setData(processedData);
@@ -42,7 +42,7 @@ const RobustaCherryQualityChart = () => {
     };
 
     fetchData();
-  }, []);
+  }, [timeframe]);
 
   // Transform API response into chart data
   const processData = (apiData) => {
