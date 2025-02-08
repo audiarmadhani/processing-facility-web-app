@@ -8,7 +8,18 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'; // Import Adapt
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'; // Import LocalizationProvider
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; // Import DatePicker
 import dayjs from 'dayjs'; // Install: npm install dayjs
-import { Grid, Card, CardContent, Typography, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { 
+  Grid, 
+  Card, 
+  CardContent, 
+  Typography, 
+  CircularProgress, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem, 
+  OutlinedInput
+} from '@mui/material';
 
 import TotalBatchesChart from './charts/TotalBatchesChart'; // Adjust the path as necessary
 import TotalCostChart from './charts/TotalCostChart'; // Adjust the path as necessary
@@ -66,7 +77,6 @@ function Dashboard() {
   const [endDate, setEndDate] = useState(null);
   const [startDatePrevious, setStartDatePrevious] = useState(null);
   const [endDatePrevious, setEndDatePrevious] = useState(null);
-  const [isCustomRange, setIsCustomRange] = useState(false);
 
   // User-friendly labels for timeframes
   const timeframes = [
@@ -76,7 +86,6 @@ function Dashboard() {
     { value: 'last_week', label: 'Last Week' },
     { value: 'last_month', label: 'Last Month' },
     { value: 'last_year', label: 'Last Year' },
-    { value: 'custom', label: 'Custom Range' },
   ];
 
   // Fetch metrics from the backend
@@ -116,7 +125,6 @@ function Dashboard() {
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
-    setIsCustomRange(event.target.value === 'custom');
     if (event.target.value !== 'custom') {
       setStartDate(null);
       setEndDate(null);
@@ -139,7 +147,7 @@ function Dashboard() {
         <Grid container spacing={3}>
 
           {/* Timeframe Selector */}
-          <Grid item xs={12}>
+          <Grid item xs={4}>
             <FormControl fullWidth>
               <InputLabel id="timeframe-label">Select Timeframe</InputLabel>
               <Select
@@ -148,6 +156,7 @@ function Dashboard() {
                 value={timeframe}
                 label="Select Timeframe"
                 onChange={handleTimeframeChange}
+                input={<OutlinedInput label="Select Timeframe" />}
               >
                 {timeframes.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -158,51 +167,6 @@ function Dashboard() {
             </FormControl>
           </Grid>
 
-          {/* Custom Date Pickers */}
-          {isCustomRange && (
-            <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6">Custom Date Range</Typography>
-                  <Grid container spacing={2}>
-                    {/* Current Range */}
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1">Current Range</Typography>
-                      <DatePicker
-                        label="Start Date"
-                        value={startDate ? dayjs(startDate) : null}
-                        onChange={(newValue) => setStartDate(newValue ? newValue.toDate() : null)}
-                        renderInput={(params) => <TextField {...params} fullWidth />}
-                      />
-                      <DatePicker
-                        label="End Date"
-                        value={endDate ? dayjs(endDate) : null}
-                        onChange={(newValue) => setEndDate(newValue ? newValue.toDate() : null)}
-                        renderInput={(params) => <TextField {...params} fullWidth />}
-                      />
-                    </Grid>
-
-                    {/* Previous Range */}
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1">Previous Range</Typography>
-                      <DatePicker
-                        label="Start Date (Previous)"
-                        value={startDatePrevious ? dayjs(startDatePrevious) : null}
-                        onChange={(newValue) => setStartDatePrevious(newValue ? newValue.toDate() : null)}
-                        renderInput={(params) => <TextField {...params} fullWidth />}
-                      />
-                      <DatePicker
-                        label="End Date (Previous)"
-                        value={endDatePrevious ? dayjs(endDatePrevious) : null}
-                        onChange={(newValue) => setEndDatePrevious(newValue ? newValue.toDate() : null)}
-                        renderInput={(params) => <TextField {...params} fullWidth />}
-                      />
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
 
           {/* Arabica Section */}
           <Grid item xs={12} md={12}>
