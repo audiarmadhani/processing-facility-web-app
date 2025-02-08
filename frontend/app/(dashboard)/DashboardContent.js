@@ -100,6 +100,18 @@ function Dashboard() {
     // Update the metrics state with the fetched data
     setMetrics({
       totalBatches: jsonData.totalBatches || 0,
+      totalArabicaWeight: jsonData.totalArabicaWeight || 0,
+      lastmonthArabicaWeight: jsonData.lastmonthArabicaWeight || 0,
+      totalRobustaWeight: jsonData.totalRobustaWeight || 0,
+      totalArabicaCost: jsonData.totalArabicaCost || 0,
+      lastmonthArabicaCost: jsonData.lastmonthArabicaCost || 0,
+      totalRobustaCost: jsonData.totalRobustaCost || 0,
+      activeArabicaFarmers: jsonData.activeArabicaFarmers || 0,
+      activeRobustaFarmers: jsonData.activeRobustaFarmers || 0,
+      pendingArabicaQC: jsonData.pendingArabicaQC || 0,
+      pendingRobustaQC: jsonData.pendingRobustaQC || 0,
+      pendingArabicaProcessing: jsonData.pendingArabicaProcessing || 0,
+      pendingRobustaProcessing: jsonData.pendingRobustaProcessing || 0,
       totalWeight: jsonData.totalArabicaWeight + jsonData.totalRobustaWeight || 0,
       totalCost: jsonData.totalArabicaCost + jsonData.totalRobustaCost || 0,
       activeFarmers: jsonData.activeArabicaFarmers + jsonData.activeRobustaFarmers || 0,
@@ -148,21 +160,21 @@ function Dashboard() {
                 <CardContent>
                   <Typography variant="body1">Total Arabica Cherry Weight</Typography>
                   <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {new Intl.NumberFormat('de-DE').format(Number(jsonData.totalArabicaWeight) ?? 0)} kg
-                    {jsonData.lastmonthArabicaWeight !== 0 && (
+                    {new Intl.NumberFormat('de-DE').format(Number(metrics.totalArabicaWeight) ?? 0)} kg
+                    {metrics.lastmonthArabicaWeight !== 0 && (
                       <Typography
                         variant="subtitle2"
-                        color={jsonData.totalArabicaWeight >= jsonData.lastmonthArabicaWeight ? 'green' : 'red'}
+                        color={metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? 'green' : 'red'}
                         sx={{
                           fontWeight: 'bold',
-                          backgroundColor: jsonData.totalArabicaWeight >= jsonData.lastmonthArabicaWeight ? '#e0f4e0' : '#f4e0e0', // Light background color
+                          backgroundColor: metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? '#e0f4e0' : '#f4e0e0', // Light background color
                           borderRadius: '12px', // Pill shape
                           padding: '4px 8px', // Padding for the pill
                           marginLeft: 'auto', // Push to the far right
                         }}
                       >
-                        {jsonData.totalArabicaWeight >= jsonData.lastmonthArabicaWeight ? '+' : '-'}
-                        {Math.abs(((jsonData.totalArabicaWeight - jsonData.lastmonthArabicaWeight) / jsonData.lastmonthArabicaWeight * 100).toFixed(2))}%
+                        {metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? '+' : '-'}
+                        {Math.abs(((metrics.totalArabicaWeight - metrics.lastmonthArabicaWeight) / metrics.lastmonthArabicaWeight * 100).toFixed(2))}%
                       </Typography>
                     )}
                   </Typography>
