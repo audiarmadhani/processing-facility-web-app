@@ -99,7 +99,7 @@ function Dashboard() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const jsonData = await response.json();
-            setData(jsonData);
+            setMetrics(jsonData);
         } catch (err) {
             console.error("Error fetching data:", err);
             setError(err.message);
