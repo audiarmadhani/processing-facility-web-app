@@ -15,6 +15,7 @@ const colorCategories = {
 const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Add an error state
 
   const processChartData = (data) => {
     if (!Array.isArray(data)) {
@@ -36,24 +37,24 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
       if (allNaN) {
         normalizedUnknown = 100;
       } else {
-        const unripe = isNaN(unripePercentage) ? 0 : unripePercentage;
-        const semiripe = isNaN(semiripePercentage) ? 0 : semiripePercentage;
-        const ripe = isNaN(ripePercentage) ? 0 : ripePercentage;
-        const overripe = isNaN(overripePercentage) ? 0 : overripePercentage;
-        const unknown = isNaN(unknownRipeness) ? 0 : unknownRipeness;
+        const unripe = isNaN(unripePercentage) || unripePercentage === null ? 0 : unripePercentage;
+        const semiripe = isNaN(semiripePercentage) || semiripePercentage === null ? 0 : semiripePercentage;
+        const ripe = isNaN(ripePercentage) || ripePercentage === null ? 0 : ripePercentage;
+        const overripe = isNaN(overripePercentage) || overripePercentage === null ? 0 : overripePercentage;
+        const unknown = isNaN(unknownRipeness) || unknownRipeness === null ? 0 : unknownRipeness;
 
         const totalPercentage = unripe + semiripe + ripe + overripe + unknown;
 
-        normalizedUnripe = (unripe / totalPercentage) * 100;
-        normalizedSemiripe = (semiripe / totalPercentage) * 100;
-        normalizedRipe = (ripe / totalPercentage) * 100;
-        normalizedOverripe = (overripe / totalPercentage) * 100;
-        normalizedUnknown = (unknown / totalPercentage) * 100;
+        normalizedUnripe = totalPercentage === 0 ? 0 : (unripe / totalPercentage) * 100;
+        normalizedSemiripe = totalPercentage === 0 ? 0 : (semiripe / totalPercentage) * 100;
+        normalizedRipe = totalPercentage === 0 ? 0 : (ripe / totalPercentage) * 100;
+        normalizedOverripe = totalPercentage === 0 ? 0 : (overripe / totalPercentage) * 100;
+        normalizedUnknown = totalPercentage === 0 ? 0 : (unknown / totalPercentage) * 100;
       }
 
       return {
         farmerName: farmer.farmerName,
-        totalWeight,
+        totalWeight: isNaN(totalWeight) || totalWeight === null ? 0 : totalWeight,
 
         unripeWeight: (normalizedUnripe / 100) * totalWeight,
         semiripeWeight: (normalizedSemiripe / 100) * totalWeight,
@@ -67,6 +68,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null); // Clear any previous errors
       try {
         const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
@@ -78,10 +80,12 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
         } else {
           console.error("Invalid data format:", response.data);
           setData([]);
+          setError("Invalid data format received from the server."); // Set error message
         }
       } catch (error) {
         console.error("Error fetching data:", error);
         setData([]);
+        setError("Error fetching data from the server."); // Set error message
       } finally {
         setLoading(false);
       }
@@ -97,6 +101,11 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
       </Box>
     );
   }
+
+    if (error) { // Display error message
+    return <Box sx={{ color: 'red', textAlign: 'center', mt: 2 }}>{error}</Box>;
+  }
+
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
   const ripenessKeys = ["unripeWeight", "semiripeWeight", "ripeWeight", "overripeWeight", "unknownWeight"];
