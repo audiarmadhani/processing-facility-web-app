@@ -21,7 +21,21 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
       console.error("Expected an array but received:", data);
       return [];
     }
-    return data.sort((a, b) => b.totalWeight - a.totalWeight);
+
+    return data.map(farmer => {
+      const { totalWeight, unripePercentage, semiripePercentage, ripePercentage, overripePercentage, unknownRipeness } = farmer;
+
+      return {
+        farmerName: farmer.farmerName,
+        totalWeight,
+
+        unripeWeight: (unripePercentage / 100) * totalWeight || 0, // Handle potential NaN values
+        semiripeWeight: (semiripePercentage / 100) * totalWeight || 0,
+        ripeWeight: (ripePercentage / 100) * totalWeight || 0,
+        overripeWeight: (overripePercentage / 100) * totalWeight || 0,
+        unknownWeight: (unknownRipeness / 100) * totalWeight || 0,
+      };
+    }).sort((a, b) => b.totalWeight - a.totalWeight);
   };
 
   useEffect(() => {
@@ -32,14 +46,16 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
-        if (Array.isArray(response.data.arabicaFarmersContribution)) { // Use the correct data key
-          const transformedData = processChartData(response.data.arabicaFarmersContribution);
+        if (response.data && Array.isArray(response.data.arabicaRipenessByFarmer)) {
+          const transformedData = processChartData(response.data.arabicaRipenessByFarmer);
           setData(transformedData);
         } else {
-          console.error("Invalid data format:", response.data.arabicaFarmersContribution); // Correct data key
+          console.error("Invalid data format:", response.data); // Log the whole response for debugging
+          setData([]); // Set data to empty array to avoid rendering issues
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+        setData([]); // Set data to empty array in case of error
       } finally {
         setLoading(false);
       }
@@ -64,21 +80,20 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   }
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
-  const colorScheme = "Set3";
 
-  const ripenessKeys = ["unripePercentage", "semiripePercentage", "ripePercentage", "overripePercentage", "unknownRipeness"];
+  const ripenessKeys = ["unripeWeight", "semiripeWeight", "ripeWeight", "overripeWeight", "unknownWeight"];
 
   return (
     <Box sx={{ height: chartHeight }}>
       <BarChart
         dataset={data}
         xAxis={[{ scaleType: "band", dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
-        yAxis={[{ label: "Weight (kg)" }]} // Removed dataKey from yAxis
+        yAxis={[{ label: "Weight (kg)" }]}
         series={ripenessKeys.map((key, index) => ({
           dataKey: key,
-          label: key.replace("Percentage", ""), // Clean up label
-          stackId: "1", // Important for stacking
-          colors: colorCategories[colorScheme][index % colorCategories[colorScheme].length], // Use color from the array
+          label: key.replace("Weight", ""),
+          stackId: "1",
+          color: colorCategories.Set3[index % colorCategories.Set3.length],
         }))}
         height={500}
         sx={{
@@ -86,10 +101,17 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
             transform: "translate(-50px, 0)",
           },
         }}
-        //colors={colorCategories[colorScheme]}  // Color is now handled within the series
         borderRadius={10}
-        slotProps={{ legend: { hidden: false } }} // Show the legend
-      />
+        slotProps={{ legend: { hidden: true } }} // Hide the legend
+      >
+        <BarChartTooltip // Add the tooltip
+          formatter={(value, item) => {
+            const ripenessLabel = item.label; // Get the ripeness label
+            const totalWeight = data.find(d => d.farmerName === item.farmerName)?.totalWeight; // Get the total weight for the farmer
+            return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalWeight?.toFixed(2)} kg)`; // Show ripeness weight and total weight
+          }}
+        />
+      </BarChart>
     </Box>
   );
 };
