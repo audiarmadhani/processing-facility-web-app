@@ -7,18 +7,8 @@ import { Box, CircularProgress } from "@mui/material";
 
 const colorCategories = {
   Set3: [
-    "#8dd3c7",
-    "#ffffb3",
-    "#bebada",
-    "#fb8072",
-    "#80b1d3",
-    "#fdb462",
-    "#b3de69",
-    "#fccde5",
-    "#d9d9d9",
-    "#bc80bd",
-    "#ccebc5",
-    "#ffed6f",
+    "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462",
+    "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd", "#ccebc5", "#ffed6f",
   ],
 };
 
@@ -26,8 +16,6 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Process the API response into chart-friendly format.
-  // We sort the array by totalWeight in descending order.
   const processChartData = (data) => {
     if (!Array.isArray(data)) {
       console.error("Expected an array but received:", data);
@@ -36,7 +24,6 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     return data.sort((a, b) => b.totalWeight - a.totalWeight);
   };
 
-  // Fetch data from the API whenever the timeframe changes.
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -44,13 +31,12 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
         const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
-        console.log(response.data); // Log the full response for debugging
 
-        if (Array.isArray(response.data.arabicaFarmersContribution)) {
+        if (Array.isArray(response.data.arabicaFarmersContribution)) { // Use the correct data key
           const transformedData = processChartData(response.data.arabicaFarmersContribution);
           setData(transformedData);
         } else {
-          console.error("Invalid data format:", response.data.arabicaFarmersContribution);
+          console.error("Invalid data format:", response.data.arabicaFarmersContribution); // Correct data key
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -77,47 +63,32 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  // Set the chart height based on available data.
   const chartHeight = data && data.length > 0 ? 500 : "auto";
   const colorScheme = "Set3";
+
+  const ripenessKeys = ["unripePercentage", "semiripePercentage", "ripePercentage", "overripePercentage", "unknownRipeness"];
 
   return (
     <Box sx={{ height: chartHeight }}>
       <BarChart
         dataset={data}
-        // x-axis: band scale for the categorical farmer names.
-        xAxis={[
-          {
-            scaleType: "band",
-            dataKey: "farmerName",
-            label: "Farmer",
-            disableTicks: true,
-          },
-        ]}
-        // y-axis: linear scale for the numeric totalWeight.
-        yAxis={[
-          {
-            dataKey: "totalWeight",
-            label: "Weight (kg)",
-          },
-        ]}
-        // Series using totalWeight for the bar lengths.
-        series={[
-          {
-            dataKey: "totalWeight",
-            label: "Total Weight",
-            colors: "cheerfulFiesta", // You can change this or remove if not needed
-          },
-        ]}
+        xAxis={[{ scaleType: "band", dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
+        yAxis={[{ label: "Weight (kg)" }]} // Removed dataKey from yAxis
+        series={ripenessKeys.map((key, index) => ({
+          dataKey: key,
+          label: key.replace("Percentage", ""), // Clean up label
+          stackId: "1", // Important for stacking
+          colors: colorCategories[colorScheme][index % colorCategories[colorScheme].length], // Use color from the array
+        }))}
         height={500}
         sx={{
           ".MuiChart-axisLeft .MuiChart-axisLabel": {
             transform: "translate(-50px, 0)",
           },
         }}
-        colors={colorCategories[colorScheme]}
+        //colors={colorCategories[colorScheme]}  // Color is now handled within the series
         borderRadius={10}
-        slotProps={{ legend: { hidden: true } }}
+        slotProps={{ legend: { hidden: false } }} // Show the legend
       />
     </Box>
   );
