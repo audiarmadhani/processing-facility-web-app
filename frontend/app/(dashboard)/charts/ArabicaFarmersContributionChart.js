@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BarChart, BarChartTooltip } from "@mui/x-charts/BarChart";
+import { BarChart, BarChartTooltip } from "@mui/x-charts";
 import axios from "axios";
 import { Box, CircularProgress } from "@mui/material";
 
@@ -25,15 +25,41 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     return data.map(farmer => {
       const { totalWeight, unripePercentage, semiripePercentage, ripePercentage, overripePercentage, unknownRipeness } = farmer;
 
+      const allNaN = isNaN(unripePercentage) && isNaN(semiripePercentage) && isNaN(ripePercentage) && isNaN(overripePercentage);
+
+      let normalizedUnripe = 0;
+      let normalizedSemiripe = 0;
+      let normalizedRipe = 0;
+      let normalizedOverripe = 0;
+      let normalizedUnknown = 0;
+
+      if (allNaN) {
+        normalizedUnknown = 100;
+      } else {
+        const unripe = isNaN(unripePercentage) ? 0 : unripePercentage;
+        const semiripe = isNaN(semiripePercentage) ? 0 : semiripePercentage;
+        const ripe = isNaN(ripePercentage) ? 0 : ripePercentage;
+        const overripe = isNaN(overripePercentage) ? 0 : overripePercentage;
+        const unknown = isNaN(unknownRipeness) ? 0 : unknownRipeness;
+
+        const totalPercentage = unripe + semiripe + ripe + overripe + unknown;
+
+        normalizedUnripe = (unripe / totalPercentage) * 100;
+        normalizedSemiripe = (semiripe / totalPercentage) * 100;
+        normalizedRipe = (ripe / totalPercentage) * 100;
+        normalizedOverripe = (overripe / totalPercentage) * 100;
+        normalizedUnknown = (unknown / totalPercentage) * 100;
+      }
+
       return {
         farmerName: farmer.farmerName,
         totalWeight,
 
-        unripeWeight: (unripePercentage / 100) * totalWeight || 0, // Handle potential NaN values
-        semiripeWeight: (semiripePercentage / 100) * totalWeight || 0,
-        ripeWeight: (ripePercentage / 100) * totalWeight || 0,
-        overripeWeight: (overripePercentage / 100) * totalWeight || 0,
-        unknownWeight: (unknownRipeness / 100) * totalWeight || 0,
+        unripeWeight: (normalizedUnripe / 100) * totalWeight,
+        semiripeWeight: (normalizedSemiripe / 100) * totalWeight,
+        ripeWeight: (normalizedRipe / 100) * totalWeight,
+        overripeWeight: (normalizedOverripe / 100) * totalWeight,
+        unknownWeight: (normalizedUnknown / 100) * totalWeight,
       };
     }).sort((a, b) => b.totalWeight - a.totalWeight);
   };
@@ -46,16 +72,16 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
-        if (response.data && Array.isArray(response.data.arabicaRipenessByFarmer)) {
-          const transformedData = processChartData(response.data.arabicaRipenessByFarmer);
+        if (response.data && Array.isArray(response.data.arabicaFarmersContribution)) {
+          const transformedData = processChartData(response.data.arabicaFarmersContribution);
           setData(transformedData);
         } else {
-          console.error("Invalid data format:", response.data); // Log the whole response for debugging
-          setData([]); // Set data to empty array to avoid rendering issues
+          console.error("Invalid data format:", response.data);
+          setData([]);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        setData([]); // Set data to empty array in case of error
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -66,21 +92,13 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: 500,
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
         <CircularProgress />
       </Box>
     );
   }
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
-
   const ripenessKeys = ["unripeWeight", "semiripeWeight", "ripeWeight", "overripeWeight", "unknownWeight"];
 
   return (
@@ -102,13 +120,13 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           },
         }}
         borderRadius={10}
-        slotProps={{ legend: { hidden: true } }} // Hide the legend
+        slotProps={{ legend: { hidden: true } }}
       >
-        <BarChartTooltip // Add the tooltip
+        <BarChartTooltip
           formatter={(value, item) => {
-            const ripenessLabel = item.label; // Get the ripeness label
-            const totalWeight = data.find(d => d.farmerName === item.farmerName)?.totalWeight; // Get the total weight for the farmer
-            return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalWeight?.toFixed(2)} kg)`; // Show ripeness weight and total weight
+            const ripenessLabel = item.label;
+            const totalWeight = data.find(d => d.farmerName === item.farmerName)?.totalWeight;
+            return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalWeight?.toFixed(2)} kg)`;
           }}
         />
       </BarChart>
