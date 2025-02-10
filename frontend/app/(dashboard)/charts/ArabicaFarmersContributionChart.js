@@ -13,64 +13,66 @@ const colorCategories = {
 };
 
 const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedFarmer, setSelectedFarmer] = useState(null);
-
-  const processChartData = (data) => {
-    if (!Array.isArray(data)) {
-      console.error("Expected an array but received:", data);
-      return [];
-    }
-
-    return data.map((farmer) => {
-      const { weight, unripeWeight, semiripeWeight, ripeWeight, overripeWeight, unknownWeight } = farmer;
-
-      return {
-        farmerName: farmer.farmerName,
-        weight: Number(weight),
-        unripeWeight: Number(unripeWeight) || 0,
-        semiripeWeight: Number(semiripeWeight) || 0,
-        ripeWeight: Number(ripeWeight) || 0,
-        overripeWeight: Number(overripeWeight) || 0,
-        unknownWeight: Number(unknownWeight) || 0,
-      };
-    }).sort((a, b) => b.weight - a.weight);
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await axios.get(
-          `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
-        );
-
-        console.log("API Response:", response.data);
-
-        if (response.data && Array.isArray(response.data.arabicaFarmersContribution)) {
-          const transformedData = processChartData(response.data.arabicaFarmersContribution);
-          console.log("Transformed Data:", transformedData);
-          setData(transformedData);
-        } else {
-          console.error("Invalid data format:", response.data);
-          setData([]);
-          setError("Invalid data format received from the server.");
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setData([]);
-        setError("Error fetching data from the server.");
-      } finally {
-        setLoading(false);
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [selectedFarmer, setSelectedFarmer] = useState(null);
+  
+    const processChartData = (data) => {
+      if (!Array.isArray(data)) {
+        console.error("Expected an array but received:", data);
+        return [];
       }
+  
+      const processedData = data.map((farmer) => {
+        const { weight, unripeWeight, semiripeWeight, ripeWeight, overripeWeight, unknownWeight } = farmer;
+  
+        return {
+          farmerName: farmer.farmerName,
+          weight: Number(weight),
+          unripeWeight: Number(unripeWeight) || 0,
+          semiripeWeight: Number(semiripeWeight) || 0,
+          ripeWeight: Number(ripeWeight) || 0,
+          overripeWeight: Number(overripeWeight) || 0,
+          unknownWeight: Number(unknownWeight) || 0,
+        };
+      }).sort((a, b) => b.weight - a.weight);
+  
+      console.log("Processed Data:", processedData); // Log processed data
+      return processedData;
     };
-
-    fetchData();
-  }, [timeframe]);
+  
+    useEffect(() => {
+      const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+  
+        try {
+          const response = await axios.get(
+            `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
+          );
+  
+          console.log("API Response:", response.data); // Log API response
+  
+          if (response.data && Array.isArray(response.data.arabicaFarmersContribution)) {
+            const transformedData = processChartData(response.data.arabicaFarmersContribution);
+            setData(transformedData);
+          } else {
+            console.error("Invalid data format:", response.data);
+            setData([]);
+            setError("Invalid data format received from the server.");
+          }
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          setData([]);
+          setError("Error fetching data from the server.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchData();
+    }, [timeframe]);
 
   if (loading) {
     return (
@@ -91,6 +93,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
   const chartHeight = data && data.length > 0 ? 500 : "auto";
 
   const handleBarClick = (item) => {
+    console.log("Clicked Item:", item); // Log clicked item
     if (item) {
       setSelectedFarmer(item.farmerName);
     } else {
@@ -99,6 +102,8 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
   };
 
   const filteredData = selectedFarmer ? data.filter(farmer => farmer.farmerName === selectedFarmer) : data;
+
+  console.log("Filtered Data:", filteredData); // Log filtered data
 
   return (
     <Box sx={{ height: chartHeight }}>
@@ -127,7 +132,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
           }}
           borderRadius={10}
           slotProps={{ legend: { hidden: true } }}
-          onClick={handleBarClick}
+          onClick={(item) => handleBarClick(item)}
         />
       )}
     </Box>
