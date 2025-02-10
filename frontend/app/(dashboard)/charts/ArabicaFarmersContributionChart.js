@@ -24,9 +24,9 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     }
 
     return data.map((farmer) => {
-      const { totalweight, unripepercentage, semiripepercentage, ripepercentage, overripepercentage, unknownripeness } = farmer;
+      const { totalWeight, unripePercentage, semiripePercentage, ripePercentage, overripePercentage, unknownRipeness } = farmer;
 
-      const allNaN = isNaN(unripepercentage) && isNaN(semiripepercentage) && isNaN(ripepercentage) && isNaN(overripepercentage);
+      const allNaN = isNaN(unripePercentage) && isNaN(semiripePercentage) && isNaN(ripePercentage) && isNaN(overripePercentage);
 
       let normalizedUnripe = 0;
       let normalizedSemiripe = 0;
@@ -37,36 +37,36 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
       if (allNaN) {
         normalizedUnknown = 100;
       } else {
-        const unripe = isNaN(unripepercentage) || unripepercentage === null ? 0 : unripepercentage;
-        const semiripe = isNaN(semiripepercentage) || semiripepercentage === null ? 0 : semiripepercentage;
-        const ripe = isNaN(ripepercentage) || ripepercentage === null ? 0 : ripepercentage;
-        const overripe = isNaN(overripepercentage) || overripepercentage === null ? 0 : overripepercentage;
-        const unknown = isNaN(unknownripeness) || unknownripeness === null ? 0 : unknownripeness;
+        const unripe = isNaN(unripePercentage) || unripePercentage === null ? 0 : unripePercentage;
+        const semiripe = isNaN(semiripePercentage) || semiripePercentage === null ? 0 : semiripePercentage;
+        const ripe = isNaN(ripePercentage) || ripePercentage === null ? 0 : ripePercentage;
+        const overripe = isNaN(overripePercentage) || overripePercentage === null ? 0 : overripePercentage;
+        const unknown = isNaN(unknownRipeness) || unknownRipeness === null ? 0 : unknownRipeness;
 
-        const totalpercentage = unripe + semiripe + ripe + overripe + unknown;
+        const totalPercentage = unripe + semiripe + ripe + overripe + unknown;
 
-        normalizedUnripe = totalpercentage === 0 ? 0 : (unripe / totalpercentage) * 100;
-        normalizedSemiripe = totalpercentage === 0 ? 0 : (semiripe / totalpercentage) * 100;
-        normalizedRipe = totalpercentage === 0 ? 0 : (ripe / totalpercentage) * 100;
-        normalizedOverripe = totalpercentage === 0 ? 0 : (overripe / totalpercentage) * 100;
-        normalizedUnknown = totalpercentage === 0 ? 0 : (unknown / totalpercentage) * 100;
+        normalizedUnripe = totalPercentage === 0 ? 0 : (unripe / totalPercentage) * 100;
+        normalizedSemiripe = totalPercentage === 0 ? 0 : (semiripe / totalPercentage) * 100;
+        normalizedRipe = totalPercentage === 0 ? 0 : (ripe / totalPercentage) * 100;
+        normalizedOverripe = totalPercentage === 0 ? 0 : (overripe / totalPercentage) * 100;
+        normalizedUnknown = totalPercentage === 0 ? 0 : (unknown / totalPercentage) * 100;
       }
 
-      const totalweightNum = Number(totalweight); // Convert to number
+      const totalWeightNum = Number(totalWeight);
 
       return {
         farmerName: farmer.farmerName,
-        totalweight: totalweightNum,
+        totalWeight: totalWeightNum,
 
-        unripeWeight: (normalizedUnripe / 100) * totalweightNum,
-        semiripeWeight: (normalizedSemiripe / 100) * totalweightNum,
-        ripeWeight: (normalizedRipe / 100) * totalweightNum,
-        overripeWeight: (normalizedOverripe / 100) * totalweightNum,
-        unknownWeight: (normalizedUnknown / 100) * totalweightNum,
+        unripeWeight: (normalizedUnripe / 100) * totalWeightNum,
+        semiripeWeight: (normalizedSemiripe / 100) * totalWeightNum,
+        ripeWeight: (normalizedRipe / 100) * totalWeightNum,
+        overripeWeight: (normalizedOverripe / 100) * totalWeightNum,
+        unknownWeight: (normalizedUnknown / 100) * totalWeightNum,
+        hasRipenessData: !allNaN,
       };
-    }).sort((a, b) => b.totalweight - a.totalweight);
+    }).sort((a, b) => b.totalWeight - a.totalWeight);
   };
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,7 +118,6 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   }
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
-  const ripenessKeys = ["unripeWeight", "semiripeWeight", "ripeWeight", "overripeWeight", "unknownWeight"]; // Correct keys
 
   return (
     <Box sx={{ height: chartHeight }}>
@@ -131,12 +130,19 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           dataset={data}
           xAxis={[{ scaleType: "band", dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
           yAxis={[{ label: "Weight (kg)" }]}
-          series={ripenessKeys.map((key, index) => ({
-            dataKey: key,
-            label: key.replace("Weight", ""), // Improved label
-            stackId: "1",
-            color: colorCategories.Set3[index % colorCategories.Set3.length],
-          }))}
+          series={data.flatMap((farmer) => {
+            if (farmer.hasRipenessData) {
+              return [
+                { dataKey: "unripeWeight", label: "Unripe", stackId: "1", color: colorCategories.Set3[0] },
+                { dataKey: "semiripeWeight", label: "Semi-ripe", stackId: "1", color: colorCategories.Set3[1] },
+                { dataKey: "ripeWeight", label: "Ripe", stackId: "1", color: colorCategories.Set3[2] },
+                { dataKey: "overripeWeight", label: "Overripe", stackId: "1", color: colorCategories.Set3[3] },
+                { dataKey: "unknownWeight", label: "Unknown", stackId: "1", color: colorCategories.Set3[4] },
+              ];
+            } else {
+              return [{ dataKey: "unknownWeight", label: "Unknown", color: colorCategories.Set3[4] }];
+            }
+          })}
           height={500}
           sx={{
             ".MuiChart-axisLeft .MuiChart-axisLabel": {
@@ -149,8 +155,8 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
             trigger: "item",
             formatter: (value, item) => {
               const ripenessLabel = item.label;
-              const totalweight = data.find(d => d.farmerName === item.farmerName)?.totalweight;
-              return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalweight?.toFixed(2)} kg)`;
+              const totalWeight = data.find(d => d.farmerName === item.farmerName)?.totalWeight;
+              return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalWeight?.toFixed(2)} kg)`;
             },
           }}
         />
