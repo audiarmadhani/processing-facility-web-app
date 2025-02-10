@@ -24,6 +24,7 @@
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.7",
+    "chartjs": "^0.3.24",
     "chartjs-chart-sankey": "^0.14.0",
     "clsx": "^2",
     "dayjs": "^1",
