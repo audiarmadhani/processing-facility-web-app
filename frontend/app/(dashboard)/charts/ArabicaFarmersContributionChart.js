@@ -22,8 +22,51 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
       console.error("Expected an array but received:", data);
       return [];
     }
-    return data.sort((a, b) => b.totalWeight - a.totalWeight);
+
+    return data.map((farmer) => {
+      const { totalWeight, unripepercentage, semiripepercentage, ripepercentage, overripepercentage, unknownripeness } = farmer;
+
+      const allNaN = isNaN(unripepercentage) && isNaN(semiripepercentage) && isNaN(ripepercentage) && isNaN(overripepercentage);
+
+      let normalizedUnripe = 0;
+      let normalizedSemiripe = 0;
+      let normalizedRipe = 0;
+      let normalizedOverripe = 0;
+      let normalizedUnknown = 0;
+
+      if (allNaN) {
+        normalizedUnknown = 100;
+      } else {
+        const unripe = isNaN(unripepercentage) || unripepercentage === null ? 0 : unripepercentage;
+        const semiripe = isNaN(semiripepercentage) || semiripepercentage === null ? 0 : semiripepercentage;
+        const ripe = isNaN(ripepercentage) || ripepercentage === null ? 0 : ripepercentage;
+        const overripe = isNaN(overripepercentage) || overripepercentage === null ? 0 : overripepercentage;
+        const unknown = isNaN(unknownripeness) || unknownripeness === null ? 0 : unknownripeness;
+
+        const totalpercentage = unripe + semiripe + ripe + overripe + unknown;
+
+        normalizedUnripe = totalpercentage === 0 ? 0 : (unripe / totalpercentage) * 100;
+        normalizedSemiripe = totalpercentage === 0 ? 0 : (semiripe / totalpercentage) * 100;
+        normalizedRipe = totalpercentage === 0 ? 0 : (ripe / totalpercentage) * 100;
+        normalizedOverripe = totalpercentage === 0 ? 0 : (overripe / totalpercentage) * 100;
+        normalizedUnknown = totalpercentage === 0 ? 0 : (unknown / totalpercentage) * 100;
+      }
+
+      const totalWeightNum = Number(totalWeight); // Convert to number
+
+      return {
+        farmerName: farmer.farmerName,
+        totalWeight: totalWeightNum,
+
+        unripeWeight: (normalizedUnripe / 100) * totalWeightNum,
+        semiripeWeight: (normalizedSemiripe / 100) * totalWeightNum,
+        ripeWeight: (normalizedRipe / 100) * totalWeightNum,
+        overripeWeight: (normalizedOverripe / 100) * totalWeightNum,
+        unknownWeight: (normalizedUnknown / 100) * totalWeightNum,
+      };
+    }).sort((a, b) => b.totalWeight - a.totalWeight);
   };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,7 +118,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   }
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
-  const ripenessKeys = ["unripepercentage", "semiripepercentage", "ripepercentage", "overripepercentage", "unknownripeness"];
+  const ripenessKeys = ["unripeWeight", "semiripeWeight", "ripeWeight", "overripeWeight", "unknownWeight"]; // Correct keys
 
   return (
     <Box sx={{ height: chartHeight }}>
@@ -90,7 +133,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           yAxis={[{ label: "Weight (kg)" }]}
           series={ripenessKeys.map((key, index) => ({
             dataKey: key,
-            label: key,
+            label: key.replace("Weight", ""), // Improved label
             stackId: "1",
             color: colorCategories.Set3[index % colorCategories.Set3.length],
           }))}
@@ -103,7 +146,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           borderRadius={10}
           slotProps={{ legend: { hidden: true } }}
           tooltip={{
-            trigger: "item", // Or 'axis'
+            trigger: "item",
             formatter: (value, item) => {
               const ripenessLabel = item.label;
               const totalWeight = data.find(d => d.farmerName === item.farmerName)?.totalWeight;
