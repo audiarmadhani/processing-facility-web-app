@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
+import * as d3 from 'd3'; // Import the core d3 package
+import { sankey, sankeyLinkHorizontal } from 'd3-sankey'; // Import d3-sankey functions
 
 const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
     const chartRef = useRef(null);
