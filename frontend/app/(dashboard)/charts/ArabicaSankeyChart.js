@@ -1,18 +1,19 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Chart, CategoryScale } from 'chart.js'; // Import BOTH
+import { Chart, CategoryScale, LinearScale } from 'chart.js';
 import 'chartjs-chart-sankey';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import axios from 'axios';
 
-Chart.register(CategoryScale); // Register CategoryScale - VERY IMPORTANT
+Chart.register(CategoryScale, LinearScale); // Register necessary scales
 
 const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
     const [sankeyData, setSankeyData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const chartRef = useRef(null);
+    const [chartInstance, setChartInstance] = useState(null); // Store chart instance
 
     useEffect(() => {
         const fetchData = async () => {
@@ -21,7 +22,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             try {
                 const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
 
-                if (!response.data || !response.data.arabicaSankey || !Array.isArray(response.data.arabicaSankey)) {
+                if (!response.data ||!response.data.arabicaSankey ||!Array.isArray(response.data.arabicaSankey)) {
                     throw new Error("Invalid data format received from API.");
                 }
 
@@ -42,17 +43,18 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
         if (sankeyData && chartRef.current) {
             const ctx = chartRef.current.getContext('2d');
 
-            const sankeyChart = new Chart(ctx, {
-                type: 'sankey',
+            // Destroy previous chart instance if it exists
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const newChartInstance = new Chart(ctx, {
+                type: 'sankey', // Or 'bar', 'line', etc. if you want a different chart
                 data: {
                     datasets: [{
                         data: sankeyData,
-                        colorFrom: (context) => {
-                            return '#4c84ff'; // Example color (customize)
-                        },
-                        colorTo: (context) => {
-                            return '#4c84ff'; // Example color (customize)
-                        },
+                        colorFrom: (context) => '#4c84ff',
+                        colorTo: (context) => '#4c84ff',
                         nodeWidth: 15,
                         nodePadding: 10,
                         linkOpacity: 0.5,
@@ -66,31 +68,27 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
                         title: {
                             display: true,
                             text: title,
-                            font: {
-                                size: 16,
-                            },
+                            font: { size: 16 },
                         },
                         tooltip: {
                             callbacks: {
-                                label: function (context) {
-                                    return `${context.from} → ${context.to}: ${context.formattedValue}`;
-                                }
-                            }
-                        }
+                                label: (context) => `${context.from} → ${context.to}: ${context.formattedValue}`,
+                            },
+                        },
                     },
                     scales: {
-                        x: {
-                            display: false,
-                        },
-                        y: {
-                            display: false,
-                        }
-                    }
-                }
+                        x: { display: false },
+                        y: { display: false },
+                    },
+                },
             });
 
+            setChartInstance(newChartInstance); // Store the new chart instance
+
             return () => {
-                sankeyChart.destroy();
+                if (newChartInstance) { // Destroy the chart instance on unmount or data change
+                    newChartInstance.destroy();
+                }
             };
         }
     }, [sankeyData, title]);
