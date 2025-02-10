@@ -14,8 +14,8 @@ const ArabicaFarmersContributionChart = () => {
       xAxis={[{ scaleType: "band", dataKey: "farmerName" }]}
       yAxis={[{ label: "Weight (kg)" }]}
       series={[
-        { dataKey: "unripeWeight", label: "Unripe", stackId: "1", color: "red" },
-        { dataKey: "ripeWeight", label: "Ripe", stackId: "1", color: "blue" },
+        { dataKey: "unripeWeight", label: "Unripe", stack: "1", color: "red" },
+        { dataKey: "ripeWeight", label: "Ripe", stack: "1", color: "blue" },
       ]}
       height={300}
     />
