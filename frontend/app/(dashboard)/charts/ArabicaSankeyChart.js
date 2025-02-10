@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import React, { useEffect, useRef, useState, useContext } from 'react';
+import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import * as d3 from 'd3';
 
-const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
+const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
     const chartRef = useRef(null);
     const [sankeyData, setSankeyData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const theme = useTheme();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -17,11 +18,15 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
             setError(null);
             try {
                 const response = await fetch(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
-                
-                if (!data?.arabicaSankey?.length) throw new Error("No valid Sankey data available");
-                
+
+                if (!data?.arabicaSankey?.length) {
+                    throw new Error("No valid Sankey data available");
+                }
+
                 setSankeyData(data.arabicaSankey);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -35,17 +40,16 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
     }, [timeframe]);
 
     useEffect(() => {
-        if (!sankeyData || !chartRef.current) return;
+        if (!sankeyData || !chartRef.current) {
+            return;
+        }
 
-        // Clear previous chart
-        d3.select(chartRef.current).selectAll("*").remove();
+        d3.select(chartRef.current).selectAll("*").remove(); // Clear previous chart
 
-        // Set up dimensions
-        const width = 1400;
-        const height = 500;
-        const margin = { top: 20, right: 20, bottom: 30, left: 60 };
+        const width = 1500;
+        const height = 600;
+        const margin = { top: 20, right: 0, bottom: 30, left: 0 };
 
-        // Create SVG container
         const svg = d3.select(chartRef.current)
             .append('svg')
             .attr('width', width + margin.left + margin.right)
@@ -53,13 +57,11 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
             .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Set up Sankey generator
         const sankeyGenerator = sankey()
             .nodeWidth(15)
             .nodePadding(10)
             .size([width, height]);
 
-        // Process data
         const nodes = Array.from(new Set([
             ...sankeyData.map(d => d.from_node),
             ...sankeyData.map(d => d.to_node)
@@ -71,24 +73,25 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
             value: d.value
         }));
 
-        // Generate Sankey layout
         const { nodes: layoutNodes, links: layoutLinks } = sankeyGenerator({
             nodes: nodes,
             links: links
         });
 
-        // Create links
+        const linkStroke = theme.palette.mode === 'dark' ? "#ffffff80" : "#007bff80";
+        const nodeFill = theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main;
+        const textFill = theme.palette.mode === 'dark' ? "#fff" : "#000";
+
         svg.append("g")
             .selectAll("path")
             .data(layoutLinks)
             .join("path")
             .attr("d", sankeyLinkHorizontal())
-            .attr("stroke-width", d => Math.max(1, d.width))
-            .attr("stroke", "#007bff80")
+            .attr("stroke-width", d => Math.max(1, d.width || 1))
+            .attr("stroke", linkStroke)
             .attr("fill", "none");
 
-        // Create nodes
-        const node = svg.append("g")
+        svg.append("g")
             .selectAll("rect")
             .data(layoutNodes)
             .join("rect")
@@ -96,9 +99,10 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
             .attr("y", d => d.y0)
             .attr("height", d => d.y1 - d.y0)
             .attr("width", d => d.x1 - d.x0)
-            .attr("fill", "#007bff");
+            .attr("fill", nodeFill)
+            .append("title")
+            .text(d => d.name);
 
-        // Add labels
         svg.append("g")
             .selectAll("text")
             .data(layoutNodes)
@@ -108,11 +112,12 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
             .attr("dy", "0.35em")
             .attr("text-anchor", "end")
             .text(d => d.name)
+            .attr("fill", textFill)
             .filter(d => d.x0 > width / 2)
             .attr("x", d => d.x1 + 6)
             .attr("text-anchor", "start");
 
-    }, [sankeyData]);
+    }, [sankeyData, theme.palette.mode]);
 
     if (loading) {
         return (
@@ -132,6 +137,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
 
     return (
         <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>{title}</Typography>
             <div ref={chartRef} />
         </Box>
     );
