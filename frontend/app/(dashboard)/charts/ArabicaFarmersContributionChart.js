@@ -24,7 +24,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     }
 
     return data.map((farmer) => {
-      const { totalWeight, unripepercentage, semiripepercentage, ripepercentage, overripepercentage, unknownripeness } = farmer;
+      const { totalweight, unripepercentage, semiripepercentage, ripepercentage, overripepercentage, unknownripeness } = farmer;
 
       const allNaN = isNaN(unripepercentage) && isNaN(semiripepercentage) && isNaN(ripepercentage) && isNaN(overripepercentage);
 
@@ -52,19 +52,19 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
         normalizedUnknown = totalpercentage === 0 ? 0 : (unknown / totalpercentage) * 100;
       }
 
-      const totalWeightNum = Number(totalWeight); // Convert to number
+      const totalweightNum = Number(totalweight); // Convert to number
 
       return {
         farmerName: farmer.farmerName,
-        totalWeight: totalWeightNum,
+        totalweight: totalweightNum,
 
-        unripeWeight: (normalizedUnripe / 100) * totalWeightNum,
-        semiripeWeight: (normalizedSemiripe / 100) * totalWeightNum,
-        ripeWeight: (normalizedRipe / 100) * totalWeightNum,
-        overripeWeight: (normalizedOverripe / 100) * totalWeightNum,
-        unknownWeight: (normalizedUnknown / 100) * totalWeightNum,
+        unripeWeight: (normalizedUnripe / 100) * totalweightNum,
+        semiripeWeight: (normalizedSemiripe / 100) * totalweightNum,
+        ripeWeight: (normalizedRipe / 100) * totalweightNum,
+        overripeWeight: (normalizedOverripe / 100) * totalweightNum,
+        unknownWeight: (normalizedUnknown / 100) * totalweightNum,
       };
-    }).sort((a, b) => b.totalWeight - a.totalWeight);
+    }).sort((a, b) => b.totalweight - a.totalweight);
   };
 
 
@@ -149,8 +149,8 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
             trigger: "item",
             formatter: (value, item) => {
               const ripenessLabel = item.label;
-              const totalWeight = data.find(d => d.farmerName === item.farmerName)?.totalWeight;
-              return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalWeight?.toFixed(2)} kg)`;
+              const totalweight = data.find(d => d.farmerName === item.farmerName)?.totalweight;
+              return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalweight?.toFixed(2)} kg)`;
             },
           }}
         />
