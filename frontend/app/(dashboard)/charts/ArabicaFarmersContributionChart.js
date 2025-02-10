@@ -75,7 +75,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "this_month" }) => {
   }
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
-  const ripenessKeys = ["unripePercentage", "semiripePercentage", "ripePercentage", "overripePercentage", "unknownRipeness"];
+  const ripenessKeys = ["unripepercentage", "semiripepercentage", "ripepercentage", "overripepercentage", "unknownripeness"];
 
   return (
     <Box sx={{ height: chartHeight }}>
