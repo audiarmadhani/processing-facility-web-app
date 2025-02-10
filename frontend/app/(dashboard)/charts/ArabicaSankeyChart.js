@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { sankey, sankeyLinkHorizontal } from 'd3-sankey'; // Correct import
+import { Box, CircularProgress, Typography } from '@mui/material';
+import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 
 const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
     const chartRef = useRef(null);
@@ -56,29 +57,24 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-
-        const d3Sankey = sankey() // Use the imported sankey function
+        const d3Sankey = sankey()
             .nodeWidth(15)
             .nodePadding(10)
             .size([width, height]);
 
-        const path = sankeyLinkHorizontal(); // Use the imported path generator
+        const path = sankeyLinkHorizontal();
 
-
-        const { nodes, links } = d3Sankey({ // Use d3Sankey here
+        const { nodes, links } = d3Sankey({
             nodes: Array.from(new Set(sankeyData.flatMap(d => [d.from, d.to]))).map(name => ({ name })),
             links: sankeyData.map(d => ({ source: d.from, target: d.to, value: d.value })),
         });
-
-        // ... (rest of the chart drawing code - same as before)
-        // ... (add links, nodes, labels, etc. to the SVG)
 
         svg.append("g")
             .attr("class", "links")
             .selectAll("path")
             .data(links)
             .join("path")
-            .attr("d", path) // Use the path generator
+            .attr("d", path)
             .style("stroke-width", d => Math.max(1, d.dy))
             .attr("fill", "none")
             .attr("stroke", "#007bff")
@@ -134,7 +130,6 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             </Box>
         );
     }
-
 
     return (
         <div ref={chartRef} />
