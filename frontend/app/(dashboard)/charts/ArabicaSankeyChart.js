@@ -9,6 +9,42 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const chartRef = useRef(null);
+    const [googleChartsLoaded, setGoogleChartsLoaded] = useState(false);
+
+    useEffect(() => {
+        // Check if already loaded
+        if (window.google && window.google.visualization && window.google.visualization.Sankey) {
+            setGoogleChartsLoaded(true);
+            return;
+        }
+
+        // Load if not already loaded
+        if (!googleChartsLoaded) {
+            window.google.charts.load('current', { 'packages': ['sankey'] });
+            window.google.charts.setOnLoadCallback(() => setGoogleChartsLoaded(true));
+        }
+    }, []);
+
+    useEffect(() => {
+        if (googleChartsLoaded && sankeyData && chartRef.current) {
+            drawChart();
+        }
+    }, [sankeyData, title, googleChartsLoaded]);
+
+    const drawChart = () => {
+        const data = new window.google.visualization.DataTable();
+        data.addColumn('string', 'From');
+        data.addColumn('string', 'To');
+        data.addColumn('number', 'Weight');
+        data.addRows(sankeyData.map(flow => [flow.from, flow.to, flow.value]));
+
+        const options = {
+            title: title,
+        };
+
+        const chart = new window.google.visualization.Sankey(chartRef.current);
+        chart.draw(data, options);
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -34,36 +70,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
         fetchData();
     }, [timeframe]);
 
-    useEffect(() => {
-        if (sankeyData && chartRef.current) {
-            // Load the Google Charts package.
-            window.google.charts.load('current', { 'packages': ['sankey'] });
 
-            // Set a callback to run when the Google Charts package is loaded.
-            window.google.charts.setOnLoadCallback(drawChart);
-
-            function drawChart() {
-                const data = new window.google.visualization.DataTable();
-                data.addColumn('string', 'From');
-                data.addColumn('string', 'To');
-                data.addColumn('number', 'Weight');
-
-                data.addRows(sankeyData.map(flow => [flow.from, flow.to, flow.value]));
-
-                const options = {
-                    title: title,
-                    // ... other options if needed
-                };
-
-                const chart = new window.google.visualization.Sankey(chartRef.current);
-
-                chart.draw(data, options);
-            }
-        }
-    }, [sankeyData, title]);
-
-
-    // ... (Rest of your rendering logic)
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -89,7 +96,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     }
 
     return (
-        <div ref={chartRef} style={{ height: '600px', width: '800px' }} /> // Use a div for Google Charts
+        <div ref={chartRef} style={{ height: '600px', width: '800px' }} />
     );
 };
 

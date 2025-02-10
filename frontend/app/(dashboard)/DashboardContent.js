@@ -35,8 +35,8 @@ import ArabicaProductionMoM from './charts/ArabicaProductionMoM'; // Adjust the 
 import RobustaProductionMoM from './charts/RobustaProductionMoM'; // Adjust the path as necessary
 import ArabicaCategoryChart from './charts/ArabicaCategoryChart'; // Adjust the path as necessary
 import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the path as necessary
-import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
-import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
+// import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
+// import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
 import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
@@ -502,7 +502,7 @@ function Dashboard() {
               </Grid>
 
               {/* Arabica TradingView Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -511,7 +511,7 @@ function Dashboard() {
                     <ArabicaTVWidget />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
             </Grid>
           </Grid>
@@ -850,7 +850,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Robusta TradingView Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -859,7 +859,7 @@ function Dashboard() {
                     <RobustaTVWidget />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
             </Grid>
           </Grid>
