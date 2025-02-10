@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, GeoJSON, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Box, Typography, CircularProgress } from "@mui/material";
+import { Box, Typography, CircularProgress, useTheme } from "@mui/material"; // Import useTheme
 
 const RobustaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
-  const [desaData, setDesaData] = useState({}); // Store total farmers, land area, total value, and total weight per desa
+  const [desaData, setDesaData] = useState({});
   const [loading, setLoading] = useState(true);
+  const theme = useTheme(); // Get the current MUI theme
 
   // Fetch farmer data and calculate aggregated info
   useEffect(() => {
@@ -121,13 +122,13 @@ const RobustaMapComponent = () => {
     Promise.all([fetchData(), loadBaliGeoJSON()]).then(() => setLoading(false));
   }, []);
 
-  // Style function for village borders
+  // Style function for village borders (now uses theme)
   const styleFeature = (feature) => {
     const desaName = feature.properties.village;
     return {
       fillColor: desaData[desaName] ? "green" : "transparent",
       fillOpacity: 0.5,
-      color: "#808080",
+      color: theme.palette.mode === 'dark' ? "#444" : "#808080", // Adjust color based on theme
       weight: 0.25,
     };
   };
@@ -149,16 +150,21 @@ const RobustaMapComponent = () => {
   }
 
   return (
-    <div style={{ height: "500px", width: "100%", backgroundColor: "#f0f0f0" }}>
+    <div style={{ height: "500px", width: "100%", backgroundColor: theme.palette.background.default }}>
       <MapContainer
         center={[-8.4095, 115.1889]}
         zoom={9}
-        style={{ height: "100%", width: "100%", backgroundColor: "#f0f0f0" }}
+        style={{ height: "100%", width: "100%", backgroundColor: theme.palette.background.default }}
         zoomControl={false}
         attributionControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
+          // Use a dark tile layer URL based on the theme
+          url={
+            theme.palette.mode === 'dark'
+              ? "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" // Dark tile layer
+              : "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png" // Light tile layer
+          }
           attribution='&copy; <a href="https://carto.com/">CARTO</a> contributors'
         />
         {baliGeoJSON && (
