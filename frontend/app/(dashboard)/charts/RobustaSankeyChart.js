@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Chart } from 'chart.js';
+import { Chart, CategoryScale } from 'chart.js'; // Import BOTH
 import 'chartjs-chart-sankey';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import axios from 'axios';
+
+Chart.register(CategoryScale); // Register CategoryScale - VERY IMPORTANT
 
 const RobustaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
     const [sankeyData, setSankeyData] = useState(null);
