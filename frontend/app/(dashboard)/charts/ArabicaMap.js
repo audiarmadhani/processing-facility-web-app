@@ -3,34 +3,23 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, GeoJSON, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Box, Typography, CircularProgress, useTheme } from "@mui/material"; // Import useTheme
+import { Box, Typography, CircularProgress, useTheme } from "@mui/material";
 
 const ArabicaMapComponent = () => {
   const [baliGeoJSON, setBaliGeoJSON] = useState(null);
-  const [desaData, setDesaData] = useState({});
+  const [locationData, setLocationData] = useState({});
   const [loading, setLoading] = useState(true);
-  const theme = useTheme(); // Get the current MUI theme
+  const theme = useTheme();
 
-  // Fetch farmer data and calculate aggregated info
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch farmer data
-        const farmerResponse = await fetch(
-          "https://processing-facility-backend.onrender.com/api/farmer"
-        );
+        const farmerResponse = await fetch("https://processing-facility-backend.onrender.com/api/farmer");
         const farmerData = await farmerResponse.json();
 
-        // Fetch receiving data
-        const receivingResponse = await fetch(
-          "https://processing-facility-backend.onrender.com/api/receiving"
-        );
+        const receivingResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving");
         const receivingData = await receivingResponse.json();
 
-        // Log the receiving data to check its structure
-        console.log("Receiving Data:", receivingData);
-
-        // Create a map of farmerID to receiving data (price and weight) for quick lookup
         const receivingMap = receivingData.allRows.reduce((acc, receiving) => {
           acc[receiving.farmerID] = {
             price: parseFloat(receiving.price) || 0,
@@ -39,48 +28,46 @@ const ArabicaMapComponent = () => {
           return acc;
         }, {});
 
-        // Log the receivingMap to check its structure
-        console.log("Receiving Map:", receivingMap);
-
-        // Aggregate data by desa
         const aggregatedData = farmerData.arabicaFarmers.reduce((acc, farmer) => {
           if (farmer.farmType === "Arabica") {
-            const desaName = farmer.desa;
-            if (!acc[desaName]) {
-              acc[desaName] = {
+            const kecamatanName = farmer.kecamatan?.toUpperCase() || "UNKNOWN"; // Handle missing kec.
+            const desaName = farmer.desa?.toUpperCase() || "UNKNOWN";       // Handle missing desa
+
+            if (!acc[kecamatanName]) {
+              acc[kecamatanName] = {};
+            }
+            if (!acc[kecamatanName][desaName]) {
+              acc[kecamatanName][desaName] = {
                 farmerCount: 0,
                 totalLandArea: 0,
                 totalValue: 0,
                 totalWeight: 0,
               };
             }
-            acc[desaName].farmerCount += 1;
-            acc[desaName].totalLandArea += parseFloat(farmer.farmerLandArea) || 0;
 
-            // Add value and weight if available in the receivingMap
+            acc[kecamatanName][desaName].farmerCount += 1;
+            acc[kecamatanName][desaName].totalLandArea += parseFloat(farmer.farmerLandArea) || 0;
+
             if (receivingMap[farmer.farmerID]) {
               const { price, weight } = receivingMap[farmer.farmerID];
-              acc[desaName].totalValue += price * weight;
-              acc[desaName].totalWeight += weight;
+              acc[kecamatanName][desaName].totalValue += price * weight;
+              acc[kecamatanName][desaName].totalWeight += weight;
             }
           }
           return acc;
         }, {});
 
-        // Log the aggregated data to check its structure
-        console.log("Aggregated Data:", aggregatedData);
-
-        // Calculate average price per unit weight per desa
-        for (const desaName in aggregatedData) {
-          const { totalValue, totalWeight } = aggregatedData[desaName];
-          aggregatedData[desaName].averagePrice =
-            totalWeight > 0 ? (totalValue / totalWeight).toFixed(2) : 0;
+        for (const kecamatanName in aggregatedData) {
+          for (const desaName in aggregatedData[kecamatanName]) {
+            const { totalValue, totalWeight } = aggregatedData[kecamatanName][desaName];
+            aggregatedData[kecamatanName][desaName].averagePrice =
+              totalWeight > 0 ? (totalValue / totalWeight).toFixed(2) : 0;
+          }
         }
 
-        // Log the final desa data to check the average price
-        console.log("Final Desa Data:", aggregatedData);
+        setLocationData(aggregatedData);
+        console.log("Location Data:", aggregatedData);
 
-        setDesaData(aggregatedData);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -99,8 +86,8 @@ const ArabicaMapComponent = () => {
             features: villages.map((village) => ({
               type: "Feature",
               properties: {
-                village: village.village,
-                sub_district: village.sub_district,
+                village: village.village?.toUpperCase() || "UNKNOWN",
+                sub_district: village.sub_district?.toUpperCase() || "UNKNOWN",
                 district: village.district,
               },
               geometry: {
@@ -122,29 +109,38 @@ const ArabicaMapComponent = () => {
     Promise.all([fetchData(), loadBaliGeoJSON()]).then(() => setLoading(false));
   }, []);
 
-  // Style function for village borders (now uses theme)
   const styleFeature = (feature) => {
+    const kecamatanName = feature.properties.sub_district;
     const desaName = feature.properties.village;
+
     return {
-      fillColor: desaData[desaName] ? "green" : "transparent",
+      fillColor: locationData[kecamatanName] && locationData[kecamatanName][desaName] ? "green" : "transparent",
       fillOpacity: 0.5,
-      color: theme.palette.mode === 'dark' ? "#444" : "#808080", // Adjust color based on theme
+      color: theme.palette.mode === 'dark' ? "#444" : "#808080",
       weight: 0.25,
     };
+  };
+
+  const tooltipContent = (kecamatanName, desaName) => {
+    const data = locationData[kecamatanName] && locationData[kecamatanName][desaName]; // Check if data exists
+
+    if (data) {
+      const { farmerCount, totalLandArea, averagePrice } = data;
+      return `
+        <strong>Kecamatan:</strong> ${kecamatanName}<br/>
+        <strong>Desa:</strong> ${desaName}<br/>
+        <strong>Total Farmers:</strong> ${farmerCount}<br/>
+        <strong>Total Land Area:</strong> ${totalLandArea} m²<br/>
+        <strong>Average Price (/kg):</strong> Rp${averagePrice}
+      `;
+    }
+    return `<strong>Kecamatan:</strong> ${kecamatanName}<br/><strong>Desa:</strong> ${desaName} (No Data)`;
   };
 
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
         <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (Object.keys(desaData).length === 0) {
-    return (
-      <Box sx={{ textAlign: "center", padding: 2 }}>
-        <Typography variant="h6">No data available</Typography>
       </Box>
     );
   }
@@ -159,11 +155,10 @@ const ArabicaMapComponent = () => {
         attributionControl={false}
       >
         <TileLayer
-          // Use a dark tile layer URL based on the theme
           url={
             theme.palette.mode === 'dark'
-              ? "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" // Dark tile layer
-              : "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png" // Light tile layer
+              ? "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           }
           attribution='&copy; <a href="https://carto.com/">CARTO</a> contributors'
         />
@@ -172,28 +167,21 @@ const ArabicaMapComponent = () => {
             data={baliGeoJSON}
             style={styleFeature}
             onEachFeature={(feature, layer) => {
+              const kecamatanName = feature.properties.sub_district;
               const desaName = feature.properties.village;
-              if (desaData[desaName]) {
-                const { farmerCount, totalLandArea, averagePrice } = desaData[desaName];
-                const tooltipContent = `
-                  <strong>Desa:</strong> ${desaName}<br/>
-                  <strong>Total Farmers:</strong> ${farmerCount}<br/>
-                  <strong>Total Land Area:</strong> ${totalLandArea} m²<br/>
-                  <strong>Average Price (/kg):</strong> Rp${averagePrice}
-                `;
-                layer.bindTooltip(tooltipContent, {
-                  direction: "auto",
-                  className: "leaflet-tooltip-custom",
-                  sticky: true,
-                  opacity: 1,
-                });
-                layer.on("mouseover", function (e) {
-                  this.openTooltip();
-                });
-                layer.on("mouseout", function (e) {
-                  this.closeTooltip();
-                });
-              }
+
+              layer.bindTooltip(tooltipContent(kecamatanName, desaName), {
+                direction: "auto",
+                className: "leaflet-tooltip-custom",
+                sticky: true,
+                opacity: 1,
+              });
+              layer.on("mouseover", function (e) {
+                this.openTooltip();
+              });
+              layer.on("mouseout", function (e) {
+                this.closeTooltip();
+              });
             }}
           />
         )}
