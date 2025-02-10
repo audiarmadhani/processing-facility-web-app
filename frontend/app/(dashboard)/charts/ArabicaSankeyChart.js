@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import * as d3 from "d3"; // Import D3 for Sankey diagram functionality
 import {
   Box,
   CircularProgress,
@@ -8,6 +7,11 @@ import {
   Tooltip,
   useTheme,
 } from "@mui/material";
+import { Chart, registerables } from "chart.js";
+import { SankeyController, Flow } from "chartjs-chart-sankey";
+
+// Register Chart.js and Sankey plugin
+Chart.register(...registerables, SankeyController, Flow);
 
 const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
   const chartRef = useRef(null);
@@ -16,6 +20,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
   const [error, setError] = useState(null);
   const theme = useTheme(); // Access MUI theme for dark mode compatibility
 
+  // Fetch data from API
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -42,138 +47,78 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
     fetchData();
   }, [timeframe]);
 
+  // Draw Sankey diagram when data is available
   useEffect(() => {
     if (sankeyData && chartRef.current) {
       drawChart(sankeyData);
     }
   }, [sankeyData]);
 
-  const drawChart = (sankeyData) => {
-    if (!chartRef.current || !sankeyData) return;
+  // Helper function to draw the Sankey diagram using Chart.js
+  const drawChart = (data) => {
+    if (!chartRef.current || !data) return;
 
-    // Clear previous SVG content
-    d3.select(chartRef.current).selectAll("*").remove();
+    // Destroy previous chart instance if it exists
+    if (chartRef.current.chartInstance) {
+      chartRef.current.chartInstance.destroy();
+    }
 
-    const width = 1400;
-    const height = 700;
-    const margin = { top: 20, right: 20, bottom: 30, left: 100 };
+    // Prepare data for Chart.js Sankey
+    const nodes = Array.from(
+      new Set(data.flatMap((d) => [d.from_node, d.to_node]))
+    ).map((name, index) => ({ id: name, label: name }));
 
-    // Create SVG container
-    const svg = d3
-      .select(chartRef.current)
-      .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const links = data.map((d) => ({
+      source: d.from_node,
+      target: d.to_node,
+      flow: d.value,
+    }));
 
-    // Configure Sankey layout
-    const sankeyLayout = d3
-      .sankey()
-      .nodeWidth(15)
-      .nodePadding(10)
-      .extent([
-        [0, 0],
-        [width, height],
-      ]);
-
-    // Prepare nodes and links
-    const graph = sankeyLayout({
-      nodes: Array.from(
-        new Set(sankeyData.flatMap((d) => [d.from_node, d.to_node]))
-      ).map((name) => ({ name })),
-      links: sankeyData.map((d) => ({
-        source: d.from_node,
-        target: d.to_node,
-        value: d.value,
-      })),
+    // Create the Sankey chart
+    const ctx = chartRef.current.getContext("2d");
+    const chartInstance = new Chart(ctx, {
+      type: "sankey",
+      data: {
+        datasets: [
+          {
+            label: "Arabica Coffee Processing Flow",
+            data: links,
+            colorFrom: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
+            colorTo: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
+            colorMode: "gradient",
+            size: "dynamic", // Adjust link thickness dynamically
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const { source, target, flow } = context.raw;
+                return `Source: ${source}\nTarget: ${target}\nValue: ${flow}`;
+              },
+            },
+          },
+        },
+        sankey: {
+          node: {
+            borderWidth: 1,
+            borderColor: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
+            color: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
+            hoverColor: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
+          },
+          link: {
+            colorMode: "gradient",
+            colorFrom: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
+            colorTo: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
+          },
+        },
+      },
     });
 
-    // Draw links with hover effects and tooltips
-    const link = svg
-      .append("g")
-      .attr("class", "links")
-      .selectAll("path")
-      .data(graph.links)
-      .join("path")
-      .attr("d", d3.sankeyLinkHorizontal())
-      .style("stroke-width", (d) => Math.max(1, d.width))
-      .attr("fill", "none")
-      .attr("stroke", theme.palette.mode === "dark" ? "#ffffff" : "#007bff") // Dark mode compatibility
-      .attr("opacity", 0.5)
-      .on("mouseover", function (event, d) {
-        d3.select(this).attr("opacity", 1); // Highlight link on hover
-        tooltip.html(
-          `Source: ${d.source.name}<br>Target: ${d.target.name}<br>Value: ${d.value}`
-        );
-        tooltip.style("visibility", "visible");
-      })
-      .on("mousemove", function (event) {
-        tooltip
-          .style("top", `${event.pageY - 10}px`)
-          .style("left", `${event.pageX + 10}px`);
-      })
-      .on("mouseout", function () {
-        d3.select(this).attr("opacity", 0.5); // Reset opacity
-        tooltip.style("visibility", "hidden");
-      });
-
-    // Add tooltip for links
-    const tooltip = d3
-      .select("body")
-      .append("div")
-      .attr("class", "tooltip")
-      .style("position", "absolute")
-      .style("background", theme.palette.background.paper)
-      .style("color", theme.palette.text.primary)
-      .style("padding", "5px")
-      .style("border-radius", "4px")
-      .style("visibility", "hidden");
-
-    // Draw nodes
-    const node = svg
-      .append("g")
-      .attr("class", "nodes")
-      .selectAll("rect")
-      .data(graph.nodes)
-      .join("rect")
-      .attr("x", (d) => d.x0)
-      .attr("y", (d) => d.y0)
-      .attr("height", (d) => d.y1 - d.y0)
-      .attr("width", (d) => d.x1 - d.x0)
-      .attr("fill", theme.palette.mode === "dark" ? "#ffffff" : "#007bff") // Dark mode compatibility
-      .attr("opacity", 0.8)
-      .on("mouseover", function (event, d) {
-        d3.select(this).attr("opacity", 1); // Highlight node on hover
-        tooltip.html(`Node: ${d.name}<br>Value: ${d.value}`);
-        tooltip.style("visibility", "visible");
-      })
-      .on("mousemove", function (event) {
-        tooltip
-          .style("top", `${event.pageY - 10}px`)
-          .style("left", `${event.pageX + 10}px`);
-      })
-      .on("mouseout", function () {
-        d3.select(this).attr("opacity", 0.8); // Reset opacity
-        tooltip.style("visibility", "hidden");
-      });
-
-    // Add node labels
-    svg
-      .append("g")
-      .attr("class", "labels")
-      .selectAll("text")
-      .data(graph.nodes)
-      .join("text")
-      .attr("x", (d) => (d.x0 + d.x1) / 2)
-      .attr("y", (d) => (d.y0 + d.y1) / 2)
-      .attr("dy", "0.35em")
-      .attr("text-anchor", "middle")
-      .style("fill", theme.palette.text.primary) // Dark mode compatibility
-      .text((d) => d.name);
-
-    // Ensure text alignment with dark mode
-    svg.selectAll(".labels text").style("font-family", "Roboto, sans-serif");
+    // Store the chart instance for cleanup
+    chartRef.current.chartInstance = chartInstance;
   };
 
   if (loading) {
@@ -207,7 +152,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  return <div ref={chartRef} />;
+  return <canvas ref={chartRef} />;
 };
 
 export default ArabicaSankeyChart;
