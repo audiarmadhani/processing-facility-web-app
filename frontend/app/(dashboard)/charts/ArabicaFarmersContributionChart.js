@@ -16,6 +16,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedFarmer, setSelectedFarmer] = useState(null);
 
   const processChartData = (data) => {
     if (!Array.isArray(data)) {
@@ -28,8 +29,8 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
 
       return {
         farmerName: farmer.farmerName,
-        weight: Number(weight), // Ensure weight is a number
-        unripeWeight: Number(unripeWeight) || 0, // Ensure weights are numbers, default to 0
+        weight: Number(weight),
+        unripeWeight: Number(unripeWeight) || 0,
         semiripeWeight: Number(semiripeWeight) || 0,
         ripeWeight: Number(ripeWeight) || 0,
         overripeWeight: Number(overripeWeight) || 0,
@@ -89,6 +90,16 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
 
+  const handleBarClick = (item) => {
+    if (item) {
+      setSelectedFarmer(item.farmerName);
+    } else {
+      setSelectedFarmer(null);
+    }
+  };
+
+  const filteredData = selectedFarmer ? data.filter(farmer => farmer.farmerName === selectedFarmer) : data;
+
   return (
     <Box sx={{ height: chartHeight }}>
       {data.length === 0 ? (
@@ -97,17 +108,17 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
         </Box>
       ) : (
         <BarChart
-          dataset={data}
+          dataset={filteredData}
           xAxis={[{ scaleType: 'band', dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
           yAxis={[{ label: "Weight (kg)" }]}
           series={[
-              { dataKey: "weight", label: "Total Weight", stack: 'weight', color: colorCategories.Set3[5] }, // Total weight bar
-              { dataKey: "unripeWeight", label: "Unripe", stack: 'ripenessWeight', color: colorCategories.Set3[0] },
-              { dataKey: "semiripeWeight", label: "Semi-ripe", stack: 'ripenessWeight', color: colorCategories.Set3[1] },
-              { dataKey: "ripeWeight", label: "Ripe", stack: 'ripenessWeight', color: colorCategories.Set3[2] },
-              { dataKey: "overripeWeight", label: "Overripe", stack: 'ripenessWeight', color: colorCategories.Set3[3] },
-              { dataKey: "unknownWeight", label: "Unknown", stack: 'ripenessWeight', color: colorCategories.Set3[4] },
-            ]}
+            { dataKey: "weight", label: "Total Weight", stack: 'weight', color: colorCategories.Set3[5] },
+            { dataKey: "unripeWeight", label: "Unripe", stack: 'ripenessWeight', color: colorCategories.Set3[0] },
+            { dataKey: "semiripeWeight", label: "Semi-ripe", stack: 'ripenessWeight', color: colorCategories.Set3[1] },
+            { dataKey: "ripeWeight", label: "Ripe", stack: 'ripenessWeight', color: colorCategories.Set3[2] },
+            { dataKey: "overripeWeight", label: "Overripe", stack: 'ripenessWeight', color: colorCategories.Set3[3] },
+            { dataKey: "unknownWeight", label: "Unknown", stack: 'ripenessWeight', color: colorCategories.Set3[4] },
+          ]}
           height={500}
           sx={{
             ".MuiChart-axisLeft .MuiChart-axisLabel": {
@@ -116,6 +127,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
           }}
           borderRadius={10}
           slotProps={{ legend: { hidden: true } }}
+          onClick={handleBarClick}
         />
       )}
     </Box>
