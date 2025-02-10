@@ -114,7 +114,7 @@ const RobustaFarmersContributionChart = ({ timeframe = "last_month" }) => {
               transform: "translate(-50px, 0)",
             },
           }}
-          borderRadius={10}
+          borderRadius={5}
           slotProps={{ legend: { hidden: true } }}
         />
       )}
