@@ -98,7 +98,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
       ) : (
         <BarChart
           dataset={data}
-          xAxis={[{ dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
+          xAxis={[{ scaleType: 'band', dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
           yAxis={[{ label: "Weight (kg)" }]}
           series={[
               { dataKey: "totalWeight", label: "Total", stack: 'totalWeight', color: colorCategories.Set3[5] }, // Total weight bar
