@@ -12,7 +12,7 @@ const colorCategories = {
   ],
 };
 
-const RobustaFarmersContributionChart = ({ timeframe = "this_month" }) => {
+const RobustaFarmersContributionChart = ({ timeframe = "last_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,46 +24,16 @@ const RobustaFarmersContributionChart = ({ timeframe = "this_month" }) => {
     }
 
     return data.map((farmer) => {
-      const { totalWeight, unripePercentage, semiripePercentage, ripePercentage, overripePercentage, unknownRipeness } = farmer;
-
-      const allNaN = isNaN(unripePercentage) && isNaN(semiripePercentage) && isNaN(ripePercentage) && isNaN(overripePercentage);
-
-      let normalizedUnripe = 0;
-      let normalizedSemiripe = 0;
-      let normalizedRipe = 0;
-      let normalizedOverripe = 0;
-      let normalizedUnknown = 0;
-
-      if (allNaN) {
-        normalizedUnknown = 100;
-      } else {
-        const unripe = isNaN(unripePercentage) || unripePercentage === null ? 0 : unripePercentage;
-        const semiripe = isNaN(semiripePercentage) || semiripePercentage === null ? 0 : semiripePercentage;
-        const ripe = isNaN(ripePercentage) || ripePercentage === null ? 0 : ripePercentage;
-        const overripe = isNaN(overripePercentage) || overripePercentage === null ? 0 : overripePercentage;
-        const unknown = isNaN(unknownRipeness) || unknownRipeness === null ? 0 : unknownRipeness;
-
-        const totalPercentage = unripe + semiripe + ripe + overripe + unknown;
-
-        normalizedUnripe = totalPercentage === 0 ? 0 : (unripe / totalPercentage) * 100;
-        normalizedSemiripe = totalPercentage === 0 ? 0 : (semiripe / totalPercentage) * 100;
-        normalizedRipe = totalPercentage === 0 ? 0 : (ripe / totalPercentage) * 100;
-        normalizedOverripe = totalPercentage === 0 ? 0 : (overripe / totalPercentage) * 100;
-        normalizedUnknown = totalPercentage === 0 ? 0 : (unknown / totalPercentage) * 100;
-      }
-
-      const totalWeightNum = Number(totalWeight);
+      const { totalWeight, unripeWeight, semiripeWeight, ripeWeight, overripeWeight, unknownWeight } = farmer;
 
       return {
         farmerName: farmer.farmerName,
-        totalWeight: totalWeightNum,
-
-        unripeWeight: (normalizedUnripe / 100) * totalWeightNum,
-        semiripeWeight: (normalizedSemiripe / 100) * totalWeightNum,
-        ripeWeight: (normalizedRipe / 100) * totalWeightNum,
-        overripeWeight: (normalizedOverripe / 100) * totalWeightNum,
-        unknownWeight: (normalizedUnknown / 100) * totalWeightNum,
-        hasRipenessData: !allNaN,
+        totalWeight: Number(totalWeight), // Ensure totalWeight is a number
+        unripeWeight: Number(unripeWeight) || 0, // Ensure weights are numbers, default to 0
+        semiripeWeight: Number(semiripeWeight) || 0,
+        ripeWeight: Number(ripeWeight) || 0,
+        overripeWeight: Number(overripeWeight) || 0,
+        unknownWeight: Number(unknownWeight) || 0,
       };
     }).sort((a, b) => b.totalWeight - a.totalWeight);
   };
@@ -131,17 +101,16 @@ const RobustaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           xAxis={[{ scaleType: "band", dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
           yAxis={[{ label: "Weight (kg)" }]}
           series={data.flatMap((farmer) => {
-            if (farmer.hasRipenessData) {
-              return [
-                { dataKey: "unripeWeight", label: "Unripe", stackId: "1", color: colorCategories.Set3[0] },
-                { dataKey: "semiripeWeight", label: "Semi-ripe", stackId: "1", color: colorCategories.Set3[1] },
-                { dataKey: "ripeWeight", label: "Ripe", stackId: "1", color: colorCategories.Set3[2] },
-                { dataKey: "overripeWeight", label: "Overripe", stackId: "1", color: colorCategories.Set3[3] },
-                { dataKey: "unknownWeight", label: "Unknown", stackId: "1", color: colorCategories.Set3[4] },
-              ];
-            } else {
-              return [{ dataKey: "unknownWeight", label: "Unknown", color: colorCategories.Set3[4] }];
-            }
+            const stackId = farmer.farmerName; // Use farmerName as stackId
+
+            return [
+              { dataKey: "totalWeight", label: "Total", stack: 'totalWeight', color: colorCategories.Set3[5] }, // Total weight bar
+              { dataKey: "unripeWeight", label: "Unripe", stack: 'ripenessWeight', color: colorCategories.Set3[0] },
+              { dataKey: "semiripeWeight", label: "Semi-ripe", stack: 'ripenessWeight', color: colorCategories.Set3[1] },
+              { dataKey: "ripeWeight", label: "Ripe", stack: 'ripenessWeight', color: colorCategories.Set3[2] },
+              { dataKey: "overripeWeight", label: "Overripe", stack: 'ripenessWeight', color: colorCategories.Set3[3] },
+              { dataKey: "unknownWeight", label: "Unknown", stack: 'ripenessWeight', color: colorCategories.Set3[4] },
+            ];
           })}
           height={500}
           sx={{
@@ -151,14 +120,6 @@ const RobustaFarmersContributionChart = ({ timeframe = "this_month" }) => {
           }}
           borderRadius={10}
           slotProps={{ legend: { hidden: true } }}
-          tooltip={{
-            trigger: "item",
-            formatter: (value, item) => {
-              const ripenessLabel = item.label;
-              const totalWeight = data.find(d => d.farmerName === item.farmerName)?.totalWeight;
-              return `${ripenessLabel}: ${value.toFixed(2)} kg (Total: ${totalWeight?.toFixed(2)} kg)`;
-            },
-          }}
         />
       )}
     </Box>
