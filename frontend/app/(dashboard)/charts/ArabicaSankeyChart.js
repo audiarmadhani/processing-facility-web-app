@@ -41,8 +41,8 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
         d3.select(chartRef.current).selectAll("*").remove();
 
         // Set up dimensions
-        const width = 800;
-        const height = 600;
+        const width = 600;
+        const height = 500;
         const margin = { top: 20, right: 20, bottom: 30, left: 60 };
 
         // Create SVG container
