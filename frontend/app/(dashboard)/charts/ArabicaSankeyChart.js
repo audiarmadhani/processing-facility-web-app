@@ -1,103 +1,113 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
-import axios from 'axios';
+import React, { useEffect, useRef } from 'react';
+import * as d3 from 'd3'; // Import D3.js
 
 const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
-    const [sankeyData, setSankeyData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const chartRef = useRef(null);
-    const [googleChartsLoaded, setGoogleChartsLoaded] = useState(false);
-
-    useEffect(() => {
-        // Check if already loaded
-        if (window.google && window.google.visualization && window.google.visualization.Sankey) {
-            setGoogleChartsLoaded(true);
-            return;
-        }
-
-        // Load if not already loaded
-        if (!googleChartsLoaded) {
-            window.google.charts.load('current', { 'packages': ['sankey'] });
-            window.google.charts.setOnLoadCallback(() => setGoogleChartsLoaded(true));
-        }
-    }, []);
-
-    useEffect(() => {
-        if (googleChartsLoaded && sankeyData && chartRef.current) {
-            drawChart();
-        }
-    }, [sankeyData, title, googleChartsLoaded]);
-
-    const drawChart = () => {
-        const data = new window.google.visualization.DataTable();
-        data.addColumn('string', 'From');
-        data.addColumn('string', 'To');
-        data.addColumn('number', 'Weight');
-        data.addRows(sankeyData.map(flow => [flow.from, flow.to, flow.value]));
-
-        const options = {
-            title: title,
-        };
-
-        const chart = new window.google.visualization.Sankey(chartRef.current);
-        chart.draw(data, options);
-    };
 
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true);
-            setError(null);
             try {
-                const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
-
-                if (!response.data || !response.data.arabicaSankey || !Array.isArray(response.data.arabicaSankey)) {
+                const response = await fetch(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (!data || !data.arabicaSankey || !Array.isArray(data.arabicaSankey)) {
                     throw new Error("Invalid data format received from API.");
                 }
 
-                setSankeyData(response.data.arabicaSankey);
+                const sankeyData = data.arabicaSankey;
+                drawChart(sankeyData);
 
-            } catch (err) {
-                console.error("Error fetching data:", err);
-                setError("Error fetching data from API.");
-            } finally {
-                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                // Handle error (e.g., display an error message)
             }
         };
 
         fetchData();
     }, [timeframe]);
 
+    const drawChart = (sankeyData) => {
+        if (!chartRef.current || !sankeyData) {
+            return; // Don't draw if ref or data is missing
+        }
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
+        // Set up chart dimensions and margins
+        const width = 800;
+        const height = 600;
+        const margin = { top: 20, right: 20, bottom: 30, left: 60 };
 
-    if (error) {
-        return (
-            <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
-                <Typography variant="body1">{error}</Typography>
-            </Box>
-        );
-    }
+        // Create SVG element
+        const svg = d3.select(chartRef.current)
+            .append('svg')
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    if (!sankeyData || sankeyData.length === 0) {
-        return (
-            <Box sx={{ textAlign: "center", padding: 2 }}>
-                <Typography variant="body1">No data available</Typography>
-            </Box>
-        );
-    }
+        // Create Sankey generator
+        const sankey = d3.sankey()
+            .nodeWidth(15)
+            .nodePadding(10)
+            .size([width, height]);
+
+        // Create path generator
+        const path = d3.sankeyLinkHorizontal();
+
+        // Prepare data for Sankey layout
+        const { nodes, links } = sankey({
+            nodes: Array.from(new Set(sankeyData.flatMap(d => [d.from, d.to]))).map(name => ({ name })),
+            links: sankeyData.map(d => ({ source: d.from, target: d.to, value: d.value })),
+        });
+
+        // Add links
+        svg.append("g")
+            .attr("class", "links")
+            .selectAll("path")
+            .data(links)
+            .join("path")
+            .attr("d", path)
+            .style("stroke-width", d => Math.max(1, d.dy))
+            .attr("fill", "none")
+            .attr("stroke", "#007bff") // Example color
+            .attr("opacity", 0.5);
+
+        // Add nodes
+        svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("rect")
+            .data(nodes)
+            .join("rect")
+            .attr("x", d => d.x0)
+            .attr("y", d => d.y0)
+            .attr("height", d => d.y1 - d.y0)
+            .attr("width", d => d.x1 - d.x0)
+            .attr("fill", "#007bff") // Example color
+            .attr("opacity", 0.8)
+            .append("title")
+            .text(d => d.name);
+
+        // Add node labels (optional)
+        svg.append("g")
+            .attr("class", "labels")
+            .selectAll("text")
+            .data(nodes)
+            .join("text")
+            .attr("x", d => (d.x0 + d.x1) / 2)
+            .attr("y", d => (d.y0 + d.y1) / 2)
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .text(d => d.name);
+
+    };
 
     return (
-        <div ref={chartRef} style={{ height: '600px', width: '800px' }} />
+        <div ref={chartRef} />
     );
 };
+
 
 export default ArabicaSankeyChart;
