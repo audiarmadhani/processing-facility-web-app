@@ -1,158 +1,140 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  Tooltip,
-  useTheme,
-} from "@mui/material";
-import { Chart, registerables } from "chart.js";
-import { SankeyController, Flow } from "chartjs-chart-sankey";
 
-// Register Chart.js and Sankey plugin
-Chart.register(...registerables, SankeyController, Flow);
+import React, { useEffect, useRef, useState } from 'react';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
+import * as d3 from 'd3';
 
 const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
-  const chartRef = useRef(null);
-  const [sankeyData, setSankeyData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const theme = useTheme(); // Access MUI theme for dark mode compatibility
+    const chartRef = useRef(null);
+    const [sankeyData, setSankeyData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  // Fetch data from API
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(
-          `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const response = await fetch(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                if (!data?.arabicaSankey?.length) throw new Error("No valid Sankey data available");
+                
+                setSankeyData(data.arabicaSankey);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [timeframe]);
+
+    useEffect(() => {
+        if (!sankeyData || !chartRef.current) return;
+
+        // Clear previous chart
+        d3.select(chartRef.current).selectAll("*").remove();
+
+        // Set up dimensions
+        const width = 1400;
+        const height = 500;
+        const margin = { top: 20, right: 20, bottom: 30, left: 60 };
+
+        // Create SVG container
+        const svg = d3.select(chartRef.current)
+            .append('svg')
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Set up Sankey generator
+        const sankeyGenerator = sankey()
+            .nodeWidth(15)
+            .nodePadding(10)
+            .size([width, height]);
+
+        // Process data
+        const nodes = Array.from(new Set([
+            ...sankeyData.map(d => d.from_node),
+            ...sankeyData.map(d => d.to_node)
+        ])).map(name => ({ name }));
+
+        const links = sankeyData.map(d => ({
+            source: nodes.findIndex(n => n.name === d.from_node),
+            target: nodes.findIndex(n => n.name === d.to_node),
+            value: d.value
+        }));
+
+        // Generate Sankey layout
+        const { nodes: layoutNodes, links: layoutLinks } = sankeyGenerator({
+            nodes: nodes,
+            links: links
+        });
+
+        // Create links
+        svg.append("g")
+            .selectAll("path")
+            .data(layoutLinks)
+            .join("path")
+            .attr("d", sankeyLinkHorizontal())
+            .attr("stroke-width", d => Math.max(1, d.width))
+            .attr("stroke", "#007bff80")
+            .attr("fill", "none");
+
+        // Create nodes
+        const node = svg.append("g")
+            .selectAll("rect")
+            .data(layoutNodes)
+            .join("rect")
+            .attr("x", d => d.x0)
+            .attr("y", d => d.y0)
+            .attr("height", d => d.y1 - d.y0)
+            .attr("width", d => d.x1 - d.x0)
+            .attr("fill", "#007bff");
+
+        // Add labels
+        svg.append("g")
+            .selectAll("text")
+            .data(layoutNodes)
+            .join("text")
+            .attr("x", d => d.x0 - 6)
+            .attr("y", d => (d.y1 + d.y0) / 2)
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "end")
+            .text(d => d.name)
+            .filter(d => d.x0 > width / 2)
+            .attr("x", d => d.x1 + 6)
+            .attr("text-anchor", "start");
+
+    }, [sankeyData]);
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+                <CircularProgress />
+            </Box>
         );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        if (!data || !data.arabicaSankey || !Array.isArray(data.arabicaSankey)) {
-          throw new Error("Invalid data format received from API.");
-        }
-        setSankeyData(data.arabicaSankey);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Error fetching data from API.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [timeframe]);
-
-  // Draw Sankey diagram when data is available
-  useEffect(() => {
-    if (sankeyData && chartRef.current) {
-      drawChart(sankeyData);
-    }
-  }, [sankeyData]);
-
-  // Helper function to draw the Sankey diagram using Chart.js
-  const drawChart = (data) => {
-    if (!chartRef.current || !data) return;
-
-    // Destroy previous chart instance if it exists
-    if (chartRef.current.chartInstance) {
-      chartRef.current.chartInstance.destroy();
     }
 
-    // Prepare data for Chart.js Sankey
-    const nodes = Array.from(
-      new Set(data.flatMap((d) => [d.from_node, d.to_node]))
-    ).map((name, index) => ({ id: name, label: name }));
+    if (error) {
+        return (
+            <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+                <Typography variant="body1">{error}</Typography>
+            </Box>
+        );
+    }
 
-    const links = data.map((d) => ({
-      source: d.from_node,
-      target: d.to_node,
-      flow: d.value,
-    }));
-
-    // Create the Sankey chart
-    const ctx = chartRef.current.getContext("2d");
-    const chartInstance = new Chart(ctx, {
-      type: "sankey",
-      data: {
-        datasets: [
-          {
-            label: "Arabica Coffee Processing Flow",
-            data: links,
-            colorFrom: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
-            colorTo: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
-            colorMode: "gradient",
-            size: "dynamic", // Adjust link thickness dynamically
-          },
-        ],
-      },
-      options: {
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const { source, target, flow } = context.raw;
-                return `Source: ${source}\nTarget: ${target}\nValue: ${flow}`;
-              },
-            },
-          },
-        },
-        sankey: {
-          node: {
-            borderWidth: 1,
-            borderColor: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
-            color: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
-            hoverColor: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
-          },
-          link: {
-            colorMode: "gradient",
-            colorFrom: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
-            colorTo: theme.palette.mode === "dark" ? "#ffffff" : "#007bff",
-          },
-        },
-      },
-    });
-
-    // Store the chart instance for cleanup
-    chartRef.current.chartInstance = chartInstance;
-  };
-
-  if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: 400,
-        }}
-      >
-        <CircularProgress />
-      </Box>
+        <Box sx={{ p: 2 }}>
+            <div ref={chartRef} />
+        </Box>
     );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
-        <Typography variant="body1">{error}</Typography>
-      </Box>
-    );
-  }
-
-  if (!sankeyData || sankeyData.length === 0) {
-    return (
-      <Box sx={{ textAlign: "center", padding: 2 }}>
-        <Typography variant="body1">No data available</Typography>
-      </Box>
-    );
-  }
-
-  return <canvas ref={chartRef} />;
 };
 
 export default ArabicaSankeyChart;
