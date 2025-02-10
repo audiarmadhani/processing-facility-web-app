@@ -41,6 +41,8 @@ import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
+import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
+import RobustaSankeyChart from './charts/RobustaSankeyChart';
 
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
@@ -86,7 +88,7 @@ function Dashboard() {
 
     { value: 'this_month', label: 'This Month' },
     { value: 'last_month', label: 'Last Month' },
-    
+
     { value: 'this_year', label: 'This Year' },
     { value: 'last_year', label: 'Last Year' },
   ];
@@ -487,6 +489,18 @@ function Dashboard() {
                 </Card>
               </Grid>
 
+              {/* Arabica Sankey Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Sankey Chart
+                    </Typography>
+                    <ArabicaSankeyChart />
+                  </CardContent>
+                </Card>
+              </Grid>
+
               {/* Arabica TradingView Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
@@ -819,6 +833,18 @@ function Dashboard() {
                       Robusta Coverage Map
                     </Typography>
                     <RobustaMapComponent />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Robusta Sankey Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Sankey Chart
+                    </Typography>
+                    <RobustaSankeyChart />
                   </CardContent>
                 </Card>
               </Grid>

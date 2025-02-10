@@ -7,18 +7,12 @@ import { Box, CircularProgress } from "@mui/material";
 
 const colorCategories = {
   Set3: [
-    '#8dd3c7',
-    '#ffffb3',
-    '#bebada',
-    '#fb8072',
-    '#80b1d3',
-    '#fdb462',
-    '#b3de69',
-    '#fccde5',
-    '#d9d9d9',
-    '#bc80bd',
-    '#ccebc5',
-    '#ffed6f',
+    "#003f5c",
+    "#444e86",
+    "#955196",
+    "#dd5182",
+    "#ff6e54",
+    "#ffa600",
   ],
 };
 
