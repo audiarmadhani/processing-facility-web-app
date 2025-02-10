@@ -24,18 +24,18 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
     }
 
     return data.map((farmer) => {
-      const { totalWeight, unripeWeight, semiripeWeight, ripeWeight, overripeWeight, unknownWeight } = farmer;
+      const { weight, unripeWeight, semiripeWeight, ripeWeight, overripeWeight, unknownWeight } = farmer;
 
       return {
         farmerName: farmer.farmerName,
-        totalWeight: Number(totalWeight), // Ensure totalWeight is a number
+        weight: Number(weight), // Ensure weight is a number
         unripeWeight: Number(unripeWeight) || 0, // Ensure weights are numbers, default to 0
         semiripeWeight: Number(semiripeWeight) || 0,
         ripeWeight: Number(ripeWeight) || 0,
         overripeWeight: Number(overripeWeight) || 0,
         unknownWeight: Number(unknownWeight) || 0,
       };
-    }).sort((a, b) => b.totalWeight - a.totalWeight);
+    }).sort((a, b) => b.weight - a.weight);
   };
 
   useEffect(() => {
@@ -101,7 +101,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
           xAxis={[{ scaleType: 'band', dataKey: "farmerName", label: "Farmer", disableTicks: true }]}
           yAxis={[{ label: "Weight (kg)" }]}
           series={[
-              { dataKey: "totalWeight", label: "Total", stack: 'totalWeight', color: colorCategories.Set3[5] }, // Total weight bar
+              { dataKey: "weight", label: "Total Weight", stack: 'weight', color: colorCategories.Set3[5] }, // Total weight bar
               { dataKey: "unripeWeight", label: "Unripe", stack: 'ripenessWeight', color: colorCategories.Set3[0] },
               { dataKey: "semiripeWeight", label: "Semi-ripe", stack: 'ripenessWeight', color: colorCategories.Set3[1] },
               { dataKey: "ripeWeight", label: "Ripe", stack: 'ripenessWeight', color: colorCategories.Set3[2] },
