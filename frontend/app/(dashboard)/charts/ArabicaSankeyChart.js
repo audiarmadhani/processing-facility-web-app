@@ -2,14 +2,30 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import * as d3 from 'd3'; // Import the core d3 package
-import { sankey, sankeyLinkHorizontal } from 'd3-sankey'; // Import d3-sankey functions
 
 const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
     const chartRef = useRef(null);
     const [sankeyData, setSankeyData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [d3Loaded, setD3Loaded] = useState(false); // Track D3 loading
+
+    useEffect(() => {
+        // Check if d3 is already loaded (important for avoiding multiple loads)
+        if (typeof d3 !== 'undefined' && typeof sankey !== 'undefined' && typeof sankeyLinkHorizontal !== 'undefined') {
+          setD3Loaded(true);
+          return;
+        }
+
+        // Only load d3 if it's not already loaded
+        if (!d3Loaded) {
+          import('d3').then(d3 => {
+            setD3Loaded(true); // Set the loaded state
+          });
+        }
+      }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -37,13 +53,13 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     }, [timeframe]);
 
     useEffect(() => {
-        if (sankeyData && chartRef.current) {
+        if (sankeyData && chartRef.current && d3Loaded) { // Check d3Loaded
             drawChart(sankeyData);
         }
-    }, [sankeyData]);
+    }, [sankeyData, d3Loaded]);  // Add d3Loaded to dependencies
 
     const drawChart = (sankeyData) => {
-        if (!chartRef.current || !sankeyData) {
+        if (!chartRef.current || !sankeyData || !d3Loaded) { // Check d3Loaded
             return;
         }
 
@@ -51,7 +67,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
         const height = 600;
         const margin = { top: 20, right: 20, bottom: 30, left: 60 };
 
-        const svg = d3.select(chartRef.current)
+        const svg = d3.select(chartRef.current) // Use d3 from the top-level import
             .append('svg')
             .attr('width', width + margin.left + margin.right)
             .attr('height', height + margin.top + margin.bottom)
@@ -70,41 +86,42 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             links: sankeyData.map(d => ({ source: d.from, target: d.to, value: d.value })),
         });
 
+        // ... (rest of your chart drawing code - using d3 where needed)
         svg.append("g")
-            .attr("class", "links")
-            .selectAll("path")
-            .data(links)
-            .join("path")
-            .attr("d", path)
-            .style("stroke-width", d => Math.max(1, d.dy))
-            .attr("fill", "none")
-            .attr("stroke", "#007bff")
-            .attr("opacity", 0.5);
+        .attr("class", "links")
+        .selectAll("path")
+        .data(links)
+        .join("path")
+        .attr("d", path)
+        .style("stroke-width", d => Math.max(1, d.dy))
+        .attr("fill", "none")
+        .attr("stroke", "#007bff")
+        .attr("opacity", 0.5);
 
-        svg.append("g")
-            .attr("class", "nodes")
-            .selectAll("rect")
-            .data(nodes)
-            .join("rect")
-            .attr("x", d => d.x0)
-            .attr("y", d => d.y0)
-            .attr("height", d => d.y1 - d.y0)
-            .attr("width", d => d.x1 - d.x0)
-            .attr("fill", "#007bff")
-            .attr("opacity", 0.8)
-            .append("title")
-            .text(d => d.name);
+    svg.append("g")
+        .attr("class", "nodes")
+        .selectAll("rect")
+        .data(nodes)
+        .join("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("fill", "#007bff")
+        .attr("opacity", 0.8)
+        .append("title")
+        .text(d => d.name);
 
-        svg.append("g")
-            .attr("class", "labels")
-            .selectAll("text")
-            .data(nodes)
-            .join("text")
-            .attr("x", d => (d.x0 + d.x1) / 2)
-            .attr("y", d => (d.y0 + d.y1) / 2)
-            .attr("dy", "0.35em")
-            .attr("text-anchor", "middle")
-            .text(d => d.name);
+    svg.append("g")
+        .attr("class", "labels")
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .attr("x", d => (d.x0 + d.x1) / 2)
+        .attr("y", d => (d.y0 + d.y1) / 2)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "middle")
+        .text(d => d.name);
 
     };
 
