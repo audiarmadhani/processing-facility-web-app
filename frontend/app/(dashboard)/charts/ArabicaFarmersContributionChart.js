@@ -16,6 +16,7 @@ const ArabicaFarmersContributionChart = () => {
       series={[
         { dataKey: "unripeWeight", label: "Unripe", stack: "1", color: "red" },
         { dataKey: "ripeWeight", label: "Ripe", stack: "1", color: "blue" },
+        { dataKey: "totalWeight", label: "Weight", stack: "2", color: "green" },
       ]}
       height={300}
     />
