@@ -92,8 +92,8 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
 
   const chartHeight = data && data.length > 0 ? 500 : "auto";
 
-  const handleBarClick = (item) => {
-    console.log("Clicked Item:", item); // Log clicked item
+  const handleItemClick = (item) => {  // Correct handler name
+    console.log("Item Clicked:", item); // Correctly logged bar data
     if (item) {
       setSelectedFarmer(item.farmerName);
     } else {
@@ -132,7 +132,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
           }}
           borderRadius={10}
           slotProps={{ legend: { hidden: true } }}
-          onClick={(item) => handleBarClick(item)}
+          onItemClick={handleItemClick} // Use onItemClick handler
         />
       )}
     </Box>
