@@ -491,8 +491,8 @@ function Dashboard() {
 
               {/* Arabica Sankey Chart */}
               <Grid item xs={12} md={12} sx={{ height: '800px' }}>
-                <Card variant="outlined">
-                  <CardContent>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
                       Arabica Sankey Chart
                     </Typography>
