@@ -14,8 +14,8 @@ const SchedulePage = () => {
             xs: '400px',  // Extra-small screens
             sm: '600px',  // Small screens
             md: '800px',  // Medium screens
-            lg: '1000px',  // Large screens
-            xl: '1000px'   // Extra-large screens
+            lg: '1200px',  // Large screens
+            xl: '1200px'   // Extra-large screens
           }
         }}
       >
