@@ -73,7 +73,7 @@ const ScheduleCalendar = () => {
   }
 
   return (
-    <Box sx={{ p: 2, width: '100%', height: '100%' }}>
+    <Box sx={{ p: 2, width: '100%', height: '90%' }}>
       <FullCalendar
         plugins={[dayGridPlugin]}
         initialView="dayGridMonth"
