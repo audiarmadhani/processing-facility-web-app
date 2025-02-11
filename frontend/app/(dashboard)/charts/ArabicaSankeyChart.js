@@ -111,18 +111,8 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
                 d3.select(event.currentTarget).attr("stroke", linkStroke);
                 tooltip.transition().duration(500).style("opacity", 0);
             })
-            .attr("class", "link")
-            .style("stroke-width", d => {
-                const baseWidth = Math.max(1, d.width || 1);
-                let scaleFactor = 1; // Default
-                if (d.width < 5) { // Example threshold
-                    scaleFactor = 3;
-                } else if (d.width < 10) { // Example threshold
-                    scaleFactor = 2;
-                }
-                return baseWidth * scaleFactor;
-            });
-
+            .attr("class", "link");
+            
         svg.append("g")
             .selectAll("rect")
             .data(layoutNodes)
@@ -164,7 +154,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     }, [sankeyData, theme.palette.mode, chartDimensions.width, chartDimensions.height]);
 
     if (loading) {
-        return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}><CircularProgress /></Box>;
+        return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 800 }}><CircularProgress /></Box>;
     }
 
     if (error) {
@@ -173,7 +163,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
     return (
         <Box sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6" gutterBottom>{title}</Typography>
+            {/* <Typography variant="h6" gutterBottom>{title}</Typography> */}
             <div ref={chartRef} style={{ width: '100%', height: '100%' }} />
         </Box>
     );
