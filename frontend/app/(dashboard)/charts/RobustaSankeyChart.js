@@ -155,17 +155,21 @@ const RobustaSankeyChart = ({ timeframe = "this_month", height = "500px" }) => {
       .append("title")
       .text(d => `${d.name}\n${d.value}`);
 
-    // Add node labels
+    // Add node labels rotated vertically.
     nodeGroup.append("text")
-      .attr("x", d => d.x0 - 6)
+      .attr("transform", d => {
+        // For nodes on the left side, rotate -90; for nodes on the right, rotate 90.
+        if (d.x0 < width / 2) {
+          return `rotate(-90, ${d.x0 - 6}, ${(d.y0 + d.y1) / 2})`;
+        } else {
+          return `rotate(90, ${d.x1 + 6}, ${(d.y0 + d.y1) / 2})`;
+        }
+      })
+      .attr("x", d => d.x0 < width / 2 ? d.x0 - 6 : d.x1 + 6)
       .attr("y", d => (d.y0 + d.y1) / 2)
-      .attr("dy", "0.35em")
-      .attr("text-anchor", "end")
+      .attr("text-anchor", "middle")
       .text(d => d.name)
-      .attr("fill", textFill)
-      .filter(d => d.x0 > width / 2)
-      .attr("x", d => d.x1 + 6)
-      .attr("text-anchor", "start");
+      .attr("fill", textFill);
 
   }, [theme]);
 
@@ -183,10 +187,24 @@ const RobustaSankeyChart = ({ timeframe = "this_month", height = "500px" }) => {
     };
   }, [sankeyData, drawChart]);
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}><CircularProgress /></Box>;
-  if (error) return <Box sx={{ textAlign: "center", p: 2, color: "red" }}><Typography variant="body1">{error}</Typography></Box>;
+  if (loading)
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+        <CircularProgress />
+      </Box>
+    );
+  if (error)
+    return (
+      <Box sx={{ textAlign: "center", p: 2, color: "red" }}>
+        <Typography variant="body1">{error}</Typography>
+      </Box>
+    );
 
-  return <Box sx={{ p: 2, height, width: '100%' }}><div ref={chartRef} style={{ height: '100%', width: '100%' }} /></Box>;
+  return (
+    <Box sx={{ p: 2, height, width: '100%' }}>
+      <div ref={chartRef} style={{ height: '100%', width: '100%' }} />
+    </Box>
+  );
 };
 
 export default RobustaSankeyChart;
