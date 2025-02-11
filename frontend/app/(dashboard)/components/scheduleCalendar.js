@@ -74,13 +74,18 @@ const ScheduleCalendar = () => {
 
   // Handle date range selection to open the form
   const handleDateSelect = (selectInfo) => {
+    const adjustedEndDate = new Date(selectInfo.end);
+    adjustedEndDate.setDate(adjustedEndDate.getDate() - 1); // Adjust for exclusive end date
+  
     setNewTarget({
       ...newTarget,
       startDate: selectInfo.startStr,
-      endDate: selectInfo.endStr
+      endDate: adjustedEndDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
     });
+  
     setOpenDialog(true);
   };
+  
 
   // Handle form input changes
   const handleChange = (e) => {
