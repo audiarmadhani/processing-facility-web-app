@@ -3,32 +3,36 @@
 import React, { useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 
 const ScheduleCalendar = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const theme = useTheme();
 
-  // Fetch targets from the API
+  // Determine colors based on the current theme mode
+  const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
+  const calendarTextColor = theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
+
+  // Fetch production target events from the API
   useEffect(() => {
     const fetchTargets = async () => {
       setLoading(true);
       setError(null);
       try {
         const response = await fetch('https://processing-facility-backend.onrender.com/api/targets');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
 
-        // Map each target into a FullCalendar event.
-        // You can adjust the title and additional props as needed.
+        // Map each target into a FullCalendar event
         const mappedEvents = data.map(target => ({
           id: target.id,
+          // Example: "Wet Hull (200 kg)" or "Natural (1000 kg)"
           title: `${target.processingType} (${target.targetValue} kg)`,
           start: target.startDate,
-          end: target.endDate, // Note: FullCalendar treats "end" as exclusive.
+          // FullCalendar treats "end" as exclusive; adjust if necessary.
+          end: target.endDate,
           extendedProps: {
             type: target.type,
             quality: target.quality,
@@ -69,17 +73,18 @@ const ScheduleCalendar = () => {
   }
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2, width: '100%', height: '100%' }}>
       <FullCalendar
         plugins={[dayGridPlugin]}
         initialView="dayGridMonth"
+        events={events}
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
           right: 'dayGridMonth,dayGridWeek,dayGridDay'
         }}
-        events={events}
-        height="auto"
+        // The style prop sets background and text color based on MUI theme
+        style={{ backgroundColor: calendarBgColor, color: calendarTextColor, width: '100%' }}
       />
     </Box>
   );
