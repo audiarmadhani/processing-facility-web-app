@@ -80,6 +80,7 @@ function Dashboard() {
 
   const [data, setData] = useState(null);
   const [timeframe, setTimeframe] = useState('this_month');
+  const [dashboardData, setDashboardData] = useState(null);
 
   // User-friendly labels for timeframes
   const timeframes = [
@@ -121,6 +122,7 @@ function Dashboard() {
 
         const jsonData = await response.json();
         setMetrics(jsonData);
+        setDashboardData(response.data);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(err.message);
@@ -263,7 +265,10 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <ArabicaAvgCostMoM timeframe={timeframe} />
+                    <ArabicaAvgCostMoM 
+                      arabicaAvgCostData={dashboardData?.arabicaAvgCostMoM} 
+                      loading={loading} 
+                    />
                   </CardContent>
                 </Card>
               </Grid>
@@ -852,13 +857,27 @@ function Dashboard() {
               </Grid>
 
               {/* Robusta Sankey Chart */}
-              <Grid item xs={12} md={12} sx={{ height: '800px' }}>
+              <Grid 
+                item 
+                xs={12} 
+                md={12} 
+                sx={{ 
+                  height: { 
+                    xs: '300px', // Small screens
+                    sm: '400px', // Tablets
+                    md: '500px', // Laptops
+                    lg: '600px', // Desktops
+                    xl: '700px'  // Large monitors
+                  } 
+                }}
+              >
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
                       Robusta Sankey Chart
                     </Typography>
-                    <RobustaSankeyChart />
+                    {/* Pass height as a prop */}
+                    <RobustaSankeyChart height="100%" />
                   </CardContent>
                 </Card>
               </Grid>
