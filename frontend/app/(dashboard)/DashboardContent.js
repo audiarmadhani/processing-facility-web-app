@@ -490,7 +490,7 @@ function Dashboard() {
               </Grid>
 
               {/* Arabica Sankey Chart */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '800px', sm:'800px', md: '800px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: '800px' }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>

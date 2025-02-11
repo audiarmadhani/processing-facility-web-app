@@ -10,6 +10,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     const [sankeyData, setSankeyData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [chartDimensions, setChartDimensions] = useState({ width: 0, height: 0 });
     const theme = useTheme();
 
     useEffect(() => {
@@ -34,15 +35,29 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     }, [timeframe]);
 
     useEffect(() => {
-        if (!sankeyData || !chartRef.current) return;
+        const handleResize = () => {
+            if (chartRef.current) {
+                setChartDimensions({
+                    width: chartRef.current.offsetWidth,
+                    height: chartRef.current.offsetHeight,
+                });
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (!sankeyData || !chartRef.current || !chartDimensions.width || !chartDimensions.height) return;
 
         d3.select(chartRef.current).selectAll("*").remove();
 
         const margin = { top: 30, right: 60, bottom: 30, left: 100 };
-        const width = chartRef.current.offsetWidth - margin.left - margin.right;
-        const height = chartRef.current.offsetHeight - margin.top - margin.bottom;
-
-        if (width <= 0 || height <= 0) return;
+        const width = chartDimensions.width - margin.left - margin.right;
+        const height = chartDimensions.height - margin.top - margin.bottom;
 
         const svg = d3.select(chartRef.current)
             .append('svg')
@@ -80,7 +95,6 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .data(layoutLinks)
             .join("path")
             .attr("d", sankeyLinkHorizontal())
-            .attr("stroke-width", d => Math.max(1, d.width || 1))
             .attr("stroke", linkStroke)
             .attr("fill", "none")
             .on("mouseover", (event, d) => {
@@ -97,7 +111,17 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
                 d3.select(event.currentTarget).attr("stroke", linkStroke);
                 tooltip.transition().duration(500).style("opacity", 0);
             })
-            .attr("class", "link");
+            .attr("class", "link")
+            .style("stroke-width", d => {
+                const baseWidth = Math.max(1, d.width || 1);
+                let scaleFactor = 1; // Default
+                if (d.width < 5) { // Example threshold
+                    scaleFactor = 3;
+                } else if (d.width < 10) { // Example threshold
+                    scaleFactor = 2;
+                }
+                return baseWidth * scaleFactor;
+            });
 
         svg.append("g")
             .selectAll("rect")
@@ -137,7 +161,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .style("border-radius", "4px")
             .style("font-size", "12px");
 
-    }, [sankeyData, theme.palette.mode]);
+    }, [sankeyData, theme.palette.mode, chartDimensions.width, chartDimensions.height]);
 
     if (loading) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}><CircularProgress /></Box>;
