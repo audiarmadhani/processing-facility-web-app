@@ -75,7 +75,7 @@ const ScheduleCalendar = () => {
   // Handle date range selection to open the form
   const handleDateSelect = (selectInfo) => {
     const adjustedEndDate = new Date(selectInfo.end);
-    adjustedEndDate.setDate(adjustedEndDate.getDate() - 1); // Adjust for exclusive end date
+    adjustedEndDate.setDate(adjustedEndDate.getDate()); // Adjust for exclusive end date
   
     setNewTarget({
       ...newTarget,
