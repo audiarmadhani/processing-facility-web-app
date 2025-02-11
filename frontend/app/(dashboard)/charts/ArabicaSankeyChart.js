@@ -5,7 +5,7 @@ import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import * as d3 from 'd3';
 
-const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
+const ArabicaSankeyChart = ({ timeframe = "this_month" }) => {
     const chartRef = useRef(null);
     const [sankeyData, setSankeyData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -44,9 +44,9 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             return;
         }
 
-        d3.select(chartRef.current).selectAll("*").remove(); // Clear previous chart
+        d3.select(chartRef.current).selectAll("*").remove();
 
-        const width = 1500;
+        const width = 1200;
         const height = 600;
         const margin = { top: 30, right: 60, bottom: 30, left: 100 };
 
@@ -89,7 +89,22 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .attr("d", sankeyLinkHorizontal())
             .attr("stroke-width", d => Math.max(1, d.width || 1))
             .attr("stroke", linkStroke)
-            .attr("fill", "none");
+            .attr("fill", "none")
+            .on("mouseover", function (event, d) {  // Mouseover event for links
+                d3.selectAll(".link").filter(l => l !== d).attr("opacity", 0.3); //Dim other links
+                d3.select(this).attr("stroke", "red").attr("opacity", 1); // Highlight hovered link
+                tooltip.transition().duration(200).style("opacity", .9);
+                tooltip.html(`Weight: ${d.value.toFixed(2)}`) // Show weight in tooltip
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY - 28) + "px"); // Adjust position as needed
+
+            })
+            .on("mouseout", function (d) { // Mouseout event
+                d3.selectAll(".link").attr("opacity", 1); // Restore link opacity
+                d3.select(this).attr("stroke", linkStroke); // Restore stroke
+                tooltip.transition().duration(500).style("opacity", 0); // Hide tooltip
+            })
+            .attr("class", "link"); // Add class to links
 
         svg.append("g")
             .selectAll("rect")
@@ -117,6 +132,17 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .attr("x", d => d.x1 + 6)
             .attr("text-anchor", "start");
 
+        const tooltip = d3.select("body").append("div") // Create tooltip div
+            .attr("class", "tooltip")
+            .style("opacity", 0)
+            .style("position", "absolute")
+            .style("text-align", "center")
+            .style("background", "rgba(0,0,0,0.8)")
+            .style("color", "#fff")
+            .style("padding", "4px")
+            .style("border-radius", "4px")
+            .style("font-size", "12px");
+
     }, [sankeyData, theme.palette.mode]);
 
     if (loading) {
@@ -137,7 +163,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
     return (
         <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>{title}</Typography>
+            {/* <Typography variant="h6" gutterBottom>{title}</Typography> */}
             <div ref={chartRef} />
         </Box>
     );
