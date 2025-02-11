@@ -1,23 +1,21 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import { Box, CircularProgress, Typography, useTheme, GlobalStyles } from '@mui/material';
+import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 
 const ScheduleCalendar = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const calendarRef = useRef(null);
-  const containerRef = useRef(null);
   const theme = useTheme();
 
-  // Determine colors based on theme
+  // Determine colors based on the current theme mode
   const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
   const calendarTextColor = theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
 
-  // Fetch target events from the API
+  // Fetch production target events from the API
   useEffect(() => {
     const fetchTargets = async () => {
       setLoading(true);
@@ -30,9 +28,11 @@ const ScheduleCalendar = () => {
         // Map each target into a FullCalendar event
         const mappedEvents = data.map(target => ({
           id: target.id,
+          // Example: "Wet Hull (200 kg)" or "Natural (1000 kg)"
           title: `${target.processingType} (${target.targetValue} kg)`,
           start: target.startDate,
-          end: target.endDate, // Note: FullCalendar treats "end" as exclusive.
+          // FullCalendar treats "end" as exclusive; adjust if necessary.
+          end: target.endDate,
           extendedProps: {
             type: target.type,
             quality: target.quality,
@@ -56,21 +56,6 @@ const ScheduleCalendar = () => {
     fetchTargets();
   }, []);
 
-  // Use ResizeObserver to update FullCalendar size when container resizes
-  useEffect(() => {
-    if (!containerRef.current || !calendarRef.current) return;
-    const resizeObserver = new ResizeObserver(() => {
-      if (calendarRef.current) {
-        const calendarApi = calendarRef.current.getApi();
-        calendarApi.updateSize();
-      }
-    });
-    resizeObserver.observe(containerRef.current);
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
@@ -88,20 +73,8 @@ const ScheduleCalendar = () => {
   }
 
   return (
-    <Box ref={containerRef} sx={{ p: 2, width: '100%', height: '100%' }}>
-      {/* GlobalStyles to override the day cell height */}
-      <GlobalStyles styles={{
-        '.fc-daygrid-day-frame': {
-          height: '80px !important',
-          overflow: 'hidden',
-        },
-        // Optional: Force day cell top area to have a consistent height
-        '.fc-daygrid-day-top': {
-          minHeight: '30px !important'
-        }
-      }} />
+    <Box sx={{ p: 2, width: '100%', height: '100%' }}>
       <FullCalendar
-        ref={calendarRef}
         plugins={[dayGridPlugin]}
         initialView="dayGridMonth"
         events={events}
@@ -110,12 +83,8 @@ const ScheduleCalendar = () => {
           center: 'title',
           right: 'dayGridMonth,dayGridWeek,dayGridDay'
         }}
-        height="auto"
-        style={{ 
-          backgroundColor: calendarBgColor, 
-          color: calendarTextColor, 
-          width: '100%' 
-        }}
+        // The style prop sets background and text color based on MUI theme
+        style={{ backgroundColor: calendarBgColor, color: calendarTextColor, width: '100%' }}
       />
     </Box>
   );
