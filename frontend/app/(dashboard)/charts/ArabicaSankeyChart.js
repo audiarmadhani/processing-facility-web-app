@@ -48,7 +48,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
         const width = 1500;
         const height = 600;
-        const margin = { top: 20, right: 0, bottom: 30, left: 0 };
+        const margin = { top: 30, right: 60, bottom: 30, left: 100 };
 
         const svg = d3.select(chartRef.current)
             .append('svg')
@@ -78,7 +78,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             links: links
         });
 
-        const linkStroke = theme.palette.mode === 'dark' ? "#ffffff80" : "#007bff80";
+        const linkStroke = theme.palette.mode === 'dark' ? "#007bff80" : "#007bff80";
         const nodeFill = theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main;
         const textFill = theme.palette.mode === 'dark' ? "#fff" : "#000";
 
