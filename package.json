@@ -16,6 +16,8 @@
     "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@fullcalendar/daygrid": "^6.1.15",
+    "@fullcalendar/react": "^6.1.15",
     "@mui/material": "^6.4.2",
     "axios": "^1.7.9",
     "chart.js": "^4.4.7",
