@@ -50,7 +50,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     const containerHeight = chartRef.current.clientHeight;
 
     // Define margins and calculate inner dimensions
-    const margin = { top: 50, right: 200, bottom: 0, left: 150 };
+    const margin = { top: 20, right: 200, bottom: 20, left: 130 };
     const width = containerWidth - margin.left - margin.right;
     const height = containerHeight - margin.top - margin.bottom;
 
@@ -91,6 +91,22 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     const nodeFill = theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main;
     const textFill = theme.palette.mode === 'dark' ? "#fff" : "#000";
 
+    // Create tooltip (ensure only one exists)
+    let tooltip = d3.select("body").select(".tooltip");
+    if (tooltip.empty()) {
+      tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0)
+        .style("position", "absolute")
+        .style("text-align", "center")
+        .style("background", "rgba(0,0,0,0.8)")
+        .style("color", "#fff")
+        .style("padding", "4px")
+        .style("border-radius", "4px")
+        .style("font-size", "12px");
+    }
+
     // Draw links
     svg.append("g")
       .selectAll("path")
@@ -108,7 +124,11 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
           .attr("stroke", "lightblue")
           .attr("opacity", 1);
         tooltip.transition().duration(200).style("opacity", 0.9);
-        tooltip.html(`Weight: ${d.value.toFixed(2)}`)
+        tooltip.html(`
+          From: ${d.source.name}<br>
+          To: ${d.target.name}<br>
+          Weight: ${d.value.toFixed(2)}
+        `)
           .style("left", (event.pageX) + "px")
           .style("top", (event.pageY - 28) + "px");
       })
@@ -147,21 +167,6 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
       .attr("x", d => d.x1 + 6)
       .attr("text-anchor", "start");
 
-    // Create tooltip (ensure only one exists)
-    let tooltip = d3.select("body").select(".tooltip");
-    if (tooltip.empty()) {
-      tooltip = d3.select("body")
-        .append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0)
-        .style("position", "absolute")
-        .style("text-align", "center")
-        .style("background", "rgba(0,0,0,0.8)")
-        .style("color", "#fff")
-        .style("padding", "4px")
-        .style("border-radius", "4px")
-        .style("font-size", "12px");
-    }
   }, [theme]);
 
   // Use ResizeObserver to watch for changes in the chart container

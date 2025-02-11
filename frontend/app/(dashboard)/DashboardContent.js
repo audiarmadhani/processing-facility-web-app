@@ -42,7 +42,7 @@ import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
 import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
-// import RobustaSankeyChart from './charts/RobustaSankeyChart';
+import RobustaSankeyChart from './charts/RobustaSankeyChart';
 
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
@@ -838,16 +838,16 @@ function Dashboard() {
               </Grid>
 
               {/* Robusta Sankey Chart */}
-              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
+              <Grid item xs={12} md={12} sx={{ height: '800px' }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
                       Robusta Sankey Chart
                     </Typography>
                     <RobustaSankeyChart />
                   </CardContent>
                 </Card>
-              </Grid> */}
+              </Grid>
 
               {/* Robusta TradingView Chart */}
               {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
