@@ -38,11 +38,11 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     fetchData();
   }, [timeframe]);
 
-  // Define the drawChart function using useCallback (so we can call it on resize)
+  // Define the drawChart function using useCallback so that we can call it on container resize.
   const drawChart = useCallback((data) => {
     if (!chartRef.current) return;
 
-    // Remove any existing chart content
+    // Clear any existing chart content
     d3.select(chartRef.current).selectAll("*").remove();
 
     // Get container dimensions
@@ -147,10 +147,10 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
       .attr("x", d => d.x1 + 6)
       .attr("text-anchor", "start");
 
-    // Create tooltip
-    const tooltip = d3.select("body").selectAll(".tooltip").data([null]);
+    // Create tooltip (ensure only one exists)
+    let tooltip = d3.select("body").select(".tooltip");
     if (tooltip.empty()) {
-      d3.select("body")
+      tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltip")
         .style("opacity", 0)
@@ -164,18 +164,22 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     }
   }, [theme]);
 
-  // Redraw chart on window resize
+  // Use ResizeObserver to watch for changes in the chart container
   useEffect(() => {
-    const handleResize = () => {
+    if (!chartRef.current) return;
+    const resizeObserver = new ResizeObserver(entries => {
+      // When the container's size changes, redraw the chart
       if (sankeyData) {
         drawChart(sankeyData);
       }
+    });
+    resizeObserver.observe(chartRef.current);
+    return () => {
+      resizeObserver.disconnect();
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [sankeyData, drawChart]);
 
-  // Draw chart initially (or when data/theme changes)
+  // Also redraw the chart when theme changes (if needed)
   useEffect(() => {
     if (sankeyData && chartRef.current) {
       drawChart(sankeyData);
@@ -184,7 +188,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 700 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <CircularProgress />
       </Box>
     );
@@ -192,7 +196,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
   if (error) {
     return (
-      <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+      <Box sx={{ textAlign: "center", p: 2, color: "red" }}>
         <Typography variant="body1">{error}</Typography>
       </Box>
     );
