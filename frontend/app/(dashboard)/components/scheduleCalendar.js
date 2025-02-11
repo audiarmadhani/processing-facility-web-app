@@ -3,22 +3,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-  useTheme,
-  GlobalStyles
-} from '@mui/material';
+import interactionPlugin from '@fullcalendar/interaction'; // Enables date selection
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Select, TextField, Typography, useTheme, GlobalStyles } from '@mui/material';
 
 const ScheduleCalendar = () => {
   const [events, setEvents] = useState([]);
@@ -72,20 +58,15 @@ const ScheduleCalendar = () => {
     fetchTargets();
   }, []);
 
-  // Handle date range selection to open the form
+  // Handle date selection to open the form
   const handleDateSelect = (selectInfo) => {
-    const adjustedEndDate = new Date(selectInfo.end);
-    adjustedEndDate.setDate(adjustedEndDate.getDate()); // Adjust for exclusive end date
-  
     setNewTarget({
       ...newTarget,
       startDate: selectInfo.startStr,
-      endDate: selectInfo.endStr,
+      endDate: selectInfo.endStr
     });
-  
     setOpenDialog(true);
   };
-  
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -148,7 +129,6 @@ const ScheduleCalendar = () => {
           initialView="dayGridMonth"
           events={events}
           selectable={true}
-          selectMirror={true}  // Highlights selected range
           select={handleDateSelect}
           headerToolbar={{
             left: 'prev,next today',
@@ -163,22 +143,8 @@ const ScheduleCalendar = () => {
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Create New Target</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 400 }}>
-          <TextField
-            label="Start Date"
-            type="date"
-            name="startDate"
-            value={newTarget.startDate}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            label="End Date"
-            type="date"
-            name="endDate"
-            value={newTarget.endDate}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-          />
+          <Typography>Start Date: {newTarget.startDate}</Typography>
+          <Typography>End Date: {newTarget.endDate}</Typography>
 
           <Select name="type" value={newTarget.type} onChange={handleChange} displayEmpty>
             <MenuItem value="" disabled>Select Type</MenuItem>
