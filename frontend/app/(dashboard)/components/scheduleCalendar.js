@@ -80,7 +80,7 @@ const ScheduleCalendar = () => {
     setNewTarget({
       ...newTarget,
       startDate: selectInfo.startStr,
-      endDate: adjustedEndDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
+      endDate: selectInfo.endStr,
     });
   
     setOpenDialog(true);
