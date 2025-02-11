@@ -1,173 +1,208 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useContext } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import * as d3 from 'd3';
 
 const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
-    const chartRef = useRef(null);
-    const [sankeyData, setSankeyData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const theme = useTheme();
+  const chartRef = useRef(null);
+  const [sankeyData, setSankeyData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const theme = useTheme();
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await fetch(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-
-                if (!data?.arabicaSankey?.length) {
-                    throw new Error("No valid Sankey data available");
-                }
-
-                setSankeyData(data.arabicaSankey);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                setError(error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [timeframe]);
-
-    useEffect(() => {
-        if (!sankeyData || !chartRef.current) {
-            return;
+  // Fetch data from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+        const data = await response.json();
+        if (!data?.arabicaSankey?.length) {
+          throw new Error("No valid Sankey data available");
+        }
+        setSankeyData(data.arabicaSankey);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        d3.select(chartRef.current).selectAll("*").remove();
+    fetchData();
+  }, [timeframe]);
 
-        const width = 1200;
-        const height = 600;
-        const margin = { top: 50, right: 200, bottom: 0, left: 200 };
+  // Define the drawChart function using useCallback (so we can call it on resize)
+  const drawChart = useCallback((data) => {
+    if (!chartRef.current) return;
 
-        const svg = d3.select(chartRef.current)
-            .append('svg')
-            .attr('width', width + margin.left + margin.right)
-            .attr('height', height + margin.top + margin.bottom)
-            .append('g')
-            .attr('transform', `translate(${margin.left},${margin.top})`);
+    // Remove any existing chart content
+    d3.select(chartRef.current).selectAll("*").remove();
 
-        const sankeyGenerator = sankey()
-            .nodeWidth(15)
-            .nodePadding(10)
-            .size([width, height]);
+    // Get container dimensions
+    const containerWidth = chartRef.current.clientWidth;
+    const containerHeight = chartRef.current.clientHeight;
 
-        const nodes = Array.from(new Set([
-            ...sankeyData.map(d => d.from_node),
-            ...sankeyData.map(d => d.to_node)
-        ])).map(name => ({ name }));
+    // Define margins and calculate inner dimensions
+    const margin = { top: 50, right: 200, bottom: 0, left: 150 };
+    const width = containerWidth - margin.left - margin.right;
+    const height = containerHeight - margin.top - margin.bottom;
 
-        const links = sankeyData.map(d => ({
-            source: nodes.findIndex(n => n.name === d.from_node),
-            target: nodes.findIndex(n => n.name === d.to_node),
-            value: d.value
-        }));
+    // Create SVG element with the container's dimensions
+    const svg = d3.select(chartRef.current)
+      .append('svg')
+      .attr('width', containerWidth)
+      .attr('height', containerHeight)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        const { nodes: layoutNodes, links: layoutLinks } = sankeyGenerator({
-            nodes: nodes,
-            links: links
-        });
+    // Initialize the sankey generator with the computed width and height
+    const sankeyGenerator = sankey()
+      .nodeWidth(15)
+      .nodePadding(10)
+      .size([width, height]);
 
-        const linkStroke = theme.palette.mode === 'dark' ? "#007bff80" : "#007bff80";
-        const nodeFill = theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main;
-        const textFill = theme.palette.mode === 'dark' ? "#fff" : "#000";
+    // Prepare nodes and links using the API keys "from_node" and "to_node"
+    const nodes = Array.from(new Set([
+      ...data.map(d => d.from_node),
+      ...data.map(d => d.to_node)
+    ])).map(name => ({ name }));
 
-        svg.append("g")
-            .selectAll("path")
-            .data(layoutLinks)
-            .join("path")
-            .attr("d", sankeyLinkHorizontal())
-            .attr("stroke-width", d => Math.max(1, d.width || 1))
-            .attr("stroke", linkStroke)
-            .attr("fill", "none")
-            .on("mouseover", (event, d) => {
-                d3.selectAll(".link").filter(l => l !== d).attr("opacity", 0.3);
-                d3.select(event.currentTarget)
-                    .attr("stroke", "lightblue") // Changed highlight color to light blue
-                    .attr("opacity", 1);
-                tooltip.transition().duration(200).style("opacity", 0.9);
-                tooltip.html(`Weight: ${d.value.toFixed(2)}`)
-                    .style("left", (event.pageX) + "px")
-                    .style("top", (event.pageY - 28) + "px");
-            })
-            .on("mouseout", function (d) { // Mouseout event
-                d3.selectAll(".link").attr("opacity", 1); // Restore link opacity
-                d3.select(this).attr("stroke", linkStroke); // Restore stroke
-                tooltip.transition().duration(500).style("opacity", 0); // Hide tooltip
-            })
-            .attr("class", "link"); // Add class to links
+    const links = data.map(d => ({
+      source: nodes.findIndex(n => n.name === d.from_node),
+      target: nodes.findIndex(n => n.name === d.to_node),
+      value: d.value
+    }));
 
-        svg.append("g")
-            .selectAll("rect")
-            .data(layoutNodes)
-            .join("rect")
-            .attr("x", d => d.x0)
-            .attr("y", d => d.y0)
-            .attr("height", d => d.y1 - d.y0)
-            .attr("width", d => d.x1 - d.x0)
-            .attr("fill", nodeFill)
-            .append("title")
-            .text(d => d.name);
+    // Compute the sankey layout
+    const { nodes: layoutNodes, links: layoutLinks } = sankeyGenerator({
+      nodes: nodes.map(d => ({ ...d })),
+      links: links.map(d => ({ ...d }))
+    });
 
-        svg.append("g")
-            .selectAll("text")
-            .data(layoutNodes)
-            .join("text")
-            .attr("x", d => d.x0 - 6)
-            .attr("y", d => (d.y1 + d.y0) / 2)
-            .attr("dy", "0.35em")
-            .attr("text-anchor", "end")
-            .text(d => d.name)
-            .attr("fill", textFill)
-            .filter(d => d.x0 > width / 2)
-            .attr("x", d => d.x1 + 6)
-            .attr("text-anchor", "start");
+    // Define styles based on the theme
+    const linkStroke = theme.palette.mode === 'dark' ? "#007bff80" : "#007bff80";
+    const nodeFill = theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main;
+    const textFill = theme.palette.mode === 'dark' ? "#fff" : "#000";
 
-        const tooltip = d3.select("body").append("div") // Create tooltip div
-            .attr("class", "tooltip")
-            .style("opacity", 0)
-            .style("position", "absolute")
-            .style("text-align", "center")
-            .style("background", "rgba(0,0,0,0.8)")
-            .style("color", "#fff")
-            .style("padding", "4px")
-            .style("border-radius", "4px")
-            .style("font-size", "12px");
+    // Draw links
+    svg.append("g")
+      .selectAll("path")
+      .data(layoutLinks)
+      .join("path")
+      .attr("d", sankeyLinkHorizontal())
+      .attr("stroke-width", d => Math.max(1, d.width || 1))
+      .attr("stroke", linkStroke)
+      .attr("fill", "none")
+      .attr("opacity", 0.5)
+      .attr("class", "link")
+      .on("mouseover", (event, d) => {
+        d3.selectAll(".link").filter(l => l !== d).attr("opacity", 0.3);
+        d3.select(event.currentTarget)
+          .attr("stroke", "lightblue")
+          .attr("opacity", 1);
+        tooltip.transition().duration(200).style("opacity", 0.9);
+        tooltip.html(`Weight: ${d.value.toFixed(2)}`)
+          .style("left", (event.pageX) + "px")
+          .style("top", (event.pageY - 28) + "px");
+      })
+      .on("mouseout", function (event, d) {
+        d3.selectAll(".link").attr("opacity", 1);
+        d3.select(this).attr("stroke", linkStroke);
+        tooltip.transition().duration(500).style("opacity", 0);
+      });
 
-    }, [sankeyData, theme.palette.mode]);
+    // Draw nodes
+    const nodeGroup = svg.append("g")
+      .attr("class", "nodes")
+      .selectAll("g")
+      .data(layoutNodes)
+      .join("g");
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 700 }}>
-                <CircularProgress />
-            </Box>
-        );
+    nodeGroup.append("rect")
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0)
+      .attr("width", d => d.x1 - d.x0)
+      .attr("height", d => d.y1 - d.y0)
+      .attr("fill", nodeFill)
+      .attr("opacity", 0.8)
+      .append("title")
+      .text(d => `${d.name}\n${d.value}`);
+
+    // Add node labels
+    nodeGroup.append("text")
+      .attr("x", d => d.x0 - 6)
+      .attr("y", d => (d.y0 + d.y1) / 2)
+      .attr("dy", "0.35em")
+      .attr("text-anchor", "end")
+      .text(d => d.name)
+      .attr("fill", textFill)
+      .filter(d => d.x0 > width / 2)
+      .attr("x", d => d.x1 + 6)
+      .attr("text-anchor", "start");
+
+    // Create tooltip
+    const tooltip = d3.select("body").selectAll(".tooltip").data([null]);
+    if (tooltip.empty()) {
+      d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0)
+        .style("position", "absolute")
+        .style("text-align", "center")
+        .style("background", "rgba(0,0,0,0.8)")
+        .style("color", "#fff")
+        .style("padding", "4px")
+        .style("border-radius", "4px")
+        .style("font-size", "12px");
     }
+  }, [theme]);
 
-    if (error) {
-        return (
-            <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
-                <Typography variant="body1">{error}</Typography>
-            </Box>
-        );
+  // Redraw chart on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (sankeyData) {
+        drawChart(sankeyData);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sankeyData, drawChart]);
+
+  // Draw chart initially (or when data/theme changes)
+  useEffect(() => {
+    if (sankeyData && chartRef.current) {
+      drawChart(sankeyData);
     }
+  }, [sankeyData, theme.palette.mode, drawChart]);
 
+  if (loading) {
     return (
-        <Box sx={{ p: 2 }}>
-            {/* <Typography variant="h6" gutterBottom>{title}</Typography> */}
-            <div ref={chartRef} />
-        </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 700 }}>
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+        <Typography variant="body1">{error}</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ p: 2, height: '100%', width: '100%' }}>
+      <div ref={chartRef} style={{ height: '100%', width: '100%' }} />
+    </Box>
+  );
 };
 
 export default ArabicaSankeyChart;
