@@ -46,9 +46,9 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
         d3.select(chartRef.current).selectAll("*").remove();
 
-        const width = 1200;
-        const height = 600;
-        const margin = { top: 30, right: 60, bottom: 30, left: 100 };
+        const width = 1000;
+        const height = 500;
+        const margin = { top: 0, right: 200, bottom: 0, left: 200 };
 
         const svg = d3.select(chartRef.current)
             .append('svg')
@@ -148,7 +148,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 700 }}>
                 <CircularProgress />
             </Box>
         );
@@ -164,7 +164,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
     return (
         <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>{title}</Typography>
+            {/* <Typography variant="h6" gutterBottom>{title}</Typography> */}
             <div ref={chartRef} />
         </Box>
     );
