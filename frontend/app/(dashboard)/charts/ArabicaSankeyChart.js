@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useContext } from 'react';
 import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import * as d3 from 'd3';
@@ -12,23 +12,25 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     const [error, setError] = useState(null);
     const theme = useTheme();
 
-    const width = 1200; // Hardcoded width
-    const height = 600;  // Hardcoded height
-    const margin = { top: 30, right: 60, bottom: 30, left: 100 };
-
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
                 const response = await fetch(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
-                if (!data?.arabicaSankey?.length) throw new Error("No valid Sankey data available");
+
+                if (!data?.arabicaSankey?.length) {
+                    throw new Error("No valid Sankey data available");
+                }
+
                 setSankeyData(data.arabicaSankey);
-            } catch (err) {
-                console.error("Error fetching data:", err);
-                setError(err.message);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setError(error.message);
             } finally {
                 setLoading(false);
             }
@@ -38,22 +40,27 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     }, [timeframe]);
 
     useEffect(() => {
-        if (!sankeyData || !chartRef.current) return;
+        if (!sankeyData || !chartRef.current) {
+            return;
+        }
 
         d3.select(chartRef.current).selectAll("*").remove();
 
+        const width = 1200;
+        const height = 600;
+        const margin = { top: 30, right: 60, bottom: 30, left: 100 };
 
         const svg = d3.select(chartRef.current)
             .append('svg')
-            .attr('width', width + margin.left + margin.right) // Use hardcoded width
-            .attr('height', height + margin.top + margin.bottom) // Use hardcoded height
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
             .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
         const sankeyGenerator = sankey()
             .nodeWidth(15)
             .nodePadding(10)
-            .size([width, height]); // Use hardcoded width and height
+            .size([width, height]);
 
         const nodes = Array.from(new Set([
             ...sankeyData.map(d => d.from_node),
@@ -66,7 +73,10 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             value: d.value
         }));
 
-        const { nodes: layoutNodes, links: layoutLinks } = sankeyGenerator({ nodes, links });
+        const { nodes: layoutNodes, links: layoutLinks } = sankeyGenerator({
+            nodes: nodes,
+            links: links
+        });
 
         const linkStroke = theme.palette.mode === 'dark' ? "#007bff80" : "#007bff80";
         const nodeFill = theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main;
@@ -77,33 +87,25 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .data(layoutLinks)
             .join("path")
             .attr("d", sankeyLinkHorizontal())
+            .attr("stroke-width", d => Math.max(1, d.width || 1))
             .attr("stroke", linkStroke)
             .attr("fill", "none")
             .on("mouseover", (event, d) => {
                 d3.selectAll(".link").filter(l => l !== d).attr("opacity", 0.3);
-                d3.select(event.currentTarget).attr("stroke", "lightblue").attr("opacity", 1);
+                d3.select(event.currentTarget)
+                    .attr("stroke", "lightblue") // Changed highlight color to light blue
+                    .attr("opacity", 1);
                 tooltip.transition().duration(200).style("opacity", 0.9);
-                tooltip.html(`Weight: ${d.value.toFixed(2)}`);
-                const x = event.pageX;
-                const y = event.pageY;
-                tooltip.style("left", (x + 10) + "px").style("top", (y - 20) + "px");
+                tooltip.html(`Weight: ${d.value.toFixed(2)}`)
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY - 28) + "px");
             })
-            .on("mouseout", (event) => {
-                d3.selectAll(".link").attr("opacity", 1);
-                d3.select(event.currentTarget).attr("stroke", linkStroke);
-                tooltip.transition().duration(500).style("opacity", 0);
+            .on("mouseout", function (d) { // Mouseout event
+                d3.selectAll(".link").attr("opacity", 1); // Restore link opacity
+                d3.select(this).attr("stroke", linkStroke); // Restore stroke
+                tooltip.transition().duration(500).style("opacity", 0); // Hide tooltip
             })
-            .attr("class", "link")
-            .style("stroke-width", d => {
-                const baseWidth = Math.max(1, d.width || 1);
-                let scaleFactor = 1; // Default
-                if (d.width < 5) { // Example threshold
-                    scaleFactor = 3;
-                } else if (d.width < 10) { // Example threshold
-                    scaleFactor = 2;
-                }
-                return baseWidth * scaleFactor;
-            });
+            .attr("class", "link"); // Add class to links
 
         svg.append("g")
             .selectAll("rect")
@@ -122,7 +124,7 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .data(layoutNodes)
             .join("text")
             .attr("x", d => d.x0 - 6)
-            .attr("y", (d => d.y1 + d.y0) / 2)
+            .attr("y", d => (d.y1 + d.y0) / 2)
             .attr("dy", "0.35em")
             .attr("text-anchor", "end")
             .text(d => d.name)
@@ -131,11 +133,10 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
             .attr("x", d => d.x1 + 6)
             .attr("text-anchor", "start");
 
-        const tooltip = d3.select("body").append("div")
+        const tooltip = d3.select("body").append("div") // Create tooltip div
             .attr("class", "tooltip")
             .style("opacity", 0)
             .style("position", "absolute")
-            .style("pointer-events", "none")
             .style("text-align", "center")
             .style("background", "rgba(0,0,0,0.8)")
             .style("color", "#fff")
@@ -146,17 +147,25 @@ const ArabicaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     }, [sankeyData, theme.palette.mode]);
 
     if (loading) {
-        return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 700 }}><CircularProgress /></Box>;
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+                <CircularProgress />
+            </Box>
+        );
     }
 
     if (error) {
-        return <Box sx={{ textAlign: "center", padding: 2, color: "red" }}><Typography variant="body1">{error}</Typography></Box>;
+        return (
+            <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+                <Typography variant="body1">{error}</Typography>
+            </Box>
+        );
     }
 
     return (
-        <Box sx={{ p: 2, height: '100%' }}>
-            {/* <Typography variant="h6" gutterBottom>{title}</Typography> */}
-            <div ref={chartRef} style={{ width: '100%', height: '100%' }} />
+        <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>{title}</Typography>
+            <div ref={chartRef} />
         </Box>
     );
 };
