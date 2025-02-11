@@ -5,7 +5,7 @@ import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import * as d3 from 'd3';
 
-const RobustaSankeyChart = ({ timeframe = "this_month", title = "Weight Progression" }) => {
+const RobustaSankeyChart = ({ timeframe = "this_month", height = "500px" }) => {
   const chartRef = useRef(null);
   const [sankeyData, setSankeyData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -169,11 +169,10 @@ const RobustaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
 
   }, [theme]);
 
-  // Use ResizeObserver to watch for changes in the chart container
+  // Resize observer for dynamic resizing
   useEffect(() => {
     if (!chartRef.current) return;
-    const resizeObserver = new ResizeObserver(entries => {
-      // When the container's size changes, redraw the chart
+    const resizeObserver = new ResizeObserver(() => {
       if (sankeyData) {
         drawChart(sankeyData);
       }
@@ -184,34 +183,10 @@ const RobustaSankeyChart = ({ timeframe = "this_month", title = "Weight Progress
     };
   }, [sankeyData, drawChart]);
 
-  // Also redraw the chart when theme changes (if needed)
-  useEffect(() => {
-    if (sankeyData && chartRef.current) {
-      drawChart(sankeyData);
-    }
-  }, [sankeyData, theme.palette.mode, drawChart]);
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}><CircularProgress /></Box>;
+  if (error) return <Box sx={{ textAlign: "center", p: 2, color: "red" }}><Typography variant="body1">{error}</Typography></Box>;
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ textAlign: "center", p: 2, color: "red" }}>
-        <Typography variant="body1">{error}</Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ p: 2, height: '100%', width: '100%' }}>
-      <div ref={chartRef} style={{ height: '100%', width: '100%' }} />
-    </Box>
-  );
+  return <Box sx={{ p: 2, height, width: '100%' }}><div ref={chartRef} style={{ height: '100%', width: '100%' }} /></Box>;
 };
 
 export default RobustaSankeyChart;
