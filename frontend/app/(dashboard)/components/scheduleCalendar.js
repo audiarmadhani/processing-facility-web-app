@@ -324,6 +324,86 @@ const ScheduleCalendar = () => {
     setIsEventDetailsDialogOpen(true); // Open the dialog
   };
 
+	// Handle update button click
+  const handleUpdate = async () => {
+    const { id, type, ...rest } = editedEventDetails;
+
+    try {
+      let response;
+      if (type === "target") {
+        response = await fetch(
+          `https://processing-facility-backend.onrender.com/api/targets/${id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(rest),
+          }
+        );
+      } else if (type === "event") {
+        response = await fetch(
+          `https://processing-facility-backend.onrender.com/api/events/${id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(rest),
+          }
+        );
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update.");
+      }
+
+      // Update local state
+      setEvents((prevEvents) =>
+        prevEvents.map((event) =>
+          event.id === id ? { ...event, ...editedEventDetails } : event
+        )
+      );
+
+      setIsEventDetailsDialogOpen(false);
+    } catch (err) {
+      console.error("Error updating:", err);
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  // Handle delete button click
+  const handleDelete = async () => {
+    const { id, type } = selectedEventDetails;
+
+    try {
+      let response;
+      if (type === "target") {
+        response = await fetch(
+          `https://processing-facility-backend.onrender.com/api/targets/${id}`,
+          { method: "DELETE" }
+        );
+      } else if (type === "event") {
+        response = await fetch(
+          `https://processing-facility-backend.onrender.com/api/events/${id}`,
+          { method: "DELETE" }
+        );
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete.");
+      }
+
+      // Remove from local state
+      setEvents((prevEvents) =>
+        prevEvents.filter((event) => event.id !== id)
+      );
+
+      setIsEventDetailsDialogOpen(false);
+    } catch (err) {
+      console.error("Error deleting:", err);
+      alert(`Error: ${err.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
@@ -655,80 +735,124 @@ const ScheduleCalendar = () => {
 				</DialogContent>
 			</Dialog>
 
-			{/* Dialog for showing event details */}
+			{/* Dialog for showing/editing event details */}
       <Dialog
         open={isEventDetailsDialogOpen}
         onClose={() => setIsEventDetailsDialogOpen(false)}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Event Details</DialogTitle>
+        <DialogTitle>Edit Event Details</DialogTitle>
         <DialogContent>
           {selectedEventDetails && (
-            <Box>
-              <Typography variant="h6">{selectedEventDetails.title}</Typography>
-              <Typography>
-                <strong>Start:</strong> {selectedEventDetails.start}
-              </Typography>
-              <Typography>
-                <strong>End:</strong> {selectedEventDetails.end}
-              </Typography>
-              {selectedEventDetails.type && (
-                <Typography>
-                  <strong>Type:</strong> {selectedEventDetails.type}
-                </Typography>
+            <>
+              <TextField
+                label="Title"
+                value={editedEventDetails.title || ""}
+                onChange={(e) =>
+                  setEditedEventDetails({
+                    ...editedEventDetails,
+                    title: e.target.value,
+                  })
+                }
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Start Date"
+                type="date"
+                value={editedEventDetails.start || ""}
+                onChange={(e) =>
+                  setEditedEventDetails({
+                    ...editedEventDetails,
+                    start: e.target.value,
+                  })
+                }
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="End Date"
+                type="date"
+                value={editedEventDetails.end || ""}
+                onChange={(e) =>
+                  setEditedEventDetails({
+                    ...editedEventDetails,
+                    end: e.target.value,
+                  })
+                }
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              {editedEventDetails.type === "target" && (
+                <>
+                  <TextField
+                    label="Target Value"
+                    value={editedEventDetails.targetValue || ""}
+                    onChange={(e) =>
+                      setEditedEventDetails({
+                        ...editedEventDetails,
+                        targetValue: e.target.value,
+                      })
+                    }
+                    fullWidth
+                    margin="normal"
+                  />
+                  <TextField
+                    label="Processing Type"
+                    value={editedEventDetails.processingType || ""}
+                    onChange={(e) =>
+                      setEditedEventDetails({
+                        ...editedEventDetails,
+                        processingType: e.target.value,
+                      })
+                    }
+                    fullWidth
+                    margin="normal"
+                  />
+                </>
               )}
-              {selectedEventDetails.processingType && (
-                <Typography>
-                  <strong>Processing Type:</strong>{" "}
-                  {selectedEventDetails.processingType}
-                </Typography>
+              {editedEventDetails.type === "event" && (
+                <>
+                  <TextField
+                    label="Description"
+                    value={editedEventDetails.eventDescription || ""}
+                    onChange={(e) =>
+                      setEditedEventDetails({
+                        ...editedEventDetails,
+                        eventDescription: e.target.value,
+                      })
+                    }
+                    fullWidth
+                    margin="normal"
+                  />
+                  <TextField
+                    label="Location"
+                    value={editedEventDetails.location || ""}
+                    onChange={(e) =>
+                      setEditedEventDetails({
+                        ...editedEventDetails,
+                        location: e.target.value,
+                      })
+                    }
+                    fullWidth
+                    margin="normal"
+                  />
+                </>
               )}
-              {selectedEventDetails.productLine && (
-                <Typography>
-                  <strong>Product Line:</strong>{" "}
-                  {selectedEventDetails.productLine}
-                </Typography>
-              )}
-              {selectedEventDetails.producer && (
-                <Typography>
-                  <strong>Producer:</strong> {selectedEventDetails.producer}
-                </Typography>
-              )}
-              {selectedEventDetails.quality && (
-                <Typography>
-                  <strong>Quality:</strong> {selectedEventDetails.quality}
-                </Typography>
-              )}
-              {selectedEventDetails.metric && (
-                <Typography>
-                  <strong>Metric:</strong> {selectedEventDetails.metric}
-                </Typography>
-              )}
-              {selectedEventDetails.timeFrame && (
-                <Typography>
-                  <strong>Time Frame:</strong> {selectedEventDetails.timeFrame}
-                </Typography>
-              )}
-              {selectedEventDetails.description && (
-                <Typography>
-                  <strong>Description:</strong>{" "}
-                  {selectedEventDetails.description}
-                </Typography>
-              )}
-              {selectedEventDetails.location && (
-                <Typography>
-                  <strong>Location:</strong> {selectedEventDetails.location}
-                </Typography>
-              )}
-              {selectedEventDetails.category && (
-                <Typography>
-                  <strong>Category:</strong> {selectedEventDetails.category}
-                </Typography>
-              )}
-            </Box>
+            </>
           )}
         </DialogContent>
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: 16 }}>
+          <Button onClick={handleDelete} color="error" variant="contained">
+            Delete
+          </Button>
+          <Button onClick={handleUpdate} color="primary" variant="contained">
+            Update
+          </Button>
+        </div>
       </Dialog>
 
     </Box>
