@@ -25,7 +25,8 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
-  Autocomplete
+  Autocomplete,
+	Checkbox
 } from '@mui/material';
 
 const ScheduleCalendar = () => {
@@ -61,11 +62,25 @@ const ScheduleCalendar = () => {
 	});
 
 	const [newEvent, setNewEvent] = useState({  // State for new events
-		title: '',
-		start: '',
-		end: '',
-		// ... other event properties
+		eventName: '',
+		startDate: '',
+		endDate: '',
+		eventDescription: '',
+		allDay: false, // Add allDay state, initialized to false
+		location: '',
+		category: '',
 	});
+
+	const [newEventFormValues, setNewEventFormValues] = useState({  // Separate state for form values
+		eventName: '',
+		startDate: '',
+		endDate: '',
+		eventDescription: '',
+		allDay: false, // Add allDay state, initialized to false
+		location: '',
+		category: '',
+	});
+
 	const [selectedRange, setSelectedRange] = useState(null);
 	const theme = useTheme();
 	const calendarRef = useRef(null);
@@ -76,6 +91,8 @@ const ScheduleCalendar = () => {
   const predefinedProducer = ['HQ', 'BTM'];
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
+	const predefinedCategory = ['Bali Holiday', 'National Holiday'];
+
 
   // Determine colors based on the current theme mode
   const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
@@ -124,6 +141,11 @@ const ScheduleCalendar = () => {
     // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
     setNewTargetFormValues(newTarget);
   }, [newTarget]);
+
+	useEffect(() => {
+    // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
+    setNewEventFormValues(newEvent);
+  }, [newEvent]);
 
   const handleDateSelect = (selectionInfo) => {
 		setSelectedRange(selectionInfo);
@@ -209,10 +231,10 @@ const ScheduleCalendar = () => {
 
 	const handleSubmitEvent = async () => {
 		try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/targets', {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTarget),
+        body: JSON.stringify(newEventFormValues),
       });
 
       if (!response.ok) {
@@ -220,19 +242,19 @@ const ScheduleCalendar = () => {
         throw new Error(errorData.error || 'Failed to create target.');
       }
 
-      const createdTarget = await response.json();
+      const createdEvent = await response.json();
       setEvents((prevEvents) => [
         ...prevEvents,
         {
-          id: createdTarget.id,
-          title: `${newTarget.processingType} (${newTarget.targetValue} kg)`,
-          start: newTarget.startDate,
-          end: newTarget.endDate,
+          id: createdEvent.id,
+          title: `${newEvent.processingType}`,
+          start: newEvent.startDate,
+          end: newEvent.endDate,
         },
       ]);
 
-			setIsAddTargetDialogOpen(false);
-      setNewTarget({
+			setIsAddEventDialogOpen(false);
+      setNewEventFormValues({
         type: '',
         processingType: '',
         productLine: '',
@@ -245,7 +267,7 @@ const ScheduleCalendar = () => {
         endDate: '',
       });
     } catch (err) {
-      console.error('Error creating target:', err);
+      console.error('Error creating event:', err);
       alert(`Error: ${err.message}`);
     }
   };
@@ -464,40 +486,112 @@ const ScheduleCalendar = () => {
         </DialogContent>
       </Dialog>
 
+
 			{/* Dialog for adding a new event */}
 			<Dialog open={isAddEventDialogOpen} onClose={() => setIsAddEventDialogOpen(false)}>
 				<DialogTitle>Add New Event</DialogTitle>
 				<DialogContent>
-					<TextField
-						label="Title"
-						value={newEvent.title}
-						onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-						fullWidth
-						margin="normal"
-					/>
-					<TextField
-						label="Start Date"
-						type="date"
-						value={newEvent.start}
-						onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
-						fullWidth
-						margin="normal"
-						InputLabelProps={{
-							shrink: true,
-						}}
+
+					<Grid item xs={12}>
+						<TextField
+							label="eventName"
+							value={newEventFormValues.eventName}
+							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventName: e.target.value })}
+							fullWidth
+							margin="normal"
 						/>
-					<TextField
-						label="End Date"
-						type="date"
-						value={newEvent.end}
-						onChange={(e) => setNewEvent({ ...newEvent, end: e.target.value })}
-						fullWidth
-						margin="normal"
-						InputLabelProps={{
-							shrink: true,
-						}}
-					/>
-					{/* ... other event form fields */}
+					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							label="Start Date"
+							type="date"
+							value={newEventFormValues.startDate}
+							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, startDate: e.target.value })}
+							fullWidth
+							margin="normal"
+							InputLabelProps={{
+								shrink: true,
+							}}
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							label="End Date"
+							type="date"
+							value={newEventFormValues.endDate}
+							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, endDate: e.target.value })}
+							fullWidth
+							margin="normal"
+							InputLabelProps={{
+								shrink: true,
+							}}
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={newEventFormValues.allDay}
+									onChange={(e) =>
+										setNewEventFormValues({
+											...newEventFormValues,
+											allDay: e.target.checked,
+										})
+									}
+								/>
+							}
+							label="All Day"
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							label="Event Description"
+							type="eventDescription"
+							value={newEventFormValues.eventDescription}
+							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventDescription: e.target.value })}
+							fullWidth
+							margin="normal"
+							InputLabelProps={{
+								shrink: true,
+							}}
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							label="Location"
+							type="location"
+							value={newEventFormValues.location}
+							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, location: e.target.value })}
+							fullWidth
+							margin="normal"
+							InputLabelProps={{
+								shrink: true,
+							}}
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+							<FormControl fullWidth required>
+								<InputLabel id="category-label">Category</InputLabel>
+								<Select
+									labelId="category-label"
+									value={newEventFormValues.category}
+									onChange={(e) => setNewEventFormValues({ ...newEventFormValues, category: e.target.value })}
+									input={<OutlinedInput label="Category" />}
+								>
+									{predefinedCategory.map((category) => (
+									<MenuItem key={category} value={category}>
+										{category}
+									</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						</Grid>
 					<Button onClick={handleSubmitEvent} variant="contained" color="primary" sx={{ mt: 2 }}>
 						Save Event
 					</Button>
