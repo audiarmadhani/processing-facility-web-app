@@ -4,26 +4,28 @@ import React, { useEffect, useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { 
+import dayjs from 'dayjs'; // Import dayjs
+
+import {
   Snackbar,
   Alert,
-	Box, 
-	CircularProgress, 
-	Typography, 
-	Button, 
-	Dialog, 
-	DialogTitle, 
-	DialogContent, 
-	TextField, 
-	useTheme, 
-	Toolbar, 
-	Grid, 
-	FormControl, 
-	InputLabel, 
-  Select, 
+  Box,
+  CircularProgress,
+  Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  useTheme,
+  Toolbar,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
-	OutlinedInput,
-	Autocomplete
+  OutlinedInput,
+  Autocomplete
 } from '@mui/material';
 
 const ScheduleCalendar = () => {
@@ -43,7 +45,21 @@ const ScheduleCalendar = () => {
 		targetValue: '',
 		startDate: '',
 		endDate: '',
+	});	
+
+	const [newTargetFormValues, setNewTargetFormValues] = useState({  // Separate state for form values
+		type: '',
+		processingType: '',
+		productLine: '',
+		producer: '',
+		quality: '',
+		metric: '',
+		timeFrame: '',
+		targetValue: '',
+		startDate: '',
+		endDate: '',
 	});
+
 	const [newEvent, setNewEvent] = useState({  // State for new events
 		title: '',
 		start: '',
@@ -56,7 +72,7 @@ const ScheduleCalendar = () => {
 
 	// Predefined options
   const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
-  const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot'];
+  const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot', 'Commercial Lot'];
   const predefinedProducer = ['HQ', 'BTM'];
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
@@ -104,6 +120,11 @@ const ScheduleCalendar = () => {
     fetchTargets();
   }, []);
 
+	useEffect(() => {
+    // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
+    setNewTargetFormValues(newTarget);
+  }, [newTarget]);
+
   const handleDateSelect = (selectionInfo) => {
 		setSelectedRange(selectionInfo);
 	};
@@ -123,7 +144,7 @@ const ScheduleCalendar = () => {
 			});
 		}
 		setIsAddTargetDialogOpen(true);
-	};
+  };
 
 	const handleOpenAddEventDialog = () => {
 		if (selectedRange) {
@@ -143,12 +164,12 @@ const ScheduleCalendar = () => {
 	};
 
 
-	const handleSubmitTarget = async () => { // Renamed for clarity
-		try {
+	const handleSubmitTarget = async () => {
+    try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/targets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTarget),
+        body: JSON.stringify(newTargetFormValues), // Send the form values
       });
 
       if (!response.ok) {
@@ -168,7 +189,7 @@ const ScheduleCalendar = () => {
       ]);
 
 			setIsAddTargetDialogOpen(false);
-      setNewTarget({
+      setNewTargetFormValues({ // Clear the form values
         type: '',
         processingType: '',
         productLine: '',
@@ -177,8 +198,8 @@ const ScheduleCalendar = () => {
         metric: '',
         timeFrame: '',
         targetValue: '',
-        startDate: '',
-        endDate: '',
+				startDate: '',
+				endDate: '',
       });
     } catch (err) {
       console.error('Error creating target:', err);
@@ -283,8 +304,8 @@ const ScheduleCalendar = () => {
 							<TextField
 								label="Start Date"
 								type="date"
-								value={newTarget.startDate}
-								onChange={(e) => setNewTarget({ ...newTarget, startDate: e.target.value })}
+								value={newTargetFormValues.startDate}
+								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, startDate: e.target.value })}
 								fullWidth
 								margin="normal"
 								InputLabelProps={{
@@ -297,8 +318,8 @@ const ScheduleCalendar = () => {
 							<TextField
 								label="End Date"
 								type="date"
-								value={newTarget.endDate}
-								onChange={(e) => setNewTarget({ ...newTarget, endDate: e.target.value })}
+								value={newTargetFormValues.endDate}
+								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, endDate: e.target.value })}
 								fullWidth
 								margin="normal"
 								InputLabelProps={{
@@ -312,8 +333,8 @@ const ScheduleCalendar = () => {
 								<InputLabel id="type-label">Type</InputLabel>
 								<Select
 									labelId="type-label"
-									value={newTarget.type}
-									onChange={({ target: { value } }) => setType(value)}
+									value={newTargetFormValues.type}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, type: e.target.value })}
 									input={<OutlinedInput label="Type" />}
 								>
 									<MenuItem value="Arabica">Arabica</MenuItem>
@@ -326,8 +347,8 @@ const ScheduleCalendar = () => {
 							<Autocomplete
 								freeSolo
 								options={predefinedProcesses}
-								value={newTarget.processingType}
-								onChange={(_, newValue) => setProcessingType(newValue || '')}
+								value={newTargetFormValues.processingType}
+								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, processingType: e.target.value })}
 								renderInput={(params) => (
 									<TextField {...params} label="Process" required />
 								)}
@@ -338,8 +359,8 @@ const ScheduleCalendar = () => {
 							<Autocomplete
 								freeSolo
 								options={predefinedProductLine}
-								value={newTarget.productLine}
-								onChange={(_, newValue) => setProductLine(newValue || '')}
+								value={newTargetFormValues.productLine}
+								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, productLine: e.target.value })}
 								renderInput={(params) => (
 									<TextField {...params} label="Product Line" required />
 								)}
@@ -350,8 +371,8 @@ const ScheduleCalendar = () => {
 							<Autocomplete
 								freeSolo
 								options={predefinedProducer}
-								value={newTarget.producer}
-								onChange={(_, newValue) => setProducer(newValue || '')}
+								value={newTargetFormValues.producer}
+								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, producer: e.target.value })}
 								renderInput={(params) => (
 									<TextField {...params} label="Producer" required />
 								)}
@@ -363,8 +384,8 @@ const ScheduleCalendar = () => {
 								<InputLabel id="quality-label">Quality</InputLabel>
 								<Select
 									labelId="quality-label"
-									value={newTarget.quality}
-									onChange={({ target: { value } }) => setQuality(value)}
+									value={newTargetFormValues.quality}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, quality: e.target.value })}
 									input={<OutlinedInput label="Quality" />}
 								>
 									<MenuItem value="Specialty">Specialty</MenuItem>
@@ -380,8 +401,8 @@ const ScheduleCalendar = () => {
 							<Autocomplete
 								freeSolo
 								options={predefinedMetrics}
-								value={newTarget.metric}
-								onChange={(_, newValue) => setMetric(newValue || '')}
+								value={newTargetFormValues.metric}
+								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, metric: e.target.value })}
 								renderInput={(params) => (
 									<TextField {...params} label="Metric" required />
 								)}
@@ -393,8 +414,8 @@ const ScheduleCalendar = () => {
 								<InputLabel id="timeframe-label">Timeframe</InputLabel>
 								<Select
 									labelId="timeframe-label"
-									value={newTarget.timeFrame}
-									onChange={({ target: { value } }) => setTimeFrame(value)}
+									value={newTargetFormValues.timeframe}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, timeframe: e.target.value })}
 									input={<OutlinedInput label="Timeframe" />}
 								>
 									<MenuItem value="Weekly">Weekly</MenuItem>
@@ -406,8 +427,8 @@ const ScheduleCalendar = () => {
 						<Grid item xs={12}>
 							<TextField
 								label="Target Value"
-								value={newTarget.targetValue}
-								onChange={({ target: { value } }) => setTargetValue(value)}
+								value={newTargetFormValues.targetValue}
+								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, targetValue: e.target.value })}
 								fullWidth
 								required
 							/>
