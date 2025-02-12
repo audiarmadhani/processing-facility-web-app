@@ -83,8 +83,10 @@ const ScheduleCalendar = () => {
 	});
 
 	const [selectedRange, setSelectedRange] = useState(null);
-	const theme = useTheme();
-	const calendarRef = useRef(null);
+	const [isEventDetailsDialogOpen, setIsEventDetailsDialogOpen] = useState(false); // State for event details dialog
+  const [selectedEventDetails, setSelectedEventDetails] = useState(null); // State to store clicked event details
+  const theme = useTheme();
+  const calendarRef = useRef(null);
 
 	// Predefined options
   const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
@@ -310,6 +312,18 @@ const ScheduleCalendar = () => {
     }
   };
 
+	// Handle event click
+  const handleEventClick = (clickInfo) => {
+    const { event } = clickInfo;
+    setSelectedEventDetails({
+      title: event.title,
+      start: event.startStr,
+      end: event.endStr,
+      ...event.extendedProps, // Include extendedProps
+    });
+    setIsEventDetailsDialogOpen(true); // Open the dialog
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
@@ -343,6 +357,7 @@ const ScheduleCalendar = () => {
 				plugins={[dayGridPlugin, interactionPlugin]}
 				initialView="dayGridMonth"
 				events={events}
+				eventClick={handleEventClick} // Add event click handler
 				headerToolbar={{
 					left: 'prev,next today',
 					center: 'title',
@@ -639,6 +654,82 @@ const ScheduleCalendar = () => {
 					</Grid>
 				</DialogContent>
 			</Dialog>
+
+			{/* Dialog for showing event details */}
+      <Dialog
+        open={isEventDetailsDialogOpen}
+        onClose={() => setIsEventDetailsDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Event Details</DialogTitle>
+        <DialogContent>
+          {selectedEventDetails && (
+            <Box>
+              <Typography variant="h6">{selectedEventDetails.title}</Typography>
+              <Typography>
+                <strong>Start:</strong> {selectedEventDetails.start}
+              </Typography>
+              <Typography>
+                <strong>End:</strong> {selectedEventDetails.end}
+              </Typography>
+              {selectedEventDetails.type && (
+                <Typography>
+                  <strong>Type:</strong> {selectedEventDetails.type}
+                </Typography>
+              )}
+              {selectedEventDetails.processingType && (
+                <Typography>
+                  <strong>Processing Type:</strong>{" "}
+                  {selectedEventDetails.processingType}
+                </Typography>
+              )}
+              {selectedEventDetails.productLine && (
+                <Typography>
+                  <strong>Product Line:</strong>{" "}
+                  {selectedEventDetails.productLine}
+                </Typography>
+              )}
+              {selectedEventDetails.producer && (
+                <Typography>
+                  <strong>Producer:</strong> {selectedEventDetails.producer}
+                </Typography>
+              )}
+              {selectedEventDetails.quality && (
+                <Typography>
+                  <strong>Quality:</strong> {selectedEventDetails.quality}
+                </Typography>
+              )}
+              {selectedEventDetails.metric && (
+                <Typography>
+                  <strong>Metric:</strong> {selectedEventDetails.metric}
+                </Typography>
+              )}
+              {selectedEventDetails.timeFrame && (
+                <Typography>
+                  <strong>Time Frame:</strong> {selectedEventDetails.timeFrame}
+                </Typography>
+              )}
+              {selectedEventDetails.description && (
+                <Typography>
+                  <strong>Description:</strong>{" "}
+                  {selectedEventDetails.description}
+                </Typography>
+              )}
+              {selectedEventDetails.location && (
+                <Typography>
+                  <strong>Location:</strong> {selectedEventDetails.location}
+                </Typography>
+              )}
+              {selectedEventDetails.category && (
+                <Typography>
+                  <strong>Category:</strong> {selectedEventDetails.category}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </Box>
   );
