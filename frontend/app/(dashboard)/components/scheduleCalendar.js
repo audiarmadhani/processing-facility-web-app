@@ -132,6 +132,7 @@ const ScheduleCalendar = () => {
           title: `${target.processingType} (${target.targetValue} kg)`,
           start: target.startDate,
           end: target.endDate,
+					type: 'target', // Add a type to distinguish targets
           extendedProps: {
             type: target.type,
             quality: target.quality,
@@ -155,6 +156,7 @@ const ScheduleCalendar = () => {
 						start: event.startDate,
 						end: event.endDate,
 						allDay: event.allDay, // Include allDay property
+						type: 'event', // Add a category to distinguish targets
 						backgroundColor: color, // Set background color based on category
 						borderColor: color, // Match border color with background
 						extendedProps: {
@@ -329,8 +331,10 @@ const ScheduleCalendar = () => {
   };
 
 	// Handle update button click
-  const handleUpdate = async ({ type, id }) => {
-		// Validate input
+  const handleUpdate = async () => {
+		const { id, type, ...rest } = editedEventDetails;
+	
+		// Validate type and ID
 		if (!type || !id) {
 			console.error("Invalid type or ID:", { type, id });
 			alert("Invalid type or ID. Please try again.");
@@ -338,27 +342,50 @@ const ScheduleCalendar = () => {
 		}
 	
 		try {
-			// Log the request details for debugging
-			console.log("Updating:", { type, id });
-	
-			// Make the API call
-			const response = await fetch(`https://processing-facility-backend.onrender.com/api/${type}s/${id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(rest),
-			});
-	
-			// Handle invalid responses
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData?.message || "Failed to update.");
+			let response;
+			if (type === "target") {
+				response = await fetch(
+					`https://processing-facility-backend.onrender.com/api/targets/${id}`,
+					{
+						method: "PUT",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(rest),
+					}
+				);
+			} else if (type === "event") {
+				response = await fetch(
+					`https://processing-facility-backend.onrender.com/api/events/${id}`,
+					{
+						method: "PUT",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(rest),
+					}
+				);
 			}
 	
-			// Log success
-			console.log("Update successful:", await response.json());
-		} catch (error) {
-			console.error("Error updating:", error);
-			alert(`Error: ${error.message}`);
+			// Log the response for debugging
+			console.log("API Response:", response);
+	
+			// Handle undefined or invalid responses
+			if (!response) {
+				throw new Error("No response received from the server.");
+			}
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData?.error || "Failed to update.");
+			}
+	
+			// Update local state
+			setEvents((prevEvents) =>
+				prevEvents.map((event) =>
+					event.id === id ? { ...event, ...editedEventDetails } : event
+				)
+			);
+	
+			setIsEventDetailsDialogOpen(false);
+		} catch (err) {
+			console.error("Error updating:", err);
+			alert(`Error: ${err.message}`);
 		}
 	};
 
