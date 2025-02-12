@@ -160,7 +160,7 @@ const ScheduleCalendar = () => {
 						backgroundColor: color, // Set background color based on category
 						borderColor: color, // Match border color with background
 						extendedProps: {
-							description: event.eventDescription,
+							eventDescription: event.eventDescription,
 							location: event.location,
 							category: category, // Add a category to distinguish events
 						},
@@ -320,9 +320,9 @@ const ScheduleCalendar = () => {
     const { event } = clickInfo;
     const details = {
       id: event.id,
-      title: event.title,
-      start: event.startStr,
-      end: event.endStr,
+      eventName: event.title,
+      startDate: event.startStr,
+      endDate: event.endStr || event.startStr,
       ...event.extendedProps,
     };
     setSelectedEventDetails(details);
