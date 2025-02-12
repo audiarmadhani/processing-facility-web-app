@@ -26,72 +26,77 @@ import {
   MenuItem,
   OutlinedInput,
   Autocomplete,
-  Checkbox,
-  FormControlLabel
+	Checkbox,
+	FormControlLabel
 } from '@mui/material';
 
 const ScheduleCalendar = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isAddTargetDialogOpen, setIsAddTargetDialogOpen] = useState(false);
-  const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false); // For events
-  const [newTarget, setNewTarget] = useState({
-    type: '',
-    processingType: '',
-    productLine: '',
-    producer: '',
-    quality: '',
-    metric: '',
-    timeFrame: '',
-    targetValue: '',
-    startDate: '',
-    endDate: '',
-  });	
-  const [newTargetFormValues, setNewTargetFormValues] = useState({  // Separate state for form values
-    type: '',
-    processingType: '',
-    productLine: '',
-    producer: '',
-    quality: '',
-    metric: '',
-    timeFrame: '',
-    targetValue: '',
-    startDate: '',
-    endDate: '',
-  });
-  const [newEvent, setNewEvent] = useState({  // State for new events
-    eventName: '',
-    startDate: '',
-    endDate: '',
-    eventDescription: '',
-    allDay: false, // Add allDay state, initialized to false
-    location: '',
-    category: '',
-  });
-  const [newEventFormValues, setNewEventFormValues] = useState({  // Separate state for form values
-    eventName: '',
-    startDate: '',
-    endDate: '',
-    eventDescription: '',
-    allDay: false, // Add allDay state, initialized to false
-    location: '',
-    category: '',
-  });
-  const [selectedRange, setSelectedRange] = useState(null);
-  const [isEventDetailsDialogOpen, setIsEventDetailsDialogOpen] = useState(false); // State for event details dialog
-  const [selectedEventDetails, setSelectedEventDetails] = useState(null); // Store clicked event details
-  const [editedEventDetails, setEditedEventDetails] = useState({});
+	const [events, setEvents] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+	const [isAddTargetDialogOpen, setIsAddTargetDialogOpen] = useState(false);
+	const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false); // For events
+	const [newTarget, setNewTarget] = useState({
+		type: '',
+		processingType: '',
+		productLine: '',
+		producer: '',
+		quality: '',
+		metric: '',
+		timeFrame: '',
+		targetValue: '',
+		startDate: '',
+		endDate: '',
+	});	
+
+	const [newTargetFormValues, setNewTargetFormValues] = useState({  // Separate state for form values
+		type: '',
+		processingType: '',
+		productLine: '',
+		producer: '',
+		quality: '',
+		metric: '',
+		timeFrame: '',
+		targetValue: '',
+		startDate: '',
+		endDate: '',
+	});
+
+	const [newEvent, setNewEvent] = useState({  // State for new events
+		eventName: '',
+		startDate: '',
+		endDate: '',
+		eventDescription: '',
+		allDay: false, // Add allDay state, initialized to false
+		location: '',
+		category: '',
+	});
+
+	const [newEventFormValues, setNewEventFormValues] = useState({  // Separate state for form values
+		eventName: '',
+		startDate: '',
+		endDate: '',
+		eventDescription: '',
+		allDay: false, // Add allDay state, initialized to false
+		location: '',
+		category: '',
+	});
+
+	const [selectedRange, setSelectedRange] = useState(null);
+	const [isEventDetailsDialogOpen, setIsEventDetailsDialogOpen] = useState(false); // State for event details dialog
+  const [selectedEventDetails, setSelectedEventDetails] = useState(null); // State to store clicked event details
+	const [editedEventDetails, setEditedEventDetails] = useState({});
   const theme = useTheme();
   const calendarRef = useRef(null);
 
-  // Predefined options
+	// Predefined options
   const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
   const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot', 'Commercial Lot'];
   const predefinedProducer = ['HQ', 'BTM'];
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
-  const predefinedCategory = ['Bali Holiday', 'National Holiday'];
+	const predefinedCategory = ['Bali Holiday', 'National Holiday'];
+
 
   // Determine colors based on the current theme mode
   const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
@@ -115,11 +120,19 @@ const ScheduleCalendar = () => {
         }
         const eventsData = await eventsResponse.json();
 
+				const categoryColors = {
+					'Bali Holiday': '#CD7F32',
+					'National Holiday': '#BA232C',
+					'Joint Holiday': '#FF683E', // Gold for National Holiday
+					default: '#444444', // Default gray for unknown categories
+				};
+
         const mappedTargets = targetsData.map((target) => ({
           id: target.id,
           title: `${target.processingType} (${target.targetValue} kg)`,
           start: target.startDate,
           end: target.endDate,
+					type: 'target', // Add a type to distinguish targets
           extendedProps: {
             type: target.type,
             quality: target.quality,
@@ -128,26 +141,36 @@ const ScheduleCalendar = () => {
             columnName: target.columnName,
             productLine: target.productLine,
             producer: target.producer,
-            category: 'target', // Mark as target
+            category: 'target', // Add a category to distinguish targets
           },
         }));
 
-        const mappedEvents = eventsData.map((event) => ({
-          id: event.id,
-          title: event.eventName, // Use eventName from your event data
-          start: event.startDate,
-          end: event.endDate,
-          allDay: event.allDay, // Include allDay property
-          extendedProps: {
-            eventDescription: event.eventDescription,
-            location: event.location,
-            category: 'event', // Mark as event
-          },
-        }));
+        const mappedEvents = eventsData.map((event) => {
+
+					const category = event.category || 'default'; // Use 'default' if no category is provided
+					const color = categoryColors[category] || categoryColors.default; // Fallback to default color
+	
+					return {
+						id: event.id,
+						title: event.eventName, // Use eventName from your event data
+						start: event.startDate,
+						end: event.endDate,
+						allDay: event.allDay, // Include allDay property
+						type: 'event', // Add a category to distinguish targets
+						backgroundColor: color, // Set background color based on category
+						borderColor: color, // Match border color with background
+						extendedProps: {
+							eventDescription: event.eventDescription,
+							location: event.location,
+							category: category, // Add a category to distinguish events
+						},
+					};
+				});
 
         setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
+
       } catch (err) {
-        console.error("Error fetching targets/events:", err);
+        console.error("Error fetching targets:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -157,21 +180,21 @@ const ScheduleCalendar = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    // Sync newTargetFormValues with newTarget when newTarget changes
+	useEffect(() => {
+    // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
     setNewTargetFormValues(newTarget);
   }, [newTarget]);
 
-  useEffect(() => {
-    // Sync newEventFormValues with newEvent when newEvent changes
+	useEffect(() => {
+    // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
     setNewEventFormValues(newEvent);
   }, [newEvent]);
 
   const handleDateSelect = (selectionInfo) => {
-    setSelectedRange(selectionInfo);
-  };
+		setSelectedRange(selectionInfo);
+	};
 
-  const handleOpenAddTargetDialog = () => {
+	const handleOpenAddTargetDialog = () => {
     if (selectedRange) {
       setNewTarget({
         ...newTarget,
