@@ -173,14 +173,14 @@ const ScheduleCalendar = () => {
 		if (selectedRange) {
 			setNewEvent({
 				...newEvent,
-				start: selectedRange.startStr,
-				end: selectedRange.endStr,
+				startDate: selectedRange.startStr,
+				endDate: selectedRange.endStr,
 			});
 		} else {
 			setNewEvent({
 				...newEvent,
-				start: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
-				end: dayjs().format('YYYY-MM-DD'),
+				startDate: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
+				endDate: dayjs().format('YYYY-MM-DD'),
 			});
 		}
 		setIsAddEventDialogOpen(true);
