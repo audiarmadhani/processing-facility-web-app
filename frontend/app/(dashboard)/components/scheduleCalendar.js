@@ -330,48 +330,62 @@ const ScheduleCalendar = () => {
 
 	// Handle update button click
   const handleUpdate = async () => {
-    const { id, type, ...rest } = editedEventDetails;
-
-    try {
-      let response;
-      if (type === "target") {
-        response = await fetch(
-          `https://processing-facility-backend.onrender.com/api/targets/${id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(rest),
-          }
-        );
-      } else if (type === "event") {
-        response = await fetch(
-          `https://processing-facility-backend.onrender.com/api/events/${id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(rest),
-          }
-        );
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update.");
-      }
-
-      // Update local state
-      setEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event.id === id ? { ...event, ...editedEventDetails } : event
-        )
-      );
-
-      setIsEventDetailsDialogOpen(false);
-    } catch (err) {
-      console.error("Error updating:", err);
-      alert(`Error: ${err.message}`);
-    }
-  };
+		const { id, type, ...rest } = editedEventDetails;
+	
+		// Validate type and ID
+		if (!type || !id) {
+			console.error("Invalid type or ID:", { type, id });
+			alert("Invalid type or ID. Please try again.");
+			return;
+		}
+	
+		try {
+			let response;
+			if (type === "target") {
+				response = await fetch(
+					`https://processing-facility-backend.onrender.com/api/targets/${id}`,
+					{
+						method: "PUT",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(rest),
+					}
+				);
+			} else if (type === "event") {
+				response = await fetch(
+					`https://processing-facility-backend.onrender.com/api/events/${id}`,
+					{
+						method: "PUT",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(rest),
+					}
+				);
+			}
+	
+			// Log the response for debugging
+			console.log("API Response:", response);
+	
+			// Handle undefined or invalid responses
+			if (!response) {
+				throw new Error("No response received from the server.");
+			}
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData?.error || "Failed to update.");
+			}
+	
+			// Update local state
+			setEvents((prevEvents) =>
+				prevEvents.map((event) =>
+					event.id === id ? { ...event, ...editedEventDetails } : event
+				)
+			);
+	
+			setIsEventDetailsDialogOpen(false);
+		} catch (err) {
+			console.error("Error updating:", err);
+			alert(`Error: ${err.message}`);
+		}
+	};
 
   // Handle delete button click
   const handleDelete = async () => {
