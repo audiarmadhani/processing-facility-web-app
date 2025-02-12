@@ -128,22 +128,23 @@ const ScheduleCalendar = () => {
 				};
 
         const mappedTargets = targetsData.map((target) => ({
-          id: target.id,
-          title: `${target.processingType} (${target.targetValue} kg)`,
-          start: target.startDate,
-          end: target.endDate,
-					type: 'target', // Add a type to distinguish targets
-          extendedProps: {
-            type: target.type,
-            quality: target.quality,
-            metric: target.metric,
-            timeFrame: target.timeFrame,
-            columnName: target.columnName,
-            productLine: target.productLine,
-            producer: target.producer,
-            category: 'target', // Add a category to distinguish targets
-          },
-        }));
+					id: target.id,
+					title: `${target.processingType} (${target.targetValue} kg)`,
+					start: target.startDate,
+					end: target.endDate,
+					extendedProps: {
+						type: target.type,
+						quality: target.quality,
+						metric: target.metric,
+						timeFrame: target.timeFrame,
+						columnName: target.columnName,
+						productLine: target.productLine,
+						producer: target.producer,
+						processingType: target.processingType,
+						targetValue: target.targetValue,
+						category: 'target',
+					},
+				}));
 
         const mappedEvents = eventsData.map((event) => {
 
@@ -317,105 +318,115 @@ const ScheduleCalendar = () => {
   // handleEventClick - Improved to capture type correctly
 	const handleEventClick = (clickInfo) => {
 		const { event } = clickInfo;
-		const details = {
-			id: event.id,
-			type: event.extendedProps.type || 'event', // Ensure type is captured
-			eventName: event.title,
-			startDate: dayjs(event.start).format('YYYY-MM-DD'),
-			endDate: event.end ? dayjs(event.end).subtract(1, 'day').format('YYYY-MM-DD') : dayjs(event.start).format('YYYY-MM-DD'),
-			...event.extendedProps,
-		};
-		setSelectedEventDetails(details);
-		setEditedEventDetails(details);
-		setIsEventDetailsDialogOpen(true);
+		const category = event.extendedProps.category;
+		
+		if (category === 'target') {
+			// For targets, show title, startDate, endDate, targetValue, and processingType.
+			const details = {
+				id: event.id,
+				title: event.title, // e.g. "Natural (200 kg)"
+				startDate: event.startStr,
+				endDate: event.endStr || event.startStr,
+				targetValue: event.extendedProps.targetValue,  // Ensure this property is set in the mapping
+				processingType: event.extendedProps.processingType,
+				type: 'target',
+			};
+			setSelectedEventDetails(details);
+			setEditedEventDetails(details); // Initialize editable state with current details
+			setIsEventDetailsDialogOpen(true);
+		} else {
+			// For calendar events, show eventName, startDate, endDate, description, and location.
+			const details = {
+				id: event.id,
+				eventName: event.title, // event title used as eventName
+				startDate: event.startStr,
+				endDate: event.endStr || event.startStr,
+				description: event.extendedProps.eventDescription,
+				location: event.extendedProps.location,
+				type: 'event',
+			};
+			setSelectedEventDetails(details);
+			setEditedEventDetails(details);
+			setIsEventDetailsDialogOpen(true);
+		}
 	};
 
-	// handleUpdate - Enhanced for both types
+	// Handle update: Sends updated data to the proper API endpoint based on type.
 	const handleUpdate = async () => {
-		const { id, type, extendedProps } = editedEventDetails;
-
+		const { id, type, ...updatedData } = editedEventDetails;
+		
+		if (!id || !type) {
+			alert("Missing event ID or type. Please try again.");
+			return;
+		}
+		
 		try {
-			let endpoint, payload;
-
-			if (type === 'target') {
-				endpoint = `/api/targets/${id}`;
-				payload = {
-					type: editedEventDetails.type,
-					processingType: editedEventDetails.processingType,
-					productLine: editedEventDetails.productLine,
-					producer: editedEventDetails.producer,
-					quality: editedEventDetails.quality,
-					metric: editedEventDetails.metric,
-					timeFrame: editedEventDetails.timeFrame,
-					targetValue: editedEventDetails.targetValue,
-					startDate: editedEventDetails.startDate,
-					endDate: editedEventDetails.endDate
-				};
-			} else {
-				endpoint = `/api/events/${id}`;
-				payload = {
-					eventName: editedEventDetails.eventName,
-					startDate: editedEventDetails.startDate,
-					endDate: editedEventDetails.endDate,
-					eventDescription: editedEventDetails.eventDescription,
-					allDay: editedEventDetails.allDay,
-					location: editedEventDetails.location,
-					category: editedEventDetails.category
-				};
+			let url = "";
+			if (type === "target") {
+				url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
+			} else if (type === "event") {
+				url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
 			}
-
-			const response = await fetch(`https://processing-facility-backend.onrender.com${endpoint}`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
+			
+			const response = await fetch(url, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(updatedData),
 			});
-
+			
 			if (!response.ok) {
 				const errorData = await response.json();
-				throw new Error(errorData.error || 'Update failed');
+				throw new Error(errorData?.error || "Failed to update.");
 			}
-
-			setEvents(prevEvents => 
-				prevEvents.map(event => 
-					event.id === id ? { 
-						...event, 
-						...payload,
-						title: type === 'target' ? 
-							`${payload.processingType} (${payload.targetValue} kg)` : 
-							payload.eventName 
-					} : event
+			
+			// Update local state: Replace the event with the updated data.
+			setEvents((prevEvents) =>
+				prevEvents.map((evt) =>
+					evt.id === id ? { ...evt, ...editedEventDetails } : evt
 				)
 			);
+			
 			setIsEventDetailsDialogOpen(false);
 		} catch (err) {
-			console.error('Update error:', err);
-			alert(`Error: ${err.message}`);
+			console.error("Error updating record:", err);
+			alert(`Update failed: ${err.message}`);
 		}
 	};
 
-	// handleDelete - Type-specific handling
+	// Handle delete: Calls the proper API endpoint based on type and removes the event from local state.
 	const handleDelete = async () => {
 		const { id, type } = selectedEventDetails;
-
+		
+		if (!id || !type) {
+			alert("Missing event ID or type.");
+			return;
+		}
+		
 		try {
-			const endpoint = type === 'target' ? `/targets/${id}` : `/events/${id}`;
-			const response = await fetch(
-				`https://processing-facility-backend.onrender.com/api${endpoint}`,
-				{ method: 'DELETE' }
-			);
-
+			let url = "";
+			if (type === "target") {
+				url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
+			} else if (type === "event") {
+				url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
+			}
+			
+			const response = await fetch(url, { method: "DELETE" });
+			
 			if (!response.ok) {
 				const errorData = await response.json();
-				throw new Error(errorData.error || 'Delete failed');
+				throw new Error(errorData.error || "Failed to delete.");
 			}
-
-			setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
+			
+			// Remove the deleted event from local state.
+			setEvents((prevEvents) => prevEvents.filter((evt) => evt.id !== id));
+			
 			setIsEventDetailsDialogOpen(false);
 		} catch (err) {
-			console.error('Delete error:', err);
-			alert(`Error: ${err.message}`);
+			console.error("Error deleting record:", err);
+			alert(`Deletion failed: ${err.message}`);
 		}
 	};
+
 
 
   if (loading) {
