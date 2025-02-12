@@ -279,29 +279,33 @@ const ScheduleCalendar = () => {
         <DialogContent>
 					<Grid container spacing={2}>
 
-						<TextField
-							label="Start Date"
-							type="date"
-							value={newTarget.startDate}
-							onChange={(e) => setNewTarget({ ...newTarget, startDate: e.target.value })}
-							fullWidth
-							margin="normal"
-							InputLabelProps={{
-								shrink: true,
-							}}
-						/>
+						<Grid item xs={12}>
+							<TextField
+								label="Start Date"
+								type="date"
+								value={newTarget.startDate}
+								onChange={(e) => setNewTarget({ ...newTarget, startDate: e.target.value })}
+								fullWidth
+								margin="normal"
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+						</Grid>
 
-						<TextField
-							label="End Date"
-							type="date"
-							value={newTarget.endDate}
-							onChange={(e) => setNewTarget({ ...newTarget, endDate: e.target.value })}
-							fullWidth
-							margin="normal"
-							InputLabelProps={{
-								shrink: true,
-							}}
-						/>
+						<Grid item xs={12}>
+							<TextField
+								label="End Date"
+								type="date"
+								value={newTarget.endDate}
+								onChange={(e) => setNewTarget({ ...newTarget, endDate: e.target.value })}
+								fullWidth
+								margin="normal"
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+						</Grid>
 
 						<Grid item xs={12}>
 							<FormControl fullWidth required>
