@@ -344,39 +344,57 @@ const ScheduleCalendar = () => {
 						</Grid>
 										
 						<Grid item xs={12}>
-							<Autocomplete
-								freeSolo
-								options={predefinedProcesses}
-								value={newTargetFormValues.processingType}
-								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, processingType: e.target.value })}
-								renderInput={(params) => (
-									<TextField {...params} label="Process" required />
-								)}
-							/>
-						</Grid>
-						
-						<Grid item xs={12}>
-							<Autocomplete
-								freeSolo
-								options={predefinedProductLine}
-								value={newTargetFormValues.productLine}
-								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, productLine: e.target.value })}
-								renderInput={(params) => (
-									<TextField {...params} label="Product Line" required />
-								)}
-							/>
+							<FormControl fullWidth required>
+								<InputLabel id="process-label">Process</InputLabel>
+								<Select
+									labelId="process-label"
+									value={newTargetFormValues.processingType}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, processingType: e.target.value })}
+									input={<OutlinedInput label="Process" />}
+								>
+									{predefinedProcesses.map((process) => (
+										<MenuItem key={process} value={process}>
+											{process}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
 						</Grid>
 
 						<Grid item xs={12}>
-							<Autocomplete
-								freeSolo
-								options={predefinedProducer}
-								value={newTargetFormValues.producer}
-								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, producer: e.target.value })}
-								renderInput={(params) => (
-									<TextField {...params} label="Producer" required />
-								)}
-							/>
+							<FormControl fullWidth required>
+								<InputLabel id="product-label">Product Line</InputLabel>
+								<Select
+									labelId="product-label"
+									value={newTargetFormValues.productLine}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, productLine: e.target.value })}
+									input={<OutlinedInput label="Product Line" />}
+								>
+									{predefinedProductLine.map((productline) => (
+										<MenuItem key={productline} value={productline}>
+											{productline}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						</Grid>
+
+						<Grid item xs={12}>
+							<FormControl fullWidth required>
+								<InputLabel id="producer-label">Producer</InputLabel>
+								<Select
+									labelId="producer-label"
+									value={newTargetFormValues.producer}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, producer: e.target.value })}
+									input={<OutlinedInput label="Producer" />}
+								>
+									{predefinedProducer.map((producer) => (
+										<MenuItem key={producer} value={producer}>
+											{producer}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
 						</Grid>
 
 						<Grid item xs={12}>
@@ -419,7 +437,6 @@ const ScheduleCalendar = () => {
 									input={<OutlinedInput label="Timeframe" />}
 								>
 									<MenuItem value="Weekly">Weekly</MenuItem>
-									<MenuItem value="Monthly">Monthly</MenuItem>
 								</Select>
 							</FormControl>
 						</Grid>
