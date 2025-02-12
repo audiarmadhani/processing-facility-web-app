@@ -243,7 +243,7 @@ const ScheduleCalendar = () => {
 				selectable={true}
 				select={handleDateSelect}
 				style={{ backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff', color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', width: '100%' }}
-				aspectRatio={1.4} // Try adjusting this value (lower makes it taller)
+				aspectRatio={1.6} // Try adjusting this value (lower makes it taller)
       />
 
       {/* Dialog for adding a new target */}

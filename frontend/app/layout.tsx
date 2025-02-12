@@ -68,6 +68,11 @@ const NAVIGATION: Navigation = [
   },
   
   { kind: "divider" },
+
+  { segment: "calendar", title: "Calendar", icon: <CalendarMonthIcon /> },
+
+  { kind: "divider" },
+
   
   {
     segment: "admin",
@@ -76,7 +81,6 @@ const NAVIGATION: Navigation = [
     children: [
       { segment: "target", title: "Target", icon: <AdjustIcon /> },
       { segment: "database", title: "Database", icon: <StorageIcon /> },
-      { segment: "schedule", title: "Schedule", icon: <CalendarMonthIcon /> },
       { segment: "report", title: "Report (WIP)", icon: <SummarizeIcon /> },
       { segment: "cctv", title: "CCTV (WIP)", icon: <VideocamIcon /> },
     ],

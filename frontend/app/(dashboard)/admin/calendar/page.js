@@ -2,7 +2,7 @@ import React from 'react';
 import { Grid, Card, CardContent, Typography } from '@mui/material';
 import ScheduleCalendar from '../../components/scheduleCalendar';
 
-const SchedulePage = () => {
+const CalendarPage = () => {
   return (
     <Grid container spacing={3}>
       <Grid
@@ -21,9 +21,6 @@ const SchedulePage = () => {
       >
         <Card variant="outlined" sx={{ height: '100%' }}>
           <CardContent sx={{ height: '100%' }}>
-            <Typography variant="h6" gutterBottom>
-              Production Targets Schedule
-            </Typography>
             <ScheduleCalendar />
           </CardContent>
         </Card>
@@ -32,4 +29,4 @@ const SchedulePage = () => {
   );
 };
 
-export default SchedulePage;
+export default CalendarPage;
