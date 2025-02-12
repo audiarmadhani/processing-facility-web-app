@@ -163,6 +163,13 @@ const ScheduleCalendar = () => {
         dateClick={handleDateClick} // Handle single date clicks
         select={handleDateSelect}   // Handle date range selection
         style={{ backgroundColor: calendarBgColor, color: calendarTextColor, width: '100%' }}
+        dayCellContent={(arg) => {
+            return (
+                <div style={{ height: '100px', overflow: 'auto' }}> {/* Adjust height as needed */}
+                    {arg.el.innerHTML} {/* Display existing content (events, numbers) */}
+                </div>
+            );
+        }}
       />
 
       {/* Dialog for adding a new target */}
