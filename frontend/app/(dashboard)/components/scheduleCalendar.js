@@ -134,6 +134,7 @@ const ScheduleCalendar = () => {
 					end: target.endDate,
 					extendedProps: {
 						type: 'target',
+						coffeeType: target.type,
 						quality: target.quality,
 						metric: target.metric,
 						timeFrame: target.timeFrame,
@@ -338,6 +339,13 @@ const ScheduleCalendar = () => {
 	
 		const targetSpecific = {
 			targetValue: event.title.match(/\((\d+)\s?kg\)/)?.[1] || 'N/A',
+			title: event.title,
+			coffeeType: event.extendedProps.coffeeType, // Using 'type' from extendedProps for coffee type
+			processingType: event.extendedProps.processingType,
+			productLine: event.extendedProps.productLine,
+			producer: event.extendedProps.producer,
+			quality: event.extendedProps.quality,
+			targetValue: event.extendedProps.targetValue || 'N/A',
 		};
 	
 		const details = { 
@@ -854,7 +862,54 @@ const ScheduleCalendar = () => {
 						{/* Target-Specific Fields */}
 						{editedEventDetails.type === 'target' && (
 							<>
-								<Grid item xs={12} sm={12}>
+								{/* Read-only display fields */}
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Coffee Type"
+										fullWidth
+										value={editedEventDetails.typeCoffee || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+								
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Processing Type"
+										fullWidth
+										value={editedEventDetails.processingType || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+								
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Product Line"
+										fullWidth
+										value={editedEventDetails.productLine || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Producer"
+										fullWidth
+										value={editedEventDetails.producer || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Quality"
+										fullWidth
+										value={editedEventDetails.quality || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+
+								{/* Editable field */}
+								<Grid item xs={12} sm={6}>
 									<TextField
 										label="Target Value (kg)"
 										type="number"
@@ -865,6 +920,7 @@ const ScheduleCalendar = () => {
 								</Grid>
 							</>
 						)}
+						
 					</Grid>
 				</DialogContent>
 
