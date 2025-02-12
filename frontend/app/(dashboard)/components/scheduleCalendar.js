@@ -164,12 +164,16 @@ const ScheduleCalendar = () => {
         select={handleDateSelect}   // Handle date range selection
         style={{ backgroundColor: calendarBgColor, color: calendarTextColor, width: '100%' }}
         dayCellContent={(arg) => {
-            return (
-                <div style={{ height: '100px', overflow: 'auto' }}> {/* Adjust height as needed */}
-                    {arg.el.innerHTML} {/* Display existing content (events, numbers) */}
-                </div>
-            );
-        }}
+					if (arg.el) { // Check if arg.el is defined before accessing innerHTML
+							return (
+									<div style={{ height: '100px', overflow: 'auto' }}>
+											{arg.el.innerHTML}
+									</div>
+							);
+					} else {
+						return null; // or return some default content for non-day cells
+					}
+				}}
       />
 
       {/* Dialog for adding a new target */}
