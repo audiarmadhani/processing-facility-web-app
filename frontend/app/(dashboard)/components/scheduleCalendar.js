@@ -321,7 +321,6 @@ const ScheduleCalendar = () => {
 		const baseDetails = {
 			id: event.id,
 			type: event.extendedProps.type || 'event',
-			title: event.title,
 			startDate: dayjs(event.start).format('YYYY-MM-DD'),
 			endDate: event.end ? 
 				dayjs(event.end).subtract(1, 'day').format('YYYY-MM-DD') : 
@@ -329,6 +328,7 @@ const ScheduleCalendar = () => {
 		};
 	
 		const eventSpecific = {
+			title: event.title,
 			eventName: event.title,
 			eventDescription: event.extendedProps.eventDescription,
 			location: event.extendedProps.location,
