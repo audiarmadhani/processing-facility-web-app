@@ -13,9 +13,9 @@ const CalendarPage = () => {
           height: {
             xs: '400px',  // Extra-small screens
             sm: '600px',  // Small screens
-            md: '800px',  // Medium screens
-            lg: '1200px',  // Large screens
-            xl: '1200px'   // Extra-large screens
+            md: '1800px',  // Medium screens
+            lg: '1800px',  // Large screens
+            xl: '1800px'   // Extra-large screens
           }
         }}
       >
