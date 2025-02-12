@@ -145,7 +145,9 @@ const ScheduleCalendar = () => {
             location: event.location,
             category: event.category || 'event', // Add a category to distinguish events
           },
-					eventColor: '#f97a7a',
+					// eventColor: '#f97a7a',
+					backgroundColor: '#f97a7a', // Soft red color for events
+					borderColor: '#f97a7a', // Soft red color for events
         }));
 
         setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
