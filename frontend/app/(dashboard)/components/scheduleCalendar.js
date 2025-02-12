@@ -315,41 +315,45 @@ const ScheduleCalendar = () => {
     }
   };
 
-  // handleEventClick - Improved to capture type correctly
-	const handleEventClick = (clickInfo) => {
+  const handleEventClick = (clickInfo) => {
 		const { event } = clickInfo;
-		const category = event.extendedProps.category;
+		const isTarget = event.extendedProps.type === 'target';
 		
-		if (category === 'target') {
-			// For targets, show title, startDate, endDate, targetValue, and processingType.
-			const details = {
-				id: event.id,
-				title: event.title, // e.g. "Natural (200 kg)"
-				startDate: event.startStr,
-				endDate: event.endStr || event.startStr,
-				targetValue: event.extendedProps.targetValue,  // Ensure this property is set in the mapping
-				processingType: event.extendedProps.processingType,
-				type: 'target',
-			};
-			setSelectedEventDetails(details);
-			setEditedEventDetails(details); // Initialize editable state with current details
-			setIsEventDetailsDialogOpen(true);
-		} else {
-			// For calendar events, show eventName, startDate, endDate, description, and location.
-			const details = {
-				id: event.id,
-				eventName: event.title, // event title used as eventName
-				startDate: event.startStr,
-				endDate: event.endStr || event.startStr,
-				description: event.extendedProps.eventDescription,
-				location: event.extendedProps.location,
-				type: 'event',
-			};
-			setSelectedEventDetails(details);
-			setEditedEventDetails(details);
-			setIsEventDetailsDialogOpen(true);
-		}
+		const baseDetails = {
+			id: event.id,
+			type: event.extendedProps.type || 'event',
+			title: event.title,
+			startDate: dayjs(event.start).format('YYYY-MM-DD'),
+			endDate: event.end ? 
+				dayjs(event.end).subtract(1, 'day').format('YYYY-MM-DD') : 
+				dayjs(event.start).format('YYYY-MM-DD'),
+		};
+	
+		const eventSpecific = {
+			eventName: event.title,
+			eventDescription: event.extendedProps.eventDescription,
+			location: event.extendedProps.location,
+			category: event.extendedProps.category,
+			allDay: event.allDay,
+		};
+	
+		const targetSpecific = {
+			processingType: event.extendedProps.processingType,
+			targetValue: event.title.match(/\((\d+)\s?kg\)/)?.[1] || 'N/A',
+			productLine: event.extendedProps.productLine,
+			metric: event.extendedProps.metric,
+		};
+	
+		const details = { 
+			...baseDetails,
+			...(isTarget ? targetSpecific : eventSpecific)
+		};
+	
+		setSelectedEventDetails(details);
+		setEditedEventDetails(details);
+		setIsEventDetailsDialogOpen(true);
 	};
+	
 
 	// Handle update: Sends updated data to the proper API endpoint based on type.
 	const handleUpdate = async () => {
@@ -646,7 +650,7 @@ const ScheduleCalendar = () => {
       </Dialog>
 
 
-			{/* Dialog for adding a new target */}
+			{/* Dialog for adding a new event */}
       <Dialog open={isAddEventDialogOpen} onClose={() => setIsAddEventDialogOpen(false)}>
         <DialogTitle>Add New Event</DialogTitle>
         <DialogContent>
@@ -768,108 +772,143 @@ const ScheduleCalendar = () => {
         fullWidth
       >
         <DialogTitle>Edit Event Details</DialogTitle>
-        <DialogContent>
-          {selectedEventDetails && (
-            <>
-              <TextField
-                label="Title"
-                value={editedEventDetails.title || ""}
-                onChange={(e) =>
-                  setEditedEventDetails({
-                    ...editedEventDetails,
-                    title: e.target.value,
-                  })
-                }
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Start Date"
-                type="date"
-                value={editedEventDetails.start || ""}
-                onChange={(e) =>
-                  setEditedEventDetails({
-                    ...editedEventDetails,
-                    start: e.target.value,
-                  })
-                }
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="End Date"
-                type="date"
-                value={editedEventDetails.end || ""}
-                onChange={(e) =>
-                  setEditedEventDetails({
-                    ...editedEventDetails,
-                    end: e.target.value,
-                  })
-                }
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-              {editedEventDetails.type === "target" && (
-                <>
-                  <TextField
-                    label="Target Value"
-                    value={editedEventDetails.targetValue || ""}
-                    onChange={(e) =>
-                      setEditedEventDetails({
-                        ...editedEventDetails,
-                        targetValue: e.target.value,
-                      })
-                    }
-                    fullWidth
-                    margin="normal"
-                  />
-                  <TextField
-                    label="Processing Type"
-                    value={editedEventDetails.processingType || ""}
-                    onChange={(e) =>
-                      setEditedEventDetails({
-                        ...editedEventDetails,
-                        processingType: e.target.value,
-                      })
-                    }
-                    fullWidth
-                    margin="normal"
-                  />
-                </>
-              )}
-              {editedEventDetails.type === "event" && (
-                <>
-                  <TextField
-                    label="Description"
-                    value={editedEventDetails.eventDescription || ""}
-                    onChange={(e) =>
-                      setEditedEventDetails({
-                        ...editedEventDetails,
-                        eventDescription: e.target.value,
-                      })
-                    }
-                    fullWidth
-                    margin="normal"
-                  />
-                  <TextField
-                    label="Location"
-                    value={editedEventDetails.location || ""}
-                    onChange={(e) =>
-                      setEditedEventDetails({
-                        ...editedEventDetails,
-                        location: e.target.value,
-                      })
-                    }
-                    fullWidth
-                    margin="normal"
-                  />
-                </>
-              )}
-            </>
-          )}
-        </DialogContent>
+				
+        <DialogContent dividers>
+					<Grid container spacing={2}>
+						{/* Common Fields */}
+						<Grid item xs={12} sm={6}>
+							<TextField
+								label="Start Date"
+								type="date"
+								fullWidth
+								value={editedEventDetails.startDate}
+								onChange={(e) => setEditedEventDetails(prev => ({...prev, startDate: e.target.value}))}
+								InputLabelProps={{ shrink: true }}
+							/>
+						</Grid>
+						
+						<Grid item xs={12} sm={6}>
+							<TextField
+								label="End Date"
+								type="date"
+								fullWidth
+								value={editedEventDetails.endDate}
+								onChange={(e) => setEditedEventDetails(prev => ({...prev, endDate: e.target.value}))}
+								InputLabelProps={{ shrink: true }}
+							/>
+						</Grid>
+
+						{/* Event-Specific Fields */}
+						{editedEventDetails.type === 'event' && (
+							<>
+								<Grid item xs={12}>
+									<TextField
+										label="Event Name"
+										fullWidth
+										value={editedEventDetails.eventName || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({...prev, eventName: e.target.value}))}
+									/>
+								</Grid>
+								<Grid item xs={12}>
+									<TextField
+										label="Description"
+										multiline
+										rows={3}
+										fullWidth
+										value={editedEventDetails.eventDescription || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({...prev, eventDescription: e.target.value}))}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Location"
+										fullWidth
+										value={editedEventDetails.location || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({...prev, location: e.target.value}))}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<Autocomplete
+										options={predefinedCategory}
+										value={editedEventDetails.category || ''}
+										onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, category: newValue}))}
+										renderInput={(params) => (
+											<TextField
+												{...params}
+												label="Category"
+												fullWidth
+											/>
+										)}
+									/>
+								</Grid>
+								<Grid item xs={12}>
+									<FormControlLabel
+										control={
+											<Checkbox
+												checked={editedEventDetails.allDay || false}
+												onChange={(e) => setEditedEventDetails(prev => ({...prev, allDay: e.target.checked}))}
+											/>
+										}
+										label="All-Day Event"
+									/>
+								</Grid>
+							</>
+						)}
+
+						{/* Target-Specific Fields */}
+						{editedEventDetails.type === 'target' && (
+							<>
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Processing Type"
+										fullWidth
+										value={editedEventDetails.processingType || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({...prev, processingType: e.target.value}))}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Target Value (kg)"
+										type="number"
+										fullWidth
+										value={editedEventDetails.targetValue || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({...prev, targetValue: e.target.value}))}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<Autocomplete
+										options={predefinedProductLine}
+										value={editedEventDetails.productLine || ''}
+										onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, productLine: newValue}))}
+										renderInput={(params) => (
+											<TextField
+												{...params}
+												label="Product Line"
+												fullWidth
+											/>
+										)}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<Autocomplete
+										options={predefinedMetrics}
+										value={editedEventDetails.metric || ''}
+										onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, metric: newValue}))}
+										renderInput={(params) => (
+											<TextField
+												{...params}
+												label="Metric"
+												fullWidth
+											/>
+										)}
+									/>
+								</Grid>
+							</>
+						)}
+					</Grid>
+				</DialogContent>
+
+
         <div style={{ display: "flex", justifyContent: "flex-end", padding: 16 }}>
           <Button onClick={handleDelete} color="error" variant="contained">
             Delete
