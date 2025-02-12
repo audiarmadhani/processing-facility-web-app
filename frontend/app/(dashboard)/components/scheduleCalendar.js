@@ -163,8 +163,8 @@ const ScheduleCalendar = () => {
         dateClick={handleDateClick} // Handle single date clicks
         select={handleDateSelect}   // Handle date range selection
         style={{ backgroundColor: calendarBgColor, color: calendarTextColor, width: '100%' }}
-        height={600} // Or some other fixed height
-				aspectRatio={1.5} // Try adjusting this value (lower makes it taller)
+        // height={800} // Or some other fixed height
+				aspectRatio={1.2} // Try adjusting this value (lower makes it taller)
       />
 
       {/* Dialog for adding a new target */}
