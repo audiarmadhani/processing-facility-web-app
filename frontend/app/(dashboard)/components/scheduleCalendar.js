@@ -132,8 +132,8 @@ const ScheduleCalendar = () => {
 					title: `${target.processingType} (${target.targetValue} kg)`,
 					start: target.startDate,
 					end: target.endDate,
-					type: 'target',
 					extendedProps: {
+						type: 'target',
 						quality: target.quality,
 						metric: target.metric,
 						timeFrame: target.timeFrame,
@@ -141,7 +141,7 @@ const ScheduleCalendar = () => {
 						producer: target.producer,
 						processingType: target.processingType,
 						targetValue: target.targetValue,
-						category: 'target',
+						category: target.category,
 					},
 				}));
 
