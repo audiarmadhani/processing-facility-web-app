@@ -416,15 +416,21 @@ const ScheduleCalendar = () => {
 						</Grid>
 
 						<Grid item xs={12}>
-							<Autocomplete
-								freeSolo
-								options={predefinedMetrics}
-								value={newTargetFormValues.metric}
-								onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, metric: e.target.value })}
-								renderInput={(params) => (
-									<TextField {...params} label="Metric" required />
-								)}
-							/>
+							<FormControl fullWidth required>
+								<InputLabel id="metric-label">Metric</InputLabel>
+								<Select
+									labelId="metric-label"
+									value={newTargetFormValues.metric}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, metric: e.target.value })}
+									input={<OutlinedInput label="Metric" />}
+								>
+									{predefinedMetrics.map((metric) => (
+										<MenuItem key={metric} value={metric}>
+											{metric}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
 						</Grid>
 
 						<Grid item xs={12}>
