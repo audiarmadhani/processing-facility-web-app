@@ -337,10 +337,7 @@ const ScheduleCalendar = () => {
 		};
 	
 		const targetSpecific = {
-			processingType: event.extendedProps.processingType,
 			targetValue: event.title.match(/\((\d+)\s?kg\)/)?.[1] || 'N/A',
-			productLine: event.extendedProps.productLine,
-			metric: event.extendedProps.metric,
 		};
 	
 		const details = { 
@@ -857,49 +854,13 @@ const ScheduleCalendar = () => {
 						{/* Target-Specific Fields */}
 						{editedEventDetails.type === 'target' && (
 							<>
-								<Grid item xs={12} sm={6}>
-									<TextField
-										label="Processing Type"
-										fullWidth
-										value={editedEventDetails.processingType || ''}
-										onChange={(e) => setEditedEventDetails(prev => ({...prev, processingType: e.target.value}))}
-									/>
-								</Grid>
-								<Grid item xs={12} sm={6}>
+								<Grid item xs={12} sm={12}>
 									<TextField
 										label="Target Value (kg)"
 										type="number"
 										fullWidth
 										value={editedEventDetails.targetValue || ''}
 										onChange={(e) => setEditedEventDetails(prev => ({...prev, targetValue: e.target.value}))}
-									/>
-								</Grid>
-								<Grid item xs={12} sm={6}>
-									<Autocomplete
-										options={predefinedProductLine}
-										value={editedEventDetails.productLine || ''}
-										onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, productLine: newValue}))}
-										renderInput={(params) => (
-											<TextField
-												{...params}
-												label="Product Line"
-												fullWidth
-											/>
-										)}
-									/>
-								</Grid>
-								<Grid item xs={12} sm={6}>
-									<Autocomplete
-										options={predefinedMetrics}
-										value={editedEventDetails.metric || ''}
-										onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, metric: newValue}))}
-										renderInput={(params) => (
-											<TextField
-												{...params}
-												label="Metric"
-												fullWidth
-											/>
-										)}
 									/>
 								</Grid>
 							</>
