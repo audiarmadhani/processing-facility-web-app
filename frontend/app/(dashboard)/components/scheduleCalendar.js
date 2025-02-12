@@ -435,11 +435,11 @@ const ScheduleCalendar = () => {
 
 						<Grid item xs={12}>
 							<FormControl fullWidth required>
-								<InputLabel id="timeframe-label">Timeframe</InputLabel>
+								<InputLabel id="timeFrame-label">Timeframe</InputLabel>
 								<Select
-									labelId="timeframe-label"
-									value={newTargetFormValues.timeframe}
-									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, timeframe: e.target.value })}
+									labelId="timeFrame-label"
+									value={newTargetFormValues.timeFrame}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, timeFrame: e.target.value })}
 									input={<OutlinedInput label="Timeframe" />}
 								>
 									<MenuItem value="Weekly">Weekly</MenuItem>
