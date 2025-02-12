@@ -148,7 +148,7 @@ const ScheduleCalendar = () => {
         }));
 
         setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
-				
+
       } catch (err) {
         console.error("Error fetching targets:", err);
         setError(err.message);
@@ -157,7 +157,7 @@ const ScheduleCalendar = () => {
       }
     };
 
-    fetchTargets();
+    fetchData();
   }, []);
 
 	useEffect(() => {
