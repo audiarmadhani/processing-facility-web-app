@@ -315,114 +315,125 @@ const ScheduleCalendar = () => {
     }
   };
 
-	// Handle event click
-  const handleEventClick = (clickInfo) => {
-    const { event } = clickInfo;
-    const details = {
-      id: event.id,
-      eventName: event.title,
-      startDate: event.startStr,
-      endDate: event.endStr || event.startStr,
-      ...event.extendedProps,
-    };
-    setSelectedEventDetails(details);
-    setEditedEventDetails(details); // Initialize editable state
-    setIsEventDetailsDialogOpen(true);
-  };
+	// Handle event click with proper data extraction
+	const handleEventClick = (clickInfo) => {
+		const { event } = clickInfo;
+		const isTarget = event.extendedProps.category === 'target';
+		
+		const details = {
+			id: event.id,
+			type: isTarget ? 'target' : 'event',
+			title: event.title,
+			startDate: event.start ? dayjs(event.start).format('YYYY-MM-DD') : '',
+			endDate: event.end ? dayjs(event.end).format('YYYY-MM-DD') : '',
+			allDay: event.allDay,
+			...(isTarget ? {
+				processingType: event.extendedProps.processingType,
+				productLine: event.extendedProps.productLine,
+				targetValue: event.extendedProps.targetValue,
+				metric: event.extendedProps.metric
+			} : {
+				eventDescription: event.extendedProps.eventDescription,
+				location: event.extendedProps.location,
+				category: event.extendedProps.category
+			})
+		};
 
-	// Handle update button click
-  const handleUpdate = async () => {
-		const { id, type, ...rest } = editedEventDetails;
-	
-		// Validate type and ID
-		if (!type || !id) {
-			console.error("Invalid type or ID:", { type, id });
-			alert("Invalid type or ID. Please try again.");
+		setSelectedEventDetails(details);
+		setEditedEventDetails(details);
+		setIsEventDetailsDialogOpen(true);
+	};
+
+	// Unified update handler with proper validation
+	const handleUpdate = async () => {
+		if (!editedEventDetails?.id || !editedEventDetails?.type) {
+			alert('Invalid event data for update');
 			return;
 		}
-	
+
 		try {
-			let response;
-			if (type === "target") {
-				response = await fetch(
-					`https://processing-facility-backend.onrender.com/api/targets/${id}`,
-					{
-						method: "PUT",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify(rest),
-					}
-				);
-			} else if (type === "event") {
-				response = await fetch(
-					`https://processing-facility-backend.onrender.com/api/events/${id}`,
-					{
-						method: "PUT",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify(rest),
-					}
-				);
-			}
-	
-			// Log the response for debugging
-			console.log("API Response:", response);
-	
-			// Handle undefined or invalid responses
-			if (!response) {
-				throw new Error("No response received from the server.");
-			}
+			const endpoint = editedEventDetails.type === 'target' 
+				? `targets/${editedEventDetails.id}`
+				: `events/${editedEventDetails.id}`;
+
+			const response = await fetch(
+				`https://processing-facility-backend.onrender.com/api/${endpoint}`,
+				{
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						...(editedEventDetails.type === 'target' ? {
+							processingType: editedEventDetails.processingType,
+							productLine: editedEventDetails.productLine,
+							targetValue: editedEventDetails.targetValue,
+							metric: editedEventDetails.metric,
+							startDate: editedEventDetails.startDate,
+							endDate: editedEventDetails.endDate
+						} : {
+							eventName: editedEventDetails.title,
+							eventDescription: editedEventDetails.eventDescription,
+							location: editedEventDetails.location,
+							category: editedEventDetails.category,
+							startDate: editedEventDetails.startDate,
+							endDate: editedEventDetails.endDate,
+							allDay: editedEventDetails.allDay
+						})
+					})
+				}
+			);
+
 			if (!response.ok) {
 				const errorData = await response.json();
-				throw new Error(errorData?.error || "Failed to update.");
+				throw new Error(errorData.message || 'Update failed');
 			}
-	
-			// Update local state
-			setEvents((prevEvents) =>
-				prevEvents.map((event) =>
-					event.id === id ? { ...event, ...editedEventDetails } : event
-				)
-			);
-	
+
+			// Refresh events after successful update
+			const updatedEvent = await response.json();
+			setEvents(prev => prev.map(e => 
+				e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e
+			));
+
 			setIsEventDetailsDialogOpen(false);
+			alert('Successfully updated!');
 		} catch (err) {
-			console.error("Error updating:", err);
-			alert(`Error: ${err.message}`);
+			console.error('Update error:', err);
+			alert(`Update failed: ${err.message}`);
 		}
 	};
 
-  // Handle delete button click
-  const handleDelete = async () => {
-    const { id, type } = selectedEventDetails;
+	// Enhanced delete handler with confirmation
+	const handleDelete = async () => {
+		if (!window.confirm('Are you sure you want to delete this item?')) return;
 
-    try {
-      let response;
-      if (type === "target") {
-        response = await fetch(
-          `https://processing-facility-backend.onrender.com/api/targets/${id}`,
-          { method: "DELETE" }
-        );
-      } else if (type === "event") {
-        response = await fetch(
-          `https://processing-facility-backend.onrender.com/api/events/${id}`,
-          { method: "DELETE" }
-        );
-      }
+		if (!selectedEventDetails?.id || !selectedEventDetails?.type) {
+			alert('Invalid event data for deletion');
+			return;
+		}
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete.");
-      }
+		try {
+			const endpoint = selectedEventDetails.type === 'target' 
+				? `targets/${selectedEventDetails.id}`
+				: `events/${selectedEventDetails.id}`;
 
-      // Remove from local state
-      setEvents((prevEvents) =>
-        prevEvents.filter((event) => event.id !== id)
-      );
+			const response = await fetch(
+				`https://processing-facility-backend.onrender.com/api/${endpoint}`,
+				{ method: 'DELETE' }
+			);
 
-      setIsEventDetailsDialogOpen(false);
-    } catch (err) {
-      console.error("Error deleting:", err);
-      alert(`Error: ${err.message}`);
-    }
-  };
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.message || 'Delete failed');
+			}
+
+			// Update local state after successful deletion
+			setEvents(prev => prev.filter(e => e.id !== selectedEventDetails.id));
+			setIsEventDetailsDialogOpen(false);
+			alert('Successfully deleted!');
+		} catch (err) {
+			console.error('Delete error:', err);
+			alert(`Delete failed: ${err.message}`);
+		}
+	};
 
   if (loading) {
     return (
