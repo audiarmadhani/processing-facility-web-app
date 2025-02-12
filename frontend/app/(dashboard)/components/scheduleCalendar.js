@@ -4,7 +4,27 @@ import React, { useEffect, useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Box, CircularProgress, Typography, Button, Dialog, DialogTitle, DialogContent, TextField, useTheme, Toolbar } from '@mui/material';
+import { 
+  Snackbar,
+  Alert,
+	Box, 
+	CircularProgress, 
+	Typography, 
+	Button, 
+	Dialog, 
+	DialogTitle, 
+	DialogContent, 
+	TextField, 
+	useTheme, 
+	Toolbar, 
+	Grid, 
+	FormControl, 
+	InputLabel, 
+  Select, 
+  MenuItem,
+	OutlinedInput,
+	Autocomplete
+} from '@mui/material';
 
 const ScheduleCalendar = () => {
 	const [events, setEvents] = useState([]);
