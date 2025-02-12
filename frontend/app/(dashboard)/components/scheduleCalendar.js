@@ -488,114 +488,117 @@ const ScheduleCalendar = () => {
       </Dialog>
 
 
-			{/* Dialog for adding a new event */}
-			<Dialog open={isAddEventDialogOpen} onClose={() => setIsAddEventDialogOpen(false)}>
-				<DialogTitle>Add New Event</DialogTitle>
-				<DialogContent>
+			{/* Dialog for adding a new target */}
+      <Dialog open={isAddEventDialogOpen} onClose={() => setIsAddEventDialogOpen(false)}>
+        <DialogTitle>Add New Event</DialogTitle>
+        <DialogContent>
 
-					<Grid item xs={12}>
-						<TextField
-							label="eventName"
-							value={newEventFormValues.eventName}
-							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventName: e.target.value })}
-							fullWidth
-							margin="normal"
-						/>
-					</Grid>
+					<Grid container spacing={2}>
 
-					<Grid item xs={12}>
-						<TextField
-							label="Start Date"
-							type="date"
-							value={newEventFormValues.startDate}
-							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, startDate: e.target.value })}
-							fullWidth
-							margin="normal"
-							InputLabelProps={{
-								shrink: true,
-							}}
-						/>
-					</Grid>
-
-					<Grid item xs={12}>
-						<TextField
-							label="End Date"
-							type="date"
-							value={newEventFormValues.endDate}
-							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, endDate: e.target.value })}
-							fullWidth
-							margin="normal"
-							InputLabelProps={{
-								shrink: true,
-							}}
-						/>
-					</Grid>
-
-					<Grid item xs={12}>
-						<FormControlLabel
-							control={
-								<Checkbox
-									checked={newEventFormValues.allDay}
-									onChange={(e) =>
-										setNewEventFormValues({
-											...newEventFormValues,
-											allDay: e.target.checked,
-										})
-									}
-								/>
-							}
-							label="All Day"
-						/>
-					</Grid>
-
-					<Grid item xs={12}>
-						<TextField
-							label="Event Description"
-							type="eventDescription"
-							value={newEventFormValues.eventDescription}
-							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventDescription: e.target.value })}
-							fullWidth
-							margin="normal"
-							InputLabelProps={{
-								shrink: true,
-							}}
-						/>
-					</Grid>
-
-					<Grid item xs={12}>
-						<TextField
-							label="Location"
-							type="location"
-							value={newEventFormValues.location}
-							onChange={(e) => setNewEventFormValues({ ...newEventFormValues, location: e.target.value })}
-							fullWidth
-							margin="normal"
-							InputLabelProps={{
-								shrink: true,
-							}}
-						/>
-					</Grid>
-
-					<Grid item xs={12}>
-							<FormControl fullWidth required>
-								<InputLabel id="category-label">Category</InputLabel>
-								<Select
-									labelId="category-label"
-									value={newEventFormValues.category}
-									onChange={(e) => setNewEventFormValues({ ...newEventFormValues, category: e.target.value })}
-									input={<OutlinedInput label="Category" />}
-								>
-									{predefinedCategory.map((category) => (
-									<MenuItem key={category} value={category}>
-										{category}
-									</MenuItem>
-									))}
-								</Select>
-							</FormControl>
+						<Grid item xs={12}>
+							<TextField
+								label="eventName"
+								value={newEventFormValues.eventName}
+								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventName: e.target.value })}
+								fullWidth
+								margin="normal"
+							/>
 						</Grid>
-					<Button onClick={handleSubmitEvent} variant="contained" color="primary" sx={{ mt: 2 }}>
-						Save Event
-					</Button>
+
+						<Grid item xs={12}>
+							<TextField
+								label="Start Date"
+								type="date"
+								value={newEventFormValues.startDate}
+								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, startDate: e.target.value })}
+								fullWidth
+								margin="normal"
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<TextField
+								label="End Date"
+								type="date"
+								value={newEventFormValues.endDate}
+								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, endDate: e.target.value })}
+								fullWidth
+								margin="normal"
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<FormControlLabel
+								control={
+									<Checkbox
+										checked={newEventFormValues.allDay}
+										onChange={(e) =>
+											setNewEventFormValues({
+												...newEventFormValues,
+												allDay: e.target.checked,
+											})
+										}
+									/>
+								}
+								label="All Day"
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<TextField
+								label="Event Description"
+								type="eventDescription"
+								value={newEventFormValues.eventDescription}
+								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventDescription: e.target.value })}
+								fullWidth
+								margin="normal"
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<TextField
+								label="Location"
+								type="location"
+								value={newEventFormValues.location}
+								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, location: e.target.value })}
+								fullWidth
+								margin="normal"
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+								<FormControl fullWidth required>
+									<InputLabel id="category-label">Category</InputLabel>
+									<Select
+										labelId="category-label"
+										value={newEventFormValues.category}
+										onChange={(e) => setNewEventFormValues({ ...newEventFormValues, category: e.target.value })}
+										input={<OutlinedInput label="Category" />}
+									>
+										{predefinedCategory.map((category) => (
+										<MenuItem key={category} value={category}>
+											{category}
+										</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+							</Grid>
+						<Button onClick={handleSubmitEvent} variant="contained" color="primary" sx={{ mt: 2 }}>
+							Save Event
+						</Button>
+					</Grid>
 				</DialogContent>
 			</Dialog>
 
