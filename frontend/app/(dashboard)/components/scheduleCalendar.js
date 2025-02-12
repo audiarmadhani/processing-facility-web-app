@@ -101,16 +101,23 @@ const ScheduleCalendar = () => {
 
   // Fetch production target events from the API
   useEffect(() => {
-    const fetchTargets = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/targets');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+        const targetsResponse = await fetch('https://processing-facility-backend.onrender.com/api/targets');
+        if (!targetsResponse.ok) {
+          throw new Error(`HTTP error! status: ${targetsResponse.status} (Targets)`);
+        }
+        const targetsData = await targetsResponse.json();
 
-        // Map each target into a FullCalendar event
-        const mappedEvents = data.map(target => ({
+        const eventsResponse = await fetch('https://processing-facility-backend.onrender.com/api/events');
+        if (!eventsResponse.ok) {
+          throw new Error(`HTTP error! status: ${eventsResponse.status} (Events)`);
+        }
+        const eventsData = await eventsResponse.json();
+
+        const mappedTargets = targetsData.map((target) => ({
           id: target.id,
           title: `${target.processingType} (${target.targetValue} kg)`,
           start: target.startDate,
@@ -123,10 +130,25 @@ const ScheduleCalendar = () => {
             columnName: target.columnName,
             productLine: target.productLine,
             producer: target.producer,
+            category: 'target', // Add a category to distinguish targets
           },
         }));
 
-        setEvents(mappedEvents);
+        const mappedEvents = eventsData.map((event) => ({
+          id: event.id,
+          title: event.eventName, // Use eventName from your event data
+          start: event.startDate,
+          end: event.endDate,
+          allDay: event.allDay, // Include allDay property
+          extendedProps: {
+            description: event.eventDescription,
+            location: event.location,
+            category: event.category || 'event', // Add a category to distinguish events
+          },
+        }));
+
+        setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
+				
       } catch (err) {
         console.error("Error fetching targets:", err);
         setError(err.message);
