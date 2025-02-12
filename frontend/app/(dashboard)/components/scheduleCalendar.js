@@ -164,7 +164,7 @@ const ScheduleCalendar = () => {
         select={handleDateSelect}   // Handle date range selection
         style={{ backgroundColor: calendarBgColor, color: calendarTextColor, width: '100%' }}
         // height={800} // Or some other fixed height
-				aspectRatio={1.2} // Try adjusting this value (lower makes it taller)
+				aspectRatio={1.4} // Try adjusting this value (lower makes it taller)
       />
 
       {/* Dialog for adding a new target */}
