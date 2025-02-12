@@ -34,6 +34,13 @@ const ScheduleCalendar = () => {
 	const theme = useTheme();
 	const calendarRef = useRef(null);
 
+	// Predefined options
+  const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
+  const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot'];
+  const predefinedProducer = ['HQ', 'BTM'];
+  const predefinedMetrics = ['Total Weight Produced'];
+  const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
+
   // Determine colors based on the current theme mode
   const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
   const calendarTextColor = theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
@@ -250,81 +257,142 @@ const ScheduleCalendar = () => {
       <Dialog open={isAddTargetDialogOpen} onClose={() => setIsAddTargetDialogOpen(false)}>
         <DialogTitle>Add New Target</DialogTitle>
         <DialogContent>
-					<TextField
-						label="Start Date"
-						type="date"
-						value={newTarget.startDate}
-						onChange={(e) => setNewTarget({ ...newTarget, startDate: e.target.value })}
-						fullWidth
-						margin="normal"
-						InputLabelProps={{
-							shrink: true,
-						}}
-					/>
-					<TextField
-						label="End Date"
-						type="date"
-						value={newTarget.endDate}
-						onChange={(e) => setNewTarget({ ...newTarget, endDate: e.target.value })}
-						fullWidth
-						margin="normal"
-						InputLabelProps={{
-							shrink: true,
-						}}
-					/>
-          <TextField
-            label="Processing Type"
-            value={newTarget.processingType}
-            onChange={(e) => setNewTarget({ ...newTarget, processingType: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Product Line"
-            value={newTarget.productLine}
-            onChange={(e) => setNewTarget({ ...newTarget, productLine: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Producer"
-            value={newTarget.producer}
-            onChange={(e) => setNewTarget({ ...newTarget, producer: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Quality"
-            value={newTarget.quality}
-            onChange={(e) => setNewTarget({ ...newTarget, quality: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Metric"
-            value={newTarget.metric}
-            onChange={(e) => setNewTarget({ ...newTarget, metric: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Time Frame"
-            value={newTarget.timeFrame}
-            onChange={(e) => setNewTarget({ ...newTarget, timeFrame: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Target Value"
-            type="number"
-            value={newTarget.targetValue}
-            onChange={(e) => setNewTarget({ ...newTarget, targetValue: e.target.value })}
-            fullWidth
-            margin="normal"
-          />
-          <Button onClick={handleSubmitTarget} variant="contained" color="primary" sx={{ mt: 2 }}>
-						Save Target
-					</Button>
+					<Grid container spacing={2}>
+
+						<TextField
+							label="Start Date"
+							type="date"
+							value={newTarget.startDate}
+							onChange={(e) => setNewTarget({ ...newTarget, startDate: e.target.value })}
+							fullWidth
+							margin="normal"
+							InputLabelProps={{
+								shrink: true,
+							}}
+						/>
+
+						<TextField
+							label="End Date"
+							type="date"
+							value={newTarget.endDate}
+							onChange={(e) => setNewTarget({ ...newTarget, endDate: e.target.value })}
+							fullWidth
+							margin="normal"
+							InputLabelProps={{
+								shrink: true,
+							}}
+						/>
+
+						<Grid item xs={12}>
+							<FormControl fullWidth required>
+								<InputLabel id="type-label">Type</InputLabel>
+								<Select
+									labelId="type-label"
+									value={newTarget.type}
+									onChange={({ target: { value } }) => setType(value)}
+									input={<OutlinedInput label="Type" />}
+								>
+									<MenuItem value="Arabica">Arabica</MenuItem>
+									<MenuItem value="Robusta">Robusta</MenuItem>
+								</Select>
+							</FormControl>
+						</Grid>
+										
+						<Grid item xs={12}>
+							<Autocomplete
+								freeSolo
+								options={predefinedProcesses}
+								value={newTarget.processingType}
+								onChange={(_, newValue) => setProcessingType(newValue || '')}
+								renderInput={(params) => (
+									<TextField {...params} label="Process" required />
+								)}
+							/>
+						</Grid>
+						
+						<Grid item xs={12}>
+							<Autocomplete
+								freeSolo
+								options={predefinedProductLine}
+								value={newTarget.productLine}
+								onChange={(_, newValue) => setProductLine(newValue || '')}
+								renderInput={(params) => (
+									<TextField {...params} label="Product Line" required />
+								)}
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<Autocomplete
+								freeSolo
+								options={predefinedProducer}
+								value={newTarget.producer}
+								onChange={(_, newValue) => setProducer(newValue || '')}
+								renderInput={(params) => (
+									<TextField {...params} label="Producer" required />
+								)}
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<FormControl fullWidth required>
+								<InputLabel id="quality-label">Quality</InputLabel>
+								<Select
+									labelId="quality-label"
+									value={newTarget.quality}
+									onChange={({ target: { value } }) => setQuality(value)}
+									input={<OutlinedInput label="Quality" />}
+								>
+									<MenuItem value="Specialty">Specialty</MenuItem>
+									<MenuItem value="G1">G1</MenuItem>
+									<MenuItem value="G2">G2</MenuItem>
+									<MenuItem value="G3">G3</MenuItem>
+									<MenuItem value="G4">G4</MenuItem>
+								</Select>
+							</FormControl>
+						</Grid>
+
+						<Grid item xs={12}>
+							<Autocomplete
+								freeSolo
+								options={predefinedMetrics}
+								value={newTarget.metric}
+								onChange={(_, newValue) => setMetric(newValue || '')}
+								renderInput={(params) => (
+									<TextField {...params} label="Metric" required />
+								)}
+							/>
+						</Grid>
+
+						<Grid item xs={12}>
+							<FormControl fullWidth required>
+								<InputLabel id="timeframe-label">Timeframe</InputLabel>
+								<Select
+									labelId="timeframe-label"
+									value={newTarget.timeFrame}
+									onChange={({ target: { value } }) => setTimeFrame(value)}
+									input={<OutlinedInput label="Timeframe" />}
+								>
+									<MenuItem value="Weekly">Weekly</MenuItem>
+									<MenuItem value="Monthly">Monthly</MenuItem>
+								</Select>
+							</FormControl>
+						</Grid>
+
+						<Grid item xs={12}>
+							<TextField
+								label="Target Value"
+								value={newTarget.targetValue}
+								onChange={({ target: { value } }) => setTargetValue(value)}
+								fullWidth
+								required
+							/>
+						</Grid>
+
+						<Button onClick={handleSubmitTarget} variant="contained" color="primary" sx={{ mt: 2 }}>
+							Save Target
+						</Button>
+					</Grid>
         </DialogContent>
       </Dialog>
 

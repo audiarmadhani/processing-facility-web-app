@@ -1,6 +1,6 @@
 import React from 'react';
 import { Grid, Card, CardContent, Typography } from '@mui/material';
-import ScheduleCalendar from '../../components/scheduleCalendar';
+import ScheduleCalendar from '../components/scheduleCalendar';
 
 const CalendarPage = () => {
   return (
