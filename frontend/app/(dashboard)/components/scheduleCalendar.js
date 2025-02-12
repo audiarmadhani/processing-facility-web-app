@@ -219,19 +219,18 @@ const ScheduleCalendar = () => {
 			</Toolbar>
 
       <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]} // Add interaction plugin
-        initialView="dayGridMonth"
-        events={events}
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,dayGridWeek,dayGridDay',
-        }}
-        selectable={true} // Enable date range selection
-        dateClick={handleDateClick} // Handle single date clicks
-        select={handleDateSelect}   // Handle date range selection
-        style={{ backgroundColor: calendarBgColor, color: calendarTextColor, width: '100%' }}
-        // height={800} // Or some other fixed height
+				ref={calendarRef}
+				plugins={[dayGridPlugin, interactionPlugin]}
+				initialView="dayGridMonth"
+				events={events}
+				headerToolbar={{
+					left: 'prev,next today',
+					center: 'title',
+					right: 'dayGridMonth,dayGridWeek,dayGridDay',
+				}}
+				selectable={true}
+				select={handleDateSelect}
+				style={{ backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff', color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', width: '100%' }}
 				aspectRatio={1.4} // Try adjusting this value (lower makes it taller)
       />
 
