@@ -88,6 +88,12 @@ const ScheduleCalendar = () => {
 				startDate: selectedRange.startStr,
 				endDate: selectedRange.endStr,
 			});
+		} else {
+			setNewTarget({
+				...newTarget,
+				startDate: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
+				endDate: dayjs().format('YYYY-MM-DD'),
+			});
 		}
 		setIsAddTargetDialogOpen(true);
 	};
@@ -98,6 +104,12 @@ const ScheduleCalendar = () => {
 				...newEvent,
 				start: selectedRange.startStr,
 				end: selectedRange.endStr,
+			});
+		} else {
+			setNewEvent({
+				...newEvent,
+				start: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
+				end: dayjs().format('YYYY-MM-DD'),
 			});
 		}
 		setIsAddEventDialogOpen(true);
@@ -238,6 +250,28 @@ const ScheduleCalendar = () => {
       <Dialog open={isAddTargetDialogOpen} onClose={() => setIsAddTargetDialogOpen(false)}>
         <DialogTitle>Add New Target</DialogTitle>
         <DialogContent>
+					<TextField
+						label="Start Date"
+						type="date"
+						value={newTarget.startDate}
+						onChange={(e) => setNewTarget({ ...newTarget, startDate: e.target.value })}
+						fullWidth
+						margin="normal"
+						InputLabelProps={{
+							shrink: true,
+						}}
+					/>
+					<TextField
+						label="End Date"
+						type="date"
+						value={newTarget.endDate}
+						onChange={(e) => setNewTarget({ ...newTarget, endDate: e.target.value })}
+						fullWidth
+						margin="normal"
+						InputLabelProps={{
+							shrink: true,
+						}}
+					/>
           <TextField
             label="Processing Type"
             value={newTarget.processingType}
@@ -304,6 +338,28 @@ const ScheduleCalendar = () => {
 						onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
 						fullWidth
 						margin="normal"
+					/>
+					<TextField
+						label="Start Date"
+						type="date"
+						value={newEvent.start}
+						onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
+						fullWidth
+						margin="normal"
+						InputLabelProps={{
+							shrink: true,
+						}}
+						/>
+					<TextField
+						label="End Date"
+						type="date"
+						value={newEvent.end}
+						onChange={(e) => setNewEvent({ ...newEvent, end: e.target.value })}
+						fullWidth
+						margin="normal"
+						InputLabelProps={{
+							shrink: true,
+						}}
 					/>
 					{/* ... other event form fields */}
 					<Button onClick={handleSubmitEvent} variant="contained" color="primary" sx={{ mt: 2 }}>
