@@ -1,29 +1,38 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction'; // Import interaction plugin for dateClick and select
-import { Box, CircularProgress, Typography, Button, Dialog, DialogTitle, DialogContent, TextField, useTheme } from '@mui/material';
+import interactionPlugin from '@fullcalendar/interaction';
+import { Box, CircularProgress, Typography, Button, Dialog, DialogTitle, DialogContent, TextField, useTheme, Toolbar } from '@mui/material';
 
 const ScheduleCalendar = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false); // State to control the dialog
-  const [newTarget, setNewTarget] = useState({
-    type: '',
-    processingType: '',
-    productLine: '',
-    producer: '',
-    quality: '',
-    metric: '',
-    timeFrame: '',
-    targetValue: '',
-    startDate: '',
-    endDate: '',
-  });
-  const theme = useTheme();
+	const [events, setEvents] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+	const [isAddTargetDialogOpen, setIsAddTargetDialogOpen] = useState(false);
+	const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false); // For events
+	const [newTarget, setNewTarget] = useState({
+		type: '',
+		processingType: '',
+		productLine: '',
+		producer: '',
+		quality: '',
+		metric: '',
+		timeFrame: '',
+		targetValue: '',
+		startDate: '',
+		endDate: '',
+	});
+	const [newEvent, setNewEvent] = useState({  // State for new events
+		title: '',
+		start: '',
+		end: '',
+		// ... other event properties
+	});
+	const [selectedRange, setSelectedRange] = useState(null);
+	const theme = useTheme();
+	const calendarRef = useRef(null);
 
   // Determine colors based on the current theme mode
   const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
@@ -68,29 +77,35 @@ const ScheduleCalendar = () => {
     fetchTargets();
   }, []);
 
-  // Handle date click event
-  const handleDateClick = (arg) => {
-    setNewTarget({
-      ...newTarget,
-      startDate: arg.dateStr, // Set the clicked date as the start date
-      endDate: arg.dateStr,   // Default end date to the same as start date
-    });
-    setOpenDialog(true); // Open the dialog for creating a new target
-  };
-
-  // Handle date range selection
   const handleDateSelect = (selectionInfo) => {
-    setNewTarget({
-      ...newTarget,
-      startDate: selectionInfo.startStr, // Set the start date of the selected range
-      endDate: selectionInfo.endStr,     // Set the end date of the selected range
-    });
-    setOpenDialog(true); // Open the dialog for creating a new target
-  };
+		setSelectedRange(selectionInfo);
+	};
 
-  // Handle form submission to create a new target
-  const handleSubmit = async () => {
-    try {
+	const handleOpenAddTargetDialog = () => {
+		if (selectedRange) {
+			setNewTarget({
+				...newTarget,
+				startDate: selectedRange.startStr,
+				endDate: selectedRange.endStr,
+			});
+		}
+		setIsAddTargetDialogOpen(true);
+	};
+
+	const handleOpenAddEventDialog = () => {
+		if (selectedRange) {
+			setNewEvent({
+				...newEvent,
+				start: selectedRange.startStr,
+				end: selectedRange.endStr,
+			});
+		}
+		setIsAddEventDialogOpen(true);
+	};
+
+
+	const handleSubmitTarget = async () => { // Renamed for clarity
+		try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/targets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +128,50 @@ const ScheduleCalendar = () => {
         },
       ]);
 
-      setOpenDialog(false); // Close the dialog after successful creation
+			setIsAddTargetDialogOpen(false);
+      setNewTarget({
+        type: '',
+        processingType: '',
+        productLine: '',
+        producer: '',
+        quality: '',
+        metric: '',
+        timeFrame: '',
+        targetValue: '',
+        startDate: '',
+        endDate: '',
+      });
+    } catch (err) {
+      console.error('Error creating target:', err);
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+	const handleSubmitEvent = async () => {
+		try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/targets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTarget),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create target.');
+      }
+
+      const createdTarget = await response.json();
+      setEvents((prevEvents) => [
+        ...prevEvents,
+        {
+          id: createdTarget.id,
+          title: `${newTarget.processingType} (${newTarget.targetValue} kg)`,
+          start: newTarget.startDate,
+          end: newTarget.endDate,
+        },
+      ]);
+
+			setIsAddTargetDialogOpen(false);
       setNewTarget({
         type: '',
         processingType: '',
@@ -150,6 +208,16 @@ const ScheduleCalendar = () => {
 
   return (
     <Box sx={{ p: 2, width: '100%', height: '100%' }}>
+
+			<Toolbar sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+				<Button variant="contained" color="primary" onClick={handleOpenAddTargetDialog} sx={{ mr: 2 }}>
+						Add Target
+				</Button>
+				<Button variant="contained" color="secondary" onClick={handleOpenAddEventDialog}>
+						Add Event
+				</Button>
+			</Toolbar>
+
       <FullCalendar
         plugins={[dayGridPlugin, interactionPlugin]} // Add interaction plugin
         initialView="dayGridMonth"
@@ -168,7 +236,7 @@ const ScheduleCalendar = () => {
       />
 
       {/* Dialog for adding a new target */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+      <Dialog open={isAddTargetDialogOpen} onClose={() => setIsAddTargetDialogOpen(false)}>
         <DialogTitle>Add New Target</DialogTitle>
         <DialogContent>
           <TextField
@@ -221,11 +289,30 @@ const ScheduleCalendar = () => {
             fullWidth
             margin="normal"
           />
-          <Button onClick={handleSubmit} variant="contained" color="primary" sx={{ mt: 2 }}>
-            Save Target
-          </Button>
+          <Button onClick={handleSubmitTarget} variant="contained" color="primary" sx={{ mt: 2 }}>
+						Save Target
+					</Button>
         </DialogContent>
       </Dialog>
+
+			{/* Dialog for adding a new event */}
+			<Dialog open={isAddEventDialogOpen} onClose={() => setIsAddEventDialogOpen(false)}>
+				<DialogTitle>Add New Event</DialogTitle>
+				<DialogContent>
+					<TextField
+						label="Title"
+						value={newEvent.title}
+						onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+						fullWidth
+						margin="normal"
+					/>
+					{/* ... other event form fields */}
+					<Button onClick={handleSubmitEvent} variant="contained" color="primary" sx={{ mt: 2 }}>
+						Save Event
+					</Button>
+				</DialogContent>
+			</Dialog>
+
     </Box>
   );
 };
