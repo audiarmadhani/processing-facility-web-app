@@ -145,6 +145,8 @@ const ScheduleCalendar = () => {
             location: event.location,
             category: event.category || 'event', // Add a category to distinguish events
           },
+					eventColor: '#f97a7a',
+					backgroundColor: '#f97a7a', // Soft red color for events
         }));
 
         setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
@@ -336,8 +338,7 @@ const ScheduleCalendar = () => {
 				selectable={true}
 				select={handleDateSelect}
 				style={{ backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff', color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', width: '100%' }}
-				aspectRatio={1.6} // Try adjusting this value (lower makes it taller)
-				// contentHeight= '800px'
+				aspectRatio={1.5} // Try adjusting this value (lower makes it taller)
 				expandRows= {false}
       />
 
