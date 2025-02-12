@@ -117,6 +117,12 @@ const ScheduleCalendar = () => {
         }
         const eventsData = await eventsResponse.json();
 
+				const categoryColors = {
+					'Bali Holiday': '#FFCCCC', // Soft red for Bali Holiday
+					'National Holiday': '#FFD700', // Gold for National Holiday
+					default: '#CCCCCC', // Default gray for unknown categories
+				};
+
         const mappedTargets = targetsData.map((target) => ({
           id: target.id,
           title: `${target.processingType} (${target.targetValue} kg)`,
@@ -134,21 +140,26 @@ const ScheduleCalendar = () => {
           },
         }));
 
-        const mappedEvents = eventsData.map((event) => ({
-          id: event.id,
-          title: event.eventName, // Use eventName from your event data
-          start: event.startDate,
-          end: event.endDate,
-          allDay: event.allDay, // Include allDay property
-          extendedProps: {
-            description: event.eventDescription,
-            location: event.location,
-            category: event.category || 'event', // Add a category to distinguish events
-          },
-					// eventColor: '#f97a7a',
-					backgroundColor: '#f97a7a', // Soft red color for events
-					borderColor: '#f97a7a', // Soft red color for events
-        }));
+        const mappedEvents = eventsData.map((event) => {
+					
+					const category = event.category || 'default'; // Use 'default' if no category is provided
+					const color = categoryColors[category] || categoryColors.default; // Fallback to default color
+	
+					return {
+						id: event.id,
+						title: event.eventName, // Use eventName from your event data
+						start: event.startDate,
+						end: event.endDate,
+						allDay: event.allDay, // Include allDay property
+						backgroundColor: color, // Set background color based on category
+						borderColor: color, // Match border color with background
+						extendedProps: {
+							description: event.eventDescription,
+							location: event.location,
+							category: category, // Add a category to distinguish events
+						},
+					};
+				});
 
         setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
 
