@@ -85,6 +85,7 @@ const ScheduleCalendar = () => {
 	const [selectedRange, setSelectedRange] = useState(null);
 	const [isEventDetailsDialogOpen, setIsEventDetailsDialogOpen] = useState(false); // State for event details dialog
   const [selectedEventDetails, setSelectedEventDetails] = useState(null); // State to store clicked event details
+	const [editedEventDetails, setEditedEventDetails] = useState({});
   const theme = useTheme();
   const calendarRef = useRef(null);
 
@@ -315,13 +316,16 @@ const ScheduleCalendar = () => {
 	// Handle event click
   const handleEventClick = (clickInfo) => {
     const { event } = clickInfo;
-    setSelectedEventDetails({
+    const details = {
+      id: event.id,
       title: event.title,
       start: event.startStr,
       end: event.endStr,
-      ...event.extendedProps, // Include extendedProps
-    });
-    setIsEventDetailsDialogOpen(true); // Open the dialog
+      ...event.extendedProps,
+    };
+    setSelectedEventDetails(details);
+    setEditedEventDetails(details); // Initialize editable state
+    setIsEventDetailsDialogOpen(true);
   };
 
 	// Handle update button click
