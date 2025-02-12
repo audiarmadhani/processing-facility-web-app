@@ -26,77 +26,72 @@ import {
   MenuItem,
   OutlinedInput,
   Autocomplete,
-	Checkbox,
-	FormControlLabel
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 
 const ScheduleCalendar = () => {
-	const [events, setEvents] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
-	const [isAddTargetDialogOpen, setIsAddTargetDialogOpen] = useState(false);
-	const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false); // For events
-	const [newTarget, setNewTarget] = useState({
-		type: '',
-		processingType: '',
-		productLine: '',
-		producer: '',
-		quality: '',
-		metric: '',
-		timeFrame: '',
-		targetValue: '',
-		startDate: '',
-		endDate: '',
-	});	
-
-	const [newTargetFormValues, setNewTargetFormValues] = useState({  // Separate state for form values
-		type: '',
-		processingType: '',
-		productLine: '',
-		producer: '',
-		quality: '',
-		metric: '',
-		timeFrame: '',
-		targetValue: '',
-		startDate: '',
-		endDate: '',
-	});
-
-	const [newEvent, setNewEvent] = useState({  // State for new events
-		eventName: '',
-		startDate: '',
-		endDate: '',
-		eventDescription: '',
-		allDay: false, // Add allDay state, initialized to false
-		location: '',
-		category: '',
-	});
-
-	const [newEventFormValues, setNewEventFormValues] = useState({  // Separate state for form values
-		eventName: '',
-		startDate: '',
-		endDate: '',
-		eventDescription: '',
-		allDay: false, // Add allDay state, initialized to false
-		location: '',
-		category: '',
-	});
-
-	const [selectedRange, setSelectedRange] = useState(null);
-	const [isEventDetailsDialogOpen, setIsEventDetailsDialogOpen] = useState(false); // State for event details dialog
-  const [selectedEventDetails, setSelectedEventDetails] = useState(null); // State to store clicked event details
-	const [editedEventDetails, setEditedEventDetails] = useState({});
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isAddTargetDialogOpen, setIsAddTargetDialogOpen] = useState(false);
+  const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false); // For events
+  const [newTarget, setNewTarget] = useState({
+    type: '',
+    processingType: '',
+    productLine: '',
+    producer: '',
+    quality: '',
+    metric: '',
+    timeFrame: '',
+    targetValue: '',
+    startDate: '',
+    endDate: '',
+  });	
+  const [newTargetFormValues, setNewTargetFormValues] = useState({  // Separate state for form values
+    type: '',
+    processingType: '',
+    productLine: '',
+    producer: '',
+    quality: '',
+    metric: '',
+    timeFrame: '',
+    targetValue: '',
+    startDate: '',
+    endDate: '',
+  });
+  const [newEvent, setNewEvent] = useState({  // State for new events
+    eventName: '',
+    startDate: '',
+    endDate: '',
+    eventDescription: '',
+    allDay: false, // Add allDay state, initialized to false
+    location: '',
+    category: '',
+  });
+  const [newEventFormValues, setNewEventFormValues] = useState({  // Separate state for form values
+    eventName: '',
+    startDate: '',
+    endDate: '',
+    eventDescription: '',
+    allDay: false, // Add allDay state, initialized to false
+    location: '',
+    category: '',
+  });
+  const [selectedRange, setSelectedRange] = useState(null);
+  const [isEventDetailsDialogOpen, setIsEventDetailsDialogOpen] = useState(false); // State for event details dialog
+  const [selectedEventDetails, setSelectedEventDetails] = useState(null); // Store clicked event details
+  const [editedEventDetails, setEditedEventDetails] = useState({});
   const theme = useTheme();
   const calendarRef = useRef(null);
 
-	// Predefined options
+  // Predefined options
   const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
   const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot', 'Commercial Lot'];
   const predefinedProducer = ['HQ', 'BTM'];
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
-	const predefinedCategory = ['Bali Holiday', 'National Holiday'];
-
+  const predefinedCategory = ['Bali Holiday', 'National Holiday'];
 
   // Determine colors based on the current theme mode
   const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
@@ -120,19 +115,11 @@ const ScheduleCalendar = () => {
         }
         const eventsData = await eventsResponse.json();
 
-				const categoryColors = {
-					'Bali Holiday': '#CD7F32',
-					'National Holiday': '#BA232C',
-					'Joint Holiday': '#FF683E', // Gold for National Holiday
-					default: '#444444', // Default gray for unknown categories
-				};
-
         const mappedTargets = targetsData.map((target) => ({
           id: target.id,
           title: `${target.processingType} (${target.targetValue} kg)`,
           start: target.startDate,
           end: target.endDate,
-					type: 'target', // Add a type to distinguish targets
           extendedProps: {
             type: target.type,
             quality: target.quality,
@@ -141,36 +128,26 @@ const ScheduleCalendar = () => {
             columnName: target.columnName,
             productLine: target.productLine,
             producer: target.producer,
-            category: 'target', // Add a category to distinguish targets
+            category: 'target', // Mark as target
           },
         }));
 
-        const mappedEvents = eventsData.map((event) => {
-
-					const category = event.category || 'default'; // Use 'default' if no category is provided
-					const color = categoryColors[category] || categoryColors.default; // Fallback to default color
-	
-					return {
-						id: event.id,
-						title: event.eventName, // Use eventName from your event data
-						start: event.startDate,
-						end: event.endDate,
-						allDay: event.allDay, // Include allDay property
-						type: 'event', // Add a category to distinguish targets
-						backgroundColor: color, // Set background color based on category
-						borderColor: color, // Match border color with background
-						extendedProps: {
-							eventDescription: event.eventDescription,
-							location: event.location,
-							category: category, // Add a category to distinguish events
-						},
-					};
-				});
+        const mappedEvents = eventsData.map((event) => ({
+          id: event.id,
+          title: event.eventName, // Use eventName from your event data
+          start: event.startDate,
+          end: event.endDate,
+          allDay: event.allDay, // Include allDay property
+          extendedProps: {
+            eventDescription: event.eventDescription,
+            location: event.location,
+            category: 'event', // Mark as event
+          },
+        }));
 
         setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
-
       } catch (err) {
-        console.error("Error fetching targets:", err);
+        console.error("Error fetching targets/events:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -180,56 +157,55 @@ const ScheduleCalendar = () => {
     fetchData();
   }, []);
 
-	useEffect(() => {
-    // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
+  useEffect(() => {
+    // Sync newTargetFormValues with newTarget when newTarget changes
     setNewTargetFormValues(newTarget);
   }, [newTarget]);
 
-	useEffect(() => {
-    // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
+  useEffect(() => {
+    // Sync newEventFormValues with newEvent when newEvent changes
     setNewEventFormValues(newEvent);
   }, [newEvent]);
 
   const handleDateSelect = (selectionInfo) => {
-		setSelectedRange(selectionInfo);
-	};
-
-	const handleOpenAddTargetDialog = () => {
-		if (selectedRange) {
-			setNewTarget({
-				...newTarget,
-				startDate: selectedRange.startStr,
-				endDate: selectedRange.endStr,
-			});
-		} else {
-			setNewTarget({
-				...newTarget,
-				startDate: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
-				endDate: dayjs().format('YYYY-MM-DD'),
-			});
-		}
-		setIsAddTargetDialogOpen(true);
+    setSelectedRange(selectionInfo);
   };
 
-	const handleOpenAddEventDialog = () => {
-		if (selectedRange) {
-			setNewEvent({
-				...newEvent,
-				startDate: selectedRange.startStr,
-				endDate: selectedRange.endStr,
-			});
-		} else {
-			setNewEvent({
-				...newEvent,
-				startDate: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
-				endDate: dayjs().format('YYYY-MM-DD'),
-			});
-		}
-		setIsAddEventDialogOpen(true);
-	};
+  const handleOpenAddTargetDialog = () => {
+    if (selectedRange) {
+      setNewTarget({
+        ...newTarget,
+        startDate: selectedRange.startStr,
+        endDate: selectedRange.endStr,
+      });
+    } else {
+      setNewTarget({
+        ...newTarget,
+        startDate: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
+        endDate: dayjs().format('YYYY-MM-DD'),
+      });
+    }
+    setIsAddTargetDialogOpen(true);
+  };
 
+  const handleOpenAddEventDialog = () => {
+    if (selectedRange) {
+      setNewEvent({
+        ...newEvent,
+        startDate: selectedRange.startStr,
+        endDate: selectedRange.endStr,
+      });
+    } else {
+      setNewEvent({
+        ...newEvent,
+        startDate: dayjs().format('YYYY-MM-DD'), // Default to today's date if no range selected
+        endDate: dayjs().format('YYYY-MM-DD'),
+      });
+    }
+    setIsAddEventDialogOpen(true);
+  };
 
-	const handleSubmitTarget = async () => {
+  const handleSubmitTarget = async () => {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/targets', {
         method: 'POST',
@@ -250,54 +226,12 @@ const ScheduleCalendar = () => {
           title: `${newTarget.processingType} (${newTarget.targetValue} kg)`,
           start: newTarget.startDate,
           end: newTarget.endDate,
+          extendedProps: { category: 'target' },
         },
       ]);
 
-			setIsAddTargetDialogOpen(false);
+      setIsAddTargetDialogOpen(false);
       setNewTargetFormValues({ // Clear the form values
-        type: '',
-        processingType: '',
-        productLine: '',
-        producer: '',
-        quality: '',
-        metric: '',
-        timeFrame: '',
-        targetValue: '',
-				startDate: '',
-				endDate: '',
-      });
-    } catch (err) {
-      console.error('Error creating target:', err);
-      alert(`Error: ${err.message}`);
-    }
-  };
-
-	const handleSubmitEvent = async () => {
-		try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEventFormValues),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create target.');
-      }
-
-      const createdEvent = await response.json();
-      setEvents((prevEvents) => [
-        ...prevEvents,
-        {
-          id: createdEvent.id,
-          title: `${newEvent.processingType}`,
-          start: newEvent.startDate,
-          end: newEvent.endDate,
-        },
-      ]);
-
-			setIsAddEventDialogOpen(false);
-      setNewEventFormValues({
         type: '',
         processingType: '',
         productLine: '',
@@ -310,130 +244,132 @@ const ScheduleCalendar = () => {
         endDate: '',
       });
     } catch (err) {
+      console.error('Error creating target:', err);
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  const handleSubmitEvent = async () => {
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEventFormValues),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create event.');
+      }
+
+      const createdEvent = await response.json();
+      setEvents((prevEvents) => [
+        ...prevEvents,
+        {
+          id: createdEvent.id,
+          title: newEventFormValues.eventName,
+          start: newEventFormValues.startDate,
+          end: newEventFormValues.endDate,
+          allDay: newEventFormValues.allDay,
+          extendedProps: { category: 'event' },
+        },
+      ]);
+
+      setIsAddEventDialogOpen(false);
+      setNewEventFormValues({
+        eventName: '',
+        startDate: '',
+        endDate: '',
+        eventDescription: '',
+        allDay: false,
+        location: '',
+        category: '',
+      });
+    } catch (err) {
       console.error('Error creating event:', err);
       alert(`Error: ${err.message}`);
     }
   };
 
-	// Handle event click with proper data extraction
-	const handleEventClick = (clickInfo) => {
-		const { event } = clickInfo;
-		const isTarget = event.extendedProps.category === 'target';
-		
-		const details = {
-			id: event.id,
-			type: isTarget ? 'target' : 'event',
-			title: event.title,
-			startDate: event.start ? dayjs(event.start).format('YYYY-MM-DD') : '',
-			endDate: event.end ? dayjs(event.end).format('YYYY-MM-DD') : '',
-			allDay: event.allDay,
-			...(isTarget ? {
-				processingType: event.extendedProps.processingType,
-				productLine: event.extendedProps.productLine,
-				targetValue: event.extendedProps.targetValue,
-				metric: event.extendedProps.metric
-			} : {
-				eventDescription: event.extendedProps.eventDescription,
-				location: event.extendedProps.location,
-				category: event.extendedProps.category
-			})
-		};
+  // Handle event click to open details dialog for editing/updating/deleting
+  const handleEventClick = (clickInfo) => {
+    const { event } = clickInfo;
+    const details = {
+      id: event.id,
+      eventName: event.title,
+      startDate: event.startStr,
+      endDate: event.endStr || event.startStr,
+      type: event.extendedProps.category === 'target' ? 'target' : 'event',
+      ...event.extendedProps,
+    };
+    setSelectedEventDetails(details);
+    setEditedEventDetails(details);
+    setIsEventDetailsDialogOpen(true);
+  };
 
-		setSelectedEventDetails(details);
-		setEditedEventDetails(details);
-		setIsEventDetailsDialogOpen(true);
-	};
+  // Handle update button click
+  const handleUpdate = async () => {
+    const { id, type, ...updatedData } = editedEventDetails;
+    if (!id || !type) {
+      alert("Missing event ID or type. Please try again.");
+      return;
+    }
+    try {
+      let url = "";
+      if (type === "target") {
+        url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
+      } else if (type === "event") {
+        url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
+      }
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error || "Failed to update.");
+      }
+      setEvents((prevEvents) =>
+        prevEvents.map((evt) =>
+          evt.id === id ? { ...evt, ...editedEventDetails } : evt
+        )
+      );
+      setIsEventDetailsDialogOpen(false);
+    } catch (err) {
+      console.error("Error updating:", err);
+      alert(`Error: ${err.message}`);
+    }
+  };
 
-	// Unified update handler with proper validation
-	const handleUpdate = async () => {
-		if (!editedEventDetails?.id || !editedEventDetails?.type) {
-			alert('Invalid event data for update');
-			return;
-		}
-
-		try {
-			const endpoint = editedEventDetails.type === 'target' 
-				? `targets/${editedEventDetails.id}`
-				: `events/${editedEventDetails.id}`;
-
-			const response = await fetch(
-				`https://processing-facility-backend.onrender.com/api/${endpoint}`,
-				{
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						...(editedEventDetails.type === 'target' ? {
-							processingType: editedEventDetails.processingType,
-							productLine: editedEventDetails.productLine,
-							targetValue: editedEventDetails.targetValue,
-							metric: editedEventDetails.metric,
-							startDate: editedEventDetails.startDate,
-							endDate: editedEventDetails.endDate
-						} : {
-							eventName: editedEventDetails.title,
-							eventDescription: editedEventDetails.eventDescription,
-							location: editedEventDetails.location,
-							category: editedEventDetails.category,
-							startDate: editedEventDetails.startDate,
-							endDate: editedEventDetails.endDate,
-							allDay: editedEventDetails.allDay
-						})
-					})
-				}
-			);
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.message || 'Update failed');
-			}
-
-			// Refresh events after successful update
-			const updatedEvent = await response.json();
-			setEvents(prev => prev.map(e => 
-				e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e
-			));
-
-			setIsEventDetailsDialogOpen(false);
-			alert('Successfully updated!');
-		} catch (err) {
-			console.error('Update error:', err);
-			alert(`Update failed: ${err.message}`);
-		}
-	};
-
-	// Enhanced delete handler with confirmation
-	const handleDelete = async () => {
-		if (!window.confirm('Are you sure you want to delete this item?')) return;
-
-		if (!selectedEventDetails?.id || !selectedEventDetails?.type) {
-			alert('Invalid event data for deletion');
-			return;
-		}
-
-		try {
-			const endpoint = selectedEventDetails.type === 'target' 
-				? `targets/${selectedEventDetails.id}`
-				: `events/${selectedEventDetails.id}`;
-
-			const response = await fetch(
-				`https://processing-facility-backend.onrender.com/api/${endpoint}`,
-				{ method: 'DELETE' }
-			);
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.message || 'Delete failed');
-			}
-
-			// Update local state after successful deletion
-			setEvents(prev => prev.filter(e => e.id !== selectedEventDetails.id));
-			setIsEventDetailsDialogOpen(false);
-			alert('Successfully deleted!');
-		} catch (err) {
-			console.error('Delete error:', err);
-			alert(`Delete failed: ${err.message}`);
-		}
-	};
+  // Handle delete button click
+  const handleDelete = async () => {
+    const { id, type } = selectedEventDetails;
+    if (!id || !type) {
+      alert("Missing event ID or type.");
+      return;
+    }
+    try {
+      let url = "";
+      if (type === "target") {
+        url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
+      } else if (type === "event") {
+        url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
+      }
+      const response = await fetch(url, { method: "DELETE" });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete.");
+      }
+      setEvents((prevEvents) =>
+        prevEvents.filter((evt) => evt.id !== id)
+      );
+      setIsEventDetailsDialogOpen(false);
+    } catch (err) {
+      console.error("Error deleting:", err);
+      alert(`Error: ${err.message}`);
+    }
+  };
 
   if (loading) {
     return (
