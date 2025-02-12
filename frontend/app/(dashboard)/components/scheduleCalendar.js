@@ -118,9 +118,10 @@ const ScheduleCalendar = () => {
         const eventsData = await eventsResponse.json();
 
 				const categoryColors = {
-					'Bali Holiday': '#FFCCCC', // Soft red for Bali Holiday
-					'National Holiday': '#FFD700', // Gold for National Holiday
-					default: '#CCCCCC', // Default gray for unknown categories
+					'Bali Holiday': '#CD7F32',
+					'National Holiday': '#BA232C',
+					'Joint Holiday': '#FF683E', // Gold for National Holiday
+					default: '#444444', // Default gray for unknown categories
 				};
 
         const mappedTargets = targetsData.map((target) => ({
@@ -141,7 +142,7 @@ const ScheduleCalendar = () => {
         }));
 
         const mappedEvents = eventsData.map((event) => {
-					
+
 					const category = event.category || 'default'; // Use 'default' if no category is provided
 					const color = categoryColors[category] || categoryColors.default; // Fallback to default color
 	
