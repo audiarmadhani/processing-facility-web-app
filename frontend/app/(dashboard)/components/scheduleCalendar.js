@@ -314,85 +314,109 @@ const ScheduleCalendar = () => {
     }
   };
 
-  // Handle event click to open details dialog for editing/updating/deleting
-  const handleEventClick = (clickInfo) => {
-    const { event } = clickInfo;
-    const details = {
-      id: event.id,
-      eventName: event.title,
-      startDate: event.startStr,
-      endDate: event.endStr || event.startStr,
-      type: event.extendedProps.category === 'target' ? 'target' : 'event',
-      ...event.extendedProps,
-    };
-    setSelectedEventDetails(details);
-    setEditedEventDetails(details);
-    setIsEventDetailsDialogOpen(true);
-  };
+  // handleEventClick - Improved to capture type correctly
+	const handleEventClick = (clickInfo) => {
+		const { event } = clickInfo;
+		const details = {
+			id: event.id,
+			type: event.extendedProps.type || 'event', // Ensure type is captured
+			eventName: event.title,
+			startDate: dayjs(event.start).format('YYYY-MM-DD'),
+			endDate: event.end ? dayjs(event.end).subtract(1, 'day').format('YYYY-MM-DD') : dayjs(event.start).format('YYYY-MM-DD'),
+			...event.extendedProps,
+		};
+		setSelectedEventDetails(details);
+		setEditedEventDetails(details);
+		setIsEventDetailsDialogOpen(true);
+	};
 
-  // Handle update button click
-  const handleUpdate = async () => {
-    const { id, type, ...updatedData } = editedEventDetails;
-    if (!id || !type) {
-      alert("Missing event ID or type. Please try again.");
-      return;
-    }
-    try {
-      let url = "";
-      if (type === "target") {
-        url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
-      } else if (type === "event") {
-        url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
-      }
-      const response = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedData),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.error || "Failed to update.");
-      }
-      setEvents((prevEvents) =>
-        prevEvents.map((evt) =>
-          evt.id === id ? { ...evt, ...editedEventDetails } : evt
-        )
-      );
-      setIsEventDetailsDialogOpen(false);
-    } catch (err) {
-      console.error("Error updating:", err);
-      alert(`Error: ${err.message}`);
-    }
-  };
+	// handleUpdate - Enhanced for both types
+	const handleUpdate = async () => {
+		const { id, type, extendedProps } = editedEventDetails;
 
-  // Handle delete button click
-  const handleDelete = async () => {
-    const { id, type } = selectedEventDetails;
-    if (!id || !type) {
-      alert("Missing event ID or type.");
-      return;
-    }
-    try {
-      let url = "";
-      if (type === "target") {
-        url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
-      } else if (type === "event") {
-        url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
-      }
-      const response = await fetch(url, { method: "DELETE" });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete.");
-      }
-      setEvents((prevEvents) =>
-        prevEvents.filter((evt) => evt.id !== id)
-      );
-      setIsEventDetailsDialogOpen(false);
-    } catch (err) {
-      console.error("Error deleting:", err);
-      alert(`Error: ${err.message}`);
-    }
-  };
+		try {
+			let endpoint, payload;
+
+			if (type === 'target') {
+				endpoint = `/api/targets/${id}`;
+				payload = {
+					type: editedEventDetails.type,
+					processingType: editedEventDetails.processingType,
+					productLine: editedEventDetails.productLine,
+					producer: editedEventDetails.producer,
+					quality: editedEventDetails.quality,
+					metric: editedEventDetails.metric,
+					timeFrame: editedEventDetails.timeFrame,
+					targetValue: editedEventDetails.targetValue,
+					startDate: editedEventDetails.startDate,
+					endDate: editedEventDetails.endDate
+				};
+			} else {
+				endpoint = `/api/events/${id}`;
+				payload = {
+					eventName: editedEventDetails.eventName,
+					startDate: editedEventDetails.startDate,
+					endDate: editedEventDetails.endDate,
+					eventDescription: editedEventDetails.eventDescription,
+					allDay: editedEventDetails.allDay,
+					location: editedEventDetails.location,
+					category: editedEventDetails.category
+				};
+			}
+
+			const response = await fetch(`https://processing-facility-backend.onrender.com${endpoint}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Update failed');
+			}
+
+			setEvents(prevEvents => 
+				prevEvents.map(event => 
+					event.id === id ? { 
+						...event, 
+						...payload,
+						title: type === 'target' ? 
+							`${payload.processingType} (${payload.targetValue} kg)` : 
+							payload.eventName 
+					} : event
+				)
+			);
+			setIsEventDetailsDialogOpen(false);
+		} catch (err) {
+			console.error('Update error:', err);
+			alert(`Error: ${err.message}`);
+		}
+	};
+
+	// handleDelete - Type-specific handling
+	const handleDelete = async () => {
+		const { id, type } = selectedEventDetails;
+
+		try {
+			const endpoint = type === 'target' ? `/targets/${id}` : `/events/${id}`;
+			const response = await fetch(
+				`https://processing-facility-backend.onrender.com/api${endpoint}`,
+				{ method: 'DELETE' }
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Delete failed');
+			}
+
+			setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
+			setIsEventDetailsDialogOpen(false);
+		} catch (err) {
+			console.error('Delete error:', err);
+			alert(`Error: ${err.message}`);
+		}
+	};
+
 
   if (loading) {
     return (
