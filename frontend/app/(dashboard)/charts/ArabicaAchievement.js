@@ -20,6 +20,9 @@ const colorPalette = [
 ];
 
 const ArabicaAchievementChart = ({ arabicaAchievement, loading }) => {
+
+  console.log("Received arabicaAchievement data:", arabicaAchievement);
+
   if (loading) {
     return (
       <Box
@@ -52,6 +55,9 @@ const ArabicaAchievementChart = ({ arabicaAchievement, loading }) => {
     targetPercentage: item.targetPercentage,
     color: colorPalette[index % colorPalette.length], // Assign a color from the palette
   }));
+
+  // Debug: Log the transformed data
+  console.log("Transformed chart data:", chartData);
 
   return (
     <Box>
