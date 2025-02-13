@@ -494,7 +494,7 @@ function Dashboard() {
               </Grid>
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -503,7 +503,7 @@ function Dashboard() {
                     <ArabicaAchievementChart timeframe={timeframe}/>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Arabica Sankey Chart */}
               <Grid 
@@ -868,7 +868,7 @@ function Dashboard() {
               </Grid>
 
               {/* Robusta Target Achievement */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -877,7 +877,7 @@ function Dashboard() {
                     <RobustaAchievementChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Robusta Sankey Chart */}
               <Grid 
