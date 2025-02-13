@@ -42,7 +42,10 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
             targetPercentage: item.targetPercentage,
             color: colorPalette[index % colorPalette.length], // Assign a color from the palette
           }));
+
           setData(chartData);
+          console.log("Received arabicaAchievement data:", chartData);
+
         } else {
           console.error("Invalid data format:", response.data.arabicaAchievement);
         }
@@ -57,19 +60,28 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
   }, [timeframe]);
 
   if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: 500,
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+  
+    if (error) { // Display error message
+      return (
+        <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+          <Typography variant="body1">{error}</Typography>
+        </Box>
+      );
+    }
+  
+    if (data.length === 0) {
+      return (
+        <Box sx={{ textAlign: "center", padding: 2 }}>
+          <Typography variant="body1">No data available</Typography>
+        </Box>
+      );
+    }
 
   return (
     <Box>

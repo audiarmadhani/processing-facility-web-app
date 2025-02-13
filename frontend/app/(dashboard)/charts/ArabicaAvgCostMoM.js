@@ -48,10 +48,18 @@ const ArabicaAvgCostChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  if (!data.length) {
+  if (error) { // Display error message
+    return (
+      <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+        <Typography variant="body1">{error}</Typography>
+      </Box>
+    );
+  }
+
+  if (data.length === 0) {
     return (
       <Box sx={{ textAlign: "center", padding: 2 }}>
-        <p>No data available</p>
+        <Typography variant="body1">No data available</Typography>
       </Box>
     );
   }
