@@ -851,24 +851,40 @@ const ScheduleCalendar = () => {
 					<Grid container spacing={2}>
 						{/* Common Fields */}
 						<Grid item xs={12} sm={6}>
-							<TextField
-								label="Start Date"
-								type="date"
-								fullWidth
-								value={editedEventDetails.startDate}
-								onChange={(e) => setEditedEventDetails(prev => ({...prev, startDate: e.target.value}))}
-								InputLabelProps={{ shrink: true }}
+							<DateTimePicker
+								label="Start Date and Time"
+								value={editedEventDetails.startDate ? dayjs(editedEventDetails.startDate) : null}
+								onChange={(newValue) => {
+										if (newValue) {
+												let newStartDate = newValue;
+												if (editedEventDetails.allDay) {
+														newStartDate = newStartDate.startOf('day'); // Set to 00:00:00 if all-day
+												}
+												setEditedEventDetails(prev => ({ ...prev, startDate: newStartDate.toISOString() }));
+										} else {
+												setEditedEventDetails(prev => ({ ...prev, startDate: '' })); // Handle null/clear
+										}
+								}}
+								renderInput={(params) => <TextField {...params} fullWidth />}
 							/>
 						</Grid>
-						
+
 						<Grid item xs={12} sm={6}>
-							<TextField
-								label="End Date"
-								type="date"
-								fullWidth
-								value={editedEventDetails.endDate}
-								onChange={(e) => setEditedEventDetails(prev => ({...prev, endDate: e.target.value}))}
-								InputLabelProps={{ shrink: true }}
+							<DateTimePicker
+								label="End Date and Time"
+								value={editedEventDetails.endDate ? dayjs(editedEventDetails.endDate) : null}
+								onChange={(newValue) => {
+									if (newValue) {
+											let newEndDate = newValue;
+										if (editedEventDetails.allDay) {
+											newEndDate = newEndDate.endOf('day');
+										}
+											setEditedEventDetails(prev => ({ ...prev, endDate: newEndDate.toISOString() }));
+									} else {
+											setEditedEventDetails(prev => ({ ...prev, endDate: '' }));//handle empty date
+									}
+								}}
+								renderInput={(params) => <TextField {...params} fullWidth />}
 							/>
 						</Grid>
 
@@ -883,6 +899,7 @@ const ScheduleCalendar = () => {
 										onChange={(e) => setEditedEventDetails(prev => ({...prev, eventName: e.target.value}))}
 									/>
 								</Grid>
+
 								<Grid item xs={12}>
 									<TextField
 										label="Description"
@@ -893,6 +910,7 @@ const ScheduleCalendar = () => {
 										onChange={(e) => setEditedEventDetails(prev => ({...prev, eventDescription: e.target.value}))}
 									/>
 								</Grid>
+
 								<Grid item xs={12} sm={6}>
 									<TextField
 										label="Location"
@@ -901,6 +919,7 @@ const ScheduleCalendar = () => {
 										onChange={(e) => setEditedEventDetails(prev => ({...prev, location: e.target.value}))}
 									/>
 								</Grid>
+
 								<Grid item xs={12} sm={6}>
 									<Autocomplete
 										options={predefinedCategory}
@@ -915,17 +934,34 @@ const ScheduleCalendar = () => {
 										)}
 									/>
 								</Grid>
+
 								<Grid item xs={12}>
 									<FormControlLabel
 										control={
 											<Checkbox
 												checked={editedEventDetails.allDay || false}
-												onChange={(e) => setEditedEventDetails(prev => ({...prev, allDay: e.target.checked}))}
+												onChange={(e) => {
+													const isAllDay = e.target.checked;
+													setEditedEventDetails(prevDetails => {
+														let updatedDetails = { ...prevDetails, allDay: isAllDay };
+
+														if (isAllDay) {
+															if (updatedDetails.startDate) {
+																updatedDetails.startDate = dayjs(updatedDetails.startDate).startOf('day').toISOString();
+															}
+															if (updatedDetails.endDate) {
+																updatedDetails.endDate = dayjs(updatedDetails.endDate).endOf('day').toISOString();
+															}
+														}
+														return updatedDetails;
+													});
+												}}
 											/>
 										}
 										label="All-Day Event"
 									/>
 								</Grid>
+							
 							</>
 						)}
 
@@ -996,7 +1032,7 @@ const ScheduleCalendar = () => {
 
 
         <div style={{ display: "flex", justifyContent: "flex-end", padding: 16 }}>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button onClick={handleDelete} color="error" variant="contained" sx={{ mr: 2 }}>
             Delete
           </Button>
           <Button onClick={handleUpdate} color="primary" variant="contained">
