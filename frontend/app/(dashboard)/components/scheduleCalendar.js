@@ -5,6 +5,9 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayjs from 'dayjs'; // Import dayjs
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'; // Correct import
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 import {
   Snackbar,
@@ -700,112 +703,138 @@ const ScheduleCalendar = () => {
         <DialogTitle>Add New Event</DialogTitle>
         <DialogContent>
 
-					<Grid container spacing={2}>
+					<LocalizationProvider dateAdapter={AdapterDayjs}>
+						
+						<Grid container spacing={2}>
 
-						<Grid item xs={12}>
-							<TextField
-								label="eventName"
-								value={newEventFormValues.eventName}
-								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventName: e.target.value })}
-								fullWidth
-								margin="normal"
-							/>
-						</Grid>
-
-						<Grid item xs={12}>
-							<TextField
-								label="Start Date"
-								type="date"
-								value={newEventFormValues.startDate}
-								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, startDate: e.target.value })}
-								fullWidth
-								margin="normal"
-								InputLabelProps={{
-									shrink: true,
-								}}
-							/>
-						</Grid>
-
-						<Grid item xs={12}>
-							<TextField
-								label="End Date"
-								type="date"
-								value={newEventFormValues.endDate}
-								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, endDate: e.target.value })}
-								fullWidth
-								margin="normal"
-								InputLabelProps={{
-									shrink: true,
-								}}
-							/>
-						</Grid>
-
-						<Grid item xs={12}>
-							<FormControlLabel
-								control={
-									<Checkbox
-										checked={newEventFormValues.allDay}
-										onChange={(e) =>
-											setNewEventFormValues({
-												...newEventFormValues,
-												allDay: e.target.checked,
-											})
-										}
-									/>
-								}
-								label="All Day"
-							/>
-						</Grid>
-
-						<Grid item xs={12}>
-							<TextField
-								label="Event Description"
-								type="eventDescription"
-								value={newEventFormValues.eventDescription}
-								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventDescription: e.target.value })}
-								fullWidth
-								margin="normal"
-								InputLabelProps={{
-									shrink: true,
-								}}
-							/>
-						</Grid>
-
-						<Grid item xs={12}>
-							<TextField
-								label="Location"
-								type="location"
-								value={newEventFormValues.location}
-								onChange={(e) => setNewEventFormValues({ ...newEventFormValues, location: e.target.value })}
-								fullWidth
-								margin="normal"
-								InputLabelProps={{
-									shrink: true,
-								}}
-							/>
-						</Grid>
-
-						<Grid item xs={12}>
-								<FormControl fullWidth required>
-									<InputLabel id="category-label">Category</InputLabel>
-									<Select
-										labelId="category-label"
-										value={newEventFormValues.category}
-										onChange={(e) => setNewEventFormValues({ ...newEventFormValues, category: e.target.value })}
-										input={<OutlinedInput label="Category" />}
-									>
-										{predefinedCategory.map((category) => (
-										<MenuItem key={category} value={category}>
-											{category}
-										</MenuItem>
-										))}
-									</Select>
-								</FormControl>
+							<Grid item xs={12}>
+								<TextField
+									label="Event Name"
+									fullWidth
+									value={newEvent.eventName}
+									onChange={(e) => setNewEvent({ ...newEvent, eventName: e.target.value })}
+								/>
 							</Grid>
-						<Button onClick={handleSubmitEvent} variant="contained" color="primary" sx={{ mt: 2 }}>
-							Save Event
-						</Button>
-					</Grid>
+
+							<Grid item xs={12} sm={6}>
+								<DateTimePicker
+									label="Start Date and Time"
+									value={newEvent.startDate ? dayjs(newEvent.startDate) : null}
+									onChange={(newValue) => {
+										if (newValue) {
+											let newStartDate = newValue;
+											if (newEvent.allDay) {
+													newStartDate = newStartDate.startOf('day'); // Set to 00:00:00
+											}
+											setNewEvent({ ...newEvent, startDate: newStartDate.toISOString()});
+										} else {
+											setNewEvent({ ...newEvent, startDate: ''})
+										}
+
+									}}
+									renderInput={(params) => <TextField {...params} fullWidth />}
+								/>
+							</Grid>
+
+							<Grid item xs={12} sm={6}>
+								<DateTimePicker
+									label="End Date and Time"
+									value={newEvent.endDate ? dayjs(newEvent.endDate) : null}
+									onChange={(newValue) => {
+										if (newValue) {
+												let newEndDate = newValue;
+												if (newEvent.allDay) {
+													newEndDate = newEndDate.endOf('day'); // Set to 23:59:59
+												}
+												setNewEvent({ ...newEvent, endDate: newEndDate.toISOString() });
+										} else {
+												setNewEvent({ ...newEvent, endDate: '' });
+										}
+									}}
+									renderInput={(params) => <TextField {...params} fullWidth />}
+								/>
+							</Grid>
+
+							<Grid item xs={12}>
+								<FormControlLabel
+									control={
+										<Checkbox
+											checked={newEvent.allDay}
+											onChange={(e) => {
+												const isAllDay = e.target.checked;
+												setNewEvent(prevEvent => {
+													let updatedEvent = { ...prevEvent, allDay: isAllDay };
+
+													if (isAllDay) {
+														if (updatedEvent.startDate) {
+																updatedEvent.startDate = dayjs(updatedEvent.startDate).startOf('day').toISOString();
+														}
+														if (updatedEvent.endDate) {
+																updatedEvent.endDate = dayjs(updatedEvent.endDate).endOf('day').toISOString();
+														}
+													}
+													// No else needed.  If not allDay, keep the time the user selected.
+
+													return updatedEvent;
+												});
+											}}
+										/>
+									}
+									label="All Day"
+								/>
+							</Grid>
+
+							<Grid item xs={12}>
+								<TextField
+									label="Event Description"
+									type="eventDescription"
+									value={newEventFormValues.eventDescription}
+									onChange={(e) => setNewEventFormValues({ ...newEventFormValues, eventDescription: e.target.value })}
+									fullWidth
+									margin="normal"
+									InputLabelProps={{
+										shrink: true,
+									}}
+								/>
+							</Grid>
+
+							<Grid item xs={12}>
+								<TextField
+									label="Location"
+									type="location"
+									value={newEventFormValues.location}
+									onChange={(e) => setNewEventFormValues({ ...newEventFormValues, location: e.target.value })}
+									fullWidth
+									margin="normal"
+									InputLabelProps={{
+										shrink: true,
+									}}
+								/>
+							</Grid>
+
+							<Grid item xs={12}>
+									<FormControl fullWidth required>
+										<InputLabel id="category-label">Category</InputLabel>
+										<Select
+											labelId="category-label"
+											value={newEventFormValues.category}
+											onChange={(e) => setNewEventFormValues({ ...newEventFormValues, category: e.target.value })}
+											input={<OutlinedInput label="Category" />}
+										>
+											{predefinedCategory.map((category) => (
+											<MenuItem key={category} value={category}>
+												{category}
+											</MenuItem>
+											))}
+										</Select>
+									</FormControl>
+								</Grid>
+
+							<Button onClick={handleSubmitEvent} variant="contained" color="primary" sx={{ mt: 2 }}>
+								Save Event
+							</Button>
+						</Grid>
+					</LocalizationProvider>
 				</DialogContent>
 			</Dialog>
 
