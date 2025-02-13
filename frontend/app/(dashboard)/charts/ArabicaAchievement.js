@@ -114,7 +114,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
               dataKey: 'targetPercentage',
               label: 'Target Achievement',
               valueFormatter: (value) => `${value}%`,
-			        colorBy: 'dataKey', //add color
+              colors: "cheerfulFiesta", // You can change this or remove if not needed
             },
           ]}
           yAxis={[
