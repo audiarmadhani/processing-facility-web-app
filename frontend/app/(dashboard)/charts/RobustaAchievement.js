@@ -5,22 +5,21 @@ import { BarChart } from "@mui/x-charts/BarChart";
 import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
-const colorCategories = {
-  Set3: [
-    "#8dd3c7",
-    "#ffffb3",
-    "#bebada",
-    "#fb8072",
-    "#80b1d3",
-    "#fdb462",
-    "#b3de69",
-    "#fccde5",
-    "#d9d9d9",
-    "#bc80bd",
-    "#ccebc5",
-    "#ffed6f",
-  ],
-};
+const colorPalette = [  // Define a single array of colors
+  "#8dd3c7",
+  "#ffffb3",
+  "#bebada",
+  "#fb8072",
+  "#80b1d3",
+  "#fdb462",
+  "#b3de69",
+  "#fccde5",
+  "#d9d9d9",
+  "#bc80bd",
+  "#ccebc5",
+  "#ffed6f",
+];
+
 
 const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
@@ -36,14 +35,14 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
-        // Access 'robustaAchievement' directly
         const robustaAchievementData = response.data.robustaAchievement;
 
         if (Array.isArray(robustaAchievementData)) {
           const chartData = robustaAchievementData.map((item, index) => ({
-            id: item.referenceNumber, // Use referenceNumber as a unique ID
+            id: item.referenceNumber,
             referenceNumber: item.referenceNumber,
             targetPercentage: item.targetPercentage,
+            color: colorPalette[index % colorPalette.length], // Assign color here
           }));
           setData(chartData);
         } else {
@@ -94,7 +93,6 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  const colorScheme = 'Set3';
 
   return (
     <Box>
@@ -103,10 +101,16 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
           dataset={data}
           xAxis={[
             {
-              scaleType: "band",
-              dataKey: "referenceNumber",
-              label: "Reference Number",
-              disableTicks: true,
+              scaleType: 'band',
+              dataKey: 'referenceNumber',
+              label: 'Reference Number',
+            },
+          ]}
+          yAxis={[
+            {
+              min: 0,
+              max: 100,
+              label: 'Target Percentage (%)',
             },
           ]}
           series={[
@@ -114,15 +118,8 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
               dataKey: 'targetPercentage',
               label: 'Target Achievement',
               valueFormatter: (value) => `${value}%`,
-              colors: "cheerfulFiesta", // You can change this or remove if not needed
+              colorBy: 'dataKey',  // Important: Tell the chart to color by dataKey
             },
-          ]}
-          yAxis={[
-            { 
-              min: 0, max: 100, 
-              label: "Target Percentage (%)", 
-              disableTicks: true 
-            }
           ]}
           height={500}
           sx={{
@@ -130,9 +127,8 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
               transform: "translate(-100px, 0)",
             },
           }}
-          colors={colorCategories[colorScheme]}
           borderRadius={10}
-          slotProps={{ legend: { hidden: true } }}
+          slotProps={{ legend: { hidden : true } }}
         />
       </Box>
     </Box>
