@@ -21,8 +21,6 @@ const colorPalette = [
 
 const ArabicaAchievementChart = ({ arabicaAchievement, loading }) => {
 
-  console.log("Received arabicaAchievement data:", arabicaAchievement);
-
   if (loading) {
     return (
       <Box
@@ -49,12 +47,19 @@ const ArabicaAchievementChart = ({ arabicaAchievement, loading }) => {
   }
 
   // Transform the data for the chart
-  const chartData = arabicaAchievement.map((item, index) => ({
-    id: item.referenceNumber,
-    referenceNumber: item.referenceNumber,
-    targetPercentage: item.targetPercentage,
-    color: colorPalette[index % colorPalette.length], // Assign a color from the palette
-  }));
+  const chartData = Array.isArray(arabicaAchievement)
+    ? arabicaAchievement.map(item => ({
+      id: item.referenceNumber,
+      referenceNumber: item.referenceNumber,
+      targetPercentage: item.targetPercentage,
+      color: colorPalette[index % colorPalette.length], // Assign a color from the palette
+      }))
+    : [{
+        id: arabicaAchievement.referenceNumber,
+        referenceNumber: arabicaAchievement.referenceNumber,
+        targetPercentage: arabicaAchievement.targetPercentage,
+        color: colorPalette[index % colorPalette.length], // Assign a color from the palette
+      }];
 
   // Debug: Log the transformed data
   console.log("Transformed chart data:", chartData);
