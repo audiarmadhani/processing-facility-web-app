@@ -358,14 +358,14 @@ const ScheduleCalendar = () => {
   const handleEventClick = (clickInfo) => {
 		const { event } = clickInfo;
 		const isTarget = event.extendedProps.type === 'target';
-		
+	
 		const baseDetails = {
 			id: event.id,
 			type: event.extendedProps.type || 'event',
 			startDate: dayjs(event.start).format('YYYY-MM-DD'),
-			endDate: event.end ? 
-				dayjs(event.end).subtract(1, 'day').format('YYYY-MM-DD') : 
-				dayjs(event.start).format('YYYY-MM-DD'),
+			endDate: event.end
+				? dayjs(event.end).subtract(1, 'day').format('YYYY-MM-DD')
+				: dayjs(event.start).format('YYYY-MM-DD'),
 		};
 	
 		const eventSpecific = {
@@ -384,15 +384,30 @@ const ScheduleCalendar = () => {
 			targetValue: event.extendedProps.targetValue || 'N/A',
 		};
 	
-		const details = { 
+		// Find the corresponding reference mapping for targets
+		if (isTarget) {
+			const selectedMapping = referenceMappings.find(
+				(mapping) => mapping.referenceNumber === event.extendedProps.referenceNumber
+			);
+	
+			if (selectedMapping) {
+				targetSpecific.productLine = selectedMapping.productLine;
+				targetSpecific.processingType = selectedMapping.processingType;
+				targetSpecific.producer = selectedMapping.producer;
+				targetSpecific.quality = selectedMapping.quality;
+				targetSpecific.type = selectedMapping.type;
+			}
+		}
+	
+		const details = {
 			...baseDetails,
-			...(isTarget ? targetSpecific : eventSpecific)
+			...(isTarget ? targetSpecific : eventSpecific),
 		};
 	
 		setSelectedEventDetails(details);
 		setEditedEventDetails(details);
 		setIsEventDetailsDialogOpen(true);
-	};
+	};	
 	
 
 	// Handle update: Sends updated data to the proper API endpoint based on type.
@@ -968,30 +983,76 @@ const ScheduleCalendar = () => {
 
 							{/* Target-Specific Fields */}
 							{editedEventDetails.type === 'target' && (
-								<>
-									{/* Read-only display fields */}
+							<>
+								{/* Read-only display fields */}
+								<Grid item xs={12}>
+									<TextField
+										label="Reference Number"
+										fullWidth
+										value={editedEventDetails.referenceNumber || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
 
-									<Grid item xs={12} sm={12}>
-										<TextField
-											label="Reference Number"
-											fullWidth
-											value={editedEventDetails.referenceNumber || ''}
-											InputProps={{ readOnly: true }}
-										/>
-									</Grid>
+								<Grid item xs={6}>
+									<TextField
+										label="Product Line"
+										fullWidth
+										value={editedEventDetails.productLine || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
 
-									{/* Editable field */}
-									<Grid item xs={12} sm={12}>
-										<TextField
-											label="Target Value (kg)"
-											type="number"
-											fullWidth
-											value={editedEventDetails.targetValue || ''}
-											onChange={(e) => setEditedEventDetails(prev => ({...prev, targetValue: e.target.value}))}
-										/>
-									</Grid>
-								</>
-							)}
+								<Grid item xs={6}>
+									<TextField
+										label="Processing Type"
+										fullWidth
+										value={editedEventDetails.processingType || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+
+								<Grid item xs={6}>
+									<TextField
+										label="Producer"
+										fullWidth
+										value={editedEventDetails.producer || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+
+								<Grid item xs={6}>
+									<TextField
+										label="Quality"
+										fullWidth
+										value={editedEventDetails.quality || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+
+								<Grid item xs={6}>
+									<TextField
+										label="Type"
+										fullWidth
+										value={editedEventDetails.type || ''}
+										InputProps={{ readOnly: true }}
+									/>
+								</Grid>
+
+								{/* Editable field */}
+								<Grid item xs={12}>
+									<TextField
+										label="Target Value (kg)"
+										type="number"
+										fullWidth
+										value={editedEventDetails.targetValue || ''}
+										onChange={(e) =>
+											setEditedEventDetails((prev) => ({ ...prev, targetValue: e.target.value }))
+										}
+									/>
+								</Grid>
+							</>
+						)}
 
 						</Grid>
 					</LocalizationProvider>
