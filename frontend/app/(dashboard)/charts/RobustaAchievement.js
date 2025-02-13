@@ -94,7 +94,7 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  const colorScheme = "Set3";
+  const colorScheme = 'Set3';
 
   return (
     <Box>
