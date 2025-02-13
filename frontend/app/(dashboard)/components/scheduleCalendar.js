@@ -361,7 +361,7 @@ const ScheduleCalendar = () => {
 
 	// Handle update: Sends updated data to the proper API endpoint based on type.
 	const handleUpdate = async () => {
-		const { id, type, ...updatedData } = editedEventDetails;
+		const { id, type, ...rest } = editedEventDetails;
 		
 		if (!id || !type) {
 			alert("Missing event ID or type. Please try again.");
@@ -370,28 +370,53 @@ const ScheduleCalendar = () => {
 		
 		try {
 			let url = "";
+			let payload = {};
+
 			if (type === "target") {
 				url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
+				payload = {
+					targetValue: editedEventDetails.targetValue,
+					startDate: editedEventDetails.startDate,
+					endDate: editedEventDetails.endDate
+				};
 			} else if (type === "event") {
 				url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
+				payload = rest; // Send all fields for events
 			}
-			
+
 			const response = await fetch(url, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(updatedData),
+				body: JSON.stringify(payload),
 			});
 			
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(errorData?.error || "Failed to update.");
 			}
-			
-			// Update local state: Replace the event with the updated data.
-			setEvents((prevEvents) =>
-				prevEvents.map((evt) =>
-					evt.id === id ? { ...evt, ...editedEventDetails } : evt
-				)
+
+			// Update local state
+			setEvents(prevEvents => 
+				prevEvents.map(evt => {
+					if (evt.id === id) {
+						if (type === "target") {
+							// For targets: preserve original data and update only allowed fields
+							return {
+								...evt,
+								title: `${evt.extendedProps.processingType} (${editedEventDetails.targetValue} kg)`,
+								start: editedEventDetails.startDate,
+								end: editedEventDetails.endDate,
+								extendedProps: {
+									...evt.extendedProps,
+									targetValue: editedEventDetails.targetValue
+								}
+							};
+						}
+						// For events: keep existing update logic
+						return { ...evt, ...editedEventDetails };
+					}
+					return evt;
+				})
 			);
 			
 			setIsEventDetailsDialogOpen(false);
@@ -400,6 +425,7 @@ const ScheduleCalendar = () => {
 			alert(`Update failed: ${err.message}`);
 		}
 	};
+
 
 	// Handle delete: Calls the proper API endpoint based on type and removes the event from local state.
 	const handleDelete = async () => {
@@ -920,7 +946,7 @@ const ScheduleCalendar = () => {
 								</Grid>
 							</>
 						)}
-						
+
 					</Grid>
 				</DialogContent>
 
