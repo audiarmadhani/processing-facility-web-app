@@ -149,7 +149,7 @@ const ArabicaMapComponent = () => {
     <div style={{ height: "500px", width: "100%", backgroundColor: theme.palette.background.default }}>
       <MapContainer
         center={[-8.4095, 115.1889]}
-        zoom={9}
+        zoom={10}
         style={{ height: "100%", width: "100%", backgroundColor: theme.palette.background.default }}
         zoomControl={false}
         attributionControl={false}
