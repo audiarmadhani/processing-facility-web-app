@@ -1088,6 +1088,61 @@ router.get('/dashboard-metrics', async (req, res) => {
 						GROUP BY from_node, to_node;
         `;
 
+				const arabicaAchievementQuery = `
+            WITH metric AS (
+							SELECT id, "referenceNumber", SUM("targetValue") AS "targetValue" 
+							FROM (SELECT a.*, b.type FROM "TargetMetrics" a LEFT JOIN "ReferenceMappings_duplicate" b on a."referenceNumber" = b."referenceNumber") a
+							WHERE "startDate" BETWEEN '${formattedCurrentStartDate}' AND '${formattedCurrentEndDate}'
+							AND type = 'Arabica'
+							GROUP BY id, "referenceNumber", metric
+						), 
+
+						ttw AS (
+							SELECT "referenceNumber", 'Total Weight Produced' AS metric, COALESCE(SUM(weight), 0) AS achievement 
+							FROM "PostprocessingData" 
+							WHERE "storedDate" BETWEEN '${formattedCurrentStartDate}' AND '${formattedCurrentEndDate}'
+							GROUP BY "referenceNumber"
+						) 
+
+						SELECT 
+							a."referenceNumber", 
+							SUM(a."targetValue"), 
+							SUM(COALESCE(b.achievement, 0)) as achievement,
+							ROUND(CAST((SUM(COALESCE(b.achievement, 0)) / SUM(a."targetValue"))*100 AS numeric) , 2)::FLOAT AS "targetPercentage"
+						FROM metric a 
+						LEFT JOIN ttw b ON LOWER(a."referenceNumber") = LOWER(b."referenceNumber")
+						GROUP BY a."referenceNumber"
+						ORDER BY a."referenceNumber" ASC, ROUND(CAST((SUM(COALESCE(b.achievement, 0)) / SUM(a."targetValue"))*100 AS numeric) , 2)::FLOAT DESC;
+        `;
+
+				const robustaAchievementQuery = `
+            WITH metric AS (
+							SELECT id, "referenceNumber", SUM("targetValue") AS "targetValue" 
+							FROM (SELECT a.*, b.type FROM "TargetMetrics" a LEFT JOIN "ReferenceMappings_duplicate" b on a."referenceNumber" = b."referenceNumber") a
+							WHERE "startDate" BETWEEN '${formattedCurrentStartDate}' AND '${formattedCurrentEndDate}'
+							AND type = 'Arabica'
+							GROUP BY id, "referenceNumber", metric
+						), 
+
+						ttw AS (
+							SELECT "referenceNumber", 'Total Weight Produced' AS metric, COALESCE(SUM(weight), 0) AS achievement 
+							FROM "PostprocessingData" 
+							WHERE "storedDate" BETWEEN '${formattedCurrentStartDate}' AND '${formattedCurrentEndDate}'
+							GROUP BY "referenceNumber"
+						) 
+
+						SELECT 
+							a."referenceNumber", 
+							SUM(a."targetValue"), 
+							SUM(COALESCE(b.achievement, 0)) as achievement,
+							ROUND(CAST((SUM(COALESCE(b.achievement, 0)) / SUM(a."targetValue"))*100 AS numeric) , 2)::FLOAT AS "targetPercentage"
+						FROM metric a 
+						LEFT JOIN ttw b ON LOWER(a."referenceNumber") = LOWER(b."referenceNumber")
+						GROUP BY a."referenceNumber"
+						ORDER BY a."referenceNumber" ASC, ROUND(CAST((SUM(COALESCE(b.achievement, 0)) / SUM(a."targetValue"))*100 AS numeric) , 2)::FLOAT DESC;
+        `;
+
+
         // Execute queries
         const [totalBatchesResult] = await sequelize.query(totalBatchesQuery);
  
@@ -1161,6 +1216,9 @@ router.get('/dashboard-metrics', async (req, res) => {
 
 				const [arabicaSankeyResult] = await sequelize.query(arabicaSankeyQuery);
         const [robustaSankeyResult] = await sequelize.query(robustaSankeyQuery);
+
+				const [arabicaAchievementResult] = await sequelize.query(arabicaAchievementQuery);
+        const [robustaAchievementResult] = await sequelize.query(robustaAchievementQuery);
  
  
         // Extract the relevant values from query results
@@ -1239,6 +1297,9 @@ router.get('/dashboard-metrics', async (req, res) => {
 
 				const arabicaSankey = arabicaSankeyResult || [];
 				const robustaSankey = robustaSankeyResult || [];
+
+				const arabicaAchievement = arabicaAchievementResult || [];
+				const robustaAchievement = robustaAchievementResult || [];
  
         // Return the metrics
         res.json({
@@ -1314,6 +1375,9 @@ router.get('/dashboard-metrics', async (req, res) => {
 
 						arabicaSankey,
 						robustaSankey,
+
+						arabicaAchievement,
+						robustaAchievement,
  
         });
     } catch (err) {

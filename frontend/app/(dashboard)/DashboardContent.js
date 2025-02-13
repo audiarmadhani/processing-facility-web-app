@@ -43,6 +43,8 @@ import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContribution
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
 import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
 import RobustaSankeyChart from './charts/RobustaSankeyChart';
+import ArabicaAchievementChart from './charts/ArabicaAchievement';
+import RobustaAchievementChart from './charts/RobustaAchievement';
 
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
@@ -494,6 +496,18 @@ function Dashboard() {
                 </Card>
               </Grid>
 
+              {/* Arabica Target Achievement */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Target Achievement
+                    </Typography>
+                    <ArabicaAchievementChart />
+                  </CardContent>
+                </Card>
+              </Grid>
+
               {/* Arabica Sankey Chart */}
               <Grid 
                 item 
@@ -852,6 +866,18 @@ function Dashboard() {
                       Robusta Coverage Map
                     </Typography>
                     <RobustaMapComponent />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Robusta Target Achievement */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Target Achievement
+                    </Typography>
+                    <RobustaAchievementChart />
                   </CardContent>
                 </Card>
               </Grid>
