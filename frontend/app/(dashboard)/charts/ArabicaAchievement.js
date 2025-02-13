@@ -29,12 +29,14 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null); // Reset error state
       try {
         const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
         console.log("API Response:", response.data); // Log the full response for debugging
 
+        // Check if arabicaAchievement exists and is an array
         if (Array.isArray(response.data.arabicaAchievement)) {
           // Transform the data for the chart
           const chartData = response.data.arabicaAchievement.map((item, index) => ({
@@ -45,13 +47,14 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
           }));
 
           setData(chartData);
-          console.log("Received arabicaAchievement data:", chartData);
-
+          console.log("Transformed chart data:", chartData);
         } else {
           console.error("Invalid data format:", response.data.arabicaAchievement);
+          setError("Invalid data format received from the API.");
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError("Failed to fetch data. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -62,16 +65,19 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 400 }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (error) { // Display error message
+  if (error) {
+    // Display error message
     return (
-      <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
-        <Typography variant="body1">{error}</Typography>
+      <Box sx={{ textAlign: "center", padding: 2 }}>
+        <Typography variant="body1" color="error">
+          {error}
+        </Typography>
       </Box>
     );
   }
