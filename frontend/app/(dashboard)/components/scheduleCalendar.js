@@ -576,6 +576,7 @@ const ScheduleCalendar = () => {
 				style={{ backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff', color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', width: '100%' }}
 				aspectRatio={1.5} // Try adjusting this value (lower makes it taller)
 				expandRows= {false}
+				firstDay={1}
       />
 
       {/* Dialog for adding a new target */}
