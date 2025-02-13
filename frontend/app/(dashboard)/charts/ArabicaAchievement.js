@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
-import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
 const colorPalette = [
@@ -20,42 +19,7 @@ const colorPalette = [
   "#ffed6f",
 ];
 
-const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch data from the API
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(
-          `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
-        );
-        console.log("API Response:", response.data); // Log the full response for debugging
-
-        if (Array.isArray(response.data.arabicaAchievement)) {
-          // Transform the data for the chart
-          const chartData = response.data.arabicaAchievement.map((item, index) => ({
-            id: item.referenceNumber,
-            referenceNumber: item.referenceNumber,
-            targetPercentage: item.targetPercentage,
-            color: colorPalette[index % colorPalette.length], // Assign a color from the palette
-          }));
-          setData(chartData);
-        } else {
-          console.error("Invalid data format:", response.data.arabicaAchievement);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [timeframe]);
-
+const ArabicaAchievementChart = ({ arabicaAchievement, loading }) => {
   if (loading) {
     return (
       <Box
@@ -71,6 +35,24 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
+  if (!arabicaAchievement || arabicaAchievement.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", padding: 2 }}>
+        <Typography variant="body2" color="textSecondary">
+          No data available
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Transform the data for the chart
+  const chartData = arabicaAchievement.map((item, index) => ({
+    id: item.referenceNumber,
+    referenceNumber: item.referenceNumber,
+    targetPercentage: item.targetPercentage,
+    color: colorPalette[index % colorPalette.length], // Assign a color from the palette
+  }));
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -78,7 +60,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
       </Typography>
       <Box sx={{ height: 500 }}>
         <BarChart
-          dataset={data}
+          dataset={chartData}
           layout="horizontal" // Set the chart to horizontal
           xAxis={[
             {

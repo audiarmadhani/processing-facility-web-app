@@ -503,7 +503,10 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Arabica Target Achievement
                     </Typography>
-                    <ArabicaAchievementChart />
+                    <ArabicaAchievementChart
+                      arabicaAchievement={dashboardData?.arabicaAchievement}
+                      loading={loading}
+                    />
                   </CardContent>
                 </Card>
               </Grid>
@@ -877,7 +880,10 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Robusta Target Achievement
                     </Typography>
-                    <RobustaAchievementChart />
+                    <RobustaAchievementChart
+                      robustaAchievement={dashboardData?.robustaAchievement}
+                      loading={loading}
+                    />
                   </CardContent>
                 </Card>
               </Grid>
