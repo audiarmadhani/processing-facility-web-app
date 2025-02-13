@@ -105,6 +105,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
               min: 0,
               max: 100, // Scale the y-axis to 100%
               label: "Target Percentage (%)",
+              scaleType: "band",
             },
           ]}
           series={[
