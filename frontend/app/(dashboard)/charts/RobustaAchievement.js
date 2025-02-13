@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BarChart } from "@mui/x-charts/BarChart";
+import { LineChart } from "@mui/x-charts/LineChart";
 import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
+import dayjs from 'dayjs';
 
 const colorPalette = [  // Define a single array of colors
   "#8dd3c7",
@@ -20,38 +21,51 @@ const colorPalette = [  // Define a single array of colors
   "#ffed6f",
 ];
 
-
-const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
-  const [data, setData] = useState([]);
+const RobustaAchievementChart = ({ timeframe }) => {
+  const [chartData, setChartData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dates, setDates] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+
       try {
         const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
-        const robustaAchievementData = response.data.robustaAchievement;
+        const apiData = response.data.robustaAchievement;
 
-        if (Array.isArray(robustaAchievementData)) {
-          const chartData = robustaAchievementData.map((item, index) => ({
-            id: item.referenceNumber,
-            referenceNumber: item.referenceNumber,
-            targetPercentage: item.targetPercentage,
-            color: colorPalette[index % colorPalette.length], // Assign color here
-          }));
-          setData(chartData);
+        if (Array.isArray(apiData)) {
+          const transformedData = {};
+          const allDates = new Set();
+          let colorIndex = 0; // Track the current color index
+
+          apiData.forEach(item => {
+            allDates.add(item.Date);
+            if (!transformedData[item.referenceNumber]) {
+              transformedData[item.referenceNumber] = {
+                data: [],
+                color: colorPalette[colorIndex % colorPalette.length] // Apply color
+              };
+              colorIndex++; // Increment on each new referenceNumber
+            }
+            transformedData[item.referenceNumber].data.push(item.targetPercentage === null ? 0 : item.targetPercentage);
+          });
+          setDates(Array.from(allDates).sort());
+          setChartData(transformedData);
+
         } else {
-          console.error("Invalid data format:", robustaAchievementData);
+          console.error("Invalid data format:", apiData);
           setError("Invalid data format received from the API.");
         }
+
       } catch (error) {
         console.error("Error fetching data:", error);
-        setError("Failed to fetch data. Please try again later.");
+        setError(error.response?.data?.message || error.message || "Failed to fetch data. Please check network.");
       } finally {
         setLoading(false);
       }
@@ -60,16 +74,10 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
     fetchData();
   }, [timeframe]);
 
+
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: 500,
-        }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
         <CircularProgress />
       </Box>
     );
@@ -77,7 +85,7 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
 
   if (error) {
     return (
-      <Box sx={{ textAlign: "center", padding: 2 }}>
+      <Box sx={{ textAlign: 'center', padding: 2 }}>
         <Typography variant="body1" color="error">
           {error}
         </Typography>
@@ -85,7 +93,7 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!chartData || Object.keys(chartData).length === 0) {
     return (
       <Box sx={{ textAlign: "center", padding: 2 }}>
         <Typography variant="body1">No data available.</Typography>
@@ -93,19 +101,24 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
+    const series = Object.keys(chartData).map((refNumber) => ({
+    dataKey: refNumber,
+    label: refNumber,
+    data: chartData[refNumber].data,
+    color: chartData[refNumber].color, // Use the assigned color
+  }));
 
   return (
     <Box>
       <Box sx={{ height: 500 }}>
-        <BarChart
-          dataset={data}
-          xAxis={[
-            {
-              scaleType: 'band',
-              dataKey: 'referenceNumber',
-              label: 'Reference Number',
-            },
-          ]}
+        <LineChart
+          xAxis={[{
+            scaleType: 'point',
+            data: dates,
+            valueFormatter: (date) => dayjs(date).format('YYYY-MM-DD'),
+            label: "Date",
+          }]}
+          series={series}
           yAxis={[
             {
               min: 0,
@@ -113,22 +126,12 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
               label: 'Target Percentage (%)',
             },
           ]}
-          series={[
-            {
-              dataKey: 'targetPercentage',
-              label: 'Target Achievement',
-              valueFormatter: (value) => `${value}%`,
-              colorBy: 'dataKey',  // Important: Tell the chart to color by dataKey
-            },
-          ]}
           height={500}
-          sx={{
-            ".MuiChart-axisLeft .MuiChart-axisLabel": {
-              transform: "translate(-100px, 0)",
-            },
+          slotProps={{
+            legend: { hidden: false },
+              tooltip: { valueFormatter: (value) => `${value}%` }
           }}
-          borderRadius={10}
-          slotProps={{ legend: { hidden : true } }}
+          tooltip={{ trigger: 'axis' }}
         />
       </Box>
     </Box>
@@ -136,3 +139,4 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
 };
 
 export default RobustaAchievementChart;
+

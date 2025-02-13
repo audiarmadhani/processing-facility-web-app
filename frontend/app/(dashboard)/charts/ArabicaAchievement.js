@@ -1,58 +1,71 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BarChart } from "@mui/x-charts/BarChart";
+import { LineChart } from "@mui/x-charts/LineChart";
 import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
+import dayjs from 'dayjs';
 
-const colorCategories = {
-  Set3: [
-    "#8dd3c7",
-    "#ffffb3",
-    "#bebada",
-    "#fb8072",
-    "#80b1d3",
-    "#fdb462",
-    "#b3de69",
-    "#fccde5",
-    "#d9d9d9",
-    "#bc80bd",
-    "#ccebc5",
-    "#ffed6f",
-  ],
-};
+const colorPalette = [  // Define a single array of colors
+  "#8dd3c7",
+  "#ffffb3",
+  "#bebada",
+  "#fb8072",
+  "#80b1d3",
+  "#fdb462",
+  "#b3de69",
+  "#fccde5",
+  "#d9d9d9",
+  "#bc80bd",
+  "#ccebc5",
+  "#ffed6f",
+];
 
-const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
-  const [data, setData] = useState([]);
+const ArabicaAchievementChart = ({ timeframe }) => {
+  const [chartData, setChartData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dates, setDates] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+
       try {
         const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
-        // Access 'arabicaAchievement' directly from the API response
-        const arabicaAchievementData = response.data.arabicaAchievement;
+        const apiData = response.data.arabicaAchievement;
 
-        if (Array.isArray(arabicaAchievementData)) {
-          const chartData = arabicaAchievementData.map((item, index) => ({
-            id: item.referenceNumber, // Use referenceNumber as a unique ID
-            referenceNumber: item.referenceNumber,
-            targetPercentage: item.targetPercentage,
-          }));
-          setData(chartData);
+        if (Array.isArray(apiData)) {
+          const transformedData = {};
+          const allDates = new Set();
+          let colorIndex = 0; // Track the current color index
+
+          apiData.forEach(item => {
+            allDates.add(item.Date);
+            if (!transformedData[item.referenceNumber]) {
+              transformedData[item.referenceNumber] = {
+                data: [],
+                color: colorPalette[colorIndex % colorPalette.length] // Apply color
+              };
+              colorIndex++; // Increment on each new referenceNumber
+            }
+            transformedData[item.referenceNumber].data.push(item.targetPercentage === null ? 0 : item.targetPercentage);
+          });
+          setDates(Array.from(allDates).sort());
+          setChartData(transformedData);
+
         } else {
-          console.error("Invalid data format:", arabicaAchievementData);
+          console.error("Invalid data format:", apiData);
           setError("Invalid data format received from the API.");
         }
+
       } catch (error) {
         console.error("Error fetching data:", error);
-        setError("Failed to fetch data. Please try again later.");
+        setError(error.response?.data?.message || error.message || "Failed to fetch data. Please check network.");
       } finally {
         setLoading(false);
       }
@@ -61,16 +74,10 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     fetchData();
   }, [timeframe]);
 
+
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: 500,
-        }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
         <CircularProgress />
       </Box>
     );
@@ -78,7 +85,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
 
   if (error) {
     return (
-      <Box sx={{ textAlign: "center", padding: 2 }}>
+      <Box sx={{ textAlign: 'center', padding: 2 }}>
         <Typography variant="body1" color="error">
           {error}
         </Typography>
@@ -86,7 +93,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!chartData || Object.keys(chartData).length === 0) {
     return (
       <Box sx={{ textAlign: "center", padding: 2 }}>
         <Typography variant="body1">No data available.</Typography>
@@ -94,50 +101,37 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  const colorScheme = "Set3";
+    const series = Object.keys(chartData).map((refNumber) => ({
+    dataKey: refNumber,
+    label: refNumber,
+    data: chartData[refNumber].data,
+    color: chartData[refNumber].color, // Use the assigned color
+  }));
 
   return (
     <Box>
       <Box sx={{ height: 500 }}>
-        <BarChart
-          dataset={data}
-          xAxis={[
-            {
-              scaleType: "band",
-              dataKey: "referenceNumber",
-              label: "Reference Number",
-              disableTicks: true,
-            },
-          ]}
-          series={[
-            {
-              dataKey: "targetPercentage",
-              label: "Target Achievement",
-              valueFormatter: (value) => `${value}%`,
-              // Use getColor to cycle through Set3 colors for each bar:
-              getColor: (datum, index) =>
-                colorCategories[colorScheme][
-                  index % colorCategories[colorScheme].length
-                ],
-            },
-          ]}
+        <LineChart
+          xAxis={[{
+            scaleType: 'point',
+            data: dates,
+            valueFormatter: (date) => dayjs(date).format('YYYY-MM-DD'),
+            label: "Date",
+          }]}
+          series={series}
           yAxis={[
             {
               min: 0,
               max: 100,
-              label: "Target Percentage (%)",
-              disableTicks: true,
+              label: 'Target Percentage (%)',
             },
           ]}
           height={500}
-          sx={{
-            ".MuiChart-axisLeft .MuiChart-axisLabel": {
-              transform: "translate(-100px, 0)",
-            },
+          slotProps={{
+            legend: { hidden: false },
+              tooltip: { valueFormatter: (value) => `${value}%` }
           }}
-          colors={colorCategories[colorScheme]}
-          borderRadius={10}
-          slotProps={{ legend: { hidden: true } }}
+          tooltip={{ trigger: 'axis' }}
         />
       </Box>
     </Box>
@@ -145,3 +139,4 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
 };
 
 export default ArabicaAchievementChart;
+
