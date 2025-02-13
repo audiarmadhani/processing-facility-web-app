@@ -481,18 +481,6 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Arabica Map */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Arabica Coverage Map
-                    </Typography>
-                    <ArabicaMapComponent />
-                  </CardContent>
-                </Card>
-              </Grid>
-
               {/* Arabica Target Achievement */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
@@ -501,6 +489,18 @@ function Dashboard() {
                       Arabica Target Achievement
                     </Typography>
                     <ArabicaAchievementChart timeframe={timeframe}/>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Arabica Map */}
+              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Coverage Map
+                    </Typography>
+                    <ArabicaMapComponent />
                   </CardContent>
                 </Card>
               </Grid>
@@ -855,18 +855,6 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Robusta Map */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Robusta Coverage Map
-                    </Typography>
-                    <RobustaMapComponent />
-                  </CardContent>
-                </Card>
-              </Grid>
-
               {/* Robusta Target Achievement */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
@@ -875,6 +863,18 @@ function Dashboard() {
                       Robusta Target Achievement
                     </Typography>
                     <RobustaAchievementChart timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Robusta Map */}
+              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Coverage Map
+                    </Typography>
+                    <RobustaMapComponent />
                   </CardContent>
                 </Card>
               </Grid>
