@@ -171,15 +171,15 @@ const ScheduleCalendar = () => {
         setEvents([...mappedTargets, ...mappedEvents]); // Combine targets and events
 
       } catch (err) {
-        console.error("Error fetching targets:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+				console.error("Error fetching data:", err);
+				setError(err.message);
+			} finally {
+				setLoading(false);
+			}
+		};
+	
+		fetchData();
+	}, [refreshCounter]); // Add refreshCounter as dependency
 
 	useEffect(() => {
     // Sync newTargetFormValues with newTarget when newTarget changes (e.g., when a range is selected)
@@ -299,7 +299,11 @@ const ScheduleCalendar = () => {
         },
       ]);
 
-      setIsAddEventDialogOpen(false);
+			if (response.ok) {
+				setRefreshCounter(prev => prev + 1); // Trigger data refresh
+				setIsAddEventDialogOpen(false);
+			}
+
       setNewEventFormValues({
         eventName: '',
         startDate: '',
@@ -419,8 +423,12 @@ const ScheduleCalendar = () => {
 					return evt;
 				})
 			);
+
+			if (response.ok) {
+				setRefreshCounter(prev => prev + 1); // Trigger data refresh
+				setIsEventDetailsDialogOpen(false);
+			}
 			
-			setIsEventDetailsDialogOpen(false);
 		} catch (err) {
 			console.error("Error updating record:", err);
 			alert(`Update failed: ${err.message}`);
@@ -454,8 +462,12 @@ const ScheduleCalendar = () => {
 			
 			// Remove the deleted event from local state.
 			setEvents((prevEvents) => prevEvents.filter((evt) => evt.id !== id));
+
+			if (response.ok) {
+				setRefreshCounter(prev => prev + 1); // Trigger data refresh
+				setIsEventDetailsDialogOpen(false);
+			}
 			
-			setIsEventDetailsDialogOpen(false);
 		} catch (err) {
 			console.error("Error deleting record:", err);
 			alert(`Deletion failed: ${err.message}`);
