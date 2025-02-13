@@ -40,11 +40,7 @@ const ScheduleCalendar = () => {
 	const [isAddTargetDialogOpen, setIsAddTargetDialogOpen] = useState(false);
 	const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false); // For events
 	const [newTarget, setNewTarget] = useState({
-		type: '',
-		processingType: '',
-		productLine: '',
-		producer: '',
-		quality: '',
+		referenceNumber: '',
 		metric: '',
 		timeFrame: '',
 		targetValue: '',
@@ -53,11 +49,7 @@ const ScheduleCalendar = () => {
 	});	
 
 	const [newTargetFormValues, setNewTargetFormValues] = useState({  // Separate state for form values
-		type: '',
-		processingType: '',
-		productLine: '',
-		producer: '',
-		quality: '',
+		referenceNumber: '',
 		metric: '',
 		timeFrame: '',
 		targetValue: '',
@@ -92,10 +84,57 @@ const ScheduleCalendar = () => {
   const theme = useTheme();
   const calendarRef = useRef(null);
 
+	const [referenceMappings, setReferenceMappings] = useState([]);
+
 	// Predefined options
-  const predefinedProcesses = ['Pulped Natural', 'Washed', 'Natural', 'Anaerobic Natural', 'Anaerobic Washed', 'Anaerobic Honey', 'CM Natural', 'CM Washed'];
-  const predefinedProductLine = ['Regional Lot', 'Micro Lot', 'Competition Lot', 'Commercial Lot'];
-  const predefinedProducer = ['HQ', 'BTM'];
+	// State for predefinedReferenceNumber
+	const [predefinedReferenceNumber, setPredefinedReferenceNumber] = useState([]);
+	const [predefinedProductLine, setPredefinedProductLine] = useState([]);
+	const [predefinedProcessingType, setPredefinedProcessingType] = useState([]);
+	const [predefinedProducer, setPredefinedProducer] = useState([]);
+	const [predefinedQuality, setPredefinedQuality] = useState([]);
+	const [predefinedType, setPredefinedType] = useState([]);
+
+	// Fetch reference mappings from the API
+	useEffect(() => {
+		const fetchReferenceMappings = async () => {
+			try {
+				const response = await fetch('https://processing-facility-backend.onrender.com/api/referenceMappings');
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+				const data = await response.json();
+				setReferenceMappings(data); // Store the full dataset
+			} catch (err) {
+				console.error("Error fetching reference mappings:", err);
+				setError(err.message);
+			}
+		};
+
+		fetchReferenceMappings();
+	}, []);
+
+	const handleReferenceNumberChange = (event, value) => {
+		// Find the selected reference mapping object
+		const selectedMapping = referenceMappings.find(
+			(mapping) => mapping.referenceNumber === value
+		);
+
+		if (selectedMapping) {
+			// Update the form values with the selected data
+			setNewTargetFormValues({
+				...newTargetFormValues,
+				referenceNumber: selectedMapping.referenceNumber,
+				productLine: selectedMapping.productLine,
+				processingType: selectedMapping.processingType,
+				producer: selectedMapping.producer,
+				quality: selectedMapping.quality,
+				type: selectedMapping.type,
+			});
+		}
+	};
+
+
   const predefinedMetrics = ['Total Weight Produced'];
   const timeframes = ['this-week', 'next-week', 'previous-week', 'this-month', 'next-month', 'previous-month'];
 	const predefinedCategory = ['Bali Holiday', 'National Holiday'];
@@ -134,20 +173,15 @@ const ScheduleCalendar = () => {
 
         const mappedTargets = targetsData.map((target) => ({
 					id: target.id,
-					title: `${target.processingType} (${target.targetValue} kg)`,
+					title: `${target.referenceNumber} (${target.targetValue} kg)`,
 					start: target.startDate,
 					end: target.endDate,
 					extendedProps: {
 						type: 'target',
-						coffeeType: target.type,
-						quality: target.quality,
+						referenceNumber: target.referenceNumber,
 						metric: target.metric,
 						timeFrame: target.timeFrame,
-						productLine: target.productLine,
-						producer: target.producer,
-						processingType: target.processingType,
 						targetValue: target.targetValue,
-						category: target.category,
 					},
 				}));
 
@@ -252,20 +286,17 @@ const ScheduleCalendar = () => {
         ...prevEvents,
         {
           id: createdTarget.id,
-          title: `${newTarget.processingType} (${newTarget.targetValue} kg)`,
+          title: `${newTarget.referenceNumber} (${newTarget.targetValue} kg)`,
           start: newTarget.startDate,
           end: newTarget.endDate,
+					referenceNumber: newTarget.referenceNumber,
           extendedProps: { category: 'target' },
         },
       ]);
 
       setIsAddTargetDialogOpen(false);
       setNewTargetFormValues({ // Clear the form values
-        type: '',
-        processingType: '',
-        productLine: '',
-        producer: '',
-        quality: '',
+        referenceNumber: '',
         metric: '',
         timeFrame: '',
         targetValue: '',
@@ -349,11 +380,7 @@ const ScheduleCalendar = () => {
 		const targetSpecific = {
 			targetValue: event.title.match(/\((\d+)\s?kg\)/)?.[1] || 'N/A',
 			title: event.title,
-			coffeeType: event.extendedProps.coffeeType, // Using 'type' from extendedProps for coffee type
-			processingType: event.extendedProps.processingType,
-			productLine: event.extendedProps.productLine,
-			producer: event.extendedProps.producer,
-			quality: event.extendedProps.quality,
+			referenceNumber: event.extendedProps.referenceNumber,
 			targetValue: event.extendedProps.targetValue || 'N/A',
 		};
 	
@@ -413,7 +440,7 @@ const ScheduleCalendar = () => {
 							// For targets: preserve original data and update only allowed fields
 							return {
 								...evt,
-								title: `${evt.extendedProps.processingType} (${editedEventDetails.targetValue} kg)`,
+								title: `${evt.extendedProps.referenceNumber} (${editedEventDetails.targetValue} kg)`,
 								start: editedEventDetails.startDate,
 								end: editedEventDetails.endDate,
 								extendedProps: {
@@ -560,90 +587,75 @@ const ScheduleCalendar = () => {
 								}}
 							/>
 						</Grid>
-
-						<Grid item xs={12}>
-							<FormControl fullWidth required>
-								<InputLabel id="type-label">Type</InputLabel>
-								<Select
-									labelId="type-label"
-									value={newTargetFormValues.type}
-									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, type: e.target.value })}
-									input={<OutlinedInput label="Type" />}
-								>
-									<MenuItem value="Arabica">Arabica</MenuItem>
-									<MenuItem value="Robusta">Robusta</MenuItem>
-								</Select>
-							</FormControl>
-						</Grid>
 										
+						{/* Reference Number Dropdown */}
 						<Grid item xs={12}>
-							<FormControl fullWidth required>
-								<InputLabel id="process-label">Process</InputLabel>
-								<Select
-									labelId="process-label"
-									value={newTargetFormValues.processingType}
-									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, processingType: e.target.value })}
-									input={<OutlinedInput label="Process" />}
-								>
-									{predefinedProcesses.map((process) => (
-										<MenuItem key={process} value={process}>
-											{process}
-										</MenuItem>
-									))}
-								</Select>
-							</FormControl>
+							<Autocomplete
+								options={referenceMappings.map((mapping) => mapping.referenceNumber)}
+								value={newTargetFormValues.referenceNumber}
+								onChange={(_, newValue) => handleReferenceNumberChange(_, newValue)}
+								renderInput={(params) => (
+									<TextField {...params} label="Reference Number" fullWidth />
+								)}
+							/>
 						</Grid>
 
-						<Grid item xs={12}>
-							<FormControl fullWidth required>
-								<InputLabel id="product-label">Product Line</InputLabel>
-								<Select
-									labelId="product-label"
-									value={newTargetFormValues.productLine}
-									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, productLine: e.target.value })}
-									input={<OutlinedInput label="Product Line" />}
-								>
-									{predefinedProductLine.map((productline) => (
-										<MenuItem key={productline} value={productline}>
-											{productline}
-										</MenuItem>
-									))}
-								</Select>
-							</FormControl>
+						{/* Auto-populated Fields */}
+						<Grid item xs={6}>
+							<TextField
+								label="Product Line"
+								value={newTargetFormValues.productLine || ''}
+								fullWidth
+								InputProps={{ readOnly: true }}
+							/>
 						</Grid>
 
-						<Grid item xs={12}>
-							<FormControl fullWidth required>
-								<InputLabel id="producer-label">Producer</InputLabel>
-								<Select
-									labelId="producer-label"
-									value={newTargetFormValues.producer}
-									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, producer: e.target.value })}
-									input={<OutlinedInput label="Producer" />}
-								>
-									{predefinedProducer.map((producer) => (
-										<MenuItem key={producer} value={producer}>
-											{producer}
-										</MenuItem>
-									))}
-								</Select>
-							</FormControl>
+						<Grid item xs={6}>
+							<TextField
+								label="Processing Type"
+								value={newTargetFormValues.processingType || ''}
+								fullWidth
+								InputProps={{ readOnly: true }}
+							/>
 						</Grid>
 
-						<Grid item xs={12}>
+						<Grid item xs={6}>
+							<TextField
+								label="Producer"
+								value={newTargetFormValues.producer || ''}
+								fullWidth
+								InputProps={{ readOnly: true }}
+							/>
+						</Grid>
+
+						<Grid item xs={6}>
+							<TextField
+								label="Quality"
+								value={newTargetFormValues.quality || ''}
+								fullWidth
+								InputProps={{ readOnly: true }}
+							/>
+						</Grid>
+
+						<Grid item xs={6}>
+							<TextField
+								label="Type"
+								value={newTargetFormValues.type || ''}
+								fullWidth
+								InputProps={{ readOnly: true }}
+							/>
+						</Grid>
+
+						<Grid item xs={6}>
 							<FormControl fullWidth required>
-								<InputLabel id="quality-label">Quality</InputLabel>
+								<InputLabel id="timeFrame-label">Timeframe</InputLabel>
 								<Select
-									labelId="quality-label"
-									value={newTargetFormValues.quality}
-									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, quality: e.target.value })}
-									input={<OutlinedInput label="Quality" />}
+									labelId="timeFrame-label"
+									value={newTargetFormValues.timeFrame}
+									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, timeFrame: e.target.value })}
+									input={<OutlinedInput label="Timeframe" />}
 								>
-									<MenuItem value="Specialty">Specialty</MenuItem>
-									<MenuItem value="G1">G1</MenuItem>
-									<MenuItem value="G2">G2</MenuItem>
-									<MenuItem value="G3">G3</MenuItem>
-									<MenuItem value="G4">G4</MenuItem>
+									<MenuItem value="Weekly">Weekly</MenuItem>
 								</Select>
 							</FormControl>
 						</Grid>
@@ -662,20 +674,6 @@ const ScheduleCalendar = () => {
 											{metric}
 										</MenuItem>
 									))}
-								</Select>
-							</FormControl>
-						</Grid>
-
-						<Grid item xs={12}>
-							<FormControl fullWidth required>
-								<InputLabel id="timeFrame-label">Timeframe</InputLabel>
-								<Select
-									labelId="timeFrame-label"
-									value={newTargetFormValues.timeFrame}
-									onChange={(e) => setNewTargetFormValues({ ...newTargetFormValues, timeFrame: e.target.value })}
-									input={<OutlinedInput label="Timeframe" />}
-								>
-									<MenuItem value="Weekly">Weekly</MenuItem>
 								</Select>
 							</FormControl>
 						</Grid>
@@ -845,7 +843,7 @@ const ScheduleCalendar = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Edit Event Details</DialogTitle>
+      <DialogTitle>Edit Event Details</DialogTitle>
 				
         <DialogContent dividers>
 					<Grid container spacing={2}>
@@ -969,53 +967,18 @@ const ScheduleCalendar = () => {
 						{editedEventDetails.type === 'target' && (
 							<>
 								{/* Read-only display fields */}
-								<Grid item xs={12} sm={6}>
-									<TextField
-										label="Coffee Type"
-										fullWidth
-										value={editedEventDetails.typeCoffee || ''}
-										InputProps={{ readOnly: true }}
-									/>
-								</Grid>
-								
-								<Grid item xs={12} sm={6}>
-									<TextField
-										label="Processing Type"
-										fullWidth
-										value={editedEventDetails.processingType || ''}
-										InputProps={{ readOnly: true }}
-									/>
-								</Grid>
-								
-								<Grid item xs={12} sm={6}>
-									<TextField
-										label="Product Line"
-										fullWidth
-										value={editedEventDetails.productLine || ''}
-										InputProps={{ readOnly: true }}
-									/>
-								</Grid>
 
-								<Grid item xs={12} sm={6}>
+								<Grid item xs={12} sm={12}>
 									<TextField
-										label="Producer"
+										label="Reference Number"
 										fullWidth
-										value={editedEventDetails.producer || ''}
-										InputProps={{ readOnly: true }}
-									/>
-								</Grid>
-
-								<Grid item xs={12} sm={6}>
-									<TextField
-										label="Quality"
-										fullWidth
-										value={editedEventDetails.quality || ''}
+										value={editedEventDetails.referenceNumber || ''}
 										InputProps={{ readOnly: true }}
 									/>
 								</Grid>
 
 								{/* Editable field */}
-								<Grid item xs={12} sm={6}>
+								<Grid item xs={12} sm={12}>
 									<TextField
 										label="Target Value (kg)"
 										type="number"

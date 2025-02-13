@@ -7,11 +7,7 @@ router.post('/targets', async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { 
-      type, 
-      processingType,
-      productLine,
-      producer, 
-      quality, 
+      referenceNumber, 
       metric, 
       timeFrame, 
       targetValue, 
@@ -20,23 +16,19 @@ router.post('/targets', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!type || !processingType || !quality || !metric || !timeFrame || !targetValue || !startDate || !endDate) {
+    if (!referenceNumber || !metric || !timeFrame || !targetValue || !startDate || !endDate) {
       return res.status(400).json({ error: 'Missing required fields.' });
     }
 
     // Save the target metrics data
     const [TargetMetrics] = await sequelize.query(
       `INSERT INTO "TargetMetrics" 
-       (type, "processingType", "productLine", producer, quality, metric, "timeFrame", "targetValue", "startDate", "endDate", "createdAt", "updatedAt") 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+       ("referenceNumber", metric, "timeFrame", "targetValue", "startDate", "endDate", "createdAt", "updatedAt") 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
        RETURNING *`,
       {
         replacements: [
-          type, 
-          processingType, 
-          productLine,
-          producer,
-          quality, 
+          referenceNumber, 
           metric, 
           timeFrame, 
           targetValue, 
@@ -73,6 +65,18 @@ router.get('/targets', async (req, res) => {
   } catch (err) {
     console.error('Error fetching target metrics data:', err);
     res.status(500).json({ message: 'Failed to fetch target metrics data.' });
+  }
+});
+
+// Route for fetching all target metrics data
+router.get('/referenceMappings', async (req, res) => {
+  try {
+    // Fetch all records for filtering purposes
+    const [allRows] = await sequelize.query('SELECT * FROM "ReferenceMappings_duplicate"');
+    res.json(allRows);
+  } catch (err) {
+    console.error('Error fetching reference mappings data:', err);
+    res.status(500).json({ message: 'Failed to fetch reference mappings data.' });
   }
 });
 
@@ -130,7 +134,30 @@ router.get('/targets/:range', async (req, res) => {
   }
 
   try {
-    const query = `WITH metric AS (SELECT id, type, "processingType", "productLine", producer, quality, metric, CASE WHEN metric = 'Average Cherry Cost' THEN AVG("targetValue") ELSE SUM("targetValue") END AS "targetValue" FROM "TargetMetrics" WHERE "startDate" <= ? AND "endDate" >= ? GROUP BY id, type, "processingType" ,"productLine", producer, quality, metric), ttw AS (SELECT type, "processingType", "productLine", producer, quality, 'Total Weight Produced' AS metric, COALESCE(SUM(weight), 0) AS achievement FROM "PostprocessingData" WHERE "storedDate" BETWEEN ? AND ? GROUP BY type, "processingType", "productLine", producer, quality) SELECT a.id, a.type, a."processingType", a."productLine", a.producer, a.quality, a.metric, a."targetValue", COALESCE(b.achievement, 0) as achievement FROM metric a LEFT JOIN ttw b ON LOWER(a.type) = LOWER(b.type) AND LOWER(a."processingType") = LOWER(b."processingType") AND LOWER(a."productLine") = LOWER(b."productLine") AND LOWER(a.producer) = LOWER(b.producer) AND LOWER(a.quality) = LOWER(b.quality) AND LOWER(a.metric) = LOWER(b.metric);`;
+    const query = `
+    WITH metric AS (
+      SELECT id, "referenceNumber", metric, CASE WHEN metric = 'Average Cherry Cost' THEN AVG("targetValue") ELSE SUM("targetValue") END AS "targetValue" 
+      FROM "TargetMetrics" 
+      WHERE "startDate" <= ? AND "endDate" >= ? 
+      GROUP BY id, "referenceNumber"
+    ), 
+
+    ttw AS (
+      SELECT "referenceNumber", 'Total Weight Produced' AS metric, COALESCE(SUM(weight), 0) AS achievement 
+      FROM "PostprocessingData" 
+      WHERE "storedDate" BETWEEN ? AND ? 
+      GROUP BY "referenceNumber"
+    ) 
+
+    SELECT 
+      a.id, 
+      a."referenceNumber", 
+      a.metric, 
+      a."targetValue", 
+      COALESCE(b.achievement, 0) as achievement 
+    FROM metric a 
+    LEFT JOIN ttw b ON LOWER(a."referenceNumber") = LOWER(b."referenceNumber") AND LOWER(a.metric) = LOWER(b.metric);
+    `;
 
     const values = [end, start, start, end];
     const result = await sequelize.query(query, {
