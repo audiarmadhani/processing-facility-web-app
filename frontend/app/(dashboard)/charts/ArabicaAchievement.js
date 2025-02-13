@@ -5,21 +5,22 @@ import { BarChart } from "@mui/x-charts/BarChart";
 import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
-const colorPalette = [  // Define a single array of colors
-  "#8dd3c7",
-  "#ffffb3",
-  "#bebada",
-  "#fb8072",
-  "#80b1d3",
-  "#fdb462",
-  "#b3de69",
-  "#fccde5",
-  "#d9d9d9",
-  "#bc80bd",
-  "#ccebc5",
-  "#ffed6f",
-];
-
+const colorCategories = {
+  Set3: [
+    "#8dd3c7",
+    "#ffffb3",
+    "#bebada",
+    "#fb8072",
+    "#80b1d3",
+    "#fdb462",
+    "#b3de69",
+    "#fccde5",
+    "#d9d9d9",
+    "#bc80bd",
+    "#ccebc5",
+    "#ffed6f",
+  ],
+};
 
 const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
@@ -35,14 +36,14 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
+        // Access 'arabicaAchievement' directly from the API response
         const arabicaAchievementData = response.data.arabicaAchievement;
 
         if (Array.isArray(arabicaAchievementData)) {
           const chartData = arabicaAchievementData.map((item, index) => ({
-            id: item.referenceNumber,
+            id: item.referenceNumber, // Use referenceNumber as a unique ID
             referenceNumber: item.referenceNumber,
             targetPercentage: item.targetPercentage,
-            color: colorPalette[index % colorPalette.length], // Assign color here
           }));
           setData(chartData);
         } else {
@@ -93,6 +94,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
+  const colorScheme = "Set3";
 
   return (
     <Box>
@@ -101,24 +103,30 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
           dataset={data}
           xAxis={[
             {
-              scaleType: 'band',
-              dataKey: 'referenceNumber',
-              label: 'Reference Number',
+              scaleType: "band",
+              dataKey: "referenceNumber",
+              label: "Reference Number",
+              disableTicks: true,
+            },
+          ]}
+          series={[
+            {
+              dataKey: "targetPercentage",
+              label: "Target Achievement",
+              valueFormatter: (value) => `${value}%`,
+              // Use getColor to cycle through Set3 colors for each bar:
+              getColor: (datum, index) =>
+                colorCategories[colorScheme][
+                  index % colorCategories[colorScheme].length
+                ],
             },
           ]}
           yAxis={[
             {
               min: 0,
               max: 100,
-              label: 'Target Percentage (%)',
-            },
-          ]}
-          series={[
-            {
-              dataKey: 'targetPercentage',
-              label: 'Target Achievement',
-              valueFormatter: (value) => `${value}%`,
-              colorBy: 'dataKey',  // Important: Tell the chart to color by dataKey
+              label: "Target Percentage (%)",
+              disableTicks: true,
             },
           ]}
           height={500}
@@ -127,8 +135,9 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
               transform: "translate(-100px, 0)",
             },
           }}
+          colors={colorCategories[colorScheme]}
           borderRadius={10}
-          slotProps={{ legend: { hidden : true } }}
+          slotProps={{ legend: { hidden: true } }}
         />
       </Box>
     </Box>
