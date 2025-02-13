@@ -36,7 +36,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
-        // Access 'arabicaAchievement' directly from the API response
+        // Access 'arabicaAchievement' directly
         const arabicaAchievementData = response.data.arabicaAchievement;
 
         if (Array.isArray(arabicaAchievementData)) {
@@ -44,6 +44,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
             id: item.referenceNumber, // Use referenceNumber as a unique ID
             referenceNumber: item.referenceNumber,
             targetPercentage: item.targetPercentage,
+            color: colorCategories.Set3[index % colorCategories.Set3.length], // Assign a unique color
           }));
           setData(chartData);
         } else {
@@ -94,8 +95,6 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  const colorScheme = "Set3";
-
   return (
     <Box>
       <Box sx={{ height: 500 }}>
@@ -114,11 +113,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
               dataKey: "targetPercentage",
               label: "Target Achievement",
               valueFormatter: (value) => `${value}%`,
-              // Use getColor to cycle through Set3 colors for each bar:
-              getColor: (datum, index) =>
-                colorCategories[colorScheme][
-                  index % colorCategories[colorScheme].length
-                ],
+              color: data.color, // Use the color assigned to each bar
             },
           ]}
           yAxis={[
@@ -135,7 +130,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
               transform: "translate(-100px, 0)",
             },
           }}
-          colors={colorCategories[colorScheme]}
+          colors={data.map((item) => item.color)} // Pass the color for each bar
           borderRadius={10}
           slotProps={{ legend: { hidden: true } }}
         />
