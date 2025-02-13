@@ -88,7 +88,7 @@ const ArabicaCherryQualityChart = ({ timeframe = "this_month" }) => {
         height={500}
         sx={{
           ".MuiChart-axisLeft .MuiChart-axisLabel": {
-            transform: "translate(-50px, 0)",
+            transform: "translate(-100px, 0)",
           },
         }}
         colors={colorCategories[colorScheme]}

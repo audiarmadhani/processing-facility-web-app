@@ -445,30 +445,6 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Arabica Farmers Contribution Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Arabica Farmers Contribution
-                    </Typography>
-                    <ArabicaFarmersContributionChart timeframe={timeframe} />
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Arabica Cherry Quality Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Arabica Cherry Quality
-                    </Typography>
-                    <ArabicaCherryQualityChart timeframe={timeframe} />
-                  </CardContent>
-                </Card>
-              </Grid>
-
               {/* Total Arabica Production Bar Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
@@ -489,6 +465,30 @@ function Dashboard() {
                       Arabica Target Achievement
                     </Typography>
                     <ArabicaAchievementChart timeframe={timeframe}/>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Arabica Farmers Contribution Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Farmers Contribution
+                    </Typography>
+                    <ArabicaFarmersContributionChart timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Arabica Cherry Quality Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Cherry Quality
+                    </Typography>
+                    <ArabicaCherryQualityChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -819,30 +819,6 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Robusta Farmers Contribution Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Robusta Farmers Contribution
-                    </Typography>
-                    <RobustaFarmersContributionChart timeframe={timeframe} />
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Robusta Cherry Quality Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Robusta Cherry Quality
-                    </Typography>
-                    <RobustaCherryQualityChart timeframe={timeframe} />
-                  </CardContent>
-                </Card>
-              </Grid>
-
               {/* Total Robusta Production Bar Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
@@ -863,6 +839,30 @@ function Dashboard() {
                       Robusta Target Achievement
                     </Typography>
                     <RobustaAchievementChart timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Robusta Farmers Contribution Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Farmers Contribution
+                    </Typography>
+                    <RobustaFarmersContributionChart timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Robusta Cherry Quality Bar Chart */}
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Cherry Quality
+                    </Typography>
+                    <RobustaCherryQualityChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
