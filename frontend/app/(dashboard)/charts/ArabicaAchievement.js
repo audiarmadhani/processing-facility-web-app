@@ -6,7 +6,7 @@ import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import dayjs from 'dayjs';
 
-const colorPalette = [  // Define a single array of colors
+const colorPalette = [
   "#8dd3c7",
   "#ffffb3",
   "#bebada",
@@ -37,24 +37,36 @@ const ArabicaAchievementChart = ({ timeframe }) => {
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
 
+        // Access the correct part of the response
         const apiData = response.data.arabicaAchievement;
 
         if (Array.isArray(apiData)) {
           const transformedData = {};
           const allDates = new Set();
-          let colorIndex = 0; // Track the current color index
+          let colorIndex = 0;
 
           apiData.forEach(item => {
-            allDates.add(item.Date);
+            // Store dates in a consistent format (ISO string)
+            const formattedDate = dayjs(item.Date).toISOString();
+            allDates.add(formattedDate);
+
             if (!transformedData[item.referenceNumber]) {
               transformedData[item.referenceNumber] = {
                 data: [],
-                color: colorPalette[colorIndex % colorPalette.length] // Apply color
+                color: colorPalette[colorIndex % colorPalette.length]
               };
-              colorIndex++; // Increment on each new referenceNumber
+              colorIndex++;
             }
-            transformedData[item.referenceNumber].data.push(item.targetPercentage === null ? 0 : item.targetPercentage);
+            // Push data to the correct reference number, handling nulls safely
+            transformedData[item.referenceNumber].data.push({
+              date: formattedDate,  //  Store the formatted date *with* the data point
+              value: item.targetPercentage === null ? 0 : item.targetPercentage
+            });
+
           });
+
+          // Sort dates *after* processing, and store them as Day.js objects initially,
+          // then format them *only* in the valueFormatter.
           setDates(Array.from(allDates).sort());
           setChartData(transformedData);
 
@@ -101,13 +113,14 @@ const ArabicaAchievementChart = ({ timeframe }) => {
     );
   }
 
-    const series = Object.keys(chartData).map((refNumber) => ({
-    dataKey: refNumber,
-    label: refNumber,
-    data: chartData[refNumber].data,
-    color: chartData[refNumber].color, // Use the assigned color
+    // This is correct *now* that `data` is an array of objects.
+  const series = Object.keys(chartData).map((refNumber) => ({
+      label: refNumber,
+      data: chartData[refNumber].data.map(item => item.value), // Extract 'value' for the chart data
+      color: chartData[refNumber].color,
+      // No `dataKey` when you have a `data` array.
   }));
-
+    
   return (
     <Box>
       <Box sx={{ height: 500 }}>
@@ -115,7 +128,7 @@ const ArabicaAchievementChart = ({ timeframe }) => {
           xAxis={[{
             scaleType: 'point',
             data: dates,
-            valueFormatter: (date) => dayjs(date).format('YYYY-MM-DD'),
+            valueFormatter: (dateStr) => dayjs(dateStr).format('YYYY-MM-DD'), // Format *here*
             label: "Date",
           }]}
           series={series}
@@ -129,9 +142,12 @@ const ArabicaAchievementChart = ({ timeframe }) => {
           height={500}
           slotProps={{
             legend: { hidden: false },
-              tooltip: { valueFormatter: (value) => `${value}%` }
+            tooltip: {
+                trigger: 'axis', // Show tooltip for all series on hover
+                valueFormatter: (value) => `${value}%`
+            }
           }}
-          tooltip={{ trigger: 'axis' }}
+          
         />
       </Box>
     </Box>
