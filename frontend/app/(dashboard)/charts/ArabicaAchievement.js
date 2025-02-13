@@ -23,6 +23,7 @@ const colorPalette = [
 const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Add error state
 
   // Fetch data from the API
   useEffect(() => {
@@ -60,28 +61,28 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
   }, [timeframe]);
 
   if (loading) {
-      return (
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
-          <CircularProgress />
-        </Box>
-      );
-    }
-  
-    if (error) { // Display error message
-      return (
-        <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
-          <Typography variant="body1">{error}</Typography>
-        </Box>
-      );
-    }
-  
-    if (data.length === 0) {
-      return (
-        <Box sx={{ textAlign: "center", padding: 2 }}>
-          <Typography variant="body1">No data available</Typography>
-        </Box>
-      );
-    }
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) { // Display error message
+    return (
+      <Box sx={{ textAlign: "center", padding: 2, color: "red" }}>
+        <Typography variant="body1">{error}</Typography>
+      </Box>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", padding: 2 }}>
+        <Typography variant="body1">No data available</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box>

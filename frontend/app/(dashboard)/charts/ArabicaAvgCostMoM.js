@@ -8,6 +8,7 @@ import { Box, CircularProgress } from '@mui/material';
 const ArabicaAvgCostChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Add error state
 
   // Fetch data from API
   useEffect(() => {
