@@ -67,7 +67,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          height: 400,
+          height: 500,
         }}
       >
         <CircularProgress />
@@ -96,24 +96,15 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Arabica Production Target Achievement
-      </Typography>
       <Box sx={{ height: 500 }}>
-		<BarChart
+        <BarChart
           dataset={data}
           xAxis={[
             {
-              scaleType: 'band',
-              dataKey: 'referenceNumber',
-              label: 'Reference Number',
-            },
-          ]}
-          yAxis={[
-            {
-              min: 0,
-              max: 100,
-              label: 'Target Percentage (%)',
+              scaleType: "band",
+              dataKey: "referenceNumber",
+              label: "Reference Number",
+              disableTicks: true,
             },
           ]}
           series={[
@@ -121,24 +112,25 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
               dataKey: 'targetPercentage',
               label: 'Target Achievement',
               valueFormatter: (value) => `${value}%`,
-			  colorBy: 'dataKey', //add color
+			        colorBy: 'dataKey', //add color
             },
           ]}
-		  
-		  //colors={colorPalette} remove this line
-
-          height={500} // Consider removing explicit height for responsiveness
-          
-          slotProps={{
-            bar: {
-              rx: 4, // Rounded corners for bars
-			},
-		  legend: {  //add Legend
-			  hidden: false,
-              vertical: "middle",
-			right: 0,
-			},
+          yAxis={[
+            { 
+              min: 0, max: 100, 
+              label: "Target Percentage (%)", 
+              disableTicks: true 
+            }
+          ]}
+          height={500}
+          sx={{
+            ".MuiChart-axisLeft .MuiChart-axisLabel": {
+              transform: "translate(-50px, 0)",
+            },
           }}
+          colors={colorCategories[colorScheme]}
+          borderRadius={10}
+          slotProps={{ legend: { hidden: true } }}
         />
       </Box>
     </Box>
