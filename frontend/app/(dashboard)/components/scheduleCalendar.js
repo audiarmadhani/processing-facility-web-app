@@ -102,6 +102,8 @@ const ScheduleCalendar = () => {
   const calendarBgColor = theme.palette.mode === 'dark' ? '#424242' : '#ffffff';
   const calendarTextColor = theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
 
+	const [refreshCounter, setRefreshCounter] = useState(0);
+
   // Fetch production target events from the API
   useEffect(() => {
     const fetchData = async () => {
