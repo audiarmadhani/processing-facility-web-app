@@ -377,7 +377,8 @@ const ScheduleCalendar = () => {
 				payload = {
 					targetValue: editedEventDetails.targetValue,
 					startDate: editedEventDetails.startDate,
-					endDate: editedEventDetails.endDate
+					endDate: editedEventDetails.endDate,
+					id: editedEventDetails.id
 				};
 			} else if (type === "event") {
 				url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
