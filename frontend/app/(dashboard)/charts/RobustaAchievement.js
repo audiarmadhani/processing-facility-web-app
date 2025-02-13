@@ -5,20 +5,22 @@ import { BarChart } from "@mui/x-charts/BarChart";
 import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
-const colorPalette = [
-  "#8dd3c7",
-  "#ffffb3",
-  "#bebada",
-  "#fb8072",
-  "#80b1d3",
-  "#fdb462",
-  "#b3de69",
-  "#fccde5",
-  "#d9d9d9",
-  "#bc80bd",
-  "#ccebc5",
-  "#ffed6f",
-];
+const colorCategories = {
+  Set3: [
+    "#8dd3c7",
+    "#ffffb3",
+    "#bebada",
+    "#fb8072",
+    "#80b1d3",
+    "#fdb462",
+    "#b3de69",
+    "#fccde5",
+    "#d9d9d9",
+    "#bc80bd",
+    "#ccebc5",
+    "#ffed6f",
+  ],
+};
 
 const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
@@ -93,6 +95,7 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
+  const colorScheme = "Set3";
 
   return (
     <Box>
