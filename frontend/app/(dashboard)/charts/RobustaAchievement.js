@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
+import axios from "axios";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
 const colorPalette = [
@@ -19,7 +20,42 @@ const colorPalette = [
   "#ffed6f",
 ];
 
-const RobustaAchievementChart = ({ robustaAchievement, loading }) => {
+const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
+        );
+        console.log("API Response:", response.data); // Log the full response for debugging
+
+        if (Array.isArray(response.data.robustaAchievement)) {
+          // Transform the data for the chart
+          const chartData = response.data.robustaAchievement.map((item, index) => ({
+            id: item.referenceNumber,
+            referenceNumber: item.referenceNumber,
+            targetPercentage: item.targetPercentage,
+            color: colorPalette[index % colorPalette.length], // Assign a color from the palette
+          }));
+          setData(chartData);
+        } else {
+          console.error("Invalid data format:", response.data.robustaAchievement);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [timeframe]);
+
   if (loading) {
     return (
       <Box
@@ -35,24 +71,6 @@ const RobustaAchievementChart = ({ robustaAchievement, loading }) => {
     );
   }
 
-  if (!robustaAchievement || robustaAchievement.length === 0) {
-    return (
-      <Box sx={{ textAlign: "center", padding: 2 }}>
-        <Typography variant="body2" color="textSecondary">
-          No data available
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Transform the data for the chart
-  const chartData = robustaAchievement.map((item, index) => ({
-    id: item.referenceNumber,
-    referenceNumber: item.referenceNumber,
-    targetPercentage: item.targetPercentage,
-    color: colorPalette[index % colorPalette.length], // Assign a color from the palette
-  }));
-
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -60,7 +78,7 @@ const RobustaAchievementChart = ({ robustaAchievement, loading }) => {
       </Typography>
       <Box sx={{ height: 500 }}>
         <BarChart
-          dataset={chartData}
+          dataset={data}
           layout="horizontal" // Set the chart to horizontal
           xAxis={[
             {

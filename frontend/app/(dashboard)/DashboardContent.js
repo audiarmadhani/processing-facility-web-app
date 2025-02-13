@@ -267,10 +267,7 @@ function Dashboard() {
                       )}
                     </Typography>
                     <Typography variant="caption">{selectedRangeLabel}</Typography>
-                    <ArabicaAvgCostMoM 
-                      arabicaAvgCostData={dashboardData?.arabicaAvgCostMoM} 
-                      loading={loading} 
-                    />
+                    <ArabicaAvgCostMoM timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -503,10 +500,7 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Arabica Target Achievement
                     </Typography>
-                    <ArabicaAchievementChart
-                      arabicaAchievement={dashboardData?.arabicaAchievement}
-                      loading={loading}
-                    />
+                    <ArabicaAchievementChart timeframe={timeframe}/>
                   </CardContent>
                 </Card>
               </Grid>
@@ -880,10 +874,7 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Robusta Target Achievement
                     </Typography>
-                    <RobustaAchievementChart
-                      robustaAchievement={dashboardData?.robustaAchievement}
-                      loading={loading}
-                    />
+                    <RobustaAchievementChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
               </Grid>
