@@ -44,7 +44,6 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
             id: item.referenceNumber, // Use referenceNumber as a unique ID
             referenceNumber: item.referenceNumber,
             targetPercentage: item.targetPercentage,
-            color: colorPalette[index % colorPalette.length],
           }));
           setData(chartData);
         } else {
