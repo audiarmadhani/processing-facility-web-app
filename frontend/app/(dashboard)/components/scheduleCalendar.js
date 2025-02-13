@@ -299,15 +299,19 @@ const ScheduleCalendar = () => {
         },
       ]);
 
-      setIsAddTargetDialogOpen(false);
-      setNewTargetFormValues({ // Clear the form values
-        referenceNumber: '',
-        metric: '',
-        timeFrame: '',
-        targetValue: '',
-        startDate: '',
-        endDate: '',
-      });
+			if (response.ok) {
+				setRefreshCounter(prev => prev + 1); // Trigger data refresh
+				setIsAddTargetDialogOpen(false);
+				setNewTargetFormValues({ // Clear the form values
+					referenceNumber: '',
+					metric: '',
+					timeFrame: '',
+					targetValue: '',
+					startDate: '',
+					endDate: '',
+				});
+			}
+
     } catch (err) {
       console.error('Error creating target:', err);
       alert(`Error: ${err.message}`);
@@ -343,17 +347,17 @@ const ScheduleCalendar = () => {
 			if (response.ok) {
 				setRefreshCounter(prev => prev + 1); // Trigger data refresh
 				setIsAddEventDialogOpen(false);
+				setNewEventFormValues({
+					eventName: '',
+					startDate: '',
+					endDate: '',
+					eventDescription: '',
+					allDay: false,
+					location: '',
+					category: '',
+				});
 			}
 
-      setNewEventFormValues({
-        eventName: '',
-        startDate: '',
-        endDate: '',
-        eventDescription: '',
-        allDay: false,
-        location: '',
-        category: '',
-      });
     } catch (err) {
       console.error('Error creating event:', err);
       alert(`Error: ${err.message}`);
