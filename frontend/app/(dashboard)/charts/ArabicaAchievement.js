@@ -23,33 +23,30 @@ const colorPalette = [
 const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // Add error state
+  const [error, setError] = useState(null);
 
-  // Fetch data from the API
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError(null); // Reset error state
+      setError(null);
       try {
         const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`
         );
-        console.log("API Response:", response.data); // Log the full response for debugging
 
-        // Check if arabicaAchievement exists and is an array
-        if (Array.isArray(response.data.arabicaAchievement)) {
-          // Transform the data for the chart
-          const chartData = response.data.arabicaAchievement.map((item, index) => ({
-            id: item.referenceNumber,
+        // Access 'arabicaAchievement' directly
+        const arabicaAchievementData = response.data.arabicaAchievement;
+
+        if (Array.isArray(arabicaAchievementData)) {
+          const chartData = arabicaAchievementData.map((item, index) => ({
+            id: item.referenceNumber, // Use referenceNumber as a unique ID
             referenceNumber: item.referenceNumber,
             targetPercentage: item.targetPercentage,
-            color: colorPalette[index % colorPalette.length], // Assign a color from the palette
+            color: colorPalette[index % colorPalette.length],
           }));
-
           setData(chartData);
-          console.log("Transformed chart data:", chartData);
         } else {
-          console.error("Invalid data format:", response.data.arabicaAchievement);
+          console.error("Invalid data format:", arabicaAchievementData);
           setError("Invalid data format received from the API.");
         }
       } catch (error) {
@@ -65,14 +62,20 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 400 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: 400,
+        }}
+      >
         <CircularProgress />
       </Box>
     );
   }
 
   if (error) {
-    // Display error message
     return (
       <Box sx={{ textAlign: "center", padding: 2 }}>
         <Typography variant="body1" color="error">
@@ -82,13 +85,14 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <Box sx={{ textAlign: "center", padding: 2 }}>
-        <Typography variant="body1">No data available</Typography>
+        <Typography variant="body1">No data available.</Typography>
       </Box>
     );
   }
+
 
   return (
     <Box>
@@ -96,38 +100,44 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
         Arabica Production Target Achievement
       </Typography>
       <Box sx={{ height: 500 }}>
-        <BarChart
+		<BarChart
           dataset={data}
-          layout="horizontal" // Set the chart to horizontal
           xAxis={[
             {
-              scaleType: "band",
-              dataKey: "referenceNumber",
-              label: "Reference Number",
+              scaleType: 'band',
+              dataKey: 'referenceNumber',
+              label: 'Reference Number',
             },
           ]}
           yAxis={[
             {
               min: 0,
-              max: 100, // Scale the y-axis to 100%
-              label: "Target Percentage (%)",
-              scaleType: "band",
+              max: 100,
+              label: 'Target Percentage (%)',
             },
           ]}
           series={[
             {
-              dataKey: "targetPercentage",
-              label: "Target Achievement",
+              dataKey: 'targetPercentage',
+              label: 'Target Achievement',
               valueFormatter: (value) => `${value}%`,
+			  colorBy: 'dataKey', //add color
             },
           ]}
-          colors={colorPalette} // Apply the color palette
-          height={500}
-          borderRadius={10}
+		  
+		  //colors={colorPalette} remove this line
+
+          height={500} // Consider removing explicit height for responsiveness
+          
           slotProps={{
             bar: {
               rx: 4, // Rounded corners for bars
-            },
+			},
+		  legend: {  //add Legend
+			  hidden: false,
+              vertical: "middle",
+			right: 0,
+			},
           }}
         />
       </Box>
