@@ -182,6 +182,11 @@ const ScheduleCalendar = () => {
 						metric: target.metric,
 						timeFrame: target.timeFrame,
 						targetValue: target.targetValue,
+						productLine: target.productLine,
+						processingType: target.processingType,
+						producer: target.producer,
+						quality: target.quality,
+						coffeeType: target.type
 					},
 				}));
 
@@ -395,7 +400,7 @@ const ScheduleCalendar = () => {
 				targetSpecific.processingType = selectedMapping.processingType;
 				targetSpecific.producer = selectedMapping.producer;
 				targetSpecific.quality = selectedMapping.quality;
-				targetSpecific.type = selectedMapping.type;
+				targetSpecific.coffeeType = selectedMapping.coffeeType;
 			}
 		}
 	
@@ -1034,7 +1039,7 @@ const ScheduleCalendar = () => {
 									<TextField
 										label="Type"
 										fullWidth
-										value={editedEventDetails.type || ''}
+										value={editedEventDetails.coffeeType || ''}
 										InputProps={{ readOnly: true }}
 									/>
 								</Grid>
