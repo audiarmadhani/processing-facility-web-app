@@ -846,151 +846,155 @@ const ScheduleCalendar = () => {
       <DialogTitle>Edit Event Details</DialogTitle>
 				
         <DialogContent dividers>
-					<Grid container spacing={2}>
-						{/* Common Fields */}
-						<Grid item xs={12} sm={6}>
-							<DateTimePicker
-								label="Start Date and Time"
-								value={editedEventDetails.startDate ? dayjs(editedEventDetails.startDate) : null}
-								onChange={(newValue) => {
+
+					<LocalizationProvider dateAdapter={AdapterDayjs}>
+
+						<Grid container spacing={2}>
+							{/* Common Fields */}
+							<Grid item xs={12} sm={6}>
+								<DateTimePicker
+									label="Start Date and Time"
+									value={editedEventDetails.startDate ? dayjs(editedEventDetails.startDate) : null}
+									onChange={(newValue) => {
+											if (newValue) {
+													let newStartDate = newValue;
+													if (editedEventDetails.allDay) {
+															newStartDate = newStartDate.startOf('day'); // Set to 00:00:00 if all-day
+													}
+													setEditedEventDetails(prev => ({ ...prev, startDate: newStartDate.toISOString() }));
+											} else {
+													setEditedEventDetails(prev => ({ ...prev, startDate: '' })); // Handle null/clear
+											}
+									}}
+									renderInput={(params) => <TextField {...params} fullWidth />}
+								/>
+							</Grid>
+
+							<Grid item xs={12} sm={6}>
+								<DateTimePicker
+									label="End Date and Time"
+									value={editedEventDetails.endDate ? dayjs(editedEventDetails.endDate) : null}
+									onChange={(newValue) => {
 										if (newValue) {
-												let newStartDate = newValue;
-												if (editedEventDetails.allDay) {
-														newStartDate = newStartDate.startOf('day'); // Set to 00:00:00 if all-day
-												}
-												setEditedEventDetails(prev => ({ ...prev, startDate: newStartDate.toISOString() }));
+												let newEndDate = newValue;
+											if (editedEventDetails.allDay) {
+												newEndDate = newEndDate.endOf('day');
+											}
+												setEditedEventDetails(prev => ({ ...prev, endDate: newEndDate.toISOString() }));
 										} else {
-												setEditedEventDetails(prev => ({ ...prev, startDate: '' })); // Handle null/clear
+												setEditedEventDetails(prev => ({ ...prev, endDate: '' }));//handle empty date
 										}
-								}}
-								renderInput={(params) => <TextField {...params} fullWidth />}
-							/>
-						</Grid>
+									}}
+									renderInput={(params) => <TextField {...params} fullWidth />}
+								/>
+							</Grid>
 
-						<Grid item xs={12} sm={6}>
-							<DateTimePicker
-								label="End Date and Time"
-								value={editedEventDetails.endDate ? dayjs(editedEventDetails.endDate) : null}
-								onChange={(newValue) => {
-									if (newValue) {
-											let newEndDate = newValue;
-										if (editedEventDetails.allDay) {
-											newEndDate = newEndDate.endOf('day');
-										}
-											setEditedEventDetails(prev => ({ ...prev, endDate: newEndDate.toISOString() }));
-									} else {
-											setEditedEventDetails(prev => ({ ...prev, endDate: '' }));//handle empty date
-									}
-								}}
-								renderInput={(params) => <TextField {...params} fullWidth />}
-							/>
-						</Grid>
+							{/* Event-Specific Fields */}
+							{editedEventDetails.type === 'event' && (
+								<>
+									<Grid item xs={12}>
+										<TextField
+											label="Event Name"
+											fullWidth
+											value={editedEventDetails.eventName || ''}
+											onChange={(e) => setEditedEventDetails(prev => ({...prev, eventName: e.target.value}))}
+										/>
+									</Grid>
 
-						{/* Event-Specific Fields */}
-						{editedEventDetails.type === 'event' && (
-							<>
-								<Grid item xs={12}>
-									<TextField
-										label="Event Name"
-										fullWidth
-										value={editedEventDetails.eventName || ''}
-										onChange={(e) => setEditedEventDetails(prev => ({...prev, eventName: e.target.value}))}
-									/>
-								</Grid>
+									<Grid item xs={12}>
+										<TextField
+											label="Description"
+											multiline
+											rows={3}
+											fullWidth
+											value={editedEventDetails.eventDescription || ''}
+											onChange={(e) => setEditedEventDetails(prev => ({...prev, eventDescription: e.target.value}))}
+										/>
+									</Grid>
 
-								<Grid item xs={12}>
-									<TextField
-										label="Description"
-										multiline
-										rows={3}
-										fullWidth
-										value={editedEventDetails.eventDescription || ''}
-										onChange={(e) => setEditedEventDetails(prev => ({...prev, eventDescription: e.target.value}))}
-									/>
-								</Grid>
+									<Grid item xs={12} sm={6}>
+										<TextField
+											label="Location"
+											fullWidth
+											value={editedEventDetails.location || ''}
+											onChange={(e) => setEditedEventDetails(prev => ({...prev, location: e.target.value}))}
+										/>
+									</Grid>
 
-								<Grid item xs={12} sm={6}>
-									<TextField
-										label="Location"
-										fullWidth
-										value={editedEventDetails.location || ''}
-										onChange={(e) => setEditedEventDetails(prev => ({...prev, location: e.target.value}))}
-									/>
-								</Grid>
+									<Grid item xs={12} sm={6}>
+										<Autocomplete
+											options={predefinedCategory}
+											value={editedEventDetails.category || ''}
+											onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, category: newValue}))}
+											renderInput={(params) => (
+												<TextField
+													{...params}
+													label="Category"
+													fullWidth
+												/>
+											)}
+										/>
+									</Grid>
 
-								<Grid item xs={12} sm={6}>
-									<Autocomplete
-										options={predefinedCategory}
-										value={editedEventDetails.category || ''}
-										onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, category: newValue}))}
-										renderInput={(params) => (
-											<TextField
-												{...params}
-												label="Category"
-												fullWidth
-											/>
-										)}
-									/>
-								</Grid>
+									<Grid item xs={12}>
+										<FormControlLabel
+											control={
+												<Checkbox
+													checked={editedEventDetails.allDay || false}
+													onChange={(e) => {
+														const isAllDay = e.target.checked;
+														setEditedEventDetails(prevDetails => {
+															let updatedDetails = { ...prevDetails, allDay: isAllDay };
 
-								<Grid item xs={12}>
-									<FormControlLabel
-										control={
-											<Checkbox
-												checked={editedEventDetails.allDay || false}
-												onChange={(e) => {
-													const isAllDay = e.target.checked;
-													setEditedEventDetails(prevDetails => {
-														let updatedDetails = { ...prevDetails, allDay: isAllDay };
-
-														if (isAllDay) {
-															if (updatedDetails.startDate) {
-																updatedDetails.startDate = dayjs(updatedDetails.startDate).startOf('day').toISOString();
+															if (isAllDay) {
+																if (updatedDetails.startDate) {
+																	updatedDetails.startDate = dayjs(updatedDetails.startDate).startOf('day').toISOString();
+																}
+																if (updatedDetails.endDate) {
+																	updatedDetails.endDate = dayjs(updatedDetails.endDate).endOf('day').toISOString();
+																}
 															}
-															if (updatedDetails.endDate) {
-																updatedDetails.endDate = dayjs(updatedDetails.endDate).endOf('day').toISOString();
-															}
-														}
-														return updatedDetails;
-													});
-												}}
-											/>
-										}
-										label="All-Day Event"
-									/>
-								</Grid>
-							
-							</>
-						)}
+															return updatedDetails;
+														});
+													}}
+												/>
+											}
+											label="All-Day Event"
+										/>
+									</Grid>
+								
+								</>
+							)}
 
-						{/* Target-Specific Fields */}
-						{editedEventDetails.type === 'target' && (
-							<>
-								{/* Read-only display fields */}
+							{/* Target-Specific Fields */}
+							{editedEventDetails.type === 'target' && (
+								<>
+									{/* Read-only display fields */}
 
-								<Grid item xs={12} sm={12}>
-									<TextField
-										label="Reference Number"
-										fullWidth
-										value={editedEventDetails.referenceNumber || ''}
-										InputProps={{ readOnly: true }}
-									/>
-								</Grid>
+									<Grid item xs={12} sm={12}>
+										<TextField
+											label="Reference Number"
+											fullWidth
+											value={editedEventDetails.referenceNumber || ''}
+											InputProps={{ readOnly: true }}
+										/>
+									</Grid>
 
-								{/* Editable field */}
-								<Grid item xs={12} sm={12}>
-									<TextField
-										label="Target Value (kg)"
-										type="number"
-										fullWidth
-										value={editedEventDetails.targetValue || ''}
-										onChange={(e) => setEditedEventDetails(prev => ({...prev, targetValue: e.target.value}))}
-									/>
-								</Grid>
-							</>
-						)}
+									{/* Editable field */}
+									<Grid item xs={12} sm={12}>
+										<TextField
+											label="Target Value (kg)"
+											type="number"
+											fullWidth
+											value={editedEventDetails.targetValue || ''}
+											onChange={(e) => setEditedEventDetails(prev => ({...prev, targetValue: e.target.value}))}
+										/>
+									</Grid>
+								</>
+							)}
 
-					</Grid>
+						</Grid>
+					</LocalizationProvider>
 				</DialogContent>
 
 
