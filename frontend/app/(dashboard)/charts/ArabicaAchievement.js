@@ -85,7 +85,7 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
         xAxis={[{ scaleType: 'point', data: data.map(item => item.date) }]}
         series={chartSeries}
         height={500} // Adjust height as needed
-        yAxis={{
+        leftAxis={{
           min: 0,
           max: 100, // Set y-axis range to 0-100%
           label: "Achievement (%)",
