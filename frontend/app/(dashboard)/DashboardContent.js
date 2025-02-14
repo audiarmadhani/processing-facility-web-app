@@ -44,7 +44,7 @@ import RobustaFarmersContributionChart from './charts/RobustaFarmersContribution
 import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
 import RobustaSankeyChart from './charts/RobustaSankeyChart';
 import ArabicaAchievementChart from './charts/ArabicaAchievement';
-// import RobustaAchievementChart from './charts/RobustaAchievement';
+import RobustaAchievementChart from './charts/RobustaAchievement';
 
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
@@ -832,7 +832,7 @@ function Dashboard() {
               </Grid>
 
               {/* Robusta Target Achievement */}
-              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -841,7 +841,7 @@ function Dashboard() {
                     <RobustaAchievementChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
-              </Grid> */}
+              </Grid>
 
               {/* Robusta Farmers Contribution Bar Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
