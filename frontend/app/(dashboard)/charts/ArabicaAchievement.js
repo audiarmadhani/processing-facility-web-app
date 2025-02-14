@@ -69,9 +69,9 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     groupedData[item.referenceNumber] = [...(groupedData[item.referenceNumber] || []), item];
   });
 
-  const chartSeries = Object.keys(groupedData).map((refNum, index) => ({
-    data: groupedData[refNum].map(item => item.cumulative_achievement_percentage),
-    label: refNum,
+  const chartSeries = Object.keys(groupedData).map((referenceNumber, index) => ({
+    data: groupedData[referenceNumber].map(item => item.cumulative_achievement_percentage),
+    label: referenceNumber,
     showMark: false,
     curve: "monotoneX",
     color: colorPalette[index % colorPalette.length],
