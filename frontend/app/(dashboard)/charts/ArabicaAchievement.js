@@ -82,19 +82,17 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <LineChart
-        xAxis={[{ scaleType: 'point', data: data.map(item => item.date) }]}
+        xAxis={[{ data: data.map(item => item.date) }]}
         series={chartSeries}
         height={500} // Adjust height as needed
         leftAxis={{
-          min: 0,
-          max: 100, // Set y-axis range to 0-100%
           label: "Achievement (%)",
         }}
-        sx={{
-          ".MuiChart-axisLeft .MuiChart-axisLabel": {
-            transform: "translate(-100px, 0)",
-          },
-        }}
+        // sx={{
+        //   ".MuiChart-axisLeft .MuiChart-axisLabel": {
+        //     transform: "translate(-100px, 0)",
+        //   },
+        // }}
         // margin={{ left: 60, right: 20, top: 20, bottom: 40 }} // Adjust margins
         slotProps={{ legend: { hidden : true } }}
       />
