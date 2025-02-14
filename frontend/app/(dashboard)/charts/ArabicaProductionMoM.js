@@ -46,7 +46,7 @@ const ArabicaProductionMoM = ({ timeframe = "this_month" }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
         <CircularProgress />
       </Box>
     );

@@ -39,7 +39,7 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
         <CircularProgress />
       </Box>
     );
@@ -84,21 +84,19 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
       <LineChart
         xAxis={[{ scaleType: 'point', data: data.map(item => item.date) }]}
         series={chartSeries}
-        height={300} // Adjust height as needed
+        height={500} // Adjust height as needed
         leftAxis={{
           min: 0,
           max: 100, // Set y-axis range to 0-100%
           label: "Achievement (%)",
         }}
-        margin={{ left: 60, right: 20, top: 20, bottom: 40 }} // Adjust margins
-        slotProps={{
-          legend: {
-            // Customize the legend
-            position: { vertical: 'bottom', horizontal: 'center' }, // Place at the bottom
-            itemMarkWidth: 10,
-            itemMarkHeight: 10,
+        sx={{
+          ".MuiChart-axisLeft .MuiChart-axisLabel": {
+            transform: "translate(-100px, 0)",
           },
         }}
+        // margin={{ left: 60, right: 20, top: 20, bottom: 40 }} // Adjust margins
+        slotProps={{ legend: { hidden : true } }}
       />
     </Box>
   );
