@@ -43,7 +43,7 @@ import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContribution
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
 import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
 import RobustaSankeyChart from './charts/RobustaSankeyChart';
-// import ArabicaAchievementChart from './charts/ArabicaAchievement';
+import ArabicaAchievementChart from './charts/ArabicaAchievement';
 // import RobustaAchievementChart from './charts/RobustaAchievement';
 
 
