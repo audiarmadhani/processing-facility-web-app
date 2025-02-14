@@ -19,13 +19,15 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     const fetchData = async () => {
       try {
         const response = await axios.get(`https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`);
+        const apiData = response.data.arabicaAchievement || [];
 
-        if (Array.isArray(response.data.arabicaAchievement)) {
-          setData(response.data.arabicaAchievement);
-        } else {
-          console.error("Invalid data format:", response.data.arabicaAchievement);
-          setError("Invalid data format received from API.");
-        }
+        // Format date and group data
+        const formattedData = apiData.map(item => ({
+          ...item,
+          date: new Date(item.date), // Convert date string to Date object
+        }));
+        setData(formattedData);
+
       } catch (error) {
         console.error('Error fetching data:', error);
         setError("Error fetching data from API.");
@@ -61,45 +63,38 @@ const ArabicaAchievementChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  // Group data by referenceNumber
+
   const groupedData = {};
   data.forEach(item => {
-    if (!groupedData[item.referenceNumber]) {
-      groupedData[item.referenceNumber] = [];
-    }
-    groupedData[item.referenceNumber].push(item);
+    groupedData[item.referenceNumber] = [...(groupedData[item.referenceNumber] || []), item];
   });
 
-  const chartSeries = Object.keys(groupedData).map((referenceNumber, index) => ({
-    data: groupedData[referenceNumber].map(item => item.cumulative_achievement_percentage),
-    label: referenceNumber,
+  const chartSeries = Object.keys(groupedData).map((refNum, index) => ({
+    data: groupedData[refNum].map(item => item.cumulative_achievement_percentage),
+    label: refNum,
     showMark: false,
     curve: "monotoneX",
-    color: colorPalette[index % colorPalette.length], // Cycle through colors
+    color: colorPalette[index % colorPalette.length],
     strokeWidth: 2,
   }));
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <LineChart
-        xAxis={[{ scaleType: 'point', data: data.map(item => item.date) }]}
+        xAxis={[{ 
+          scaleType: 'time', // Use time scale for Date objects
+          data: data.map(item => item.date),
+          format: 'mmm-dd', // Format the date on the x-axis
+        }]}
         series={chartSeries}
-        height={500} // Adjust height as needed
-        leftAxis={{
-          // min: 0,
-          // max: 100, // Set y-axis range to 0-100%
-          label: "Achievement (%)",
-        }}
-        // sx={{
-        //   ".MuiChart-axisLeft .MuiChart-axisLabel": {
-        //     transform: "translate(-100px, 0)",
-        //   },
-        // }}
-        // margin={{ left: 60, right: 20, top: 20, bottom: 40 }} // Adjust margins
-        slotProps={{ legend: { hidden : true } }}
+        height={500}
+        yAxis={{ min: 0, max: 100, label: "Achievement (%)" }}
+        margin={{ left: 60 }}
+        slotProps={{ legend: { hidden: true } }}
       />
     </Box>
   );
 };
+
 
 export default ArabicaAchievementChart;
