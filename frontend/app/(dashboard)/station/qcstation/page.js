@@ -808,7 +808,7 @@ const QCStation = () => {
             <Typography variant="h5" gutterBottom>
               Pending QC
             </Typography>
-            <div style={{ height: 600, width: '100%' }}>
+            <div style={{ height: 800, width: '100%' }}>
               <DataGrid
                 rows={receivingData.map((row, index) => ({
                   id: index + 1,
@@ -830,7 +830,9 @@ const QCStation = () => {
         </Card>
 
         <Divider style={{ margin: '16px 0' }} /> {/* Add a Divider here */}
-        
+      </Grid>
+
+      <Grid item xs={12} md={12}>
         {/* Completed QC Section */}
         <Card style={{ marginTop: '16px' }} variant="outlined">
           <CardContent>
@@ -857,8 +859,8 @@ const QCStation = () => {
             </div>
           </CardContent>
         </Card>
-
       </Grid>
+
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}

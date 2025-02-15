@@ -69,7 +69,7 @@ const RobustaAchievementChart = ({ timeframe = "this_month" }) => {
 
     if (!data || data.length === 0) {  // Check for null or undefined data, too
         return (
-            <Box sx={{ textAlign: "center", padding: 2 }}>
+            <Box sx={{ display: "flex", textAlign: "center", padding: 2, height: 500 }}>
                 <Typography variant="body1">No data available</Typography>
             </Box>
         );
