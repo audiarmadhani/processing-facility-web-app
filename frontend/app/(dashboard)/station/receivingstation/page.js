@@ -93,6 +93,7 @@ function ReceivingStation() {
         }
         setReceivingData(filteredData);
         console.log("user role:", session.user.role);
+        console.log("Filtered Data:", filteredData);
       }
     } catch (error) {
       console.error("Error fetching receiving data:", error);
