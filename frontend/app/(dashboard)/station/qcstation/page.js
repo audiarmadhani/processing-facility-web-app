@@ -396,6 +396,11 @@ const QCStation = () => {
     const ripenessCSV = ripeness.join(", ");
     const colorCSV = color.join(", ");
 
+    if (!session || !session.user) {
+      console.error("No user session found.");
+      return; // Don't proceed if there's no user.
+    }
+
     const qcDataPayload = {
       batchNumber: batchNumber.trim(), // Trim whitespace from batchNumber
       rfidTag: rfidTag.trim(), // Trim whitespace from rfidTag
