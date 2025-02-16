@@ -488,8 +488,8 @@ const QCStation = () => {
     // --- Header ---
     addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 10, { align: 'center', bold: true });
     addText("Coffee Receiving & QC Report", doc.internal.pageSize.getWidth() / 2, 16, { align: 'center', bold: true });
-    addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 10, 10, { align: 'right' });
-    addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 10, 16, { align: 'right' });
+    addText(`Print Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 10, 10, { align: 'right' });
+    addText(`Print Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 10, 16, { align: 'right' });
     doc.line(5, 20, doc.internal.pageSize.getWidth() - 5, 20); // Horizontal line
     addText(`Batch Number: ${row.batchNumber}`, 10, 28, { bold: true }); // Moved batch number up
 
