@@ -597,16 +597,25 @@ const QCStation = () => {
     const signatureLength = 20; //  shorter signature lines
 
     addText("_".repeat(signatureLength), 10, signatureY);
-    addText(`Received by : ${row.receivingUpdatedBy || '-'}`, 10, labelY);
+    addText("Receiving Staff", 10, labelY);
+    labelY += 6; // New line for name
+    addText(`${row.receivingUpdatedBy || '-'}`, 10, labelY);
+
 
     addText("_".repeat(signatureLength), 70, signatureY);  // Adjusted X and smaller line
-    addText(`QC by : ${row.qcCreatedBy || '-'}` , 70, labelY); // Adjusted X
+    addText("QC Staff" , 70, labelY); // Adjusted X
+    labelY += 6; // New line for name
+    addText(`${row.qcCreatedBy || '-'}` , 70, labelY);
 
     addText("_".repeat(signatureLength), 130, signatureY); // Adjusted X and smaller line
     addText("Manager", 130, labelY); // Adjusted X
+    labelY += 6;
+    addText('(.......................)', 130, labelY)
 
     addText("_".repeat(signatureLength), 190, signatureY); // Adjusted X and smaller line
-    addText(`Farmer: ${row.farmerName || '-'}` , 190, labelY); // Adjusted X
+    addText("Farmer", 190, labelY); // Adjusted X
+    labelY += 6;
+    addText(`${row.farmerName || '-'}` , 70, labelY);
 
     // --- Footer ---
     doc.line(5, doc.internal.pageSize.getHeight() - 10, doc.internal.pageSize.getWidth() - 5, doc.internal.pageSize.getHeight() - 10);
