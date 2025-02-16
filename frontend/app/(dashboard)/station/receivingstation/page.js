@@ -168,6 +168,39 @@ function ReceivingStation() {
       });
   
     if (response.ok) {
+        const responseData = await response.json();
+        batchNumber = responseData.receivingData.batchNumber; // Assign value
+
+        // --- RFID Assignment (Integrated) ---
+        const scannedRFID = prompt("Please scan the RFID card (or enter UID manually for testing):");
+        if (scannedRFID) {
+            try {
+                const rfidResponse = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        batchNumber: batchNumber,  // Use newly created batchNumber
+                        rfid: scannedRFID,
+                    }),
+                });
+
+                if (rfidResponse.ok) {
+                    setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
+                    setSnackbarSeverity('success');
+                } else {
+                    const errorData = await rfidResponse.json();
+                    setSnackbarMessage(errorData.error || `Failed to assign RFID tag to batch ${batchNumber}.`);
+                    setSnackbarSeverity('error');
+                }
+            } catch (rfidError) {
+                console.error('Error assigning RFID:', rfidError);
+                setSnackbarMessage(`Error assigning RFID tag to batch ${batchNumber}.`);
+                setSnackbarSeverity('error');
+            }
+        } else {
+          setSnackbarMessage(`Batch ${batchNumber} created successfully! No RFID assigned`);
+          setSnackbarSeverity('success')
+        }
         setFarmerName('');
         setBagWeights(['']);
         setNotes('');
