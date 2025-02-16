@@ -42,6 +42,7 @@ const QCStation = () => {
   const [foreignMatter, setForeignMatter] = useState('');
   const [overallQuality, setOverallQuality] = useState('');
   const [qcNotes, setQcNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [qcData, setQcData] = useState([]);
   const [receivingData, setReceivingData] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -408,6 +409,9 @@ const QCStation = () => {
       semiripePercentage: parseFloat(roboflowResults.semi_ripe) || 0.0,
       ripePercentage: parseFloat(roboflowResults.ripe) || 0.0,
       overripePercentage: parseFloat(roboflowResults.overripe) || 0.0,
+      paymentMethod: paymentMethod.trim(),
+      createdBy: session.user.email, // Add the createdBy field
+      updatedBy: session.user.email,
     };
 
     try {
@@ -433,6 +437,7 @@ const QCStation = () => {
       setForeignMatter('');
       setOverallQuality('');
       setQcNotes('');
+      setPaymentMethod('');
       setRoboflowResults({ unripe: null, semi_ripe: null, ripe: null, overripe: null }); // Reset Roboflow results
 
       // Refresh the QC data
@@ -492,7 +497,8 @@ const QCStation = () => {
     { field: 'overallQuality', headerName: 'Overall Quality', width: 140 },
     { field: 'qcNotes', headerName: 'QC Notes', width: 180 },
     { field: 'receivingNotes', headerName: 'Receiving Notes', width: 180 },
-    { field: 'updatedBy', headerName: 'Receiving Staff', width: 180 },
+    { field: 'receivingUpdatedBy', headerName: 'Receiving Staff', width: 140 },
+    { field: 'qcCreatedBy', headerName: 'QC Staff', width: 140 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 140 },
     { field: 'paymentMethod', headerName: 'Payment Method', width: 140 },
     { field: 'bankAccount', headerName: 'Bank Account', width: 140 },
@@ -699,6 +705,22 @@ const QCStation = () => {
                   <MenuItem value="Fair">Fair</MenuItem>
                   <MenuItem value="Good">Good</MenuItem>
                   <MenuItem value="Excellent">Excellent</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth required sx={{marginTop: "16px"}}>
+                <InputLabel id="pm-label">Payment Method</InputLabel>
+                <Select
+                  labelId="pm-label"
+                  id="pm"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  input={<OutlinedInput label="Payment Method" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+                  <MenuItem value="Cash">Cash</MenuItem>
+                  <MenuItem value="Check">Check</MenuItem>
                 </Select>
               </FormControl>
               
