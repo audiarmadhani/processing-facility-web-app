@@ -508,7 +508,7 @@ const QCStation = () => {
     yOffset += 6;
     addText(`Total Bags     : ${row.totalBags}`, 10, yOffset);
     yOffset += 6;
-      addText(`Type         : ${row.type || '-'}`, 10, yOffset);
+    addText(`Type           : ${row.type || '-'}`, 10, yOffset);
     yOffset += 6;
 
      // Receiving Notes (smaller box)
