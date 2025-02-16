@@ -574,6 +574,7 @@ const QCStation = () => {
     addText(`Payment Method    : ${row.paymentMethod || '-'}`, 10, paymentDetailsY + 8);
     addText(`Cherry Group      : ${row.cherryGroup || '-'}`, 10, paymentDetailsY + 14);
     addText(`Price Group       : ${row.priceGroup || '-'}`, 10, paymentDetailsY + 20);
+
      // Use toFixed(2) for currency formatting, handle null/undefined
      const formattedMinPrice = row.minPrice ? row.minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
      const formattedMaxPrice = row.maxPrice ? row.maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
@@ -589,13 +590,13 @@ const QCStation = () => {
 
 
     // --- Signatures --- (Lowered and Smaller)
-    let signatureOffset = paymentDetailsY + 66;  // Increased offset to lower signatures
+    let signatureOffset = paymentDetailsY + 150;  // Increased offset to lower signatures
     doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset);
 
     const signatureY = signatureOffset + 4; //  Reduced space for signature
     const labelY = signatureY + 12;       // Reduced space for label
 
-    const signatureLength = 30; //  shorter signature lines
+    const signatureLength = 20; //  shorter signature lines
 
     addText("_".repeat(signatureLength), 10, signatureY);
     addText(`Receiving Staff: ${row.receivingUpdatedBy || '-'}`, 10, labelY);
