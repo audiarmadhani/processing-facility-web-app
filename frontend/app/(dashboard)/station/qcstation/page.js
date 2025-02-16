@@ -462,9 +462,9 @@ const QCStation = () => {
     }
   };
 
-const handleExportToPDF = (row) => {
+  const handleExportToPDF = (row) => {
     const doc = new jsPDF({
-        orientation: 'portrait',  // You might want 'portrait' for dot matrix
+        orientation: 'portrait',
         unit: 'mm',
         format: [241.3, 279.4] // 9.5 x 11 inches in mm
     });
@@ -472,127 +472,150 @@ const handleExportToPDF = (row) => {
     // Helper function for consistent text styling
     const addText = (text, x, y, options = {}) => {
         doc.setFont('courier'); // Use a fixed-width font!
-        doc.setFontSize(10);   // Adjust font size as needed
+        doc.setFontSize(10);
 
         if (options.bold) {
             doc.setFont('courier', 'bold');
         }
         if (options.align) {
-          doc.text(text, x, y, { align: options.align });
-        }
-        else{
-          doc.text(text, x, y);
+            doc.text(text, x, y, { align: options.align });
+        } else {
+            doc.text(text, x, y);
         }
     };
 
 
     // --- Header ---
-    addText("YOUR COFFEE COMPANY NAME", doc.internal.pageSize.getWidth() / 2, 10, { align: 'center', bold: true });
+    addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 10, { align: 'center', bold: true });
     addText("Coffee Receiving & QC Report", doc.internal.pageSize.getWidth() / 2, 16, { align: 'center', bold: true });
     addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 10, 10, { align: 'right' });
     addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 10, 16, { align: 'right' });
     doc.line(5, 20, doc.internal.pageSize.getWidth() - 5, 20); // Horizontal line
+    addText(`Batch Number: ${row.batchNumber}`, 10, 28, { bold: true }); // Moved batch number up
 
-    // --- Receiving Information ---
-    addText(`Batch Number: ${row.batchNumber}`, 10, 30, { bold: true });
-    addText("Receiving Information:", 10, 40);
-    addText(`  Farmer Name:  ${row.farmerName || '-'}`, 10, 46);
-    addText(`  Farmer ID:    ${row.farmerID || '-'}`, 10, 52);
-    addText(`  Receiving Date: ${dayjs(row.receivingDate).format('YYYY-MM-DD')}`, 10, 58);
-    addText(`  Total Weight:  ${row.weight} kg`, 10, 64);
-    addText(`  Total Bags:    ${row.totalBags}`, 10, 70);
-    addText(`  Type         : ${row.type || '-'}`, 10, 76);
-    addText("  Receiving Notes:", 10, 82);
-     // Notes box (increased height)
-    const notesX = 10;
-    const notesY = 84;
-    const notesWidth = doc.internal.pageSize.getWidth() - 20; // Full width minus margins
-    const notesHeight = 25;  // Increased height
-    doc.rect(notesX, notesY, notesWidth, notesHeight);
-    const notesLines = doc.splitTextToSize(row.receivingNotes || '', notesWidth - 5); // -5 for inner padding
-    notesLines.forEach((line, index) => {
-        addText(line, notesX + 2, notesY + 4 + (index * 6)); // Start inside the box, 6mm line height
+    // --- Two-Column Layout (Receiving and QC) ---
+    let yOffset = 38; // Start below the header and batch number
+    const columnWidth = (doc.internal.pageSize.getWidth() - 30) / 2; // Two columns with margins
+
+    // --- Receiving Information (Left Column) ---
+    addText("Receiving Information:", 10, yOffset, { bold: true });
+    yOffset += 6;
+    addText(`Farmer Name: ${row.farmerName || '-'}`, 10, yOffset);
+    yOffset += 6;
+    addText(`Farmer ID: ${row.farmerID || '-'}`, 10, yOffset);
+    yOffset += 6;
+    addText(`Receiving Date: ${dayjs(row.receivingDate).format('YYYY-MM-DD')}`, 10, yOffset);
+    yOffset += 6;
+    addText(`Total Weight: ${row.weight} kg`, 10, yOffset);
+    yOffset += 6;
+    addText(`Total Bags: ${row.totalBags}`, 10, yOffset);
+    yOffset += 6;
+      addText(`Type         : ${row.type || '-'}`, 10, yOffset);
+    yOffset += 6;
+
+     // Receiving Notes (smaller box)
+    addText("Receiving Notes:", 10, yOffset);
+    yOffset += 2;
+    const recNotesX = 10;
+    const recNotesY = yOffset;
+    const recNotesWidth = columnWidth; // Use column width
+    const recNotesHeight = 18; // Reduced height
+    doc.rect(recNotesX, recNotesY, recNotesWidth, recNotesHeight);
+    const recNotesLines = doc.splitTextToSize(row.receivingNotes || '', recNotesWidth - 5);
+    recNotesLines.forEach((line, index) => {
+        addText(line, recNotesX + 2, recNotesY + 4 + (index * 6));
     });
 
-    // --- QC Information ---
-    let yOffset = 115; // Adjusted start position
-    addText("QC Information:", 10, yOffset);
-    yOffset += 6;
-    addText(`  QC Date:        ${dayjs(row.qcDate).format('YYYY-MM-DD')}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Ripeness:      ${row.ripeness || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Color:         ${row.color || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Foreign Matter: ${row.foreignMatter || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Unripe (%):    ${row.unripePercentage || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Semi-ripe (%): ${row.semiripePercentage || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Ripe (%):      ${row.ripePercentage || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Overripe (%):  ${row.overripePercentage || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Overall Quality: ${row.overallQuality || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Payment Method: ${row.paymentMethod || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText("  QC Notes:", 10, yOffset);
-    yOffset += 2;
-    // QC Notes Box (Increased height)
-    const qcNotesX = 10;
-    const qcNotesY = yOffset;
-    const qcNotesWidth = doc.internal.pageSize.getWidth() - 20;
-    const qcNotesHeight = 25;
-    doc.rect(qcNotesX, qcNotesY, qcNotesWidth, qcNotesHeight); // Notes box
+    yOffset += recNotesHeight + 6;
+
+    // --- QC Information (Right Column) ---
+    let qcOffset = 38; // Initial Y offset for QC, aligned with Receiving
+    addText("QC Information:", 10 + columnWidth + 10, qcOffset, { bold: true }); // +10 for spacing between columns
+    qcOffset += 6;
+    addText(`QC Date: ${dayjs(row.qcDate).format('YYYY-MM-DD')}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Ripeness: ${row.ripeness || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Color: ${row.color || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Foreign Matter: ${row.foreignMatter || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Unripe (%): ${row.unripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Semi-ripe (%): ${row.semiripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Ripe (%): ${row.ripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Overripe (%): ${row.overripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+    addText(`Overall Quality: ${row.overallQuality || '-'}`, 10 + columnWidth + 10, qcOffset);
+    qcOffset += 6;
+     // QC Notes (smaller box)
+    addText("QC Notes:", 10 + columnWidth + 10, qcOffset);
+    qcOffset += 2;
+    const qcNotesX = 10 + columnWidth + 10;
+    const qcNotesY = qcOffset;
+    const qcNotesWidth = columnWidth; // Use column width
+    const qcNotesHeight = 18;       // Reduced height
+    doc.rect(qcNotesX, qcNotesY, qcNotesWidth, qcNotesHeight);
     const qcNotesLines = doc.splitTextToSize(row.qcNotes || '', qcNotesWidth - 5);
-     qcNotesLines.forEach((line, index) => {
+    qcNotesLines.forEach((line, index) => {
         addText(line, qcNotesX + 2, qcNotesY + 4 + (index * 6));
     });
-    yOffset += qcNotesHeight + 6;
 
-     // --- Price Information
-    addText("Price Information:", 10, yOffset);
-    yOffset += 6;
-    addText(`  Cherry Group      : ${row.cherryGroup || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Price Group       : ${row.priceGroup || '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Minimum Price     : Rp ${row.minPrice ? row.minPrice.toLocaleString() : '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Maximum Price     : Rp ${row.maxPrice ? row.maxPrice.toLocaleString(): '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`  Price/kg          : Rp ${row.price ? row.price.toLocaleString() : '-'}`, 10, yOffset);
-    yOffset += 12;
+    qcOffset += qcNotesHeight + 6; //Adjust Offset
 
-    // --- Signatures ---
-    doc.line(5, yOffset, doc.internal.pageSize.getWidth() - 5, yOffset); // Horizontal line
-    yOffset += 6;
+    // --- Payment Details (Full Width, Below Columns) ---
+    const paymentDetailsY = Math.max(yOffset, qcOffset) + 5; // Start below the taller of the two columns
 
-    const signatureY = yOffset + 25; //  space for the signature itself
-    const labelY = signatureY + 6;  //  space below the line
+    addText("Payment Details:", 10, paymentDetailsY, { bold: true });
+    doc.line(10, paymentDetailsY + 2, doc.internal.pageSize.getWidth() - 10, paymentDetailsY + 2); // Line below title
+
+    addText(`Payment Method: ${row.paymentMethod || '-'}`, 10, paymentDetailsY + 8);
+    addText(`Cherry Group: ${row.cherryGroup || '-'}`, 10, paymentDetailsY + 14);
+    addText(`Price Group: ${row.priceGroup || '-'}`, 10, paymentDetailsY + 20);
+
+    // Use toFixed(2) for currency formatting, handle null/undefined
+    const formattedMinPrice = row.minPrice ? row.minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+    const formattedMaxPrice = row.maxPrice ? row.maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+    const formattedPricePerKg = row.price ? row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+    const totalPrice = (row.price && row.weight) ? (row.price * row.weight).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+
+    addText(`Min Price (Today): Rp ${formattedMinPrice}`, 10, paymentDetailsY + 26);
+    addText(`Max Price (Today): Rp ${formattedMaxPrice}`, 10, paymentDetailsY + 32);
+    addText(`Price/kg: Rp ${formattedPricePerKg}`, 10, paymentDetailsY + 38);
+    addText(`Total Price: Rp ${totalPrice}`, 10, paymentDetailsY + 44);
+
+    addText(`Bank Name: ${row.bankName || '-'}`, 100, paymentDetailsY + 8);
+    addText(`Bank Account: ${row.bankAccount || '-'}`, 100, paymentDetailsY + 14);
+
+    // --- Signatures (Below Payment Details) ---
+
+    let signatureOffset = paymentDetailsY + 55; // Start below Payment Details
+    doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset); // Horizontal line
+    signatureOffset += 6;
+
+    const signatureY = signatureOffset + 25; //  space for the signature itself
+    const labelY = signatureY + 6;         //  space below the line
 
     addText("_____________________________", 10, signatureY);
-    addText(`Receiving Staff: ${row.receivingUpdatedBy || '-'}`, 10, labelY); // Use receivingUpdatedBy
+    addText(`Receiving Staff: ${row.receivingUpdatedBy || '-'}`, 10, labelY);
 
-    addText("_____________________________", 70, signatureY); // Adjusted X position
-    addText(`QC Staff: ${row.qcCreatedBy || '-'}` , 70, labelY); // Use qcCreatedBy and added created
+    addText("_____________________________", 70, signatureY);
+    addText(`QC Staff: ${row.qcCreatedBy || '-'}` , 70, labelY);
 
-    addText("_____________________________", 130, signatureY); // Adjusted X position
-    addText("Manager", 130, labelY); // Adjusted X position
+    addText("_____________________________", 130, signatureY);
+    addText("Manager", 130, labelY);
 
-    addText("_____________________________", 190, signatureY); // Adjusted X position
-    addText(`QC Staff: ${row.farmerName || '-'}` , 190, labelY); // Adjusted X position
-
-     // --- Footer (optional) ---
-    doc.line(5, doc.internal.pageSize.getHeight() - 10, doc.internal.pageSize.getWidth() - 5, doc.internal.pageSize.getHeight() - 10); // Place at the very bottom
+    addText("_____________________________", 190, signatureY);
+    addText("Farmer", 190, labelY);
+    // --- Footer ---
+    doc.line(5, doc.internal.pageSize.getHeight() - 10, doc.internal.pageSize.getWidth() - 5, doc.internal.pageSize.getHeight() - 10);
     addText(`Printed on: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 10, doc.internal.pageSize.getHeight() - 5);
-
 
     // Save the PDF
     doc.save(`QC_Report_${row.batchNumber}.pdf`);
-};
+  };
 
   const qcColumns = [
     // { field: 'id', headerName: 'ID', width: 80 },
