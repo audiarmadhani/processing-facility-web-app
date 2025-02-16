@@ -502,8 +502,6 @@ const QCStation = () => {
     yOffset += 6;
     addText(`Farmer Name    : ${row.farmerName || '-'}`, 10, yOffset);
     yOffset += 6;
-    addText(`Farmer ID      : ${row.farmerID || '-'}`, 10, yOffset);
-    yOffset += 6;
     addText(`Receiving Date : ${dayjs(row.receivingDate).format('YYYY-MM-DD')}`, 10, yOffset);
     yOffset += 6;
     addText(`Total Weight   : ${row.weight} kg`, 10, yOffset);
@@ -585,12 +583,13 @@ const QCStation = () => {
     addText(`Max Price (Today) : Rp ${formattedMaxPrice}`, 10, paymentDetailsY + 32);
     addText(`Price/kg          : Rp ${formattedPricePerKg}`, 10, paymentDetailsY + 38);
     addText(`Total Price       : Rp ${totalPrice}`, 10, paymentDetailsY + 44);
-    addText(`Bank Name         : ${row.bankName || '-'}`, 10, paymentDetailsY + 50); // Bank name and account below
-    addText(`Bank Account      : ${row.bankAccount || '-'}`, 10, paymentDetailsY + 56);
+    addText(`Farmer Name       : ${row.farmerName || '-'}`, 10, paymentDetailsY + 50); // Bank name and account below
+    addText(`Bank Name         : ${row.bankName || '-'}`, 10, paymentDetailsY + 56); // Bank name and account below
+    addText(`Bank Account      : ${row.bankAccount || '-'}`, 10, paymentDetailsY + 62);
 
 
     // --- Signatures --- (Lowered and Smaller)
-    let signatureOffset = paymentDetailsY + 150;  // Increased offset to lower signatures
+    let signatureOffset = paymentDetailsY + 60;  // Increased offset to lower signatures
     doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset);
 
     const signatureY = signatureOffset + 4; //  Reduced space for signature
@@ -608,7 +607,8 @@ const QCStation = () => {
     addText("Manager", 130, labelY); // Adjusted X
 
     addText("_".repeat(signatureLength), 190, signatureY); // Adjusted X and smaller line
-    addText("Farmer", 190, labelY); // Adjusted X
+    addText(`Farmer: ${row.farmerName || '-'}` , 190, labelY); // Adjusted X
+
     // --- Footer ---
     doc.line(5, doc.internal.pageSize.getHeight() - 10, doc.internal.pageSize.getWidth() - 5, doc.internal.pageSize.getHeight() - 10);
     addText(`Printed on: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 10, doc.internal.pageSize.getHeight() - 5);
