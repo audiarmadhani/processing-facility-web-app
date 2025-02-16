@@ -487,9 +487,9 @@ const QCStation = () => {
 
     // --- Header ---
     addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 10, { align: 'center', bold: true });
-    addText("Coffee Receiving & QC Report", doc.internal.pageSize.getWidth() / 2, 16, { align: 'center', bold: true });
-    addText(`Print Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 10, 10, { align: 'right' });
-    addText(`Print Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 10, 16, { align: 'right' });
+    addText("Cherry Receiving & QC Report", doc.internal.pageSize.getWidth() / 2, 16, { align: 'center', bold: true });
+    addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 10, 10, { align: 'right' });
+    addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 10, 16, { align: 'right' });
     doc.line(5, 20, doc.internal.pageSize.getWidth() - 5, 20); // Horizontal line
     addText(`Batch Number: ${row.batchNumber}`, 10, 28, { bold: true }); // Moved batch number up
 
@@ -500,15 +500,15 @@ const QCStation = () => {
     // --- Receiving Information (Left Column) ---
     addText("Receiving Information:", 10, yOffset, { bold: true });
     yOffset += 6;
-    addText(`Farmer Name: ${row.farmerName || '-'}`, 10, yOffset);
+    addText(`Farmer Name    : ${row.farmerName || '-'}`, 10, yOffset);
     yOffset += 6;
-    addText(`Farmer ID: ${row.farmerID || '-'}`, 10, yOffset);
+    addText(`Farmer ID      : ${row.farmerID || '-'}`, 10, yOffset);
     yOffset += 6;
-    addText(`Receiving Date: ${dayjs(row.receivingDate).format('YYYY-MM-DD')}`, 10, yOffset);
+    addText(`Receiving Date : ${dayjs(row.receivingDate).format('YYYY-MM-DD')}`, 10, yOffset);
     yOffset += 6;
-    addText(`Total Weight: ${row.weight} kg`, 10, yOffset);
+    addText(`Total Weight   : ${row.weight} kg`, 10, yOffset);
     yOffset += 6;
-    addText(`Total Bags: ${row.totalBags}`, 10, yOffset);
+    addText(`Total Bags     : ${row.totalBags}`, 10, yOffset);
     yOffset += 6;
       addText(`Type         : ${row.type || '-'}`, 10, yOffset);
     yOffset += 6;
@@ -519,36 +519,36 @@ const QCStation = () => {
     const recNotesX = 10;
     const recNotesY = yOffset;
     const recNotesWidth = columnWidth; // Use column width
-    const recNotesHeight = 18; // Reduced height
+    const recNotesHeight = 18;  // Reduced height
     doc.rect(recNotesX, recNotesY, recNotesWidth, recNotesHeight);
-    const recNotesLines = doc.splitTextToSize(row.receivingNotes || '', recNotesWidth - 5);
+    const recNotesLines = doc.splitTextToSize(row.receivingNotes || '', recNotesWidth - 5); // -5 for inner padding
     recNotesLines.forEach((line, index) => {
-        addText(line, recNotesX + 2, recNotesY + 4 + (index * 6));
+        addText(line, recNotesX + 2, recNotesY + 4 + (index * 6)); // Start inside the box, 6mm line height
     });
 
     yOffset += recNotesHeight + 6;
 
     // --- QC Information (Right Column) ---
     let qcOffset = 38; // Initial Y offset for QC, aligned with Receiving
-    addText("QC Information:", 10 + columnWidth + 10, qcOffset, { bold: true }); // +10 for spacing between columns
+    addText("QC Information :", 10 + columnWidth + 10, qcOffset, { bold: true }); // +10 for spacing between columns
     qcOffset += 6;
-    addText(`QC Date: ${dayjs(row.qcDate).format('YYYY-MM-DD')}`, 10 + columnWidth + 10, qcOffset);
+    addText(`QC Date         : ${dayjs(row.qcDate).format('YYYY-MM-DD')}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Ripeness: ${row.ripeness || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Ripeness        : ${row.ripeness || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Color: ${row.color || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Color           : ${row.color || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Foreign Matter: ${row.foreignMatter || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Foreign Matter  : ${row.foreignMatter || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Unripe (%): ${row.unripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Unripe (%)      : ${row.unripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Semi-ripe (%): ${row.semiripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Semi-ripe (%)   : ${row.semiripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Ripe (%): ${row.ripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Ripe (%)        : ${row.ripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Overripe (%): ${row.overripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Overripe (%)    : ${row.overripePercentage || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
-    addText(`Overall Quality: ${row.overallQuality || '-'}`, 10 + columnWidth + 10, qcOffset);
+    addText(`Overall Quality : ${row.overallQuality || '-'}`, 10 + columnWidth + 10, qcOffset);
     qcOffset += 6;
      // QC Notes (smaller box)
     addText("QC Notes:", 10 + columnWidth + 10, qcOffset);
@@ -557,58 +557,57 @@ const QCStation = () => {
     const qcNotesY = qcOffset;
     const qcNotesWidth = columnWidth; // Use column width
     const qcNotesHeight = 18;       // Reduced height
-    doc.rect(qcNotesX, qcNotesY, qcNotesWidth, qcNotesHeight);
+    doc.rect(qcNotesX, qcNotesY, qcNotesWidth, qcNotesHeight); // Notes box
     const qcNotesLines = doc.splitTextToSize(row.qcNotes || '', qcNotesWidth - 5);
-    qcNotesLines.forEach((line, index) => {
+     qcNotesLines.forEach((line, index) => {
         addText(line, qcNotesX + 2, qcNotesY + 4 + (index * 6));
     });
 
     qcOffset += qcNotesHeight + 6; //Adjust Offset
 
     // --- Payment Details (Full Width, Below Columns) ---
-    const paymentDetailsY = Math.max(yOffset, qcOffset) + 5; // Start below the taller of the two columns
+    let paymentDetailsY = Math.max(yOffset, qcOffset) + 5; // Start below the taller of the two columns
 
     addText("Payment Details:", 10, paymentDetailsY, { bold: true });
     doc.line(10, paymentDetailsY + 2, doc.internal.pageSize.getWidth() - 10, paymentDetailsY + 2); // Line below title
 
-    addText(`Payment Method: ${row.paymentMethod || '-'}`, 10, paymentDetailsY + 8);
-    addText(`Cherry Group: ${row.cherryGroup || '-'}`, 10, paymentDetailsY + 14);
-    addText(`Price Group: ${row.priceGroup || '-'}`, 10, paymentDetailsY + 20);
+    addText(`Payment Method    : ${row.paymentMethod || '-'}`, 10, paymentDetailsY + 8);
+    addText(`Cherry Group      : ${row.cherryGroup || '-'}`, 10, paymentDetailsY + 14);
+    addText(`Price Group       : ${row.priceGroup || '-'}`, 10, paymentDetailsY + 20);
+     // Use toFixed(2) for currency formatting, handle null/undefined
+     const formattedMinPrice = row.minPrice ? row.minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+     const formattedMaxPrice = row.maxPrice ? row.maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+     const formattedPricePerKg = row.price ? row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+     const totalPrice = (row.price && row.weight) ? (row.price * row.weight).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
 
-    // Use toFixed(2) for currency formatting, handle null/undefined
-    const formattedMinPrice = row.minPrice ? row.minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
-    const formattedMaxPrice = row.maxPrice ? row.maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
-    const formattedPricePerKg = row.price ? row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
-    const totalPrice = (row.price && row.weight) ? (row.price * row.weight).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
+    addText(`Min Price (Today) : Rp ${formattedMinPrice}`, 10, paymentDetailsY + 26);
+    addText(`Max Price (Today) : Rp ${formattedMaxPrice}`, 10, paymentDetailsY + 32);
+    addText(`Price/kg          : Rp ${formattedPricePerKg}`, 10, paymentDetailsY + 38);
+    addText(`Total Price       : Rp ${totalPrice}`, 10, paymentDetailsY + 44);
+    addText(`Bank Name         : ${row.bankName || '-'}`, 10, paymentDetailsY + 50); // Bank name and account below
+    addText(`Bank Account      : ${row.bankAccount || '-'}`, 10, paymentDetailsY + 56);
 
-    addText(`Min Price (Today): Rp ${formattedMinPrice}`, 10, paymentDetailsY + 26);
-    addText(`Max Price (Today): Rp ${formattedMaxPrice}`, 10, paymentDetailsY + 32);
-    addText(`Price/kg: Rp ${formattedPricePerKg}`, 10, paymentDetailsY + 38);
-    addText(`Total Price: Rp ${totalPrice}`, 10, paymentDetailsY + 44);
 
-    addText(`Bank Name: ${row.bankName || '-'}`, 100, paymentDetailsY + 8);
-    addText(`Bank Account: ${row.bankAccount || '-'}`, 100, paymentDetailsY + 14);
+    // --- Signatures --- (Lowered and Smaller)
+    let signatureOffset = paymentDetailsY + 66;  // Increased offset to lower signatures
+    doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset);
 
-    // --- Signatures (Below Payment Details) ---
+    const signatureY = signatureOffset + 4; //  Reduced space for signature
+    const labelY = signatureY + 12;       // Reduced space for label
 
-    let signatureOffset = paymentDetailsY + 55; // Start below Payment Details
-    doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset); // Horizontal line
-    signatureOffset += 6;
+    const signatureLength = 30; //  shorter signature lines
 
-    const signatureY = signatureOffset + 25; //  space for the signature itself
-    const labelY = signatureY + 6;         //  space below the line
-
-    addText("_____________________________", 10, signatureY);
+    addText("_".repeat(signatureLength), 10, signatureY);
     addText(`Receiving Staff: ${row.receivingUpdatedBy || '-'}`, 10, labelY);
 
-    addText("_____________________________", 70, signatureY);
-    addText(`QC Staff: ${row.qcCreatedBy || '-'}` , 70, labelY);
+    addText("_".repeat(signatureLength), 70, signatureY);  // Adjusted X and smaller line
+    addText(`QC Staff: ${row.qcCreatedBy || '-'}` , 70, labelY); // Adjusted X
 
-    addText("_____________________________", 130, signatureY);
-    addText("Manager", 130, labelY);
+    addText("_".repeat(signatureLength), 130, signatureY); // Adjusted X and smaller line
+    addText("Manager", 130, labelY); // Adjusted X
 
-    addText("_____________________________", 190, signatureY);
-    addText("Farmer", 190, labelY);
+    addText("_".repeat(signatureLength), 190, signatureY); // Adjusted X and smaller line
+    addText("Farmer", 190, labelY); // Adjusted X
     // --- Footer ---
     doc.line(5, doc.internal.pageSize.getHeight() - 10, doc.internal.pageSize.getWidth() - 5, doc.internal.pageSize.getHeight() - 10);
     addText(`Printed on: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 10, doc.internal.pageSize.getHeight() - 5);
