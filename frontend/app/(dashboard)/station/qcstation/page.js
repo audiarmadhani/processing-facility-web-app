@@ -415,8 +415,8 @@ const QCStation = () => {
       ripePercentage: parseFloat(roboflowResults.ripe) || 0.0,
       overripePercentage: parseFloat(roboflowResults.overripe) || 0.0,
       paymentMethod: paymentMethod.trim(),
-      createdBy: session.user.email, // Add the createdBy field
-      updatedBy: session.user.email,
+      createdBy: session.user.name, // Add the createdBy field
+      updatedBy: session.user.name,
     };
 
     try {

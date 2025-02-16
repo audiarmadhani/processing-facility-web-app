@@ -93,6 +93,7 @@ function ReceivingStation() {
         }
         setReceivingData(filteredData);
         console.log("user role:", session.user.role);
+        console.log("user name:", session.user.name);
         console.log("Filtered Data:", filteredData);
       }
     } catch (error) {
@@ -153,7 +154,8 @@ function ReceivingStation() {
         bagNumber: index + 1,
         weight: parseFloat(weight) || 0,
       })),
-      createdBy: session.user.email, // Add the createdBy field
+      createdBy: session.user.name, // Add the createdBy field
+      updatedBy: session.user.name, // Add the updatedBy field
     };
   
     try {
