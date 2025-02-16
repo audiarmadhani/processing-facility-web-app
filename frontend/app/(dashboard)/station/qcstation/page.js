@@ -608,20 +608,45 @@ const QCStation = () => {
 
     addText("_".repeat(signatureLength), 130, signatureY); // Adjusted X
     addText("Manager", 130, labelY); // Adjusted X
-    addText('(.......................)', 130, labelY + 6); // Name on a new line
+    addText('(..................)', 130, labelY + 12); // Name on a new line
 
 
     addText("_".repeat(signatureLength), 190, signatureY); // Adjusted X
     addText("Farmer", 190, labelY); // Adjusted X
     addText(`${row.farmerName || '-'}`, 190, labelY + 6);  // Use farmerName, new line
-    
+
     // --- Footer ---
     doc.line(5, doc.internal.pageSize.getHeight() - 10, doc.internal.pageSize.getWidth() - 5, doc.internal.pageSize.getHeight() - 10);
     addText(`Printed on: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 10, doc.internal.pageSize.getHeight() - 5);
 
-    // Save the PDF
-    doc.save(`QC_Report_${row.batchNumber}.pdf`);
-  };
+    // Save the PDF (you can customize the filename)
+    const filename = `QC_Report_${row.batchNumber}.pdf`;
+    doc.save(filename);
+
+    // Trigger print dialog after saving
+    doc.autoPrint();
+    const pdfData = doc.output('bloburl'); // Get a Blob URL
+
+    // Open a new window *before* setting the src.  This is crucial for
+    // avoiding popup blockers.  The user interaction (button click)
+    // allows the window to open.
+    const printWindow = window.open('', '_blank');
+
+    if (printWindow) {
+        printWindow.document.write(`<iframe src="${pdfData}" width="100%" height="100%" style="border: none;"></iframe>`);
+        printWindow.document.close(); // Finish writing to the document
+        // Optional, but good for cleanup:
+        printWindow.onload = () => {
+            setTimeout(() => { printWindow.focus(); }, 100); //Small delay, then focus
+        }
+
+    } else {
+        // Handle the case where the window couldn't be opened (popup blocker).
+        alert('Please allow popups for this site to enable automatic printing.');
+        // Optionally, provide a link to download the PDF as a fallback.
+        doc.output('dataurlnewwindow'); // Fallback to data URL
+    }
+};
 
   const qcColumns = [
     // { field: 'id', headerName: 'ID', width: 80 },
