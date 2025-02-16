@@ -92,6 +92,7 @@ function ReceivingStation() {
           filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
         }
         setReceivingData(filteredData);
+        console.log("user role:", session.user.role);
       }
     } catch (error) {
       console.error("Error fetching receiving data:", error);
