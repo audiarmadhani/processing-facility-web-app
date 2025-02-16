@@ -589,10 +589,10 @@ const QCStation = () => {
 
 
     // --- Signatures --- (Lowered and Smaller)
-    let signatureOffset = paymentDetailsY + 60;  // Increased offset to lower signatures
+    let signatureOffset = paymentDetailsY + 80;  // Increased offset to lower signatures
     doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset);
 
-    const signatureY = signatureOffset + 4; //  Reduced space for signature
+    const signatureY = signatureOffset + 12; //  Reduced space for signature
     const labelY = signatureY + 12;       // Reduced space for label
 
     const signatureLength = 20; //  shorter signature lines
