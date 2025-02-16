@@ -570,8 +570,7 @@ const QCStation = () => {
     doc.line(10, paymentDetailsY + 2, doc.internal.pageSize.getWidth() - 10, paymentDetailsY + 2); // Line below title
 
     addText(`Payment Method    : ${row.paymentMethod || '-'}`, 10, paymentDetailsY + 8);
-    addText(`Cherry Group      : ${row.cherryGroup || '-'}`, 10, paymentDetailsY + 14);
-    addText(`Price Group       : ${row.priceGroup || '-'}`, 10, paymentDetailsY + 20);
+    addText(`Quality Group     : ${row.priceGroup || '-'}`, 10, paymentDetailsY + 14);
 
      // Use toFixed(2) for currency formatting, handle null/undefined
      const formattedMinPrice = row.minPrice ? row.minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
@@ -579,29 +578,29 @@ const QCStation = () => {
      const formattedPricePerKg = row.price ? row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
      const totalPrice = (row.price && row.weight) ? (row.price * row.weight).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
 
-    addText(`Min Price (Today) : Rp ${formattedMinPrice}`, 10, paymentDetailsY + 26);
-    addText(`Max Price (Today) : Rp ${formattedMaxPrice}`, 10, paymentDetailsY + 32);
-    addText(`Price/kg          : Rp ${formattedPricePerKg}`, 10, paymentDetailsY + 38);
-    addText(`Total Price       : Rp ${totalPrice}`, 10, paymentDetailsY + 44);
-    addText(`Farmer Name       : ${row.farmerName || '-'}`, 10, paymentDetailsY + 50); // Bank name and account below
-    addText(`Bank Name         : ${row.bankName || '-'}`, 10, paymentDetailsY + 56); // Bank name and account below
-    addText(`Bank Account      : ${row.bankAccount || '-'}`, 10, paymentDetailsY + 62);
+    addText(`Min Price (Today) : Rp ${formattedMinPrice}`, 10, paymentDetailsY + 20);
+    addText(`Max Price (Today) : Rp ${formattedMaxPrice}`, 10, paymentDetailsY + 26);
+    addText(`Price/kg          : Rp ${formattedPricePerKg}`, 10, paymentDetailsY + 32);
+    addText(`Total Price       : Rp ${totalPrice}`, 10, paymentDetailsY + 38);
+    addText(`Farmer Name       : ${row.farmerName || '-'}`, 10, paymentDetailsY + 44); // Bank name and account below
+    addText(`Bank Name         : ${row.bankName || '-'}`, 10, paymentDetailsY + 50); // Bank name and account below
+    addText(`Bank Account      : ${row.bankAccount || '-'}`, 10, paymentDetailsY + 56);
 
 
     // --- Signatures --- (Lowered and Smaller)
-    let signatureOffset = paymentDetailsY + 60;  // Increased offset to lower signatures
+    let signatureOffset = paymentDetailsY + 70;  // Increased offset to lower signatures
     doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset);
 
-    const signatureY = signatureOffset + 30; //  Reduced space for signature
-    const labelY = signatureY + 12;       // Reduced space for label
+    const signatureY = signatureOffset + 40; //  Reduced space for signature
+    const labelY = signatureY + 6;       // Reduced space for label
 
     const signatureLength = 20; //  shorter signature lines
 
     addText("_".repeat(signatureLength), 10, signatureY);
-    addText(`Receiving Staff: ${row.receivingUpdatedBy || '-'}`, 10, labelY);
+    addText(`Received by : ${row.receivingUpdatedBy || '-'}`, 10, labelY);
 
     addText("_".repeat(signatureLength), 70, signatureY);  // Adjusted X and smaller line
-    addText(`QC Staff: ${row.qcCreatedBy || '-'}` , 70, labelY); // Adjusted X
+    addText(`QC by : ${row.qcCreatedBy || '-'}` , 70, labelY); // Adjusted X
 
     addText("_".repeat(signatureLength), 130, signatureY); // Adjusted X and smaller line
     addText("Manager", 130, labelY); // Adjusted X
