@@ -34,10 +34,8 @@ function ReceivingStation() {
   const [numberOfBags, setNumberOfBags] = useState(1);
   const [bagWeights, setBagWeights] = useState(['']);
   const [totalWeight, setTotalWeight] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState('');
   const [receivingData, setReceivingData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [price, setPrice] = useState('');
   const [type, setType] = useState('');
 
   const ITEM_HEIGHT = 48;
@@ -55,7 +53,7 @@ function ReceivingStation() {
     fetchFarmerList();
     fetchReceivingData();
     updateTotalWeight();
-  }, [bagWeights]);
+  }, [bagWeights, session]); // Add session to the dependency array
 
   // Fetch farmers data from API
   const fetchFarmerList = async () => {
@@ -75,6 +73,9 @@ function ReceivingStation() {
   };
 
   const fetchReceivingData = async () => {
+    // No need to check session here, do it before calling the function
+    if (!session || !session.user) return; // Early return if no session
+    
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
       if (!response.ok) throw new Error("Failed to fetch receiving data");
@@ -84,15 +85,13 @@ function ReceivingStation() {
 
       if (data) {
         // Filter rows based on user role
-        if (session.user.role === "staff") {
-          setReceivingData(
-            data.latestRows.map((row, index) => ({ ...row, id: index }))
-          );
-        } else if (["admin", "manager"].includes(session.user.role)) {
-          setReceivingData(
-            data.allRows.map((row, index) => ({ ...row, id: index }))
-          );
+        let filteredData = [];
+        if (session.user.role === "staff", "receiving") {
+          filteredData = data.latestRows.map((row, index) => ({ ...row, id: index }));
+        } else if (["admin", "manager"].includes(session.user.role)) { //included "receiving"
+          filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
         }
+        setReceivingData(filteredData);
       }
     } catch (error) {
       console.error("Error fetching receiving data:", error);
@@ -128,19 +127,18 @@ function ReceivingStation() {
     alert('RFID card written successfully!');
   };
 
-  const handleFarmerChange = (event) => {
-    const selectedFarmerName = event.target.value;
-    setFarmerName(selectedFarmerName);
-
-    const farmerDetails = farmerList.find((farmer) => farmer.farmerName === selectedFarmerName);
-    setSelectedFarmerDetails(farmerDetails || null);
+  const handleFarmerChange = (event, newValue) => {
+    setSelectedFarmerDetails(newValue); // Store the entire farmer object
+    setFarmerName(newValue ? newValue.farmerName : ""); // Update farmerName state
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    // Calculate totalAmount as weight * price
-    const totalAmount = (parseFloat(totalWeight) || 0) * (parseFloat(price) || 0); // Ensure price is a number
+
+    if (!session || !session.user) {
+      console.error("No user session found.");
+      return; // Don't proceed if there's no user.
+    }
   
     const payload = {
       farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null, // Include farmer ID
@@ -148,13 +146,12 @@ function ReceivingStation() {
       notes,
       weight: totalWeight,
       totalBags: bagWeights.length,
-      price: parseFloat(price) || 0, // Include price here
       type,
-      paymentMethod,
       bagPayload: bagWeights.map((weight, index) => ({
         bagNumber: index + 1,
         weight: parseFloat(weight) || 0,
       })),
+      createdBy: session.user.email, // Add the createdBy field
     };
   
     try {
@@ -166,43 +163,15 @@ function ReceivingStation() {
         body: JSON.stringify(payload),
       });
   
-      if (response.ok) {
-        // Prepare the payload for the payment API
-        const paymentPayload = {
-          farmerName, // Ensure this variable holds the correct value
-          farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null, // Include farmer ID
-          totalAmount, // Calculate totalAmount based on weight and price
-          date: new Date().toISOString(), // Use the current date
-          paymentMethod,
-          paymentDescription: 'Cherry receiving', // Fixed description
-          isPaid: 0, // Set isPaid to 0
-        };
-  
-        // Post to the payment API
-        const paymentResponse = await fetch('https://processing-facility-backend.onrender.com/api/payment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(paymentPayload),
-        });
-  
-        if (paymentResponse.ok) {
-          // Clear form fields after successful submission to both APIs
-          setFarmerName('');
-          setBagWeights(['']);
-          setNotes('');
-          setNumberOfBags(1);
-          setTotalWeight(0);
-          setPrice('');
-          setType('');
-          setPaymentMethod('');
-          fetchReceivingData(); // Fetch updated receiving data
-          setSnackbarOpen(true); // Show success message for payment
-        } else {
-          const paymentErrorData = await paymentResponse.json();
-          console.error(paymentErrorData.message || 'Error creating payment.');
-        }
+    if (response.ok) {
+        setFarmerName('');
+        setBagWeights(['']);
+        setNotes('');
+        setNumberOfBags(1);
+        setTotalWeight(0);
+        setType('');
+        fetchReceivingData(); // Fetch updated receiving data
+        setSnackbarOpen(true); // Show success message for payment
   
       } else {
         const errorData = await response.json();
@@ -224,9 +193,8 @@ function ReceivingStation() {
     { field: 'farmerID', headerName: 'Farmer ID', width: 100, sortable: true },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
-    { field: 'price', headerName: 'Price (/kg)', width: 150, sortable: true },
-    { field: 'paymentMethod', headerName: 'Payment Method', width: 180, sortable: true },
     { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
+    { field: 'createdBy', headerName: 'Created By', width: 180, sortable: true }, // Add createdBy column
   ];
 
   // Show loading screen while session is loading
@@ -235,7 +203,7 @@ function ReceivingStation() {
   }
 
   // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'receiving')) {
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'staff')) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.
@@ -341,35 +309,6 @@ function ReceivingStation() {
                     fullWidth
                     required
                   />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Price per KG"
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="payment-label">Payment Method</InputLabel>
-                    <Select
-                      labelId="payment-label"
-                      id="payment"
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      input={<OutlinedInput label="Payment Method" />}
-                      MenuProps={MenuProps}
-                    >
-                      <MenuItem value="Cash">Cash</MenuItem>
-                      <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
-                      <MenuItem value="Check">Check</MenuItem>
-                    </Select>
-                  </FormControl>
                 </Grid>
 
                 <Grid item xs={12}>

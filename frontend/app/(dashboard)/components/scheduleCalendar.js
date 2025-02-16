@@ -34,11 +34,13 @@ import {
 } from '@mui/material';
 
 const ScheduleCalendar = () => {
+	const { data: session, status } = useSession(); // Get session data
 	const [events, setEvents] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [isAddTargetDialogOpen, setIsAddTargetDialogOpen] = useState(false);
 	const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false); // For events
+	const [isAddPriceDialogOpen, setIsAddPriceDialogOpen] = useState(false); // New state for price dialog
 	const [newTarget, setNewTarget] = useState({
 		referenceNumber: '',
 		metric: '',
@@ -76,13 +78,20 @@ const ScheduleCalendar = () => {
 		location: '',
 		category: '',
 	});
-
+	const [newPrice, setNewPrice] = useState({  // New state for price
+		type: '',
+		minPrice: '',
+		maxPrice: '',
+		validAt: '',
+		validUntil: ''
+	});
+	
 	const [selectedRange, setSelectedRange] = useState(null);
 	const [isEventDetailsDialogOpen, setIsEventDetailsDialogOpen] = useState(false); // State for event details dialog
-  const [selectedEventDetails, setSelectedEventDetails] = useState(null); // State to store clicked event details
+  	const [selectedEventDetails, setSelectedEventDetails] = useState(null); // State to store clicked event details
 	const [editedEventDetails, setEditedEventDetails] = useState({});
-  const theme = useTheme();
-  const calendarRef = useRef(null);
+	const theme = useTheme();
+	const calendarRef = useRef(null);
 
 	const [referenceMappings, setReferenceMappings] = useState([]);
 
@@ -94,6 +103,8 @@ const ScheduleCalendar = () => {
 	const [predefinedProducer, setPredefinedProducer] = useState([]);
 	const [predefinedQuality, setPredefinedQuality] = useState([]);
 	const [predefinedType, setPredefinedType] = useState([]);
+	const predefinedTypes = ['Arabica', 'Robusta']; // For Price Metric
+
 
 	// Fetch reference mappings from the API
 	useEffect(() => {
@@ -273,6 +284,10 @@ const ScheduleCalendar = () => {
     setIsAddEventDialogOpen(true);
   };
 
+  const handleOpenAddPriceDialog = () => {
+    setIsAddPriceDialogOpen(true);
+};
+
   const handleSubmitTarget = async () => {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/targets', {
@@ -364,10 +379,69 @@ const ScheduleCalendar = () => {
     }
   };
 
-  const handleEventClick = (clickInfo) => {
+  const handleSubmitPrice = async () => {
+    if (!session || !session.user) {
+        console.error("No user session found.");
+        alert("You must be logged in to add a price metric.");
+        return;
+      }
+
+    try {
+        const payload = {
+            ...newPrice,
+            createdBy: session.user.email  // Add createdBy here
+        };
+
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/price', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create price metric.');
+        }
+
+        // Optionally, refresh your data or give user feedback here.
+        if(response.ok) {
+            setRefreshCounter(prev => prev + 1); //trigger refresh data
+            setIsAddPriceDialogOpen(false);
+            setNewPrice({ // Clear the form values
+                type: '',
+                minPrice: '',
+                maxPrice: '',
+                validAt: '',
+                validUntil: ''
+            });
+        }
+    } catch (err) {
+        console.error('Error creating price metric:', err);
+        alert(`Error: ${err.message}`);
+    }
+};
+
+	const handleEventClick = (clickInfo) => {
 		const { event } = clickInfo;
 		const isTarget = event.extendedProps.type === 'target';
-	
+		const isPrice = event.extendedProps.type === 'price'; //check if it is price
+
+		if (isPrice) {
+			const priceDetails = {
+				id: event.id,
+				type: event.extendedProps.type, // Make sure this is 'price'
+				minPrice: event.extendedProps.minPrice,
+				maxPrice: event.extendedProps.maxPrice,
+				validAt: event.extendedProps.validAt,
+				validUntil: event.extendedProps.validUntil,
+				// ... any other fields you want to display/edit
+			};
+			setSelectedEventDetails(priceDetails);
+			setEditedEventDetails(priceDetails);
+			setIsEventDetailsDialogOpen(true);
+			return; // Important:  Exit early after handling price
+		}
+
 		const baseDetails = {
 			id: event.id,
 			type: event.extendedProps.type || 'event',
@@ -376,7 +450,8 @@ const ScheduleCalendar = () => {
 				? dayjs(event.end).subtract(1, 'day').format('YYYY-MM-DD')
 				: dayjs(event.start).format('YYYY-MM-DD'),
 		};
-	
+
+		// ... (rest of your existing handleEventClick logic for events and targets) ...
 		const eventSpecific = {
 			title: event.title,
 			eventName: event.title,
@@ -385,20 +460,20 @@ const ScheduleCalendar = () => {
 			category: event.extendedProps.category,
 			allDay: event.allDay,
 		};
-	
+
 		const targetSpecific = {
 			targetValue: event.title.match(/\((\d+)\s?kg\)/)?.[1] || 'N/A',
 			title: event.title,
 			referenceNumber: event.extendedProps.referenceNumber,
 			targetValue: event.extendedProps.targetValue || 'N/A',
 		};
-	
+
 		// Find the corresponding reference mapping for targets
 		if (isTarget) {
 			const selectedMapping = referenceMappings.find(
 				(mapping) => mapping.referenceNumber === event.extendedProps.referenceNumber
 			);
-	
+
 			if (selectedMapping) {
 				targetSpecific.productLine = selectedMapping.productLine;
 				targetSpecific.processingType = selectedMapping.processingType;
@@ -407,12 +482,12 @@ const ScheduleCalendar = () => {
 				targetSpecific.coffeeType = selectedMapping.coffeeType;
 			}
 		}
-	
+
 		const details = {
 			...baseDetails,
 			...(isTarget ? targetSpecific : eventSpecific),
 		};
-	
+
 		setSelectedEventDetails(details);
 		setEditedEventDetails(details);
 		setIsEventDetailsDialogOpen(true);
@@ -422,16 +497,16 @@ const ScheduleCalendar = () => {
 	// Handle update: Sends updated data to the proper API endpoint based on type.
 	const handleUpdate = async () => {
 		const { id, type, ...rest } = editedEventDetails;
-		
+	
 		if (!id || !type) {
 			alert("Missing event ID or type. Please try again.");
 			return;
 		}
-		
+	
 		try {
 			let url = "";
 			let payload = {};
-
+	
 			if (type === "target") {
 				url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
 				payload = {
@@ -443,48 +518,67 @@ const ScheduleCalendar = () => {
 			} else if (type === "event") {
 				url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
 				payload = rest; // Send all fields for events
+			} else if (type === "price") {
+				url = `https://processing-facility-backend.onrender.com/api/price/${id}`;
+				payload = {
+					type: editedEventDetails.type,
+					min_price: editedEventDetails.minPrice,  // Use snake_case
+					max_price: editedEventDetails.maxPrice,
+					valid_at: editedEventDetails.validAt,
+					valid_until: editedEventDetails.validUntil,
+				};
 			}
-
+	
 			const response = await fetch(url, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payload),
 			});
-			
+	
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(errorData?.error || "Failed to update.");
 			}
-
-			// Update local state
-			setEvents(prevEvents => 
-				prevEvents.map(evt => {
-					if (evt.id === id) {
-						if (type === "target") {
-							// For targets: preserve original data and update only allowed fields
-							return {
-								...evt,
-								title: `${evt.extendedProps.referenceNumber} (${editedEventDetails.targetValue} kg)`,
-								start: editedEventDetails.startDate,
-								end: editedEventDetails.endDate,
-								extendedProps: {
-									...evt.extendedProps,
-									targetValue: editedEventDetails.targetValue
-								}
-							};
+			if (type === 'price') {
+				// Handle price update in state
+				setEvents(prevEvents =>
+					prevEvents.map(evt =>
+						evt.id === id ? { ...evt, ...payload, title: `${payload.type} Price` } : evt //update
+					)
+				);
+			}
+			else{
+				// Update local state
+				setEvents(prevEvents =>
+					prevEvents.map(evt => {
+						if (evt.id === id) {
+							if (type === "target") {
+								// For targets: preserve original data and update only allowed fields
+								return {
+									...evt,
+									title: `${evt.extendedProps.referenceNumber} (${editedEventDetails.targetValue} kg)`,
+									start: editedEventDetails.startDate,
+									end: editedEventDetails.endDate,
+									extendedProps: {
+										...evt.extendedProps,
+										targetValue: editedEventDetails.targetValue
+									}
+								};
+							}
+							// For events: keep existing update logic
+							return { ...evt, ...editedEventDetails };
 						}
-						// For events: keep existing update logic
-						return { ...evt, ...editedEventDetails };
-					}
-					return evt;
-				})
-			);
-
+						return evt;
+					})
+				);
+			}
+	
+	
 			if (response.ok) {
 				setRefreshCounter(prev => prev + 1); // Trigger data refresh
 				setIsEventDetailsDialogOpen(false);
 			}
-			
+	
 		} catch (err) {
 			console.error("Error updating record:", err);
 			alert(`Update failed: ${err.message}`);
@@ -495,35 +589,37 @@ const ScheduleCalendar = () => {
 	// Handle delete: Calls the proper API endpoint based on type and removes the event from local state.
 	const handleDelete = async () => {
 		const { id, type } = selectedEventDetails;
-		
+	
 		if (!id || !type) {
 			alert("Missing event ID or type.");
 			return;
 		}
-		
+	
 		try {
 			let url = "";
 			if (type === "target") {
 				url = `https://processing-facility-backend.onrender.com/api/targets/${id}`;
 			} else if (type === "event") {
 				url = `https://processing-facility-backend.onrender.com/api/events/${id}`;
+			} else if (type === "price") { // Add condition for price
+				url = `https://processing-facility-backend.onrender.com/api/price/${id}`;
 			}
-			
+	
 			const response = await fetch(url, { method: "DELETE" });
-			
+	
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(errorData.error || "Failed to delete.");
 			}
-			
-			// Remove the deleted event from local state.
+	
+			// Remove the deleted event/target/price from local state.
 			setEvents((prevEvents) => prevEvents.filter((evt) => evt.id !== id));
-
+	
 			if (response.ok) {
 				setRefreshCounter(prev => prev + 1); // Trigger data refresh
 				setIsEventDetailsDialogOpen(false);
 			}
-			
+	
 		} catch (err) {
 			console.error("Error deleting record:", err);
 			alert(`Deletion failed: ${err.message}`);
@@ -532,21 +628,21 @@ const ScheduleCalendar = () => {
 
 
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+	if (loading) {
+		return (
+			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+			<CircularProgress />
+			</Box>
+		);	
+	}
 
-  if (error) {
-    return (
-      <Box sx={{ textAlign: 'center', p: 2 }}>
-        <Typography variant="body1" color="error">{error}</Typography>
-      </Box>
-    );
-  }
+	if (error) {
+		return (
+			<Box sx={{ textAlign: 'center', p: 2 }}>
+			<Typography variant="body1" color="error">{error}</Typography>
+			</Box>
+		);
+	}
 
   return (
     <Box sx={{ p: 2, width: '100%', height: '100%' }}>
@@ -555,8 +651,11 @@ const ScheduleCalendar = () => {
 				<Button variant="contained" color="primary" onClick={handleOpenAddTargetDialog} sx={{ mr: 2 }}>
 						Add Target
 				</Button>
-				<Button variant="contained" color="secondary" onClick={handleOpenAddEventDialog}>
+				<Button variant="contained" color="primary" onClick={handleOpenAddEventDialog}>
 						Add Event
+				</Button>
+				<Button variant="contained" color="primary" onClick={handleOpenAddPriceDialog}>
+						Add Price
 				</Button>
 			</Toolbar>
 
@@ -721,7 +820,7 @@ const ScheduleCalendar = () => {
       </Dialog>
 
 
-			{/* Dialog for adding a new event */}
+	{/* Dialog for adding a new event */}
       <Dialog open={isAddEventDialogOpen} onClose={() => setIsAddEventDialogOpen(false)}>
         <DialogTitle>Add New Event</DialogTitle>
         <DialogContent>
@@ -861,138 +960,296 @@ const ScheduleCalendar = () => {
 				</DialogContent>
 			</Dialog>
 
-			{/* Dialog for showing/editing event details */}
-      <Dialog
-        open={isEventDetailsDialogOpen}
-        onClose={() => setIsEventDetailsDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-      <DialogTitle>Edit Event Details</DialogTitle>
-				
-        <DialogContent dividers>
+	{/* Dialog for adding a new price metric */}
+		<Dialog open={isAddPriceDialogOpen} onClose={() => setIsAddPriceDialogOpen(false)}>
+			<DialogTitle>Add New Price Metric</DialogTitle>
+			<DialogContent>
+				<LocalizationProvider dateAdapter={AdapterDayjs}>
+					<Grid container spacing={2}>
+						<Grid item xs={12}>
+							<FormControl fullWidth required>
+								<InputLabel id="price-type-label">Type</InputLabel>
+								<Select
+									labelId="price-type-label"
+									value={newPrice.type}
+									onChange={(e) => setNewPrice({ ...newPrice, type: e.target.value })}
+									input={<OutlinedInput label="Type" />}
+								>
+									{predefinedTypes.map((type) => (
+										<MenuItem key={type} value={type}>
+											{type}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						</Grid>
+						<Grid item xs={12}>
+							<TextField
+								label="Minimum Price"
+								type="number"
+								value={newPrice.minPrice}
+								onChange={(e) => setNewPrice({ ...newPrice, minPrice: e.target.value })}
+								fullWidth
+								required
+							/>
+						</Grid>
+						<Grid item xs={12}>
+							<TextField
+								label="Maximum Price"
+								type="number"
+								value={newPrice.maxPrice}
+								onChange={(e) => setNewPrice({ ...newPrice, maxPrice: e.target.value })}
+								fullWidth
+								required
+							/>
+						</Grid>
+						<Grid item xs={12}>
+							<DateTimePicker
+								label="Valid At"
+								value={newPrice.validAt ? dayjs(newPrice.validAt) : null}
+								onChange={(newValue) => {
+									if (newValue) {
+										setNewPrice({ ...newPrice, validAt: newValue.toISOString() });
+									} else {
+										setNewPrice({ ...newPrice, validAt: '' }); // Handle null/clear
+									}
+								}}
+								renderInput={(params) => <TextField {...params} fullWidth />}
+							/>
+						</Grid>
+						<Grid item xs={12}>
+							<DateTimePicker
+								label="Valid Until"
+								value={newPrice.validUntil ? dayjs(newPrice.validUntil) : null}
+								onChange={(newValue) => {
+									if (newValue) {
+										setNewPrice({ ...newPrice, validUntil: newValue.toISOString() });
+									} else {
+										setNewPrice({ ...newPrice, validUntil: '' }); // Handle null/clear
+									}
+								}}
+								renderInput={(params) => <TextField {...params} fullWidth />}
+							/>
+						</Grid>
 
-					<LocalizationProvider dateAdapter={AdapterDayjs}>
+						<Grid item xs={12}>
+							<Button onClick={handleSubmitPrice} variant="contained" color="success">
+								Save Price Metric
+							</Button>
+						</Grid>
+					</Grid>
+				</LocalizationProvider>
+			</DialogContent>
+		</Dialog>
 
-						<Grid container spacing={2}>
-							{/* Common Fields */}
-							<Grid item xs={12} sm={6}>
-								<DateTimePicker
-									label="Start Date and Time"
-									value={editedEventDetails.startDate ? dayjs(editedEventDetails.startDate) : null}
-									onChange={(newValue) => {
+	{/* Dialog for showing/editing event details */}
+		<Dialog
+			open={isEventDetailsDialogOpen}
+			onClose={() => setIsEventDetailsDialogOpen(false)}
+			maxWidth="sm"
+			fullWidth
+		>
+			<DialogTitle>
+				{editedEventDetails.type === 'price' ? 'Edit Price Metric' : 'Edit Event Details'}
+			</DialogTitle>
+
+			<DialogContent dividers>
+				<LocalizationProvider dateAdapter={AdapterDayjs}>
+					<Grid container spacing={2}>
+
+						{/* Price-Specific Fields */}
+						{editedEventDetails.type === 'price' && (
+							<>
+								<Grid item xs={12}>
+									<FormControl fullWidth required>
+										<InputLabel id="price-type-label">Type</InputLabel>
+										<Select
+											labelId="price-type-label"
+											value={editedEventDetails.type || ''}
+											onChange={(e) => setEditedEventDetails(prev => ({ ...prev, type: e.target.value }))}
+											input={<OutlinedInput label="Type" />}
+										>
+											{predefinedTypes.map((type) => (
+												<MenuItem key={type} value={type}>
+													{type}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item xs={12}>
+									<TextField
+										label="Minimum Price"
+										type="number"
+										value={editedEventDetails.minPrice || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({ ...prev, minPrice: e.target.value }))}
+										fullWidth
+										required
+									/>
+								</Grid>
+								<Grid item xs={12}>
+									<TextField
+										label="Maximum Price"
+										type="number"
+										value={editedEventDetails.maxPrice || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({ ...prev, maxPrice: e.target.value }))}
+										fullWidth
+										required
+									/>
+								</Grid>
+								<Grid item xs={12}>
+									<DateTimePicker
+										label="Valid At"
+										value={editedEventDetails.validAt ? dayjs(editedEventDetails.validAt) : null}
+										onChange={(newValue) => {
 											if (newValue) {
-													let newStartDate = newValue;
-													if (editedEventDetails.allDay) {
-															newStartDate = newStartDate.startOf('day'); // Set to 00:00:00 if all-day
-													}
-													setEditedEventDetails(prev => ({ ...prev, startDate: newStartDate.toISOString() }));
+												setEditedEventDetails(prev => ({ ...prev, validAt: newValue.toISOString() }));
 											} else {
-													setEditedEventDetails(prev => ({ ...prev, startDate: '' })); // Handle null/clear
+												setEditedEventDetails(prev => ({ ...prev, validAt: '' })); // Handle null/clear
 											}
-									}}
-									renderInput={(params) => <TextField {...params} fullWidth />}
-								/>
-							</Grid>
+										}}
+										renderInput={(params) => <TextField {...params} fullWidth />}
+									/>
+								</Grid>
+								<Grid item xs={12}>
+									<DateTimePicker
+										label="Valid Until"
+										value={editedEventDetails.validUntil ? dayjs(editedEventDetails.validUntil) : null}
+										onChange={(newValue) => {
+											if (newValue) {
+												setEditedEventDetails(prev => ({ ...prev, validUntil: newValue.toISOString() }));
+											} else {
+												setEditedEventDetails(prev => ({ ...prev, validUntil: '' })); // Handle null/clear
+											}
+										}}
+										renderInput={(params) => <TextField {...params} fullWidth />}
+									/>
+								</Grid>
+							</>
+						)}
 
-							<Grid item xs={12} sm={6}>
-								<DateTimePicker
-									label="End Date and Time"
-									value={editedEventDetails.endDate ? dayjs(editedEventDetails.endDate) : null}
-									onChange={(newValue) => {
-										if (newValue) {
-												let newEndDate = newValue;
-											if (editedEventDetails.allDay) {
-												newEndDate = newEndDate.endOf('day');
-											}
-												setEditedEventDetails(prev => ({ ...prev, endDate: newEndDate.toISOString() }));
-										} else {
-												setEditedEventDetails(prev => ({ ...prev, endDate: '' }));//handle empty date
+						{/* Common Fields */}
+						{editedEventDetails.type !== 'price' && (
+						<Grid item xs={12} sm={6}>
+							<DateTimePicker
+								label="Start Date and Time"
+								value={editedEventDetails.startDate ? dayjs(editedEventDetails.startDate) : null}
+								onChange={(newValue) => {
+									if (newValue) {
+										let newStartDate = newValue;
+										if (editedEventDetails.allDay) {
+											newStartDate = newStartDate.startOf('day'); // Set to 00:00:00 if all-day
 										}
-									}}
-									renderInput={(params) => <TextField {...params} fullWidth />}
-								/>
-							</Grid>
+										setEditedEventDetails(prev => ({ ...prev, startDate: newStartDate.toISOString() }));
+									} else {
+										setEditedEventDetails(prev => ({ ...prev, startDate: '' })); // Handle null/clear
+									}
+								}}
+								renderInput={(params) => <TextField {...params} fullWidth />}
+							/>
+						</Grid>
+						)}
 
-							{/* Event-Specific Fields */}
-							{editedEventDetails.type === 'event' && (
-								<>
-									<Grid item xs={12}>
-										<TextField
-											label="Event Name"
-											fullWidth
-											value={editedEventDetails.eventName || ''}
-											onChange={(e) => setEditedEventDetails(prev => ({...prev, eventName: e.target.value}))}
-										/>
-									</Grid>
+						{editedEventDetails.type !== 'price' && (
+						<Grid item xs={12} sm={6}>
+							<DateTimePicker
+								label="End Date and Time"
+								value={editedEventDetails.endDate ? dayjs(editedEventDetails.endDate) : null}
+								onChange={(newValue) => {
+									if (newValue) {
+										let newEndDate = newValue;
+										if (editedEventDetails.allDay) {
+											newEndDate = newEndDate.endOf('day');
+										}
+										setEditedEventDetails(prev => ({ ...prev, endDate: newEndDate.toISOString() }));
+									} else {
+										setEditedEventDetails(prev => ({ ...prev, endDate: '' }));//handle empty date
+									}
+								}}
+								renderInput={(params) => <TextField {...params} fullWidth />}
+							/>
+						</Grid>
+						)}
 
-									<Grid item xs={12}>
-										<TextField
-											label="Description"
-											multiline
-											rows={3}
-											fullWidth
-											value={editedEventDetails.eventDescription || ''}
-											onChange={(e) => setEditedEventDetails(prev => ({...prev, eventDescription: e.target.value}))}
-										/>
-									</Grid>
+						{/* Event-Specific Fields */}
+						{editedEventDetails.type === 'event' && (
+							<>
+								<Grid item xs={12}>
+									<TextField
+										label="Event Name"
+										fullWidth
+										value={editedEventDetails.eventName || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({ ...prev, eventName: e.target.value }))}
+									/>
+								</Grid>
 
-									<Grid item xs={12} sm={6}>
-										<TextField
-											label="Location"
-											fullWidth
-											value={editedEventDetails.location || ''}
-											onChange={(e) => setEditedEventDetails(prev => ({...prev, location: e.target.value}))}
-										/>
-									</Grid>
+								<Grid item xs={12}>
+									<TextField
+										label="Description"
+										multiline
+										rows={3}
+										fullWidth
+										value={editedEventDetails.eventDescription || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({ ...prev, eventDescription: e.target.value }))}
+									/>
+								</Grid>
 
-									<Grid item xs={12} sm={6}>
-										<Autocomplete
-											options={predefinedCategory}
-											value={editedEventDetails.category || ''}
-											onChange={(_, newValue) => setEditedEventDetails(prev => ({...prev, category: newValue}))}
-											renderInput={(params) => (
-												<TextField
-													{...params}
-													label="Category"
-													fullWidth
-												/>
-											)}
-										/>
-									</Grid>
+								<Grid item xs={12} sm={6}>
+									<TextField
+										label="Location"
+										fullWidth
+										value={editedEventDetails.location || ''}
+										onChange={(e) => setEditedEventDetails(prev => ({ ...prev, location: e.target.value }))}
+									/>
+								</Grid>
 
-									<Grid item xs={12}>
-										<FormControlLabel
-											control={
-												<Checkbox
-													checked={editedEventDetails.allDay || false}
-													onChange={(e) => {
-														const isAllDay = e.target.checked;
-														setEditedEventDetails(prevDetails => {
-															let updatedDetails = { ...prevDetails, allDay: isAllDay };
+								<Grid item xs={12} sm={6}>
+									<Autocomplete
+										options={predefinedCategory}
+										value={editedEventDetails.category || ''}
+										onChange={(_, newValue) => setEditedEventDetails(prev => ({ ...prev, category: newValue }))}
+										renderInput={(params) => (
+											<TextField
+												{...params}
+												label="Category"
+												fullWidth
+											/>
+										)}
+									/>
+								</Grid>
 
-															if (isAllDay) {
-																if (updatedDetails.startDate) {
-																	updatedDetails.startDate = dayjs(updatedDetails.startDate).startOf('day').toISOString();
-																}
-																if (updatedDetails.endDate) {
-																	updatedDetails.endDate = dayjs(updatedDetails.endDate).endOf('day').toISOString();
-																}
+								<Grid item xs={12}>
+									<FormControlLabel
+										control={
+											<Checkbox
+												checked={editedEventDetails.allDay || false}
+												onChange={(e) => {
+													const isAllDay = e.target.checked;
+													setEditedEventDetails(prevDetails => {
+														let updatedDetails = { ...prevDetails, allDay: isAllDay };
+
+														if (isAllDay) {
+															if (updatedDetails.startDate) {
+																updatedDetails.startDate = dayjs(updatedDetails.startDate).startOf('day').toISOString();
 															}
-															return updatedDetails;
-														});
-													}}
-												/>
-											}
-											label="All-Day Event"
-										/>
-									</Grid>
-								
-								</>
-							)}
+															if (updatedDetails.endDate) {
+																updatedDetails.endDate = dayjs(updatedDetails.endDate).endOf('day').toISOString();
+															}
+														}
+														return updatedDetails;
+													});
+												}}
+											/>
+										}
+										label="All-Day Event"
+									/>
+								</Grid>
 
-							{/* Target-Specific Fields */}
-							{editedEventDetails.type === 'target' && (
+							</>
+						)}
+
+						{/* Target-Specific Fields */}
+						{editedEventDetails.type === 'target' && (
 							<>
 								{/* Read-only display fields */}
 								<Grid item xs={12}>
@@ -1064,20 +1321,20 @@ const ScheduleCalendar = () => {
 							</>
 						)}
 
-						</Grid>
-					</LocalizationProvider>
-				</DialogContent>
+					</Grid>
+				</LocalizationProvider>
+			</DialogContent>
 
 
-        <div style={{ display: "flex", justifyContent: "flex-end", padding: 16 }}>
-          <Button onClick={handleDelete} color="error" variant="contained" sx={{ mr: 2 }}>
-            Delete
-          </Button>
-          <Button onClick={handleUpdate} color="primary" variant="contained">
-            Update
-          </Button>
-        </div>
-      </Dialog>
+			<div style={{ display: "flex", justifyContent: "flex-end", padding: 16 }}>
+				<Button onClick={handleDelete} color="error" variant="contained" sx={{ mr: 2 }}>
+					Delete
+				</Button>
+				<Button onClick={handleUpdate} color="primary" variant="contained">
+					Update
+				</Button>
+			</div>
+		</Dialog>
 
     </Box>
   );

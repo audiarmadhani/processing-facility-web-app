@@ -452,7 +452,9 @@ const QCStation = () => {
   const qcColumns = [
     // { field: 'id', headerName: 'ID', width: 80 },
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
-    { field: 'qcDateTrunc', headerName: 'QC Date', width: 110 },
+    { field: 'receivingDate', headerName: 'Receiving Date', width: 110 },
+    { field: 'qcDate', headerName: 'QC Date', width: 110 },
+    { field: 'type', headerName: 'Type', width: 110 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
     { field: 'color', headerName: 'Color', width: 140 },
     {
@@ -483,12 +485,25 @@ const QCStation = () => {
         );
       },
     },
-    { field: 'overallQuality', headerName: 'Overall Quality', width: 140 },
-    { field: 'qcNotes', headerName: 'Notes', width: 180 },
     { field: 'unripePercentage', headerName: 'Unripe (%)', width: 180 },
     { field: 'semiripePercentage', headerName: 'Semi Ripe (%)', width: 180 },
     { field: 'ripePercentage', headerName: 'Ripe (%)', width: 180 },
     { field: 'overripePercentage', headerName: 'Overripe (%)', width: 180 },
+    { field: 'overallQuality', headerName: 'Overall Quality', width: 140 },
+    { field: 'qcNotes', headerName: 'QC Notes', width: 180 },
+    { field: 'receivingNotes', headerName: 'Receiving Notes', width: 180 },
+    { field: 'updatedBy', headerName: 'Receiving Staff', width: 180 },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 140 },
+    { field: 'paymentMethod', headerName: 'Payment Method', width: 140 },
+    { field: 'bankAccount', headerName: 'Bank Account', width: 140 },
+    { field: 'bankName', headerName: 'Bank Name', width: 140 },
+    { field: 'cherryGroup', headerName: 'Cherry Quality Group', width: 140 },
+    { field: 'priceGroup', headerName: 'Cherry Price Group', width: 140 },
+    { field: 'minPrice', headerName: 'Minimum Price', width: 140 },
+    { field: 'maxPrice', headerName: 'Maximum Price', width: 140 },
+    { field: 'validAt', headerName: 'Price Valid At', width: 140 },
+    { field: 'validUntil', headerName: 'Price Valid Until', width: 140 },
+    { field: 'price', headerName: 'Final Cherry Price', width: 140 },
   ];
 
   const pendingQcColumns = [
