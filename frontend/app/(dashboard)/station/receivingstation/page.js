@@ -86,10 +86,10 @@ function ReceivingStation() {
       if (data) {
         // Filter rows based on user role
         let filteredData = [];
-        if (session.user.role === "staff", "receiving") {
-          filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
-        } else if (session.user.role === "admin", "manager", "") { //included "receiving"
+        if (session.user.role === "admin", "manager") {
           filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
+        } else if (session.user.role === "staff", "receiving", "") { //included "receiving"
+          filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
         }
         setReceivingData(filteredData);
         console.log("user role:", session.user.role);
@@ -360,7 +360,7 @@ function ReceivingStation() {
       </Grid>
 
       {/* Data Grid for Receiving Data */}
-      {["admin", "manager", "receiving"].includes(session?.user?.role) && (
+      {["admin", "manager", "receiving","staff"].includes(session?.user?.role) && (
         <Grid item xs={12} md={8}>
           <Card variant="outlined">
             <CardContent>
