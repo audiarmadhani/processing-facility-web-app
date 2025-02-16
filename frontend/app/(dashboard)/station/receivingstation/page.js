@@ -75,7 +75,7 @@ function ReceivingStation() {
   const fetchReceivingData = async () => {
     // No need to check session here, do it before calling the function
     if (!session || !session.user) return; // Early return if no session
-    
+
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
       if (!response.ok) throw new Error("Failed to fetch receiving data");
@@ -87,8 +87,8 @@ function ReceivingStation() {
         // Filter rows based on user role
         let filteredData = [];
         if (session.user.role === "staff", "receiving") {
-          filteredData = data.latestRows.map((row, index) => ({ ...row, id: index }));
-        } else if (["admin", "manager"].includes(session.user.role)) { //included "receiving"
+          filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
+        } else if (session.user.role === "admin", "manager") { //included "receiving"
           filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
         }
         setReceivingData(filteredData);
