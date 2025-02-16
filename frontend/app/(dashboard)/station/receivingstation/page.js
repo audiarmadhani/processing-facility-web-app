@@ -88,7 +88,7 @@ function ReceivingStation() {
         let filteredData = [];
         if (session.user.role === "staff", "receiving") {
           filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
-        } else if (session.user.role === "admin", "manager") { //included "receiving"
+        } else if (session.user.role === "admin", "manager", "") { //included "receiving"
           filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
         }
         setReceivingData(filteredData);
