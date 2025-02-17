@@ -139,7 +139,7 @@ function ReceivingStation() {
   //NEW FUNCTION
   const getRfidData = async () => {
     try {
-      const response = await fetch('/api/get-rfid');
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/get-rfid');
       if (!response.ok) {
         throw new Error(`Failed to fetch RFID data: ${response.status}`);
       }
@@ -160,7 +160,7 @@ function ReceivingStation() {
   //NEW FUNCTION
   const clearRfidData = async() => {
     try{
-      const response = await fetch('/api/clear-rfid', {method: 'DELETE'});
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/clear-rfid', {method: 'DELETE'});
       if(!response.ok){
         throw new Error(`Failed to clear RFID Data: ${response.status}`)
       }
@@ -175,98 +175,99 @@ function ReceivingStation() {
     e.preventDefault();
 
     if (!session || !session.user) {
-      console.error("No user session found.");
-      return;
+        console.error("No user session found.");
+        return;
     }
 
     const payload = {
-      farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null,
-      farmerName,
-      notes,
-      weight: totalWeight,
-      totalBags: bagWeights.length,
-      type,
-      bagPayload: bagWeights.map((weight, index) => ({
-        bagNumber: index + 1,
-        weight: parseFloat(weight) || 0,
-      })),
-      createdBy: session.user.name,
-      updatedBy: session.user.name,
+        farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null,
+        farmerName,
+        notes,
+        weight: totalWeight,
+        totalBags: bagWeights.length,
+        type,
+        bagPayload: bagWeights.map((weight, index) => ({
+            bagNumber: index + 1,
+            weight: parseFloat(weight) || 0,
+        })),
+        createdBy: session.user.name,
+        updatedBy: session.user.name,
     };
 
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
 
         if (response.ok) {
-          const responseData = await response.json();
-          const batchNumber = responseData.receivingData.batchNumber;
+            const responseData = await response.json();
+            const batchNumber = responseData.receivingData.batchNumber;
 
-          // --- RFID Assignment ---
-          setLastCreatedBatchNumber(batchNumber); // Store for later
-          setAssigningRFID(true);    // Disable submit button
-          // Get the RFID tag and call sendRFIDToServer
-          const scannedRFID = await getRfidData();
+            // --- RFID Assignment ---
+            const scannedRFID = await getRfidData();  // Get RFID *before* assignment
 
+            if (scannedRFID) {
+                try {
+                    const rfidResponse = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            batchNumber, // Use newly created batchNumber
+                            rfid: scannedRFID, // Use the UID from getRfidData
+                        }),
+                    });
 
-        if (scannedRFID) { // Proceed *only* if an RFID was scanned
-          try {
-            const rfidResponse = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                batchNumber: batchNumber,
-                rfid: scannedRFID,  // Use the value from getRfidData
-              }),
-            });
-
-              if (rfidResponse.ok) {
-                setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
-                setSnackbarSeverity('success');
-                await clearRfidData(); //clear rfid data
-              } else {
-                const errorData = await rfidResponse.json();
-                setSnackbarMessage(errorData.error || 'Failed to assign RFID tag.');
-                setSnackbarSeverity('error');
+                    if (rfidResponse.ok) {
+                        setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
+                        setSnackbarSeverity('success');
+                        setOpenSnackbar(true); // Show success message
+                        await clearRfidData(); //clear rfid data
+                    } else {
+                        const errorData = await rfidResponse.json();
+                        setSnackbarMessage(errorData.error || `Failed to assign RFID tag to batch ${batchNumber}.`);
+                        setSnackbarSeverity('error');
+                        setOpenSnackbar(true); // Show error message
+                    }
+                } catch (rfidError) {
+                    console.error('Error assigning RFID:', rfidError);
+                    setSnackbarMessage(`Error assigning RFID tag to batch ${batchNumber}.`);
+                    setSnackbarSeverity('error');
+                    setOpenSnackbar(true); // Show error message
                 }
-            } catch (rfidError) {
-              console.error('Error assigning RFID:', rfidError);
-              setSnackbarMessage('Error assigning RFID tag. Please try again.');
-              setSnackbarSeverity('error');
             }
-          } else {
-            setSnackbarMessage(`Batch ${batchNumber} created successfully! No RFID assigned`);
-            setSnackbarSeverity('success')
-          }
-          // Reset form fields *after* successful RFID assignment (or skipping)
-          setFarmerName('');
-          setBagWeights(['']);
-          setNotes('');
-          setNumberOfBags(1);
-          setTotalWeight(0);
-          setType('');
-          setAssigningRFID(false); //Re enable the button
-          setLastCreatedBatchNumber(null); // Clear for next use.
-          fetchReceivingData(); // Refresh data
-          setOpenSnackbar(true);
+             else {
+              setSnackbarMessage(`Batch ${batchNumber} created successfully! No RFID assigned`);
+              setSnackbarSeverity('success');
+              setOpenSnackbar(true); // Show success message
+            }
+
+            // Reset form fields *after* successful RFID assignment (or skipping it)
+            setFarmerName('');
+            setBagWeights(['']);
+            setNotes('');
+            setNumberOfBags(1);
+            setTotalWeight(0);
+            setType('');
+            fetchReceivingData(); // Refresh the data *NOW*
+
+
 
         } else {
-          // Handle error
-          const errorData = await response.json();
-          console.error(errorData.message || 'Error creating batch.');
-          setSnackbarMessage(errorData.message || 'Error creating batch.');
-          setSnackbarSeverity('error');
-          setOpenSnackbar(true);
-
+            const errorData = await response.json();
+            console.error(errorData.message || 'Error creating batch.');
+            setSnackbarMessage(errorData.message || 'Error creating batch.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);  // Open snackbar on error
         }
     } catch (error) {
-      console.error('Failed to communicate with the backend:', error);
-      setSnackbarMessage('Failed to communicate with the backend.');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
+        console.error('Failed to communicate with the backend:', error);
+        setSnackbarMessage('Failed to communicate with the backend.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true); // Open snackbar on error
     }
   };
 
