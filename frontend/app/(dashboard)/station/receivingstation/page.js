@@ -78,35 +78,36 @@ function ReceivingStation() {
   };
 
   const fetchReceivingData = async () => {
-    // No need to check session here, do it before calling the function
     if (!session || !session.user) return; // Early return if no session
 
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
-      if (!response.ok) throw new Error("Failed to fetch receiving data");
+			const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
+			if (!response.ok) throw new Error(`Failed to fetch receiving data: ${response.status}`);
 
-      const data = await response.json();
-      console.log("Fetched data:", data);
+			const data = await response.json();
+			console.log("Fetched data:", data);
 
-      if (data && Array.isArray(data.allRows) && Array.isArray(data.todayData)) {
-        let filteredData = [];
-        if (["admin", "manager"].includes(session.user.role)) {
-            // Use map directly on the array
-            filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
-        } else if (["staff", "receiving"].includes(session.user.role)) {
-             // Use map directly on the array
-            filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
-        }
-        setReceivingData(filteredData); // Set the filtered data
-        console.log("user role:", session.user.role);
-        console.log("user name:", session.user.name);
-        console.log("Filtered Data:", filteredData);
-      }
+			// Check if the properties are arrays before mapping
+			if (data && Array.isArray(data.allRows) && Array.isArray(data.todayData)) {
+				let filteredData = [];
+				if (["admin", "manager"].includes(session.user.role)) {
+					// Use map directly on the array
+					filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
+				} else if (["staff", "receiving"].includes(session.user.role)) {
+						// Use map directly on the array
+					filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
+				}
+				setReceivingData(filteredData); // Set the filtered data
+			} else {
+				console.error("Unexpected data format from /api/receiving:", data);
+				setReceivingData([]); // Set to empty array on unexpected format
+			}
+
     } catch (error) {
-      console.error("Error fetching receiving data:", error);
-      setReceivingData([]);
+			console.error("Error fetching receiving data:", error);
+			setReceivingData([]); // Set to empty array on error
     }
-  };
+	};
 
   const handleBagWeightChange = (index, value) => {
     const updatedBagWeights = [...bagWeights];
