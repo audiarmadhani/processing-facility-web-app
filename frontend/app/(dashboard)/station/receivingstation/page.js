@@ -224,25 +224,25 @@ function ReceivingStation() {
                     if (rfidResponse.ok) {
                         setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
                         setSnackbarSeverity('success');
-                        setOpenSnackbar(true); // Show success message
+                        setSnackbarOpen(true); // Show success message
                         await clearRfidData(); //clear rfid data
                     } else {
                         const errorData = await rfidResponse.json();
                         setSnackbarMessage(errorData.error || `Failed to assign RFID tag to batch ${batchNumber}.`);
                         setSnackbarSeverity('error');
-                        setOpenSnackbar(true); // Show error message
+                        setSnackbarOpen(true); // Show error message
                     }
                 } catch (rfidError) {
                     console.error('Error assigning RFID:', rfidError);
                     setSnackbarMessage(`Error assigning RFID tag to batch ${batchNumber}.`);
                     setSnackbarSeverity('error');
-                    setOpenSnackbar(true); // Show error message
+                    setSnackbarOpen(true); // Show error message
                 }
             }
              else {
               setSnackbarMessage(`Batch ${batchNumber} created successfully! No RFID assigned`);
               setSnackbarSeverity('success');
-              setOpenSnackbar(true); // Show success message
+              setSnackbarOpen(true); // Show success message
             }
 
             // Reset form fields *after* successful RFID assignment (or skipping it)
@@ -261,13 +261,13 @@ function ReceivingStation() {
             console.error(errorData.message || 'Error creating batch.');
             setSnackbarMessage(errorData.message || 'Error creating batch.');
             setSnackbarSeverity('error');
-            setOpenSnackbar(true);  // Open snackbar on error
+            setSnackbarOpen(true);  // Open snackbar on error
         }
     } catch (error) {
         console.error('Failed to communicate with the backend:', error);
         setSnackbarMessage('Failed to communicate with the backend.');
         setSnackbarSeverity('error');
-        setOpenSnackbar(true); // Open snackbar on error
+        setSnackbarOpen(true); // Open snackbar on error
     }
   };
 
