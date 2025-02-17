@@ -137,17 +137,22 @@ function ReceivingStation() {
   };
 
   //NEW FUNCTION
-  const getRfidData = async() => {
+  const getRfidData = async () => {
     try {
-      const response = await fetch('/api/get-rfid'); // Call the new API route
+      const response = await fetch('/api/get-rfid');
       if (!response.ok) {
         throw new Error(`Failed to fetch RFID data: ${response.status}`);
       }
       const data = await response.json();
-      // console.log("data rfid", data)
-      return data.rfid; // Return the RFID UID
+      console.log("getRfidData response:", data); // Add this for debugging
+      // Access the RFID UID correctly.  Handle the case where it's 0.
+      if (data.getRfid && data.getRfid.rfid) { // Check for the existence of getRfid and rfid
+          return data.getRfid.rfid;  // Access the nested rfid property
+      } else {
+          return ''; // Return empty string if no RFID
+      }
     } catch (error) {
-      console.error("Error get RFID data:", error);
+      console.error("Error getting RFID data:", error);
       return ''; // Return empty string on error.  Important!
     }
   }
@@ -168,6 +173,7 @@ function ReceivingStation() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!session || !session.user) {
       console.error("No user session found.");
       return;
@@ -181,8 +187,8 @@ function ReceivingStation() {
       totalBags: bagWeights.length,
       type,
       bagPayload: bagWeights.map((weight, index) => ({
-          bagNumber: index + 1,
-          weight: parseFloat(weight) || 0,
+        bagNumber: index + 1,
+        weight: parseFloat(weight) || 0,
       })),
       createdBy: session.user.name,
       updatedBy: session.user.name,
@@ -191,144 +197,81 @@ function ReceivingStation() {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        const responseData = await response.json();
-        const batchNumber = responseData.receivingData.batchNumber;  // Get batch number
+        if (response.ok) {
+          const responseData = await response.json();
+          const batchNumber = responseData.receivingData.batchNumber;
 
-        // --- RFID Assignment (Integrated) ---
-        const scannedRFID = await getRfidData();  //Await the RFID Data
+          // --- RFID Assignment ---
+          setLastCreatedBatchNumber(batchNumber); // Store for later
+          setAssigningRFID(true);    // Disable submit button
+          // Get the RFID tag and call sendRFIDToServer
+          const scannedRFID = await getRfidData();
 
-        if (scannedRFID) { // proceed only if rfid is available
+
+        if (scannedRFID) { // Proceed *only* if an RFID was scanned
           try {
             const rfidResponse = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                  batchNumber, // Use newly created batchNumber
-                  rfid: scannedRFID,
+                batchNumber: batchNumber,
+                rfid: scannedRFID,  // Use the value from getRfidData
               }),
             });
 
-            if (rfidResponse.ok) {
-              setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
-              setSnackbarSeverity('success');
-              await clearRfidData(); //clear data from RfidScanned table
-
-            } else {
-              const errorData = await rfidResponse.json();
-              setSnackbarMessage(errorData.error || 'Failed to assign RFID tag.');
+              if (rfidResponse.ok) {
+                setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
+                setSnackbarSeverity('success');
+                await clearRfidData(); //clear rfid data
+              } else {
+                const errorData = await rfidResponse.json();
+                setSnackbarMessage(errorData.error || 'Failed to assign RFID tag.');
+                setSnackbarSeverity('error');
+                }
+            } catch (rfidError) {
+              console.error('Error assigning RFID:', rfidError);
+              setSnackbarMessage('Error assigning RFID tag. Please try again.');
               setSnackbarSeverity('error');
             }
-          } catch (rfidError) {
-            console.error('Error assigning RFID:', rfidError);
-            setSnackbarMessage('Error assigning RFID tag. Please try again.');
-            setSnackbarSeverity('error');
+          } else {
+            setSnackbarMessage(`Batch ${batchNumber} created successfully! No RFID assigned`);
+            setSnackbarSeverity('success')
           }
-        } else{
-          setSnackbarMessage(`Batch ${batchNumber} created successfully! No RFID assigned`); //success message
-          setSnackbarSeverity('success');
-        }
-          // Reset form fields *after* successful RFID assignment (or skipping it)
+          // Reset form fields *after* successful RFID assignment (or skipping)
           setFarmerName('');
           setBagWeights(['']);
           setNotes('');
           setNumberOfBags(1);
           setTotalWeight(0);
           setType('');
-          fetchReceivingData(); // Refresh the data *NOW*
+          setAssigningRFID(false); //Re enable the button
+          setLastCreatedBatchNumber(null); // Clear for next use.
+          fetchReceivingData(); // Refresh data
+          setOpenSnackbar(true);
 
-      } else {
+        } else {
+          // Handle error
           const errorData = await response.json();
           console.error(errorData.message || 'Error creating batch.');
-          setSnackbarMessage(errorData.message || 'Error creating batch.'); // Use the error message from backend
+          setSnackbarMessage(errorData.message || 'Error creating batch.');
           setSnackbarSeverity('error');
-          setOpenSnackbar(true); //show snackbar
-      }
+          setOpenSnackbar(true);
+
+        }
     } catch (error) {
-        console.error('Failed to communicate with the backend:', error);
-        setSnackbarMessage('Failed to communicate with the backend.');
-        setSnackbarSeverity('error');
-        setOpenSnackbar(true);
+      console.error('Failed to communicate with the backend:', error);
+      setSnackbarMessage('Failed to communicate with the backend.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
     }
   };
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
-  };
-
-  const startPolling = () => {
-    if (pollingInterval.current) return; // Prevent multiple intervals
-    setPolling(true);
-    pollingInterval.current = setInterval(async () => {
-      try {
-        const response = await fetch(`https://00ef-146-70-14-21.ngrok-free.app/`);  //  ESP32's IP and /scan endpoint
-        if (response.ok) {
-          const data = await response.text(); //  Get response as text
-          if (data) { // If we get a UID
-            setRfidData(data); // Store the RFID data
-            stopPolling(); // Stop polling
-            await sendRFIDToServer(data); // Send to backend
-          }
-        } else {
-          console.error("Error fetching RFID data:", response.status);
-        }
-      } catch (error) {
-        console.error("Error during RFID polling:", error);
-        //   setPolling(false); // Stop polling on error (optional)
-        //   clearInterval(pollingInterval.current);
-      }
-    }, 1000); // Poll every 1000ms (1 second) - adjust as needed
-  };
-
-  const stopPolling = () => {
-    if (pollingInterval.current) {
-      clearInterval(pollingInterval.current);
-      pollingInterval.current = null;
-    }
-    setPolling(false);
-  };
-
- const sendRFIDToServer = async (rfidUID) => {
-    if (!lastCreatedBatchNumber) {
-      console.error("No batch number to associate with RFID.");
-      return; // Should not happen, but good to check
-    }
-
-    try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          batchNumber: lastCreatedBatchNumber, // Use the stored batch number
-          rfid: rfidUID, // Send the UID from the ESP32
-        }),
-      });
-
-      if (response.ok) {
-        setSnackbarMessage(`RFID tag assigned to batch ${lastCreatedBatchNumber}`);
-        setSnackbarSeverity('success');
-        setAssigningRFID(false);  // Re-enable "Submit" button
-        setLastCreatedBatchNumber(null); // Clear batch number after successful assignment
-        fetchReceivingData(); // Refresh the data *NOW*
-      } else {
-        const errorData = await response.json();
-        setSnackbarMessage(errorData.error || 'Failed to assign RFID tag.');
-        setSnackbarSeverity('error');
-      }
-
-    } catch (error) {
-      console.error('Error assigning RFID:', error);
-      setSnackbarMessage('Error assigning RFID tag. Please try again.');
-      setSnackbarSeverity('error');
-    } finally {
-      setOpenSnackbar(true);
-    }
   };
 
   const columns = [
