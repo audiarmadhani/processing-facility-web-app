@@ -36,7 +36,19 @@ function ReceivingStation() {
   const [totalWeight, setTotalWeight] = useState(0);
   const [receivingData, setReceivingData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // Add severity
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [type, setType] = useState('');
+  //const [rfid, setRfid] = useState(''); //  We don't need this with polling  <-- REMOVE
+
+  // --- NEW State Variables for RFID and Polling ---
+  const [assigningRFID, setAssigningRFID] = useState(false); // Flag: are we assigning RFID?
+  const [lastCreatedBatchNumber, setLastCreatedBatchNumber] = useState(null); // Store newly created batch
+  const [rfidData, setRfidData] = useState(""); // Store the received RFID data <-- ADD THIS
+  const [polling, setPolling] = useState(false);      // Control polling state <-- ADD THIS
+  const pollingInterval = useRef(null);   // Store the interval ID (for cleanup) <-- ADD THIS
+  const esp32IpAddress = "192.168.1.67"; //  REPLACE with your ESP32's IP!
+
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -54,6 +66,15 @@ function ReceivingStation() {
     fetchReceivingData();
     updateTotalWeight();
   }, [bagWeights, session]); // Add session to the dependency array
+
+  // Cleanup effect (runs on unmount) to stop polling
+  useEffect(() => {
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+    };
+  }, []); // Empty dependency array: runs only on mount and unmount
 
   // Fetch farmers data from API
   const fetchFarmerList = async () => {
@@ -124,12 +145,6 @@ function ReceivingStation() {
     const calculatedTotalWeight = bagWeights.reduce((total, weight) => total + parseFloat(weight || 0), 0);
     setTotalWeight(calculatedTotalWeight);
   };
-
-  const handleWriteToCard = () => {
-    console.log('Writing to RFID card:', { farmerName, notes, bagWeights, totalWeight });
-    alert('RFID card written successfully!');
-  };
-
   const handleFarmerChange = (event, newValue) => {
     setSelectedFarmerDetails(newValue); // Store the entire farmer object
     setFarmerName(newValue ? newValue.farmerName : ""); // Update farmerName state
@@ -159,72 +174,47 @@ function ReceivingStation() {
     };
 
     try {
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-        if (response.ok) {
-            const responseData = await response.json();
-            const batchNumber = responseData.receivingData.batchNumber; // Get batchNumber here
+      if (response.ok) {
+        const responseData = await response.json();
+        const batchNumber = responseData.receivingData.batchNumber; // Get batchNumber
 
-            // --- RFID Assignment (Integrated) ---
-            const scannedRFID = prompt("Please scan the RFID card (or enter UID manually for testing):");
-            if (scannedRFID) {
-                try {
-                    const rfidResponse = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            batchNumber: batchNumber,  // Use newly created batchNumber
-                            rfid: scannedRFID,
-                        }),
-                    });
+        // --- Start Polling for RFID ---
+        setLastCreatedBatchNumber(batchNumber); // Crucial: Store the batch number
+        setAssigningRFID(true); // Disable Submit, prepare for RFID
+        startPolling();        // Start polling the ESP32
 
-                    if (rfidResponse.ok) {
-                        setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
-                        setSnackbarSeverity('success');
-                    } else {
-                        const errorData = await rfidResponse.json();
-                         setSnackbarMessage(errorData.error || `Failed to assign RFID tag to batch ${batchNumber}.`);
-                         setSnackbarSeverity('error');
-                    }
-                } catch (rfidError) {
-                    console.error('Error assigning RFID:', rfidError);
-                    setSnackbarMessage(`Error assigning RFID tag to batch ${batchNumber}.`);
-                    setSnackbarSeverity('error');
-                }
-            }
-             else {
-              setSnackbarMessage(`Batch ${batchNumber} created successfully! No RFID assigned`);
-              setSnackbarSeverity('success')
-            }
-             // --- End RFID Assignment ---
 
-            // Reset form fields AFTER successful RFID assignment (or skipping it)
-              setFarmerName('');
-              setBagWeights(['']);
-              setNotes('');
-              setNumberOfBags(1);
-              setTotalWeight(0);
-              setType('');
-              fetchReceivingData(); // Refresh data
-              setOpenSnackbar(true);
-        } else {
-            const errorData = await response.json();
-            console.error(errorData.message || 'Error creating batch.');
-             setSnackbarMessage(errorData.message || 'Error creating batch.'); //show message
-            setSnackbarSeverity('error'); //set the severity
-            setOpenSnackbar(true); //open the snackbar
-        }
-    } catch (error) {
-        console.error('Failed to communicate with the backend:', error);
-         setSnackbarMessage('Failed to communicate with the backend.');
+        setFarmerName('');
+        setBagWeights(['']);
+        setNotes('');
+        setNumberOfBags(1);
+        setTotalWeight(0);
+        setType('');
+        // fetchReceivingData(); //DON'T fetch here.  Wait for RFID.
+        setSnackbarOpen(true);
+        setSnackbarMessage(`Batch ${responseData.receivingData.batchNumber} created.  Scan RFID card.`);
+        setSnackbarSeverity('success');
+
+      } else {
+        const errorData = await response.json();
+        console.error(errorData.message || 'Error creating batch.');
+        setSnackbarMessage(errorData.message || 'Error creating batch.'); // Use the error message from backend
         setSnackbarSeverity('error');
         setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Failed to communicate with the backend:', error);
+       setSnackbarMessage('Failed to communicate with the backend.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
 
     }
       finally{
@@ -235,6 +225,75 @@ function ReceivingStation() {
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
+  };
+
+  const startPolling = () => {
+    if (pollingInterval.current) return; // Prevent multiple intervals
+    setPolling(true);
+    pollingInterval.current = setInterval(async () => {
+      try {
+        const response = await fetch(`http://${esp32IpAddress}/scan`);  //  ESP32's IP and /scan endpoint
+        if (response.ok) {
+          const data = await response.text(); //  Get response as text
+          if (data) { // If we get a UID
+            setRfidData(data); // Store the RFID data
+            stopPolling(); // Stop polling
+            await sendRFIDToServer(data); // Send to backend
+          }
+        } else {
+          console.error("Error fetching RFID data:", response.status);
+        }
+      } catch (error) {
+        console.error("Error during RFID polling:", error);
+        //   setPolling(false); // Stop polling on error (optional)
+        //   clearInterval(pollingInterval.current);
+      }
+    }, 1000); // Poll every 1000ms (1 second) - adjust as needed
+  };
+
+  const stopPolling = () => {
+    if (pollingInterval.current) {
+      clearInterval(pollingInterval.current);
+      pollingInterval.current = null;
+    }
+    setPolling(false);
+  };
+
+ const sendRFIDToServer = async (rfidUID) => {
+    if (!lastCreatedBatchNumber) {
+      console.error("No batch number to associate with RFID.");
+      return; // Should not happen, but good to check
+    }
+
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batchNumber: lastCreatedBatchNumber, // Use the stored batch number
+          rfid: rfidUID, // Send the UID from the ESP32
+        }),
+      });
+
+      if (response.ok) {
+        setSnackbarMessage(`RFID tag assigned to batch ${lastCreatedBatchNumber}`);
+        setSnackbarSeverity('success');
+        setAssigningRFID(false);  // Re-enable "Submit" button
+        setLastCreatedBatchNumber(null); // Clear batch number after successful assignment
+        fetchReceivingData(); // Refresh the data *NOW*
+      } else {
+        const errorData = await response.json();
+        setSnackbarMessage(errorData.error || 'Failed to assign RFID tag.');
+        setSnackbarSeverity('error');
+      }
+
+    } catch (error) {
+      console.error('Error assigning RFID:', error);
+      setSnackbarMessage('Error assigning RFID tag. Please try again.');
+      setSnackbarSeverity('error');
+    } finally {
+      setOpenSnackbar(true);
+    }
   };
 
   const columns = [
@@ -392,15 +451,21 @@ function ReceivingStation() {
                 </Grid>
                 <Grid item xs={12}>
                   <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleWriteToCard}
-                    style={{ marginRight: '16px' }}
+                      variant="contained"
+                      color="primary"
+                      type="submit"
+                      disabled={assigningRFID}  // Disable when assigning RFID
+                      sx={{ mr: 2 }}
                   >
-                    Write to RFID Card
+                      Submit
                   </Button>
-                  <Button variant="contained" color="primary" type="submit">
-                    Submit
+                  <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={handleAssignRFID} // Just call startPolling
+                      disabled={!lastCreatedBatchNumber} // Only enabled after a submit
+                  >
+                      Assign Card
                   </Button>
                 </Grid>
               </Grid>
