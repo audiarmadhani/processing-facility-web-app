@@ -223,6 +223,45 @@ function ReceivingStation() {
       }
   };
 
+  // Add Assign RFID Function
+  const handleAssignRFID = async () => {
+    // Simulate RFID scan (replace with actual RFID reading logic)
+    const scannedRFID = prompt("Please scan the RFID card (or enter UID manually for testing):");
+    if (!scannedRFID) {
+      return; // Exit if no RFID provided
+    }
+
+    setRfid(scannedRFID); // Store the scanned RFID
+
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/assign-rfid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batchNumber: lastCreatedBatchNumber, // Use the stored batch number
+          rfid: scannedRFID,
+        }),
+      });
+
+      if (response.ok) {
+        setSnackbarMessage(`RFID tag assigned to batch ${lastCreatedBatchNumber}`);
+        setSnackbarSeverity('success');
+        setAssigningRFID(false); // Re-enable "Submit" button
+        setLastCreatedBatchNumber(null); // Clear batch number
+      } else {
+        const errorData = await response.json();
+        setSnackbarMessage(errorData.error || 'Failed to assign RFID tag.');
+        setSnackbarSeverity('error');
+      }
+    } catch (error) {
+        console.error('Error assigning RFID:', error);
+        setSnackbarMessage('Error assigning RFID tag. Please try again.');
+        setSnackbarSeverity('error');
+    } finally {
+        setOpenSnackbar(true);
+    }
+  };
+
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
   };
