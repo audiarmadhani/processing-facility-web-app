@@ -188,31 +188,23 @@ function ReceivingStation() {
 
     // 2. Check if RFID is already assigned
     try {
-      const rfidCheckResponse = await fetch(`/api/check-rfid?rfid=${encodeURIComponent(scannedRFID)}`); // Corrected URL
-
-      if (!rfidCheckResponse.ok) { // Correctly handle non-OK responses
-          const errorData = await rfidCheckResponse.json();
-          setSnackbarMessage(errorData.error || `RFID check failed with status: ${rfidCheckResponse.status}`);
-          setSnackbarSeverity('error');
-          setSnackbarOpen(true);
-          return;
+      const rfidCheckResponse = await fetch(`https://processing-facility-backend.onrender.com/api/check-rfid/${scannedRFID}`); // Corrected URL
+      if (!rfidCheckResponse.ok) {
+        throw new Error(`RFID check failed: ${rfidCheckResponse.status}`);
       }
-
-        const rfidCheckData = await rfidCheckResponse.json();
-        if (rfidCheckData.isAssigned) { // Correctly check isAssigned property
-            setSnackbarMessage('RFID tag is already assigned to another batch. Please scan a different tag.');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
-            return; // Stop here if RFID is already assigned
-        }
-
-
-    } catch (error){
-        console.error("Error during RFID check:", error);
-        setSnackbarMessage('Error checking RFID tag. Please try again.');
+      const rfidCheckData = await rfidCheckResponse.json();
+      if (rfidCheckData.isAssigned) {
+        setSnackbarMessage('RFID tag is already assigned to another batch. Please scan a different tag.');
         setSnackbarSeverity('error');
         setSnackbarOpen(true);
-        return; // Stop on error
+        return; // Stop here if RFID is already assigned
+      }
+    } catch (error) {
+      console.error("Error during RFID check:", error);
+      setSnackbarMessage('Error checking RFID tag. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return; // Stop on error
     }
 
     // 3. If RFID is available and not assigned, proceed with batch creation

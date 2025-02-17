@@ -184,13 +184,21 @@ router.get('/get-rfid', async (req, res) => {
       type: sequelize.QueryTypes.SELECT
     });
 
-    // console.log("Result from DB get-rfid:", results); // Log the raw result
+    console.log("Result from DB get-rfid:", results); // Log for debugging
+    console.log("Result from DB get-rfid:", results.rfid); // Log for debugging
 
-    if (results && results.length > 0) {
-      res.status(200).json({ rfid: results[0].rfid });
-    } else {
-      res.status(200).json({ rfid: '' }); // Return empty string if no RFID
+    // Robust check for RFID data:
+    if (Array.isArray(results) && results.length > 0) {
+        // Handle the case where results is an array (as expected)
+        res.status(200).json({ rfid: results[0].rfid });
+    } else if (results && results.rfid) {
+        // Handle the case where results is a single object
+        res.status(200).json({ rfid: results.rfid });
     }
+    else {
+        res.status(200).json({ rfid: '' }); // Return empty string if no RFID
+    }
+
   } catch (error) {
     console.error('Error fetching RFID tag:', error);
     res.status(500).json({ error: 'Failed to fetch RFID tag', details: error.message });
@@ -242,11 +250,13 @@ router.post('/scan-rfid', async (req, res) => {
 
 // --- NEW ROUTE: Check if RFID is already assigned ---
 router.get('/check-rfid/:rfid', async (req, res) => {
-  const { rfid } = req.query; // Get RFID from query parameter
+  const { rfid } = req.params; // Get RFID from route parameter
 
   if (!rfid) {
     return res.status(400).json({ error: 'RFID tag is required.' });
   }
+
+    const trimmedRfid = rfid.trim().toUpperCase(); //  <-- ALWAYS trim and uppercase
 
   try {
     // Use a raw SQL query to check if the RFID exists in ReceivingData
@@ -255,12 +265,13 @@ router.get('/check-rfid/:rfid', async (req, res) => {
         FROM "ReceivingData"
         WHERE "rfid" = :rfid;
     `, {
-      replacements: { rfid: rfid },
+      replacements: { rfid: trimmedRfid }, //  <-- Use the trimmed and upper-cased RFID
       type: sequelize.QueryTypes.SELECT
     });
 
-    // If any rows are returned, the RFID is already assigned
-    const isAssigned = results.length > 0;
+        // Correctly check if results is an array and has length, OR if it's an object
+        const isAssigned = Array.isArray(results) ? results.length > 0 : results !== undefined && results !== null;
+
 
     res.status(200).json({ isAssigned }); // Return { isAssigned: true/false }
 
