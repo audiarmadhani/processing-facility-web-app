@@ -189,9 +189,9 @@ function ReceivingStation() {
     // 2. Check if RFID is already assigned
     try {
 			const rfidCheckResponse = await fetch(`https://processing-facility-backend.onrender.com/api/check-rfid/${scannedRFID}`);
-			if (!rfidCheckResponse.ok) {
-				throw new Error(`RFID check failed: ${rfidCheckResponse.status}`);
-			}
+			// if (!rfidCheckResponse.ok) {
+			// 	throw new Error(`RFID check failed: ${rfidCheckResponse.status}`);
+			// }
 			const rfidCheckData = await rfidCheckResponse.json();
 
 			if (rfidCheckData.length > 0) {  // ✅ Fix: Properly check if RFID is assigned
