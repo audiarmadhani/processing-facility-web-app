@@ -173,96 +173,105 @@ function ReceivingStation() {
     e.preventDefault();
 
     if (!session || !session.user) {
-			console.error("No user session found.");
-			return;
+        console.error("No user session found.");
+        return;
     }
 
-    // 1. Check for RFID before creating the batch
+    // 1. Check for RFID *before* creating the batch
     const scannedRFID = await getRfidData();
     if (!scannedRFID) {
-			setSnackbarMessage('Please scan an RFID tag before submitting.');
-			setSnackbarSeverity('error');
-			setSnackbarOpen(true);
-			return;
+        setSnackbarMessage('Please scan an RFID tag before submitting.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return; // Stop here if no RFID
     }
 
     // 2. Check if RFID is already assigned
     try {
-			const rfidCheckResponse = await fetch(`https://processing-facility-backend.onrender.com/api/check-rfid/${scannedRFID}`);
-			// if (!rfidCheckResponse.ok) {
-			// 	throw new Error(`RFID check failed: ${rfidCheckResponse.status}`);
-			// }
-			const rfidCheckData = await rfidCheckResponse.json();
+      const rfidCheckResponse = await fetch(`/api/check-rfid?rfid=${encodeURIComponent(scannedRFID)}`); // Corrected URL
 
-			if (rfidCheckData.length > 0) {  // ✅ Fix: Properly check if RFID is assigned
-				setSnackbarMessage('RFID tag is already assigned to another batch. Please scan a different tag.');
-				setSnackbarSeverity('error');
-				setSnackbarOpen(true);
-				return;
-			}
-    } catch (error) {
-			console.error("Error during RFID check:", error);
-			setSnackbarMessage('Error checking RFID tag. Please try again.');
-			setSnackbarSeverity('error');
-			setSnackbarOpen(true);
-			return;
+      if (!rfidCheckResponse.ok) { // Correctly handle non-OK responses
+          const errorData = await rfidCheckResponse.json();
+          setSnackbarMessage(errorData.error || `RFID check failed with status: ${rfidCheckResponse.status}`);
+          setSnackbarSeverity('error');
+          setOpenSnackbar(true);
+          return;
+      }
+
+        const rfidCheckData = await rfidCheckResponse.json();
+        if (rfidCheckData.isAssigned) { // Correctly check isAssigned property
+            setSnackbarMessage('RFID tag is already assigned to another batch. Please scan a different tag.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+            return; // Stop here if RFID is already assigned
+        }
+
+
+    } catch (error){
+        console.error("Error during RFID check:", error);
+        setSnackbarMessage('Error checking RFID tag. Please try again.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return; // Stop on error
     }
 
-    // 3. Prepare payload
+    // 3. If RFID is available and not assigned, proceed with batch creation
     const payload = {
-			farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null,
-			farmerName,
-			notes,
-			weight: totalWeight,
-			totalBags: bagWeights.length,
-			type,
-			bagPayload: bagWeights.map((weight, index) => ({
-					bagNumber: index + 1,
-					weight: parseFloat(weight) || 0,
-			})),
-			createdBy: session.user.name,
-			updatedBy: session.user.name,
-			rfid: scannedRFID, // ✅ Ensure RFID is included
+        farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null,
+        farmerName,
+        notes,
+        weight: totalWeight,
+        totalBags: bagWeights.length,
+        type,
+        bagPayload: bagWeights.map((weight, index) => ({
+            bagNumber: index + 1,
+            weight: parseFloat(weight) || 0,
+        })),
+        createdBy: session.user.name,
+        updatedBy: session.user.name,
+        rfid: scannedRFID, // Include the RFID in the initial payload
     };
 
-    // 4. Submit form
     try {
-			const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload),
-			});
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
 
-			if (response.ok) {
-				const responseData = await response.json();
-				const batchNumber = responseData.receivingData.batchNumber;
+        if (response.ok) {
+            const responseData = await response.json();
+            const batchNumber = responseData.receivingData.batchNumber; // Get batchNumber
+            //Success creating batch and assigning rfid
+            setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
+            setSnackbarSeverity('success');
+            setOpenSnackbar(true);
+            await clearRfidData();
 
-				setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
-				setSnackbarSeverity('success');
-				setSnackbarOpen(true);
+            // Reset form fields *after* successful RFID assignment
+            setFarmerName('');
+            setBagWeights(['']);
+            setNotes('');
+            setNumberOfBags(1);
+            setTotalWeight(0);
+            setType('');
+            fetchReceivingData(); // Refresh the data
 
-				await clearRfidData(); // ✅ Only clear when successful
-				await fetchReceivingData(); // ✅ Ensure data refresh happens
 
-				// Reset form fields after success
-				setFarmerName('');
-				setBagWeights(['']);
-				setNotes('');
-				setNumberOfBags(1);
-				setTotalWeight(0);
-				setType('');
-			} else {
-				const errorData = await response.json();
-				console.error(errorData.message || 'Error creating batch.');
-				setSnackbarMessage(errorData.message || 'Error creating batch.');
-				setSnackbarSeverity('error');
-				setSnackbarOpen(true);
-			}
+        } else {
+            const errorData = await response.json();
+            console.error(errorData.message || 'Error creating batch.');
+            setSnackbarMessage(errorData.message || 'Error creating batch.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+        }
     } catch (error) {
-			console.error('Failed to communicate with the backend:', error);
-			setSnackbarMessage('Failed to communicate with the backend.');
-			setSnackbarSeverity('error');
-			setSnackbarOpen(true);
+        console.error('Failed to communicate with the backend:', error);
+        setSnackbarMessage('Failed to communicate with the backend.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
     }
 	};
 
