@@ -104,15 +104,16 @@ function ReceivingStation() {
       const data = await response.json();
       console.log("Fetched data:", data);
 
-      if (data) {
-        // Filter rows based on user role
+      if (data && Array.isArray(data.allRows) && Array.isArray(data.todayData)) {
         let filteredData = [];
-        if (session.user.role === "admin", "manager") {
-          filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
-        } else if (session.user.role === "staff", "receiving", "") { //included "receiving"
-          filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
+        if (["admin", "manager"].includes(session.user.role)) {
+            // Use map directly on the array
+            filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
+        } else if (["staff", "receiving"].includes(session.user.role)) {
+             // Use map directly on the array
+            filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
         }
-        setReceivingData(filteredData);
+        setReceivingData(filteredData); // Set the filtered data
         console.log("user role:", session.user.role);
         console.log("user name:", session.user.name);
         console.log("Filtered Data:", filteredData);
