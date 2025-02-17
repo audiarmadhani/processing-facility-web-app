@@ -272,7 +272,7 @@ function ReceivingStation() {
     setPolling(true);
     pollingInterval.current = setInterval(async () => {
       try {
-        const response = await fetch(`http://${esp32IpAddress}/scan`);  //  ESP32's IP and /scan endpoint
+        const response = await fetch(`https://00ef-146-70-14-21.ngrok-free.app/`);  //  ESP32's IP and /scan endpoint
         if (response.ok) {
           const data = await response.text(); //  Get response as text
           if (data) { // If we get a UID
