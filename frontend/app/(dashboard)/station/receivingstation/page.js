@@ -182,7 +182,7 @@ function ReceivingStation() {
     if (!scannedRFID) {
         setSnackbarMessage('Please scan an RFID tag before submitting.');
         setSnackbarSeverity('error');
-        setOpenSnackbar(true);
+        setSnackbarOpen(true);
         return; // Stop here if no RFID
     }
 
@@ -194,7 +194,7 @@ function ReceivingStation() {
           const errorData = await rfidCheckResponse.json();
           setSnackbarMessage(errorData.error || `RFID check failed with status: ${rfidCheckResponse.status}`);
           setSnackbarSeverity('error');
-          setOpenSnackbar(true);
+          setSnackbarOpen(true);
           return;
       }
 
@@ -202,7 +202,7 @@ function ReceivingStation() {
         if (rfidCheckData.isAssigned) { // Correctly check isAssigned property
             setSnackbarMessage('RFID tag is already assigned to another batch. Please scan a different tag.');
             setSnackbarSeverity('error');
-            setOpenSnackbar(true);
+            setSnackbarOpen(true);
             return; // Stop here if RFID is already assigned
         }
 
@@ -211,7 +211,7 @@ function ReceivingStation() {
         console.error("Error during RFID check:", error);
         setSnackbarMessage('Error checking RFID tag. Please try again.');
         setSnackbarSeverity('error');
-        setOpenSnackbar(true);
+        setSnackbarOpen(true);
         return; // Stop on error
     }
 
@@ -247,7 +247,7 @@ function ReceivingStation() {
             //Success creating batch and assigning rfid
             setSnackbarMessage(`Batch ${batchNumber} created and RFID tag assigned!`);
             setSnackbarSeverity('success');
-            setOpenSnackbar(true);
+            setSnackbarOpen(true);
             await clearRfidData();
 
             // Reset form fields *after* successful RFID assignment
@@ -265,13 +265,13 @@ function ReceivingStation() {
             console.error(errorData.message || 'Error creating batch.');
             setSnackbarMessage(errorData.message || 'Error creating batch.');
             setSnackbarSeverity('error');
-            setOpenSnackbar(true);
+            setSnackbarOpen(true);
         }
     } catch (error) {
         console.error('Failed to communicate with the backend:', error);
         setSnackbarMessage('Failed to communicate with the backend.');
         setSnackbarSeverity('error');
-        setOpenSnackbar(true);
+        setSnackbarOpen(true);
     }
 	};
 
