@@ -245,6 +245,7 @@ function ReceivingStation() {
 
             // Reset form fields *after* successful RFID assignment
             setFarmerName('');
+						setSelectedFarmerDetails(null)
             setBagWeights(['']);
             setNotes('');
             setNumberOfBags(1);
@@ -486,11 +487,11 @@ function ReceivingStation() {
       )}
 
       {/* Snackbar for notifications */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
-          Batch successfully created!
-        </Alert>
-      </Snackbar>
+			<Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+					<Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+							{snackbarMessage}
+					</Alert>
+			</Snackbar>
     </Grid>
   );
 }
