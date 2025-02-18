@@ -46,12 +46,12 @@ const NAVIGATION: Navigation = [
     title: "Station",
     icon: <CottageIcon />,
     children: [
-      { segment: "receivingstation", title: "Receiving", icon: <WarehouseIcon /> },
-      { segment: "transportstation", title: "Transport", icon: <LocalShippingIcon /> },
-      { segment: "qcstation", title: "Cherry Quality Control", icon: <NoteAltIcon /> },
-      { segment: "preprocessingstation", title: "Pre-Processing", icon: <FactoryIcon /> },
-      { segment: "postprocessingstation", title: "Post-Processing", icon: <LocalShippingOutlinedIcon /> },
-      { segment: "postprocessingqcstation", title: "GB Quality Control", icon: <NoteAltIcon /> },
+      { segment: "receivingstation", title: "Receiving Station", icon: <WarehouseIcon /> },
+      { segment: "transportstation", title: "Cherry Inbound Transport", icon: <LocalShippingIcon /> },
+      { segment: "qcstation", title: "Cherry QC Station", icon: <NoteAltIcon /> },
+      { segment: "preprocessingstation", title: "Pre-Processing Station", icon: <FactoryIcon /> },
+      { segment: "postprocessingstation", title: "Post-Processing Station", icon: <LocalShippingOutlinedIcon /> },
+      { segment: "postprocessingqcstation", title: "GB QC Station", icon: <NoteAltIcon /> },
     ],
   },
 

@@ -139,7 +139,7 @@ function ReceivingStation() {
 
   const getRfidData = async () => {
 		try {
-			const response = await fetch('https://processing-facility-backend.onrender.com/api/get-rfid'); // Call the new API route
+			const response = await fetch('https://processing-facility-backend.onrender.com/api/get-rfid/receiving'); // Call the new API route
 			if (!response.ok) {
 				throw new Error(`Failed to fetch RFID data: ${response.status}`);
 			}
@@ -159,7 +159,7 @@ function ReceivingStation() {
 
 	const clearRfidData = async() => {
 		try{
-			const response = await fetch('https://processing-facility-backend.onrender.com/api/clear-rfid', {method: 'DELETE'});
+			const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/receiving}`, {method: 'DELETE'});
 			if(!response.ok){
 				throw new Error(`Failed to clear RFID Data: ${response.status}`)
 			}

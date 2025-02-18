@@ -34,7 +34,6 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const QCStation = () => {
   const { data: session, status } = useSession();
-  const [rfidTag, setRfidTag] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
   const [farmerName, setFarmerName] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
@@ -51,11 +50,11 @@ const QCStation = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-  const [rfidVisible, setRfidVisible] = useState(false);
-
   const [open, setOpen] = useState(false);
   const webcamRef = useRef(null);
   const [imageSrc, setImageSrc] = useState(null);
+  const [rfid, setRfid] = useState(''); //store scanned rfid
+
 
   // New state variables for Roboflow results
   const [roboflowResults, setRoboflowResults] = useState({
@@ -74,6 +73,86 @@ const QCStation = () => {
         width: 250,
       },
     },
+  };
+
+  useEffect(() => {
+    fetchQCData();
+  }, [qcData]);
+
+  const fetchQCData = async () => {
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
+      if (!response.ok) throw new Error('Failed to fetch QC data');
+      const data = await response.json();
+      setQcData(data.allRows || []); // Ensure allRows exists.
+    } catch (error) {
+      console.error('Error fetching QC data:', error);
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+      setSnackbarOpen(false);
+  };
+
+  const handleRfidScan = async () => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/qc`); //  GET request with scanned_at=qc
+      if (!response.ok) {
+          throw new Error(`Failed to fetch RFID: ${response.status}`);
+      }
+      const data = await response.json();
+
+      if (data.rfid) {
+          setRfid(data.rfid) // Set the RFID state
+          // Now, fetch receiving data by RFID.
+          const receivingResponse = await fetch(`https://processing-facility-backend.onrender.com/api/receivingrfid/${data.rfid}`);
+          if (!receivingResponse.ok) {
+              throw new Error(`Failed to fetch receiving data: ${receivingResponse.status}`);
+          }
+          const receivingData = await receivingResponse.json();
+
+          if (receivingData && receivingData.length > 0) {
+              const batchData = receivingData[0];
+              // Populate form fields
+              setBatchNumber(batchData.batchNumber);
+              setFarmerName(batchData.farmerName);
+              setReceivingDate(batchData.receivingDateTrunc || ''); // Use truncated date
+              setWeight(batchData.weight || '');
+              setTotalBags(batchData.totalBags || '');
+
+              setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
+              setSnackbarSeverity('success');
+
+              //Clear the scanned rfid after fetching the data
+              await clearRfidData("qc");
+
+            } else {
+              setSnackbarMessage('No receiving data found for this RFID.');
+              setSnackbarSeverity('warning');
+            }
+      }
+      else{
+        setSnackbarMessage('No RFID tag scanned yet.');
+        setSnackbarSeverity('warning');
+      }
+    } catch (error) {
+        console.error('Error fetching batch number or receiving data:', error);
+        setSnackbarMessage('Error retrieving data. Please try again.');
+        setSnackbarSeverity('error');
+    } finally {
+        setOpenSnackbar(true); // Always show the snackbar
+    }
+  };
+
+  const clearRfidData = async () => {
+      try {
+          const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/qc`, { method: 'DELETE' }); // Pass scannedAt
+          if (!response.ok) {
+              throw new Error(`Failed to clear RFID Data: ${response.status}`);
+          }
+      } catch (error) {
+          console.error("Error clearing RFID Data:", error);
+      }
   };
 
   const analyzeWithRoboflow = async (file) => {
@@ -279,19 +358,19 @@ const QCStation = () => {
     }
   };
 
-  // Effect to fetch QC data on component mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
-        if (!response.ok) throw new Error('Failed to fetch QC data');
-        const data = await response.json();
-        setQcData(data.allRows || []);
-      } catch (error) {
-        console.error('Error fetching QC data:', error);
-      }
-    })();
-  }, []);
+  // // Effect to fetch QC data on component mount
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
+  //       if (!response.ok) throw new Error('Failed to fetch QC data');
+  //       const data = await response.json();
+  //       setQcData(data.allRows || []);
+  //     } catch (error) {
+  //       console.error('Error fetching QC data:', error);
+  //     }
+  //   })();
+  // }, []);
 
   // Effect to fetch Receiving data on component mount
   useEffect(() => {
@@ -341,27 +420,6 @@ const QCStation = () => {
     const diffTime = Math.abs(endDate - received);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convert milliseconds to days
     return diffDays;
-  };
-
-  // Handle RFID scan
-  const handleRfidScan = async (e) => {
-    const scannedTag = e.target.value;
-    setRfidTag(scannedTag);
-
-    try {
-      const response = await fetch(`/api/getBatchByRfid/${scannedTag}`);
-      if (!response.ok) throw new Error('Failed to fetch batch number');
-      const data = await response.json();
-      setBatchNumber(data.batchNumber);
-      setSnackbarMessage(`Batch number ${data.batchNumber} retrieved successfully!`);
-      setSnackbarSeverity('success');
-    } catch (error) {
-      console.error('Error fetching batch number:', error);
-      setSnackbarMessage('Error retrieving batch number. Please try again.');
-      setSnackbarSeverity('error');
-    } finally {
-      setOpenSnackbar(true);
-    }
   };
 
   // Handle batch number search
@@ -734,6 +792,7 @@ const QCStation = () => {
     { field: 'weight', headerName: 'Weight (kg)', width: 150 },
     { field: 'totalBags', headerName: 'Total Bags', width: 150 },
     { field: 'slaDays', headerName: 'SLA (Days)', width: 150 },
+
   ];
 
   // Show loading screen while session is loading
@@ -759,32 +818,20 @@ const QCStation = () => {
               QC Station Form
             </Typography>
             <form onSubmit={handleSubmit}>
+
               <Grid container spacing={2}>
+
                 <Grid item>
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => setRfidVisible(true)}
+                    onClick={handleRfidScan}
                     style={{ marginTop: '24px' }}
                   >
-                    Scan RFID Tag
+                    Get RFID Tag
                   </Button>
                 </Grid>
-                <Grid item>
-                  {rfidVisible && (
-                    <TextField
-                      id="rfid-input"
-                      type="text"
-                      value={rfidTag}
-                      onChange={handleRfidScan}
-                      placeholder="Scan RFID tag here"
-                      fullWidth
-                      required
-                      autoFocus={false}
-                      margin="normal"
-                    />
-                  )}
-                </Grid>
+                
                 <Grid item xs>
                   <TextField
                     label="Batch Number Lookup"
@@ -796,6 +843,7 @@ const QCStation = () => {
                     margin="normal"
                   />
                 </Grid>
+
                 <Grid item>
                   <Button
                     variant="contained"
@@ -806,6 +854,7 @@ const QCStation = () => {
                     Search
                   </Button>
                 </Grid>
+
               </Grid>
               {farmerName && (
                 <div>
