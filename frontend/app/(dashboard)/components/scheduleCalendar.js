@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useSession } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -8,6 +8,7 @@ import dayjs from 'dayjs'; // Import dayjs
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'; // Correct import
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { useSession } from "next-auth/react";
 
 import {
   Snackbar,
