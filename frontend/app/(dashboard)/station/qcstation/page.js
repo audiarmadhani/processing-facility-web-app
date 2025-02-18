@@ -54,6 +54,7 @@ const QCStation = () => {
   const webcamRef = useRef(null);
   const [imageSrc, setImageSrc] = useState(null);
   const [rfid, setRfid] = useState(''); //store scanned rfid
+  const [rfidTag, setRfidTag] = useState(''); //store scanned rfid
 
 
   // New state variables for Roboflow results
@@ -492,6 +493,7 @@ const QCStation = () => {
 
       // Reset form fields
       setRfidTag('');
+      setRfid('');
       setBatchNumber('');
       setFarmerName('');
       setReceivingDate('');
