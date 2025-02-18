@@ -464,7 +464,6 @@ const QCStation = () => {
 
     const qcDataPayload = {
       batchNumber: batchNumber.trim(), // Trim whitespace from batchNumber
-      rfidTag: rfidTag.trim(), // Trim whitespace from rfidTag
       ripeness: ripenessCSV, // Trim whitespace from ripeness
       color: colorCSV, // Trim whitespace from color
       foreignMatter: foreignMatter.trim(), // Trim whitespace from foreignMatter
