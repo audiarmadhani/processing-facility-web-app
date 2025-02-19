@@ -48,31 +48,10 @@ const PreprocessingStation = () => {
   const [preprocessingData, setPreprocessingData] = useState([]);
   const [unprocessedBatches, setUnprocessedBatches] = useState([]);
 
-  const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
-    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
-    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
-    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
-    { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
-    { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
-    { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
-  ];
-
-  const unprocessedColumns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
-    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
-    { field: 'type', headerName: 'Type', width: 150, sortable: true },
-    { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
-    { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
-    { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
-    { field: 'color', headerName: 'Color', width: 150, sortable: true },
-    { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
-    { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
-    { field: 'totalWeight', headerName: 'Total Weight', width: 150, sortable: true },
-    { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
-  ];
+  const [producer, setProducer] = useState('');
+  const [productLine, setProductLine] = useState('');
+  const [processingType, setProcessingType] = useState('');
+  const [quality, setQuality] = useState('');
 
 
   const fetchAvailableBags = async (batchNumber, totalBags) => {
@@ -207,6 +186,11 @@ const PreprocessingStation = () => {
     const preprocessingData = {
         bagsProcessed: trimmedBagsProcessed, 
         batchNumber: trimmedBatchNumber,
+        producer: producer,
+        productLine: productLine,
+        processingType: processingType,
+        quality: quality,
+        createdBy: session.user.name,
     };
 
     try {
@@ -310,6 +294,82 @@ const PreprocessingStation = () => {
   useEffect(() => {
     fetchPreprocessingData(); // Fetch preprocessing data only once on mount
   }, []);
+
+
+  // Define the dependent options.  This is the *core* of the solution.
+  const producerOptions = {
+    "": [" "], //Add blank value, if select is blank
+    HQ: ["Regional Lot", "Micro Lot", "Competition Lot"],
+    BTM: ["Commercial Lot"],
+  };
+
+  const productLineOptions = {
+      "": [" "],
+      "Regional Lot": ["Pulped Natural", "Washed"],
+      "Micro Lot": ["Natural", "Washed", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Honey", "CM Natural", "CM Washed"],
+      "Competition Lot": ["CM Natural", "CM Washed"],
+      "Commercial Lot": ["Washed", "Natural"],
+  };
+
+  const processingTypeOptions = {
+      "": [" "],
+      "Pulped Natural": ["Specialty"],
+      "Washed": ["Specialty", "G1", "G2", "G3", "G4"],
+      "Natural": ["Specialty", "G1", "G2", "G3", "G4"],
+      "Anaerobic Natural": ["Specialty"],
+      "Anaerobic Washed": ["Specialty"],
+      "Anaerobic Honey": ["Specialty"],
+      "CM Natural": ["Specialty"],
+      "CM Washed": ["Specialty"],
+  }
+
+  useEffect(() => {
+    if (producer && !producerOptions[producer].includes(productLine)) {
+        setProductLine(''); // Reset productLine if producer changes
+    }
+  }, [producer, productLine, producerOptions]);
+
+  useEffect(() => {
+    if (productLine && !productLineOptions[productLine].includes(processingType)) {
+        setProcessingType(''); // Reset processingType if productLine changes
+    }
+  }, [productLine, processingType, productLineOptions]);
+
+  useEffect(() => {
+    if (processingType && !processingTypeOptions[processingType].includes(quality)) {
+        setQuality(''); // Reset quality if processingType changes
+    }
+  }, [processingType, quality, processingTypeOptions]);
+
+  const columns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
+    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
+    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
+    { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
+    { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
+    { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
+    { field: 'producer', headerName: 'Producer', width: 130, sortable: true },
+    { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 130, sortable: true },
+    { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
+  ];
+
+  const unprocessedColumns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
+    { field: 'type', headerName: 'Type', width: 150, sortable: true },
+    { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
+    { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
+    { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
+    { field: 'color', headerName: 'Color', width: 150, sortable: true },
+    { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
+    { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
+    { field: 'totalWeight', headerName: 'Total Weight', width: 150, sortable: true },
+    { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
+  ];
 
   // Show loading screen while session is loading
   if (status === 'loading') {
@@ -457,6 +517,96 @@ const PreprocessingStation = () => {
                     margin="normal"
                   />
                 </Grid>
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                    <InputLabel id="pd-label">Producer</InputLabel>
+                    <Select
+                        labelId="pd-label"
+                        id="pd"
+                        value={producer}
+                        onChange={(e) => {
+                          setProducer(e.target.value);
+                          // setProductLine(''); // No longer need to reset here.  useEffect handles.
+                          // setProcessingType('');
+                          // setQuality('');
+                        }}
+                        input={<OutlinedInput label="Producer" />}
+                        MenuProps={MenuProps}
+                    >
+                        <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
+                        <MenuItem value="HQ">HEQA</MenuItem>
+                        <MenuItem value="BTM">BTM</MenuItem>
+                    </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                    <InputLabel id="pl-label">Product Line</InputLabel>
+                    <Select
+                        labelId="pl-label"
+                        id="pl"
+                        value={productLine}
+                        onChange={(e) => {
+                          setProductLine(e.target.value);
+                          // setProcessingType(''); // No longer need to reset here. useEffect handles.
+                          // setQuality('');
+                        }}
+                        input={<OutlinedInput label="Product Line" />}
+                        MenuProps={MenuProps}
+                        disabled={!producer}  // Disable if no producer selected
+                    >
+                         <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
+                        {producerOptions[producer] ? producerOptions[producer].map((option) => (
+                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                        )) : []}
+                    </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                    <InputLabel id="pt-label">Processing Type</InputLabel>
+                    <Select
+                        labelId="pt-label"
+                        id="pt"
+                        value={processingType}
+                        onChange={(e) => {
+                          setProcessingType(e.target.value);
+                          // setQuality(''); // No longer need to reset here. useEffect handles it
+                        }}
+                        input={<OutlinedInput label="Processing Type" />}
+                        MenuProps={MenuProps}
+                        disabled={!productLine}  // Disable if no product line selected
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
+                        {productLineOptions[productLine] ? productLineOptions[productLine].map((option) => (
+                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                        )) : []}
+                    </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                    <InputLabel id="ql-label">Quality</InputLabel>
+                    <Select
+                        labelId="ql-label"
+                        id="ql"
+                        value={quality}
+                        onChange={(e) => setQuality(e.target.value)}
+                        input={<OutlinedInput label="Quality" />}
+                        MenuProps={MenuProps}
+                        disabled={!processingType} // Disable if no processing type selected
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
+                        {processingTypeOptions[processingType] ? processingTypeOptions[processingType].map((option) => (
+                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                        )) : []}
+                    </Select>
+                </FormControl>
               </Grid>
   
               {/* Bag Processing Section */}
