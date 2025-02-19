@@ -534,7 +534,7 @@ const PreprocessingStation = () => {
                 </Grid>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} style={{ marginTop: '12px' }}>
                 <FormControl fullWidth required>
                     <InputLabel id="pd-label">Producer</InputLabel>
                     <Select
@@ -557,7 +557,7 @@ const PreprocessingStation = () => {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} style={{ marginTop: '12px' }}>
                 <FormControl fullWidth required>
                     <InputLabel id="pl-label">Product Line</InputLabel>
                     <Select
@@ -581,7 +581,7 @@ const PreprocessingStation = () => {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} style={{ marginTop: '12px' }}>
                 <FormControl fullWidth required>
                     <InputLabel id="pt-label">Processing Type</InputLabel>
                     <Select
@@ -604,7 +604,7 @@ const PreprocessingStation = () => {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid item xs={12} style={{ marginTop: '12px' }}>
                 <FormControl fullWidth required>
                     <InputLabel id="ql-label">Quality</InputLabel>
                     <Select
