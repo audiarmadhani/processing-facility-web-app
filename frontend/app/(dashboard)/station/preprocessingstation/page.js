@@ -369,18 +369,18 @@ const PreprocessingStation = () => {
   }, [processingType, quality, processingTypeOptions]);
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
     // { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
     // { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
-    { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
+    { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
     { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
     { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
-    { field: 'type', headerName: 'Type', width: 150, sortable: true },
-    { field: 'producer', headerName: 'Producer', width: 130, sortable: true },
+    { field: 'type', headerName: 'Type', width: 100, sortable: true },
+    { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
     { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
-    { field: 'processingType', headerName: 'Processing Type', width: 130, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
   ];
 
