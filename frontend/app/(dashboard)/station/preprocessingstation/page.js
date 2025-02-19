@@ -534,6 +534,31 @@ const PreprocessingStation = () => {
                 </Grid>
               </Grid>
 
+              {/* Bag Processing Section */}
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={6}>
+                  <TextField
+                    type="number"
+                    label="Bags to Process"
+                    value={bagsProcessed}
+                    onChange={(e) => setBagsProcessed(Number(e.target.value))}
+                    fullWidth
+                    margin="normal"
+                  />
+                </Grid>
+                <Grid item>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleAllBags}
+                  >
+                    Process All Bags
+                  </Button>
+                </Grid>
+              </Grid>
+
+              <Divider style={{ margin: '16px 0' }} /> {/* Add a Divider here */}
+
               <Grid item xs={12} style={{ marginTop: '12px' }}>
                 <FormControl fullWidth required>
                     <InputLabel id="pd-label">Producer</InputLabel>
@@ -557,103 +582,85 @@ const PreprocessingStation = () => {
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} style={{ marginTop: '12px' }}>
-                <FormControl fullWidth required>
-                    <InputLabel id="pl-label">Product Line</InputLabel>
-                    <Select
-                        labelId="pl-label"
-                        id="pl"
-                        value={productLine}
-                        onChange={(e) => {
-                          setProductLine(e.target.value);
-                          // setProcessingType(''); // No longer need to reset here. useEffect handles.
-                          // setQuality('');
-                        }}
-                        input={<OutlinedInput label="Product Line" />}
-                        MenuProps={MenuProps}
-                        disabled={!producer}  // Disable if no producer selected
-                    >
-                         <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
-                        {producerOptions[producer] ? producerOptions[producer].map((option) => (
-                            <MenuItem key={option} value={option}>{option}</MenuItem>
-                        )) : []}
-                    </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} style={{ marginTop: '12px' }}>
-                <FormControl fullWidth required>
-                    <InputLabel id="pt-label">Processing Type</InputLabel>
-                    <Select
-                        labelId="pt-label"
-                        id="pt"
-                        value={processingType}
-                        onChange={(e) => {
-                          setProcessingType(e.target.value);
-                          // setQuality(''); // No longer need to reset here. useEffect handles it
-                        }}
-                        input={<OutlinedInput label="Processing Type" />}
-                        MenuProps={MenuProps}
-                        disabled={!productLine}  // Disable if no product line selected
-                    >
-                      <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
-                        {productLineOptions[productLine] ? productLineOptions[productLine].map((option) => (
-                            <MenuItem key={option} value={option}>{option}</MenuItem>
-                        )) : []}
-                    </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} style={{ marginTop: '12px' }}>
-                <FormControl fullWidth required>
-                    <InputLabel id="ql-label">Quality</InputLabel>
-                    <Select
-                        labelId="ql-label"
-                        id="ql"
-                        value={quality}
-                        onChange={(e) => setQuality(e.target.value)}
-                        input={<OutlinedInput label="Quality" />}
-                        MenuProps={MenuProps}
-                        disabled={!processingType} // Disable if no processing type selected
-                    >
-                      <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
-                        {processingTypeOptions[processingType] ? processingTypeOptions[processingType].map((option) => (
-                            <MenuItem key={option} value={option}>{option}</MenuItem>
-                        )) : []}
-                    </Select>
-                </FormControl>
-              </Grid>
-  
-              {/* Bag Processing Section */}
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={6}>
-                  <TextField
-                    type="number"
-                    label="Bags to Process"
-                    value={bagsProcessed}
-                    onChange={(e) => setBagsProcessed(Number(e.target.value))}
-                    fullWidth
-                    margin="normal"
-                  />
+                <Grid item xs={12} style={{ marginTop: '12px' }}>
+                  <FormControl fullWidth required>
+                      <InputLabel id="pl-label">Product Line</InputLabel>
+                      <Select
+                          labelId="pl-label"
+                          id="pl"
+                          value={productLine}
+                          onChange={(e) => {
+                            setProductLine(e.target.value);
+                            // setProcessingType(''); // No longer need to reset here. useEffect handles.
+                            // setQuality('');
+                          }}
+                          input={<OutlinedInput label="Product Line" />}
+                          MenuProps={MenuProps}
+                          disabled={!producer}  // Disable if no producer selected
+                      >
+                          <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
+                          {producerOptions[producer] ? producerOptions[producer].map((option) => (
+                              <MenuItem key={option} value={option}>{option}</MenuItem>
+                          )) : []}
+                      </Select>
+                  </FormControl>
                 </Grid>
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleAllBags}
-                  >
-                    Process All Bags
-                  </Button>
+
+                <Grid item xs={12} style={{ marginTop: '12px' }}>
+                  <FormControl fullWidth required>
+                      <InputLabel id="pt-label">Processing Type</InputLabel>
+                      <Select
+                          labelId="pt-label"
+                          id="pt"
+                          value={processingType}
+                          onChange={(e) => {
+                            setProcessingType(e.target.value);
+                            // setQuality(''); // No longer need to reset here. useEffect handles it
+                          }}
+                          input={<OutlinedInput label="Processing Type" />}
+                          MenuProps={MenuProps}
+                          disabled={!productLine}  // Disable if no product line selected
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
+                          {productLineOptions[productLine] ? productLineOptions[productLine].map((option) => (
+                              <MenuItem key={option} value={option}>{option}</MenuItem>
+                          )) : []}
+                      </Select>
+                  </FormControl>
                 </Grid>
+
+                <Grid item xs={12} style={{ marginTop: '12px' }}>
+                  <FormControl fullWidth required>
+                      <InputLabel id="ql-label">Quality</InputLabel>
+                      <Select
+                          labelId="ql-label"
+                          id="ql"
+                          value={quality}
+                          onChange={(e) => setQuality(e.target.value)}
+                          input={<OutlinedInput label="Quality" />}
+                          MenuProps={MenuProps}
+                          disabled={!processingType} // Disable if no processing type selected
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
+                          {processingTypeOptions[processingType] ? processingTypeOptions[processingType].map((option) => (
+                              <MenuItem key={option} value={option}>{option}</MenuItem>
+                          )) : []}
+                      </Select>
+                  </FormControl>
+                </Grid>
+
                 <Grid item>
                   <Button type="submit" variant="contained" color="success">
-                    Start Processing
+                    Send to Wet Mill
                   </Button>
                 </Grid>
+
               </Grid>
+
             </form>
   
-            {/* View Bags History Button */}
+            {/* View Bags History Button
             <Button
               variant="contained"
               color="info"
@@ -661,7 +668,7 @@ const PreprocessingStation = () => {
               style={{ marginTop: '16px' }}
             >
               View Bags History
-            </Button>
+            </Button> */}
   
             {/* Snackbar Notifications */}
             <Snackbar
