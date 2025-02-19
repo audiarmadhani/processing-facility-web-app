@@ -231,6 +231,17 @@ const PreprocessingStation = () => {
     setBagsProcessed(1);
     setBatchNumber('');
     setBagsAvailable(0);
+    setFarmerName('');
+    setReceivingDate('');
+    setQCDate('');
+    setWeight('');
+    setTotalBags('');
+    setProducer('');
+    setProductLine('');
+    setProcessingType('');
+    setQuality('');
+    setTotalProcessedBags('');
+    setBagsAvailable('');
   };
 
   const handleCloseHistory = () => {
