@@ -300,6 +300,16 @@ const PreprocessingStation = () => {
     fetchPreprocessingData(); // Fetch preprocessing data only once on mount
   }, []);
 
+  const ITEM_HEIGHT = 48;
+  const ITEM_PADDING_TOP = 8;
+  const MenuProps = {
+    PaperProps: {
+      style: {
+        maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+        width: 250,
+      },
+    },
+  };
 
   // Define the dependent options.  This is the *core* of the solution.
   const producerOptions = {
