@@ -119,7 +119,7 @@ const WetmillStation = () => {
   };
 
   useEffect(() => {
-    fetchPreprocessingData(); // Fetch preprocessing data only once on mount
+    fetchOrderBook(); // Fetch preprocessing data only once on mount
   }, []);
 
   const columns = [
