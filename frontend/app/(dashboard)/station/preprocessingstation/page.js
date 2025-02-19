@@ -246,7 +246,7 @@ const PreprocessingStation = () => {
       // Calculate SLA (days since receiving)
       const today = new Date();
       const formattedData = pendingPreprocessingData.map(batch => {
-        const receivingDate = new Date(batch.receivingDateData);
+        const receivingDate = new Date(batch.receivingDate);
         let sla = 'N/A';
   
         if (!isNaN(receivingDate)) {
@@ -358,8 +358,8 @@ const PreprocessingStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
-    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
+    { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
     { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
@@ -373,8 +373,8 @@ const PreprocessingStation = () => {
 
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
-    { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
+    { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 150, sortable: true },
     { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
     { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
@@ -382,7 +382,7 @@ const PreprocessingStation = () => {
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
     { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
-    { field: 'totalWeight', headerName: 'Total Weight', width: 150, sortable: true },
+    { field: 'weight', headerName: 'Total Weight', width: 150, sortable: true },
     { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
   ];
 
