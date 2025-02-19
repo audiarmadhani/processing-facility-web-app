@@ -64,14 +64,14 @@ const PreprocessingStation = () => {
     { field: 'receivingdatedata', headerName: 'Receiving Date', width: 180, sortable: true },
     { field: 'qcdatedata', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 150, sortable: true },
+    { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
+    { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
     { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
     { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
     { field: 'totalWeight', headerName: 'Total Weight', width: 150, sortable: true },
     { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
-    { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
-    { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
   ];
 
 
@@ -142,22 +142,6 @@ const PreprocessingStation = () => {
     } else {
       console.warn('No available bags to process.');
       setBagsProcessed(1);
-    }
-  };
-
-  const handleRfidScan = async (e) => {
-    const scannedTag = e.target.value;
-    setRfidTag(scannedTag);
-
-    try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/getBatchDetails/${scannedTag}`);
-      if (!response.ok) throw new Error('Failed to fetch batch details');
-      
-      const data = await response.json();
-      setBatchNumber(data.batchNumber);
-      await fetchBatchData(data.batchNumber);
-    } catch (error) {
-      handleError('Error retrieving batch details. Please try again.', error);
     }
   };
 
@@ -266,7 +250,7 @@ const PreprocessingStation = () => {
 
   const fetchPreprocessingData = async () => {
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/pendingpreprocessing');
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const result = await response.json();
       const pendingPreprocessingData = result.allRows || [];
   
