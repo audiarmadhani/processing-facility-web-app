@@ -49,8 +49,17 @@ const NAVIGATION: Navigation = [
       { segment: "receivingstation", title: "Receiving Station", icon: <WarehouseIcon /> },
       { segment: "transportstation", title: "Cherry Inbound Transport", icon: <LocalShippingIcon /> },
       { segment: "qcstation", title: "Cherry QC Station", icon: <NoteAltIcon /> },
+
+      { kind: "divider" },
+
       { segment: "preprocessingstation", title: "Pre-Processing Station", icon: <FactoryIcon /> },
+      { segment: "wetmillstation", title: "Wet Mill Station", icon: <FactoryIcon /> },
+      { segment: "dryingstation", title: "Drying Station", icon: <FactoryIcon /> },
+      { segment: "drymillstation", title: "Dry Mill Station", icon: <FactoryIcon /> },
       { segment: "postprocessingstation", title: "Post-Processing Station", icon: <LocalShippingOutlinedIcon /> },
+
+      { kind: "divider" },
+
       { segment: "postprocessingqcstation", title: "GB QC Station", icon: <NoteAltIcon /> },
     ],
   },
