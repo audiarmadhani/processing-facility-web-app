@@ -244,9 +244,29 @@ const DryingStation = () => {
   const getAreaData = (area) => {
     const areaData = dryingData.filter(batch => batch.dryingArea === area);
     return areaData.sort((a, b) => {
-      if (a.type !== b.type) return b.type.localeCompare(a.type);
-      if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate);
-      return a.batchNumber.localeCompare(b.batchNumber);
+      // Sort by status: In Drying (0), Not in Drying (1), Dried (2)
+      const statusOrder = {
+        'In Drying': 0,
+        'Not in Drying': 1,
+        'Dried': 2,
+      };
+      const statusA = statusOrder[a.status] || 3; // Default to 3 for unexpected statuses
+      const statusB = statusOrder[b.status] || 3;
+      if (statusA !== statusB) return statusA - statusB;
+
+      // Sort by startDryingDate (oldest first, ascending)
+      if (a.startDryingDate !== b.startDryingDate) {
+        return a.startDryingDate.localeCompare(b.startDryingDate);
+      }
+
+      // Sort by type: Arabica (0), Robusta (1), others (2+)
+      const typeOrder = {
+        'Arabica': 0,
+        'Robusta': 1,
+      };
+      const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 2 + (a.type || '').localeCompare('');
+      const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 2 + (b.type || '').localeCompare('');
+      return typeA - typeB;
     });
   };
 
@@ -267,7 +287,6 @@ const DryingStation = () => {
               pageSize={5}
               rowsPerPageOptions={[5, 10, 20]}
               disableSelectionOnClick
-              sortingOrder={['desc', 'asc']}
               getRowId={(row) => row.batchNumber}
               slots={{ toolbar: GridToolbar }}
               autosizeOnMount
