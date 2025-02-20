@@ -29,10 +29,20 @@ import {
   Title,
   Tooltip,
   Legend,
+  ScatterController, // Added for scatter plot
 } from 'chart.js';
 
-// Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+// Register Chart.js components, including ScatterController
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ScatterController
+);
 
 const DryingStation = () => {
   const { data: session, status } = useSession();
