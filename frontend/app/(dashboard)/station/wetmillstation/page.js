@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
-
 import {
   TextField,
   Button,
@@ -22,11 +21,10 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
+  CircularProgress,
 } from '@mui/material';
-
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
 
 const WetmillStation = () => {
   const { data: session, status } = useSession();
@@ -52,41 +50,43 @@ const WetmillStation = () => {
   const [bagsHistory, setBagsHistory] = useState([]);
   const [preprocessingData, setPreprocessingData] = useState([]);
   const [unprocessedBatches, setUnprocessedBatches] = useState([]);
-
   const [producer, setProducer] = useState('');
   const [productLine, setProductLine] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [quality, setQuality] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // New state for loading
 
   const fetchOrderBook = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
+      if (!response.ok) {
+        throw new Error('Failed to fetch data from server');
+      }
       const result = await response.json();
       const pendingPreprocessingData = result.allRows || [];
-  
+
       // Calculate SLA (days since receiving)
       const today = new Date();
       const formattedData = pendingPreprocessingData.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
         let sla = 'N/A';
-  
+
         if (!isNaN(receivingDate)) {
           const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-  
+
         return {
           ...batch,
-          sla, // Add SLA to batch data
+          sla,
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A'
         };
       });
-  
-      // Filter out batches with available bags
+
+      // Filter and sort unprocessed batches
       const unprocessedBatches = formattedData.filter(batch => batch.availableBags > 0);
-  
-      // Sort unprocessed batches by type, ripeness, color, foreignMatter, and overallQuality
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
@@ -97,35 +97,52 @@ const WetmillStation = () => {
         return 0;
       });
 
+      // Filter and sort processed batches
       const processedBatches = formattedData.filter(batch => batch.processedBags > 0);
-
       const sortedDataType = processedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         return 0;
       });
-  
-      // Sort all batches by available bags and startProcessingDate
       const sortedData = sortedDataType.sort((a, b) => {
-        if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') {return -1;}
-        if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') {return 1;}
+        if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') { return -1; }
+        if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') { return 1; }
         return b.availableBags - a.availableBags;
       });
-  
+
       setPreprocessingData(sortedData);
       setUnprocessedBatches(sortedUnprocessedBatches);
     } catch (error) {
       console.error('Error fetching preprocessing data:', error);
+      setSnackbarMessage(error.message || 'Error fetching data. Please try again.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrderBook(); // Fetch preprocessing data only once on mount
+    fetchOrderBook(); // Initial fetch on mount
+
+    // Auto-refresh every 5 minutes (300,000 ms)
+    const intervalId = setInterval(() => {
+      fetchOrderBook();
+    }, 300000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
+
+  const handleRefreshData = () => {
+    fetchOrderBook(); // Manual refresh on button click
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+  };
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-    // { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
-    // { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
     { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
@@ -138,12 +155,10 @@ const WetmillStation = () => {
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
   ];
 
-  // Show loading screen while session is loading
   if (status === 'loading') {
     return <p>Loading...</p>;
   }
 
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'preprocessing')) {
     return (
       <Typography variant="h6">
@@ -160,7 +175,19 @@ const WetmillStation = () => {
             <Typography variant="h5" gutterBottom>
               Processing Order Book
             </Typography>
-  
+
+            {/* Refresh Data Button with Spinner */}
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleRefreshData}
+              disabled={isLoading}
+              style={{ marginBottom: '16px' }}
+              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {isLoading ? 'Refreshing...' : 'Refresh Data'}
+            </Button>
+
             {/* Table for Preprocessing Data */}
             <div style={{ height: 1500, width: '100%' }}>
               <DataGrid
@@ -170,7 +197,7 @@ const WetmillStation = () => {
                 rowsPerPageOptions={[5, 10, 20]}
                 disableSelectionOnClick
                 sortingOrder={['asc', 'desc']}
-                getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
+                getRowId={(row) => row.batchNumber}
                 slots={{ toolbar: GridToolbar }}
                 autosizeOnMount
                 autosizeOptions={{
@@ -184,6 +211,18 @@ const WetmillStation = () => {
           </CardContent>
         </Card>
       </Grid>
+
+      {/* Snackbar for Error Feedback */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Grid>
   );
 };
