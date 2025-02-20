@@ -22,7 +22,7 @@ import {
   MenuItem,
   OutlinedInput,
   CircularProgress,
-  Chip, // Import Chip component
+  Chip,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -65,9 +65,9 @@ const WetmillStation = () => {
       const qcResult = await qcResponse.json();
       const pendingPreprocessingData = qcResult.allRows || [];
 
-      const rfidResponse = await fetch('https://processing-facility-backend.onrender.com/api/rfid-scans');
-      if (!rfidResponse.ok) throw new Error('Failed to fetch RFID scans');
-      const rfidScans = await rfidResponse.json();
+      const wetmillResponse = await fetch('https://processing-facility-backend.onrender.com/api/wetmill-data');
+      if (!wetmillResponse.ok) throw new Error('Failed to fetch wet mill data');
+      const wetmillData = await wetmillResponse.json();
 
       const today = new Date();
       const formattedData = pendingPreprocessingData.map(batch => {
@@ -78,12 +78,13 @@ const WetmillStation = () => {
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
 
-        const batchScans = rfidScans.filter(scan => scan.batchNumber === batch.batchNumber);
-        const latestScan = batchScans.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-        const status = latestScan
-          ? latestScan.scanned_at === 'Wet Mill Entrance'
-            ? 'Entered Wet Mill'
-            : 'Exited Wet Mill'
+        // Find the latest wet mill data for this batch
+        const batchData = wetmillData.filter(data => data.batchNumber === batch.batchNumber);
+        const latestEntry = batchData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        const status = latestEntry
+          ? latestEntry.exited_at
+            ? 'Exited Wet Mill'
+            : 'Entered Wet Mill'
           : 'Not Scanned';
 
         return {
@@ -174,7 +175,7 @@ const WetmillStation = () => {
             color={color}
             size="small"
             sx={{
-              borderRadius: '16px', // Pill shape
+              borderRadius: '16px',
               fontWeight: 'medium',
             }}
           />
