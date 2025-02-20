@@ -177,11 +177,11 @@ const DryingStation = () => {
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 160 },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
     {
       field: 'status',
       headerName: 'Status',
-      width: 90,
+      width: 100,
       renderCell: (params) => {
         const status = params.value;
         let color;
@@ -208,14 +208,6 @@ const DryingStation = () => {
         );
       },
     },
-    { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
-    { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
-    { field: 'weight', headerName: 'Weight', width: 100 },
-    { field: 'type', headerName: 'Type', width: 90 },
-    { field: 'producer', headerName: 'Producer', width: 90 },
-    { field: 'productLine', headerName: 'Product Line', width: 130 },
-    { field: 'processingType', headerName: 'Processing Type', width: 160 },
-    { field: 'quality', headerName: 'Quality', width: 100 },
     {
       field: 'details',
       headerName: 'Details',
@@ -231,6 +223,14 @@ const DryingStation = () => {
         </Button>
       ),
     },
+    { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
+    { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
+    { field: 'weight', headerName: 'Weight', width: 100 },
+    { field: 'type', headerName: 'Type', width: 90 },
+    { field: 'producer', headerName: 'Producer', width: 90 },
+    { field: 'productLine', headerName: 'Product Line', width: 130 },
+    { field: 'processingType', headerName: 'Processing Type', width: 160 },
+    { field: 'quality', headerName: 'Quality', width: 100 },
   ];
 
   const dryingAreas = [
