@@ -22,6 +22,7 @@ import {
   MenuItem,
   OutlinedInput,
   CircularProgress,
+  Chip, // Import Chip component
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -54,38 +55,46 @@ const WetmillStation = () => {
   const [productLine, setProductLine] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [quality, setQuality] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // New state for loading
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchOrderBook = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
-      if (!response.ok) {
-        throw new Error('Failed to fetch data from server');
-      }
-      const result = await response.json();
-      const pendingPreprocessingData = result.allRows || [];
+      const qcResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
+      if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
+      const qcResult = await qcResponse.json();
+      const pendingPreprocessingData = qcResult.allRows || [];
 
-      // Calculate SLA (days since receiving)
+      const rfidResponse = await fetch('https://processing-facility-backend.onrender.com/api/rfid-scans');
+      if (!rfidResponse.ok) throw new Error('Failed to fetch RFID scans');
+      const rfidScans = await rfidResponse.json();
+
       const today = new Date();
       const formattedData = pendingPreprocessingData.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
         let sla = 'N/A';
-
         if (!isNaN(receivingDate)) {
           const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
 
+        const batchScans = rfidScans.filter(scan => scan.batchNumber === batch.batchNumber);
+        const latestScan = batchScans.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        const status = latestScan
+          ? latestScan.scanned_at === 'Wet Mill Entrance'
+            ? 'Entered Wet Mill'
+            : 'Exited Wet Mill'
+          : 'Not Scanned';
+
         return {
           ...batch,
           sla,
+          status,
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
-          lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A'
+          lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
         };
       });
 
-      // Filter and sort unprocessed batches
       const unprocessedBatches = formattedData.filter(batch => batch.availableBags > 0);
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
@@ -97,7 +106,6 @@ const WetmillStation = () => {
         return 0;
       });
 
-      // Filter and sort processed batches
       const processedBatches = formattedData.filter(batch => batch.processedBags > 0);
       const sortedDataType = processedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
@@ -122,19 +130,15 @@ const WetmillStation = () => {
   };
 
   useEffect(() => {
-    fetchOrderBook(); // Initial fetch on mount
-
-    // Auto-refresh every 5 minutes (300,000 ms)
+    fetchOrderBook();
     const intervalId = setInterval(() => {
       fetchOrderBook();
-    }, 300000);
-
-    // Cleanup interval on component unmount
+    }, 300000); // 5 minutes
     return () => clearInterval(intervalId);
   }, []);
 
   const handleRefreshData = () => {
-    fetchOrderBook(); // Manual refresh on button click
+    fetchOrderBook();
   };
 
   const handleCloseSnackbar = () => {
@@ -143,6 +147,40 @@ const WetmillStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 150,
+      sortable: true,
+      renderCell: (params) => {
+        const status = params.value;
+        let color;
+        switch (status) {
+          case 'Entered Wet Mill':
+            color = 'primary'; // Blue
+            break;
+          case 'Exited Wet Mill':
+            color = 'success'; // Green
+            break;
+          case 'Not Scanned':
+            color = 'default'; // Grey
+            break;
+          default:
+            color = 'default';
+        }
+        return (
+          <Chip
+            label={status}
+            color={color}
+            size="small"
+            sx={{
+              borderRadius: '16px', // Pill shape
+              fontWeight: 'medium',
+            }}
+          />
+        );
+      },
+    },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
     { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
@@ -175,8 +213,6 @@ const WetmillStation = () => {
             <Typography variant="h5" gutterBottom>
               Processing Order Book
             </Typography>
-
-            {/* Refresh Data Button with Spinner */}
             <Button
               variant="contained"
               color="primary"
@@ -187,8 +223,6 @@ const WetmillStation = () => {
             >
               {isLoading ? 'Refreshing...' : 'Refresh Data'}
             </Button>
-
-            {/* Table for Preprocessing Data */}
             <div style={{ height: 1500, width: '100%' }}>
               <DataGrid
                 rows={preprocessingData}
@@ -211,8 +245,6 @@ const WetmillStation = () => {
           </CardContent>
         </Card>
       </Grid>
-
-      {/* Snackbar for Error Feedback */}
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
