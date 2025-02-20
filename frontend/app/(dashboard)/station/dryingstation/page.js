@@ -31,12 +31,12 @@ const DryingStation = () => {
       const qcResult = await qcResponse.json();
       const pendingPreprocessingData = qcResult.allRows || [];
       console.log('QC Data:', pendingPreprocessingData);
-  
+
       const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
       if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
       const dryingDataRaw = await dryingResponse.json();
       console.log('Drying Data Raw:', dryingDataRaw);
-  
+
       const formattedData = pendingPreprocessingData.map(batch => {
         const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber);
         const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
@@ -47,16 +47,22 @@ const DryingStation = () => {
           : 'Not in Drying';
         const dryingArea = latestEntry ? latestEntry.dryingArea : 'N/A';
         console.log(`Batch ${batch.batchNumber}: Status=${status}, Area=${dryingArea}`);
-  
+
         return {
           ...batch,
           status,
           dryingArea,
-          startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
-          lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
+          startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
+          endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
+          weight: batch.weight || 'N/A', // Assuming weight is in QC data
+          type: batch.type || 'N/A',
+          producer: batch.producer || 'N/A',
+          productLine: batch.productLine || 'N/A',
+          processingType: batch.processingType || 'N/A',
+          quality: batch.quality || 'N/A',
         };
       });
-  
+
       console.log('Formatted Data:', formattedData);
       setDryingData(formattedData);
     } catch (error) {
@@ -86,24 +92,23 @@ const DryingStation = () => {
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160 },
     {
       field: 'status',
       headerName: 'Status',
       width: 150,
-      sortable: true,
       renderCell: (params) => {
         const status = params.value;
         let color;
         switch (status) {
           case 'In Drying':
-            color = 'primary'; // Blue
+            color = 'primary';
             break;
           case 'Dried':
-            color = 'success'; // Green
+            color = 'success';
             break;
           case 'Not in Drying':
-            color = 'default'; // Grey
+            color = 'default';
             break;
           default:
             color = 'default';
@@ -118,16 +123,14 @@ const DryingStation = () => {
         );
       },
     },
-    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
-    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
-    { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
-    { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
-    { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
-    { field: 'type', headerName: 'Type', width: 100, sortable: true },
-    { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
-    { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
-    { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
-    { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
+    { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
+    { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
+    { field: 'weight', headerName: 'Weight', width: 100 },
+    { field: 'type', headerName: 'Type', width: 100 },
+    { field: 'producer', headerName: 'Producer', width: 120 },
+    { field: 'productLine', headerName: 'Product Line', width: 130 },
+    { field: 'processingType', headerName: 'Processing Type', width: 160 },
+    { field: 'quality', headerName: 'Quality', width: 130 },
   ];
 
   const dryingAreas = [
@@ -139,7 +142,13 @@ const DryingStation = () => {
   ];
 
   const getAreaData = (area) => {
-    return dryingData.filter(batch => batch.dryingArea === area);
+    const areaData = dryingData.filter(batch => batch.dryingArea === area);
+    // Sort by type (desc), startDryingDate (asc), batchNumber (asc)
+    return areaData.sort((a, b) => {
+      if (a.type !== b.type) return b.type.localeCompare(a.type); // Descending
+      if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate); // Ascending
+      return a.batchNumber.localeCompare(b.batchNumber); // Ascending
+    });
   };
 
   const renderDataGrid = (area) => {
@@ -159,7 +168,7 @@ const DryingStation = () => {
               pageSize={5}
               rowsPerPageOptions={[5, 10, 20]}
               disableSelectionOnClick
-              sortingOrder={['asc', 'desc']}
+              sortingOrder={['desc', 'asc']} // Default sort order options
               getRowId={(row) => row.batchNumber}
               slots={{ toolbar: GridToolbar }}
               autosizeOnMount
