@@ -30,11 +30,13 @@ const DryingStation = () => {
       if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
       const qcResult = await qcResponse.json();
       const pendingPreprocessingData = qcResult.allRows || [];
-
+      console.log('QC Data:', pendingPreprocessingData);
+  
       const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
       if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
       const dryingDataRaw = await dryingResponse.json();
-
+      console.log('Drying Data Raw:', dryingDataRaw);
+  
       const formattedData = pendingPreprocessingData.map(batch => {
         const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber);
         const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
@@ -44,7 +46,8 @@ const DryingStation = () => {
             : 'In Drying'
           : 'Not in Drying';
         const dryingArea = latestEntry ? latestEntry.drying_area : 'N/A';
-
+        console.log(`Batch ${batch.batchNumber}: Status=${status}, Area=${dryingArea}`);
+  
         return {
           ...batch,
           status,
@@ -53,7 +56,8 @@ const DryingStation = () => {
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
         };
       });
-
+  
+      console.log('Formatted Data:', formattedData);
       setDryingData(formattedData);
     } catch (error) {
       console.error('Error fetching drying data:', error);
