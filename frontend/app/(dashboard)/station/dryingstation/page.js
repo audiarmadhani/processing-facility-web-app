@@ -45,7 +45,7 @@ const DryingStation = () => {
             ? 'Dried'
             : 'In Drying'
           : 'Not in Drying';
-        const dryingArea = latestEntry ? latestEntry.drying_area : 'N/A';
+        const dryingArea = latestEntry ? latestEntry.dryingArea : 'N/A';
         console.log(`Batch ${batch.batchNumber}: Status=${status}, Area=${dryingArea}`);
   
         return {
