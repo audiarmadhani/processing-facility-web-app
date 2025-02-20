@@ -12,8 +12,27 @@ import {
   CardContent,
   CircularProgress,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const DryingStation = () => {
   const { data: session, status } = useSession();
@@ -22,6 +41,10 @@ const DryingStation = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [dryingData, setDryingData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [dryingMeasurements, setDryingMeasurements] = useState([]);
+  const [newMoisture, setNewMoisture] = useState('');
 
   const fetchDryingData = async () => {
     setIsLoading(true);
@@ -30,12 +53,10 @@ const DryingStation = () => {
       if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
       const qcResult = await qcResponse.json();
       const pendingPreprocessingData = qcResult.allRows || [];
-      console.log('QC Data:', pendingPreprocessingData);
 
       const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
       if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
       const dryingDataRaw = await dryingResponse.json();
-      console.log('Drying Data Raw:', dryingDataRaw);
 
       const formattedData = pendingPreprocessingData.map(batch => {
         const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber);
@@ -46,7 +67,6 @@ const DryingStation = () => {
             : 'In Drying'
           : 'Not in Drying';
         const dryingArea = latestEntry ? latestEntry.dryingArea : 'N/A';
-        console.log(`Batch ${batch.batchNumber}: Status=${status}, Area=${dryingArea}`);
 
         return {
           ...batch,
@@ -54,7 +74,7 @@ const DryingStation = () => {
           dryingArea,
           startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
           endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-          weight: batch.weight || 'N/A', // Assuming weight is in QC data
+          weight: batch.weight || 'N/A',
           type: batch.type || 'N/A',
           producer: batch.producer || 'N/A',
           productLine: batch.productLine || 'N/A',
@@ -63,7 +83,6 @@ const DryingStation = () => {
         };
       });
 
-      console.log('Formatted Data:', formattedData);
       setDryingData(formattedData);
     } catch (error) {
       console.error('Error fetching drying data:', error);
@@ -72,6 +91,49 @@ const DryingStation = () => {
       setOpenSnackbar(true);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchDryingMeasurements = async (batchNumber) => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-measurements/${batchNumber}`);
+      if (!response.ok) throw new Error('Failed to fetch drying measurements');
+      const data = await response.json();
+      setDryingMeasurements(data);
+    } catch (error) {
+      console.error('Error fetching drying measurements:', error);
+      setSnackbarMessage(error.message || 'Failed to fetch drying measurements');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleAddMoisture = async () => {
+    if (!newMoisture || isNaN(newMoisture) || newMoisture < 0 || newMoisture > 100) {
+      setSnackbarMessage('Please enter a valid moisture value (0-100)');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-measurement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchNumber: selectedBatch.batchNumber, moisture: parseFloat(newMoisture) }),
+      });
+      if (!response.ok) throw new Error('Failed to save drying measurement');
+      const result = await response.json();
+      setDryingMeasurements([...dryingMeasurements, result.measurement]);
+      setNewMoisture('');
+      setSnackbarMessage('Drying measurement added successfully');
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
+    } catch (error) {
+      console.error('Error adding drying measurement:', error);
+      setSnackbarMessage(error.message || 'Failed to add drying measurement');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
     }
   };
 
@@ -89,6 +151,19 @@ const DryingStation = () => {
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
+  };
+
+  const handleDetailsClick = (batch) => {
+    setSelectedBatch(batch);
+    fetchDryingMeasurements(batch.batchNumber);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedBatch(null);
+    setDryingMeasurements([]);
+    setNewMoisture('');
   };
 
   const columns = [
@@ -131,6 +206,21 @@ const DryingStation = () => {
     { field: 'productLine', headerName: 'Product Line', width: 130 },
     { field: 'processingType', headerName: 'Processing Type', width: 160 },
     { field: 'quality', headerName: 'Quality', width: 130 },
+    {
+      field: 'details',
+      headerName: 'Details',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => handleDetailsClick(params.row)}
+        >
+          Details
+        </Button>
+      ),
+    },
   ];
 
   const dryingAreas = [
@@ -143,11 +233,10 @@ const DryingStation = () => {
 
   const getAreaData = (area) => {
     const areaData = dryingData.filter(batch => batch.dryingArea === area);
-    // Sort by type (desc), startDryingDate (asc), batchNumber (asc)
     return areaData.sort((a, b) => {
-      if (a.type !== b.type) return b.type.localeCompare(a.type); // Descending
-      if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate); // Ascending
-      return a.batchNumber.localeCompare(b.batchNumber); // Ascending
+      if (a.type !== b.type) return b.type.localeCompare(a.type);
+      if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate);
+      return a.batchNumber.localeCompare(b.batchNumber);
     });
   };
 
@@ -168,7 +257,7 @@ const DryingStation = () => {
               pageSize={5}
               rowsPerPageOptions={[5, 10, 20]}
               disableSelectionOnClick
-              sortingOrder={['desc', 'asc']} // Default sort order options
+              sortingOrder={['desc', 'asc']}
               getRowId={(row) => row.batchNumber}
               slots={{ toolbar: GridToolbar }}
               autosizeOnMount
@@ -183,6 +272,51 @@ const DryingStation = () => {
         </div>
       </>
     );
+  };
+
+  // Graph data with natural sun drying optimal curve (50% to 12% over 7 days)
+  const chartData = {
+    labels: dryingMeasurements.map(m => new Date(m.measurement_date).toLocaleDateString()),
+    datasets: [
+      {
+        label: 'Measured Moisture',
+        data: dryingMeasurements.map(m => m.moisture),
+        fill: false,
+        backgroundColor: 'rgba(75,192,192,1)',
+        borderColor: 'rgba(75,192,192,0.2)',
+        type: 'scatter',
+        pointRadius: 5,
+      },
+      {
+        label: 'Optimal Natural Sun Drying Curve',
+        data: dryingMeasurements.map((_, i) => {
+          const totalSteps = Math.max(dryingMeasurements.length, 7); // At least 7 days
+          const t = (i / (dryingMeasurements.length - 1 || 1)) * 168; // Scale to 168 hours (7 days)
+          return 50 * Math.exp(-0.00858 * t); // Natural sun drying curve
+        }),
+        fill: false,
+        borderColor: 'rgba(255,99,132,1)',
+        borderDash: [5, 5],
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    scales: {
+      x: {
+        title: { display: true, text: 'Date' },
+      },
+      y: {
+        title: { display: true, text: 'Moisture (%)' },
+        min: 0,
+        max: 60, // Adjusted for coffee drying range
+      },
+    },
+    plugins: {
+      legend: { display: true },
+      tooltip: { mode: 'index', intersect: false },
+    },
   };
 
   if (status === 'loading') {
@@ -245,6 +379,41 @@ const DryingStation = () => {
           </CardContent>
         </Card>
       </Grid>
+
+      {/* Drying Measurement Dialog */}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+        <DialogTitle>Drying Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} style={{ marginBottom: '16px' }}>
+            <Grid item xs={8}>
+              <TextField
+                label="Moisture (%)"
+                value={newMoisture}
+                onChange={(e) => setNewMoisture(e.target.value)}
+                type="number"
+                fullWidth
+                inputProps={{ min: 0, max: 100, step: 0.01 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleAddMoisture}
+                fullWidth
+                style={{ height: '100%' }}
+              >
+                Add Measurement
+              </Button>
+            </Grid>
+          </Grid>
+          <Line data={chartData} options={chartOptions} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
