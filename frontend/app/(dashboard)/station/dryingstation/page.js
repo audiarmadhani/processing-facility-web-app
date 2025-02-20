@@ -1,9 +1,8 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import {
-  TextField,
   Button,
   Typography,
   Snackbar,
@@ -11,248 +10,173 @@ import {
   Grid,
   Card,
   CardContent,
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem,
+  CircularProgress,
   Chip,
-  Autocomplete,
-  OutlinedInput
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
-const TransportStation = () => {
+const DryingStation = () => {
   const { data: session, status } = useSession();
-  const [batchNumbers, setBatchNumbers] = useState([]);
-  const [selectedBatchNumbers, setSelectedBatchNumbers] = useState([]);
-  const [desa, setDesa] = useState(null);
-  const [kecamatan, setKecamatan] = useState(null);
-  const [kabupaten, setKabupaten] = useState(null);
-  const [cost, setCost] = useState('');
-  const [paidTo, setPaidTo] = useState('');
-  const [farmerID, setFarmerID] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [farmers, setFarmers] = useState([]);
-  const [bankAccount, setBankAccount] = useState(null);
-  const [bankName, setBankName] = useState('');
-  const [transportData, setTransportData] = useState([]);
-  const [locationData, setLocationData] = useState([]);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [dryingData, setDryingData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const fetchBatchNumbers = async () => {
+  const fetchDryingData = async () => {
+    setIsLoading(true);
     try {
-      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/receiving`);
-      const todayData = response.data.todayData;
+      const qcResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
+      if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
+      const qcResult = await qcResponse.json();
+      const pendingPreprocessingData = qcResult.allRows || [];
 
-      if (Array.isArray(todayData)) {
-        const batchNumbers = todayData.map(item => item.batchNumber);
-        setBatchNumbers(batchNumbers);
-      } else {
-        console.error('todayData is not an array:', todayData);
-      }
+      const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
+      if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
+      const dryingDataRaw = await dryingResponse.json();
+
+      const formattedData = pendingPreprocessingData.map(batch => {
+        const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber);
+        const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        const status = latestEntry
+          ? latestEntry.exited_at
+            ? 'Dried'
+            : 'In Drying'
+          : 'Not in Drying';
+        const dryingArea = latestEntry ? latestEntry.drying_area : 'N/A';
+
+        return {
+          ...batch,
+          status,
+          dryingArea,
+          startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
+          lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
+        };
+      });
+
+      setDryingData(formattedData);
     } catch (error) {
-      console.error('Error fetching batch numbers:', error);
-      setSnackbarMessage('Failed to fetch batch numbers.');
-      setSnackbarOpen(true);
-    }
-  };
-
-  const fetchFarmers = async () => {
-    try {
-      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmer`);
-      const allFarmers = response.data.allRows;
-
-      if (Array.isArray(allFarmers)) {
-        setFarmers(allFarmers);
-      } else {
-        console.error('Farmers data is not an array:', allFarmers);
-      }
-    } catch (error) {
-      console.error('Error fetching farmers:', error);
-      setSnackbarMessage('Failed to fetch farmers.');
-      setSnackbarOpen(true);
-    }
-  };
-
-  const fetchTransportData = async () => {
-    try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/transport`);
-      if (!response.ok) throw new Error("Failed to fetch transport data");
-  
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setTransportData(
-          data.map(row => ({
-            ...row,
-            cost: Number(row.cost), // Ensure cost is a number
-            createdAt: new Date(row.createdAt).toLocaleString(), // Format timestamp
-          }))
-        );
-      } else {
-        throw new Error("Invalid data format received");
-      }
-    } catch (error) {
-      console.error("Error fetching transport data:", error);
-      setTransportData([]);
-      setSnackbarMessage('Failed to fetch transport data.');
-      setSnackbarOpen(true);
-    }
-  };
-
-  const fetchLocationData = async () => {
-    try {
-      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/location`);
-      setLocationData(response.data || []);
-    } catch (error) {
-      console.error('Error fetching location data:', error);
-      setSnackbarMessage('Failed to fetch location data.');
-      setSnackbarOpen(true);
+      console.error('Error fetching drying data:', error);
+      setSnackbarMessage(error.message || 'Error fetching data. Please try again.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (session) {
-      fetchBatchNumbers();
-      fetchFarmers();
-      fetchTransportData();
-      fetchLocationData();
-    }
-  }, [session]);
+    fetchDryingData();
+    const intervalId = setInterval(() => {
+      fetchDryingData();
+    }, 300000); // 5 minutes
+    return () => clearInterval(intervalId);
+  }, []);
 
-  const handleKabupatenChange = (event, newValue) => {
-    setKabupaten(newValue);
-    setKecamatan(null);
-    setDesa(null);
-  };
-
-  const handleKecamatanChange = (event, newValue) => {
-    setKecamatan(newValue);
-    setDesa(null);
-  };
-
-  const handleDesaChange = (event, newValue) => {
-    setDesa(newValue);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    try {
-      // Post to the transport API
-      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/transport`, {
-        batchNumber: selectedBatchNumbers.join(','),
-        desa,
-        kecamatan,
-        kabupaten,
-        cost,
-        paidTo,
-        paymentMethod,
-        farmerID: selectedFarmerDetails.farmerID,
-        bankAccount,
-        bankName,
-      });
-  
-      if (response.status === 200) {
-        // Prepare payment payload
-        const paymentPayload = {
-          farmerName: paidTo, // Assuming paidTo holds the farmer's name
-          farmerID: selectedFarmerDetails.farmerID, // Ensure farmerID is defined
-          totalAmount: parseFloat(cost) || 0, // Use the cost as totalAmount
-          date: new Date().toISOString(), // Use the current date
-          paymentMethod,
-          paymentDescription: 'Transport Cost', // Fixed description
-          isPaid: 0, // Set isPaid to 0
-        };
-  
-        // Post to the payment API
-        const paymentResponse = await axios.post(`https://processing-facility-backend.onrender.com/api/payment`, paymentPayload);
-  
-        if (paymentResponse.status === 200) {
-          // Reset form fields
-          setSelectedBatchNumbers([]); // Reset selected batch numbers
-          setDesa('');
-          setKecamatan('');
-          setKabupaten('');
-          setCost('');
-          setPaidTo('');
-          setPaymentMethod('');
-          setBankAccount(null);
-          setBankName('');
-          setSnackbarMessage('Transport data and payment successfully created!');
-          setSnackbarOpen(true);
-  
-          fetchTransportData(); // Fetch updated transport data
-        } else {
-          const paymentErrorData = await paymentResponse.data;
-          console.error(paymentErrorData.message || 'Error creating payment data.');
-          setSnackbarMessage(paymentErrorData.message || 'Error creating payment data.');
-          setSnackbarOpen(true);
-        }
-      } else {
-        const errorData = await response.data;
-        console.error(errorData.message || 'Error creating transport data.');
-        setSnackbarMessage(errorData.message || 'Error creating transport data.');
-        setSnackbarOpen(true);
-      }
-    } catch (error) {
-      console.error('Failed to communicate with the backend:', error);
-      setSnackbarMessage('Failed to create transport data.');
-      setSnackbarOpen(true);
-    }
-  };
-
-  const handleBatchSelect = (event) => {
-    setSelectedBatchNumbers(event.target.value);
-  };
-
-  const handlePaidToChange = (event) => {
-    const selectedFarmer = farmers.find(farmer => farmer.farmerName === event.target.value);
-    setPaidTo(event.target.value);
-    
-    if (selectedFarmer) {
-      setSelectedFarmerDetails({
-        farmerID: selectedFarmer.farmerID,
-        farmerAddress: selectedFarmer.farmerAddress || 'N/A',  // Ensure address is handled
-        bankAccount: selectedFarmer.bankAccount,
-        bankName: selectedFarmer.bankName,
-      });
-    } else {
-      setSelectedFarmerDetails(null);
-    }
+  const handleRefreshData = () => {
+    fetchDryingData();
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
+    setOpenSnackbar(false);
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', sortable: true },
-    { field: 'createdAtTrunc', headerName: 'Created At', sortable: true },
-    { field: 'kabupaten', headerName: 'Kabupaten', sortable: true },
-    { field: 'kecamatan', headerName: 'Kecamatan', sortable: true },
-    { field: 'desa', headerName: 'Desa', sortable: true },
-    { field: 'cost', headerName: 'Cost', sortable: true },
-    { field: 'paidTo', headerName: 'Paid To', sortable: true },
-    { field: 'bankAccount', headerName: 'Bank Account', sortable: true },
-    { field: 'bankName', headerName: 'Bank Name', sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 150,
+      sortable: true,
+      renderCell: (params) => {
+        const status = params.value;
+        let color;
+        switch (status) {
+          case 'In Drying':
+            color = 'primary'; // Blue
+            break;
+          case 'Dried':
+            color = 'success'; // Green
+            break;
+          case 'Not in Drying':
+            color = 'default'; // Grey
+            break;
+          default:
+            color = 'default';
+        }
+        return (
+          <Chip
+            label={status}
+            color={color}
+            size="small"
+            sx={{ borderRadius: '16px', fontWeight: 'medium' }}
+          />
+        );
+      },
+    },
+    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
+    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
+    { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
+    { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
+    { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
+    { field: 'type', headerName: 'Type', width: 100, sortable: true },
+    { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
+    { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
+    { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
   ];
 
-  const kabupatenList = [...new Set(locationData.map(item => item.kabupaten))];
-  const kecamatanList = kabupaten ? [...new Set(locationData.filter(item => item.kabupaten === kabupaten).map(item => item.kecamatan))] : [];
-  const desaList = kecamatan ? locationData.filter(item => item.kecamatan === kecamatan).map(item => item.desa) : [];
+  const dryingAreas = [
+    "Drying Area 1",
+    "Drying Area 2",
+    "Drying Area 3",
+    "Drying Area 4",
+    "Drying Area 5",
+  ];
 
-  // Show loading screen while session is loading
+  const getAreaData = (area) => {
+    return dryingData.filter(batch => batch.dryingArea === area);
+  };
+
+  const renderDataGrid = (area) => {
+    const areaData = getAreaData(area);
+    return (
+      <>
+        <Typography variant="h6" gutterBottom>{area}</Typography>
+        <div style={{ height: 400, width: '100%' }}>
+          {areaData.length === 0 ? (
+            <Typography variant="body1" align="center" color="textSecondary" style={{ paddingTop: '180px' }}>
+              No batches in {area}
+            </Typography>
+          ) : (
+            <DataGrid
+              rows={areaData}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 20]}
+              disableSelectionOnClick
+              sortingOrder={['asc', 'desc']}
+              getRowId={(row) => row.batchNumber}
+              slots={{ toolbar: GridToolbar }}
+              autosizeOnMount
+              autosizeOptions={{
+                includeHeaders: true,
+                includeOutliers: true,
+                expand: true,
+              }}
+              rowHeight={35}
+            />
+          )}
+        </div>
+      </>
+    );
+  };
+
   if (status === 'loading') {
     return <p>Loading...</p>;
   }
 
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'receiving')) {
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'drying')) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.
@@ -262,190 +186,64 @@ const TransportStation = () => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={4}>
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-              Transport Station Form
-            </Typography>
-
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>Batch Number</InputLabel>
-                    <Select
-                      multiple
-                      value={selectedBatchNumbers}
-                      onChange={handleBatchSelect}
-                      input={<OutlinedInput label="Batch Number" />}
-                      renderValue={(selected) => (
-                        <div>
-                          {selected.map((value) => (
-                            <Chip key={value} label={value} />
-                          ))}
-                        </div>
-                      )}
-                    >
-                      {batchNumbers.map((batchNumber) => (
-                        <MenuItem key={batchNumber} value={batchNumber}>
-                          {batchNumber}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Autocomplete
-                    options={kabupatenList}
-                    value={kabupaten}
-                    onChange={handleKabupatenChange}
-                    renderInput={(params) => <TextField {...params} label="Kabupaten" />}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Autocomplete
-                    options={kecamatanList}
-                    value={kecamatan}
-                    onChange={handleKecamatanChange}
-                    disabled={!kabupaten}
-                    renderInput={(params) => <TextField {...params} label="Kecamatan" />}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Autocomplete
-                    options={desaList}
-                    value={desa}
-                    onChange={handleDesaChange}
-                    disabled={!kecamatan}
-                    renderInput={(params) => <TextField {...params} label="Desa" />}
-                  />
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <TextField
-                    label="Cost"
-                    type="number"
-                    value={cost}
-                    onChange={(e) => setCost(e.target.value)}
-                    fullWidth
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>Paid To</InputLabel>
-                    <Select 
-                      value={paidTo} onChange={handlePaidToChange}
-                      input={<OutlinedInput label="Paid To" />}
-                    >
-                      {farmers.map((farmer) => (
-                        <MenuItem key={farmer.farmerID} value={farmer.farmerName}>
-                          {farmer.farmerName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                {selectedFarmerDetails && (
-                  <>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Farmer ID"
-                        value={selectedFarmerDetails.farmerID}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Farmer Address"
-                        value={selectedFarmerDetails.farmerAddress}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Bank Account"
-                        value={selectedFarmerDetails.bankAccount}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Bank Name"
-                        value={selectedFarmerDetails.bankName}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                    </Grid>
-                  </>
-                )}
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>Payment Method</InputLabel>
-                    <Select 
-                      value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
-                      input={<OutlinedInput label="Payment Method" />}
-                      >
-                      <MenuItem value="cash">Cash</MenuItem>
-                      <MenuItem value="bank transfer">Bank Transfer</MenuItem>
-                      <MenuItem value="check">Check</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Button type="submit" variant="contained" color="primary">
-                    Submit
-                  </Button>
-                </Grid>
-              </Grid>
-            </form>
-            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-              <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
-                {snackbarMessage}
-              </Alert>
-            </Snackbar>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={8}>
+      <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
-              Transport Data
+              Drying Station
             </Typography>
-            <div style={{ height: 400, width: '100%' }}>
-              <DataGrid
-                rows={transportData}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5]}
-                components={{ Toolbar: GridToolbar }}
-                disableSelectionOnClick
-                autosizeOnMount
-                autosizeOptions={{
-                  includeHeaders: true,
-                  includeOutliers: true,
-                  expand: true,
-                }}
-                rowHeight={35}
-              />
-            </div>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleRefreshData}
+              disabled={isLoading}
+              style={{ marginBottom: '16px' }}
+              startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {isLoading ? 'Refreshing...' : 'Refresh Data'}
+            </Button>
+
+            {/* Row 1: Drying Area 1 and 2 */}
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                {renderDataGrid('Drying Area 1')}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                {renderDataGrid('Drying Area 2')}
+              </Grid>
+            </Grid>
+
+            {/* Row 2: Drying Area 3 and 4 */}
+            <Grid container spacing={3} style={{ marginTop: '16px' }}>
+              <Grid item xs={12} md={6}>
+                {renderDataGrid('Drying Area 3')}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                {renderDataGrid('Drying Area 4')}
+              </Grid>
+            </Grid>
+
+            {/* Row 3: Drying Area 5 */}
+            <Grid container spacing={3} style={{ marginTop: '16px' }}>
+              <Grid item xs={12} md={6}>
+                {renderDataGrid('Drying Area 5')}
+              </Grid>
+            </Grid>
           </CardContent>
         </Card>
       </Grid>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Grid>
   );
 };
 
-export default TransportStation;
+export default DryingStation;
