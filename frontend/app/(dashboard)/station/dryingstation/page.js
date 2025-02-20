@@ -29,10 +29,10 @@ import {
   Title,
   Tooltip,
   Legend,
-  ScatterController, // Added for scatter plot
+  ScatterController,
 } from 'chart.js';
 
-// Register Chart.js components, including ScatterController
+// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -284,13 +284,33 @@ const DryingStation = () => {
     );
   };
 
-  // Graph data with natural sun drying optimal curve (50% to 12% over 7 days)
+  // Generate 7-day optimal curve starting from startDryingDate
+  const generateOptimalCurve = () => {
+    if (!selectedBatch || selectedBatch.startDryingDate === 'N/A') return [];
+    const startDate = new Date(selectedBatch.startDryingDate);
+    const labels = [];
+    const data = [];
+    for (let i = 0; i <= 168; i += 24) { // Every 24 hours for 7 days
+      const date = new Date(startDate);
+      date.setHours(date.getHours() + i);
+      labels.push(date.toLocaleDateString());
+      data.push(50 * Math.exp(-0.00858 * i)); // 50% to 12% over 168 hours
+    }
+    return { labels, data };
+  };
+
+  const optimalCurve = generateOptimalCurve();
+
+  // Graph data with fixed 7-day optimal curve and user measurements
   const chartData = {
-    labels: dryingMeasurements.map(m => new Date(m.measurement_date).toLocaleDateString()),
+    labels: optimalCurve.labels.length > 0 ? optimalCurve.labels : dryingMeasurements.map(m => new Date(m.measurement_date).toLocaleDateString()),
     datasets: [
       {
         label: 'Measured Moisture',
-        data: dryingMeasurements.map(m => m.moisture),
+        data: dryingMeasurements.map(m => ({
+          x: new Date(m.measurement_date).toLocaleDateString(),
+          y: m.moisture,
+        })),
         fill: false,
         backgroundColor: 'rgba(75,192,192,1)',
         borderColor: 'rgba(75,192,192,0.2)',
@@ -299,11 +319,7 @@ const DryingStation = () => {
       },
       {
         label: 'Optimal Natural Sun Drying Curve',
-        data: dryingMeasurements.map((_, i) => {
-          const totalSteps = Math.max(dryingMeasurements.length, 7); // At least 7 days
-          const t = (i / (dryingMeasurements.length - 1 || 1)) * 168; // Scale to 168 hours (7 days)
-          return 50 * Math.exp(-0.00858 * t); // Natural sun drying curve
-        }),
+        data: optimalCurve.data,
         fill: false,
         borderColor: 'rgba(255,99,132,1)',
         borderDash: [5, 5],
@@ -316,11 +332,12 @@ const DryingStation = () => {
     scales: {
       x: {
         title: { display: true, text: 'Date' },
+        type: 'category', // Use category scale for discrete dates
       },
       y: {
         title: { display: true, text: 'Moisture (%)' },
         min: 0,
-        max: 60, // Adjusted for coffee drying range
+        max: 60,
       },
     },
     plugins: {
