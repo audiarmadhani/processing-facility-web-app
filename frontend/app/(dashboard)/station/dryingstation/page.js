@@ -286,7 +286,9 @@ const DryingStation = () => {
 
   // Generate 7-day optimal curve starting from startDryingDate
   const generateOptimalCurve = () => {
-    if (!selectedBatch || selectedBatch.startDryingDate === 'N/A') return [];
+    if (!selectedBatch || selectedBatch.startDryingDate === 'N/A') {
+      return { labels: [], data: [] }; // Return empty arrays if no valid start date
+    }
     const startDate = new Date(selectedBatch.startDryingDate);
     const labels = [];
     const data = [];
@@ -303,7 +305,7 @@ const DryingStation = () => {
 
   // Graph data with fixed 7-day optimal curve and user measurements
   const chartData = {
-    labels: optimalCurve.labels.length > 0 ? optimalCurve.labels : dryingMeasurements.map(m => new Date(m.measurement_date).toLocaleDateString()),
+    labels: optimalCurve.labels, // Use the 7-day labels from optimal curve
     datasets: [
       {
         label: 'Measured Moisture',
