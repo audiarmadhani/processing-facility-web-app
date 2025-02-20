@@ -181,7 +181,7 @@ const DryingStation = () => {
     {
       field: 'status',
       headerName: 'Status',
-      width: 150,
+      width: 90,
       renderCell: (params) => {
         const status = params.value;
         let color;
@@ -211,11 +211,11 @@ const DryingStation = () => {
     { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
     { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
     { field: 'weight', headerName: 'Weight', width: 100 },
-    { field: 'type', headerName: 'Type', width: 100 },
-    { field: 'producer', headerName: 'Producer', width: 120 },
+    { field: 'type', headerName: 'Type', width: 90 },
+    { field: 'producer', headerName: 'Producer', width: 90 },
     { field: 'productLine', headerName: 'Product Line', width: 130 },
     { field: 'processingType', headerName: 'Processing Type', width: 160 },
-    { field: 'quality', headerName: 'Quality', width: 130 },
+    { field: 'quality', headerName: 'Quality', width: 100 },
     {
       field: 'details',
       headerName: 'Details',
@@ -413,7 +413,7 @@ const DryingStation = () => {
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>Drying Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} style={{ marginBottom: '16px' }}>
+          <Grid container spacing={2} style={{ marginBottom: '16px', marginTop: '16px' }}>
             <Grid item xs={8}>
               <TextField
                 label="Moisture (%)"
