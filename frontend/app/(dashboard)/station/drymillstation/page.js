@@ -277,7 +277,7 @@ const DryMillStation = () => {
               color="primary"
               onClick={handleRefreshData}
               disabled={isLoading}
-              style={{ marginBottom: '16px' }}
+              sx={{ mb: 2, mt: 2 }}
               startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
             >
               {isLoading ? 'Refreshing...' : 'Refresh Data'}

@@ -392,8 +392,8 @@ const DryingStation = () => {
               color="primary"
               onClick={handleRefreshData}
               disabled={isLoading}
-              style={{ marginBottom: '16px' }}
               startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+              sx={{ mb: 2, mt: 2 }}
             >
               {isLoading ? 'Refreshing...' : 'Refresh Data'}
             </Button>
