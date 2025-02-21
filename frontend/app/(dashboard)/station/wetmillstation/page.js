@@ -72,7 +72,7 @@ const WetmillStation = () => {
           if (typeA !== typeB) return typeA - typeB;
 
           // Sort by status: Entered Wet Mill (0), Not Scanned (1), Exited Wet Mill (2)
-          const statusOrder = { 'Entered Wet Mill': 0, 'Not Scanned': 1, 'Exited Wet Mill': 2 };
+          const statusOrder = { 'Entered Wet Mill': 0, 'Not Scanned': 2, 'Exited Wet Mill': 1 };
           const statusA = statusOrder[a.status] || 3;
           const statusB = statusOrder[b.status] || 3;
           if (statusA !== statusB) return statusA - statusB;

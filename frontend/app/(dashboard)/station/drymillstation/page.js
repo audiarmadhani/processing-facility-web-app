@@ -231,7 +231,7 @@ const DryMillStation = () => {
   const renderDataGrid = () => {
     const sortedData = getDryMillData();
     return (
-      <div style={{ height: 600, width: '100%' }}>
+      <div style={{ height: 1500, width: '100%' }}>
         <DataGrid
           rows={sortedData}
           columns={columns}
