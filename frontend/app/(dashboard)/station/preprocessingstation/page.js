@@ -415,7 +415,7 @@ const PreprocessingStation = () => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={5}>
+      <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
@@ -734,7 +734,7 @@ const PreprocessingStation = () => {
         </Card>
       </Grid>
 
-      <Grid item xs={12} md={7}>
+      <Grid item xs={12} md={8}>
 
         <Card variant="outlined">
           <CardContent>
