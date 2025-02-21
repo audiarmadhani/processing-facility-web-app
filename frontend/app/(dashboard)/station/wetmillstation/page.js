@@ -64,11 +64,11 @@ const WetmillStation = () => {
       if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
       const qcResult = await qcResponse.json();
       const pendingPreprocessingData = qcResult.allRows || [];
-
+  
       const wetmillResponse = await fetch('https://processing-facility-backend.onrender.com/api/wetmill-data');
       if (!wetmillResponse.ok) throw new Error('Failed to fetch wet mill data');
       const wetmillData = await wetmillResponse.json();
-
+  
       const today = new Date();
       const formattedData = pendingPreprocessingData.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
@@ -77,7 +77,7 @@ const WetmillStation = () => {
           const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-
+  
         // Find the latest wet mill data for this batch
         const batchData = wetmillData.filter(data => data.batchNumber === batch.batchNumber);
         const latestEntry = batchData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
@@ -86,7 +86,7 @@ const WetmillStation = () => {
             ? 'Exited Wet Mill'
             : 'Entered Wet Mill'
           : 'Not Scanned';
-
+  
         return {
           ...batch,
           sla,
@@ -95,10 +95,19 @@ const WetmillStation = () => {
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
         };
       });
-
+  
       const unprocessedBatches = formattedData.filter(batch => batch.availableBags > 0);
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
-        if (a.type !== b.type) return a.type.localeCompare(b.type);
+        // Sort by type: Arabica (0), Robusta (1), others (2+)
+        const typeOrder = {
+          'Arabica': 0,
+          'Robusta': 1,
+        };
+        const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 2 + (a.type || '').localeCompare('');
+        const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 2 + (b.type || '').localeCompare('');
+        if (typeA !== typeB) return typeA - typeB;
+  
+        // Secondary sorts (alphabetical)
         if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
         if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
         if (a.color !== b.color) return a.color.localeCompare(b.color);
@@ -106,18 +115,27 @@ const WetmillStation = () => {
         if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
         return 0;
       });
-
+  
       const processedBatches = formattedData.filter(batch => batch.processedBags > 0);
-      const sortedDataType = processedBatches.sort((a, b) => {
-        if (a.type !== b.type) return a.type.localeCompare(b.type);
-        return 0;
-      });
-      const sortedData = sortedDataType.sort((a, b) => {
-        if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') { return -1; }
-        if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') { return 1; }
+      const sortedData = processedBatches.sort((a, b) => {
+        // Sort by type: Arabica (0), Robusta (1), others (2+)
+        const typeOrder = {
+          'Arabica': 0,
+          'Robusta': 1,
+        };
+        const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 2 + (a.type || '').localeCompare('');
+        const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 2 + (b.type || '').localeCompare('');
+        if (typeA !== typeB) return typeA - typeB;
+  
+        // Sort by startProcessingDate (N/A first, then oldest to newest)
+        if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') return -1;
+        if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') return 1;
+        if (a.startProcessingDate !== b.startProcessingDate) return a.startProcessingDate.localeCompare(b.startProcessingDate);
+  
+        // Sort by availableBags (descending)
         return b.availableBags - a.availableBags;
       });
-
+  
       setPreprocessingData(sortedData);
       setUnprocessedBatches(sortedUnprocessedBatches);
     } catch (error) {

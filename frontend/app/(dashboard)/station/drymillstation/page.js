@@ -43,38 +43,37 @@ const DryMillStation = () => {
       if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
       const qcResult = await qcResponse.json();
       const qcData = qcResult.allRows || [];
-
+  
       const dryMillResponse = await fetch('https://processing-facility-backend.onrender.com/api/dry-mill-data');
       if (!dryMillResponse.ok) throw new Error('Failed to fetch dry mill data');
       const dryMillDataRaw = await dryMillResponse.json();
-
-      const formattedData = qcData.map(batch => {
-        const batchDryMillData = dryMillDataRaw.filter(data => data.batchNumber === batch.batchNumber);
-        const latestEntry = batchDryMillData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-        const status = latestEntry
-          ? latestEntry.exited_at
-            ? 'Processed'
-            : 'In Dry Mill'
-          : 'Not in Dry Mill';
-
-        const subBatches = batchDryMillData
-          .filter(data => data.subBatchId)
-          .map(data => ({
-            subBatchId: data.subBatchId,
-            grade: data.grade,
-            weight: data.weight,
-            sortedAt: data.sorted_at,
-          }));
-
-        return {
-          ...batch,
-          status,
-          enteredAt: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
-          exitedAt: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-          subBatches: subBatches.length > 0 ? subBatches : null,
-        };
-      });
-
+  
+      // Filter qcData to only include batches that have entered the dry mill
+      const formattedData = qcData
+        .filter(batch => dryMillDataRaw.some(data => data.batchNumber === batch.batchNumber && data.entered_at))
+        .map(batch => {
+          const batchDryMillData = dryMillDataRaw.filter(data => data.batchNumber === batch.batchNumber);
+          const latestEntry = batchDryMillData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+          const status = latestEntry.exited_at ? 'Processed' : 'In Dry Mill';
+  
+          const subBatches = batchDryMillData
+            .filter(data => data.subBatchId)
+            .map(data => ({
+              subBatchId: data.subBatchId,
+              grade: data.grade,
+              weight: data.weight,
+              sortedAt: data.sorted_at,
+            }));
+  
+          return {
+            ...batch,
+            status,
+            enteredAt: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
+            exitedAt: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
+            subBatches: subBatches.length > 0 ? subBatches : null,
+          };
+        });
+  
       setDryMillData(formattedData);
     } catch (error) {
       console.error('Error fetching dry mill data:', error);
@@ -147,7 +146,7 @@ const DryMillStation = () => {
     {
       field: 'status',
       headerName: 'Status',
-      width: 90,
+      width: 120,
       renderCell: (params) => {
         const status = params.value;
         let color;
@@ -174,14 +173,6 @@ const DryMillStation = () => {
         );
       },
     },
-    { field: 'enteredAt', headerName: 'Entered At', width: 150 },
-    { field: 'exitedAt', headerName: 'Exited At', width: 150 },
-    { field: 'weight', headerName: 'Total Weight', width: 100 },
-    { field: 'type', headerName: 'Type', width: 90 },
-    { field: 'producer', headerName: 'Producer', width: 90 },
-    { field: 'productLine', headerName: 'Product Line', width: 130 },
-    { field: 'processingType', headerName: 'Processing Type', width: 160 },
-    { field: 'quality', headerName: 'Target Quality', width: 100 },
     {
       field: 'details',
       headerName: 'Details',
@@ -197,10 +188,27 @@ const DryMillStation = () => {
         </Button>
       ),
     },
+    { field: 'enteredAt', headerName: 'Entered At', width: 150 },
+    { field: 'exitedAt', headerName: 'Exited At', width: 150 },
+    { field: 'weight', headerName: 'Total Weight', width: 100 },
+    { field: 'type', headerName: 'Type', width: 90 },
+    { field: 'producer', headerName: 'Producer', width: 90 },
+    { field: 'productLine', headerName: 'Product Line', width: 130 },
+    { field: 'processingType', headerName: 'Processing Type', width: 160 },
+    { field: 'quality', headerName: 'Target Quality', width: 130 },
   ];
 
   const getDryMillData = () => {
     return dryMillData.sort((a, b) => {
+      // Sort by type: Arabica (0), Robusta (1), others (2+)
+      const typeOrder = {
+        'Arabica': 0,
+        'Robusta': 1,
+      };
+      const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 2 + (a.type || '').localeCompare('');
+      const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 2 + (b.type || '').localeCompare('');
+      if (typeA !== typeB) return typeA - typeB;
+  
       // Sort by status: In Dry Mill (0), Not in Dry Mill (1), Processed (2)
       const statusOrder = {
         'In Dry Mill': 0,
@@ -210,20 +218,13 @@ const DryMillStation = () => {
       const statusA = statusOrder[a.status] || 3;
       const statusB = statusOrder[b.status] || 3;
       if (statusA !== statusB) return statusA - statusB;
-
+  
       // Sort by enteredAt (oldest first, ascending)
       if (a.enteredAt !== b.enteredAt) {
         return a.enteredAt.localeCompare(b.enteredAt);
       }
-
-      // Sort by type: Arabica (0), Robusta (1), others (2+)
-      const typeOrder = {
-        'Arabica': 0,
-        'Robusta': 1,
-      };
-      const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 2 + (a.type || '').localeCompare('');
-      const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 2 + (b.type || '').localeCompare('');
-      return typeA - typeB;
+  
+      return 0; // If all criteria are equal, maintain original order
     });
   };
 
