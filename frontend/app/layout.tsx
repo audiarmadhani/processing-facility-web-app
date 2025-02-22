@@ -22,6 +22,9 @@ import StorageIcon from '@mui/icons-material/Storage';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 
 export const metadata = {
   title: "Kopi Fabriek Platform",
@@ -61,6 +64,24 @@ const NAVIGATION: Navigation = [
       { kind: "divider" },
 
       { segment: "postprocessingqcstation", title: "GB QC Station", icon: <NoteAltIcon /> },
+    ],
+  },
+
+  { kind: "divider" },
+
+  {
+    segment: "oms",
+    title: "Orders",
+    icon: <ShoppingCartIcon />,
+    children: [
+      { segment: "dashboard", title: "OMS Dashboard", icon: <StorefrontIcon /> },
+      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
+      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
+
+      { kind: "divider" },
+
+      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
+      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
     ],
   },
 
