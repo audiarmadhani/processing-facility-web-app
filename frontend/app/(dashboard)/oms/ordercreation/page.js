@@ -239,10 +239,10 @@ const OrderCreation = () => {
 	
 			if (!orderRes.ok) throw new Error('Failed to create order');
 			const orderResult = await orderRes.json();
-			console.log('Order Response:', orderResult); // Debug log
+			console.log('Order Response:', orderResult);
 	
-			// Adjust based on actual response structure
-			const orderId = orderResult.order ? orderResult.order.order_id : orderResult.order_id;
+			// Extract order_id from the first element of the order array
+			const orderId = orderResult.order && orderResult.order.length > 0 ? orderResult.order[0].order_id : null;
 			if (!orderId) throw new Error('Order ID not found in response');
 	
 			// Step 2: Generate Order List PDF
