@@ -14,17 +14,17 @@ export const feedbackCustomizations: Components<Theme> = {
       }),
     },
   },
-  MuiDialog: {
-    styleOverrides: {
-      root: ({ theme }) => ({
-        '& .MuiDialog-paper': {
-          borderRadius: '10px',
-          border: '1px solid',
-          borderColor: theme.palette.divider,
-        },
-      }),
-    },
-  },
+  // MuiDialog: {
+  //   styleOverrides: {
+  //     root: ({ theme }) => ({
+  //       '& .MuiDialog-paper': {
+  //         borderRadius: '10px',
+  //         border: '1px solid',
+  //         borderColor: theme.palette.divider,
+  //       },
+  //     }),
+  //   },
+  // },
   MuiLinearProgress: {
     styleOverrides: {
       root: ({ theme }) => ({
