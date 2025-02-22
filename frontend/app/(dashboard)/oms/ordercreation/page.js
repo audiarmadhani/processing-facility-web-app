@@ -16,8 +16,8 @@ import {
   Alert,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
-import CustomerModal from '../components/CustomerModal'; // From previous code
-import DriverModal from '../components/DriverModal';   // From previous code
+import CustomerModal from '../../components/CustomerModal'; // From previous code
+import DriverModal from '../../components/DriverModal';   // From previous code
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // For table formatting
 import dayjs from 'dayjs'; // For date formatting
