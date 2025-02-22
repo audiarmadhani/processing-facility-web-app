@@ -71,7 +71,7 @@ const NAVIGATION: Navigation = [
 
   {
     segment: "oms",
-    title: "Orders",
+    title: "Order Management System",
     icon: <ShoppingCartIcon />,
     children: [
       { segment: "dashboard", title: "OMS Dashboard", icon: <StorefrontIcon /> },

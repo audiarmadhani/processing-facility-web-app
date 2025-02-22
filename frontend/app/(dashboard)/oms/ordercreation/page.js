@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  Grid,
   Typography,
   TextField,
   Select,
@@ -14,13 +13,15 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  IconButton,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
-import CustomerModal from '../../components/CustomerModal'; // From previous code
-import DriverModal from '../../components/DriverModal';   // From previous code
+import CustomerModal from '../../components/CustomerModal'; // Adjust path as needed
+import DriverModal from '../../components/DriverModal';   // Adjust path as needed
 import jsPDF from 'jspdf';
-import 'jspdf-autotable'; // For table formatting
-import dayjs from 'dayjs'; // For date formatting
+import 'jspdf-autotable';
+import dayjs from 'dayjs';
+import CloseIcon from '@mui/icons-material/Close';
 
 const OrderCreation = () => {
   const { data: session, status } = useSession();
@@ -72,6 +73,15 @@ const OrderCreation = () => {
 
   const addItem = () => {
     setFormData(prev => ({ ...prev, items: [...prev.items, { product: '', quantity: '' }] }));
+  };
+
+  const removeItem = (index) => {
+    if (formData.items.length === 1) {
+      setSnackbar({ open: true, message: 'At least one item is required', severity: 'warning' });
+      return;
+    }
+    const newItems = formData.items.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, items: newItems }));
   };
 
   const handleSaveCustomer = async (newCustomer) => {
@@ -257,9 +267,6 @@ const OrderCreation = () => {
       // Step 4: Download PDF for printing
       orderListDoc.save(`OrderList-${orderId}.pdf`);
 
-      orderListDoc.autoPrint();
-			window.open(orderListDoc.output('bloburl'), '_blank');
-
       setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
       setFormData({ customer_id: '', driver_id: '', items: [{ product: '', quantity: '' }], shipping_method: 'Customer' });
     } catch (error) {
@@ -278,50 +285,46 @@ const OrderCreation = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>Create New Order</Typography>
+    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+      <Box sx={{ width: '500px' }}> {/* Fixed width, centered */}
+        <Typography variant="h4" gutterBottom align="center">Create New Order</Typography>
 
-      <Grid container spacing={3}>
         {/* Customer Selection */}
-        <Grid item xs={12} sm={6}>
-          <FormControl fullWidth>
-            <InputLabel>Customer</InputLabel>
-            <Select
-              name="customer_id"
-              value={formData.customer_id}
-              onChange={handleInputChange}
-              label="Customer"
-            >
-              {customers.map(customer => (
-                <MenuItem key={customer.customer_id} value={customer.customer_id}>
-                  {customer.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button sx={{ mt: 1 }} onClick={() => setOpenCustomerModal(true)}>Add New Customer</Button>
-        </Grid>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Customer</InputLabel>
+          <Select
+            name="customer_id"
+            value={formData.customer_id}
+            onChange={handleInputChange}
+            label="Customer"
+          >
+            {customers.map(customer => (
+              <MenuItem key={customer.customer_id} value={customer.customer_id}>
+                {customer.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Button sx={{ mb: 3 }} onClick={() => setOpenCustomerModal(true)}>Add New Customer</Button>
 
         {/* Shipping Method */}
-        <Grid item xs={12} sm={6}>
-          <FormControl fullWidth>
-            <InputLabel>Shipping Method</InputLabel>
-            <Select
-              name="shipping_method"
-              value={formData.shipping_method}
-              onChange={handleInputChange}
-              label="Shipping Method"
-            >
-              <MenuItem value="Customer">Customer-Arranged</MenuItem>
-              <MenuItem value="Self">Self-Arranged</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Shipping Method</InputLabel>
+          <Select
+            name="shipping_method"
+            value={formData.shipping_method}
+            onChange={handleInputChange}
+            label="Shipping Method"
+          >
+            <MenuItem value="Customer">Customer-Arranged</MenuItem>
+            <MenuItem value="Self">Self-Arranged</MenuItem>
+          </Select>
+        </FormControl>
 
         {/* Driver Selection (Self-Arranged Only) */}
         {formData.shipping_method === 'Self' && (
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
+          <>
+            <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Driver</InputLabel>
               <Select
                 name="driver_id"
@@ -337,67 +340,66 @@ const OrderCreation = () => {
                 ))}
               </Select>
             </FormControl>
-            <Button sx={{ mt: 1 }} onClick={() => setOpenDriverModal(true)}>Add New Driver</Button>
-          </Grid>
+            <Button sx={{ mb: 3 }} onClick={() => setOpenDriverModal(true)}>Add New Driver</Button>
+          </>
         )}
 
         {/* Items */}
         {formData.items.map((item, index) => (
-          <Grid item xs={12} key={index}>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Product"
-                  value={item.product}
-                  onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Quantity (kg)"
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                />
-              </Grid>
-            </Grid>
-          </Grid>
+          <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <TextField
+              label="Product"
+              value={item.product}
+              onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+              sx={{ mr: 2, flex: 1 }}
+            />
+            <TextField
+              label="Quantity (kg)"
+              type="number"
+              value={item.quantity}
+              onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+              sx={{ mr: 1, width: '120px' }}
+            />
+            <IconButton
+              onClick={() => removeItem(index)}
+              size="small"
+              color="error"
+              disabled={formData.items.length === 1}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
         ))}
-        <Grid item xs={12}>
-          <Button variant="outlined" onClick={addItem}>Add Another Item</Button>
-        </Grid>
+        <Button variant="outlined" onClick={addItem} sx={{ mb: 3 }}>Add Another Item</Button>
 
         {/* Submit */}
-        <Grid item xs={12}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSubmit}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
-          >
-            Create Order
-          </Button>
-        </Grid>
-      </Grid>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSubmit}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} /> : null}
+          fullWidth
+        >
+          Create Order
+        </Button>
 
-      {/* Modals */}
-      <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
-      <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
+        {/* Modals */}
+        <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
+        <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        {/* Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </Box>
   );
 };

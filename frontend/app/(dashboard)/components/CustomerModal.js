@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Button } from '@mui/material';
 
 const CustomerModal = ({ open, onClose, onSave }) => {
-  const [customer, setCustomer] = useState({ name: '', address: '', phone: '', special_requests: '', warehouse_open_time: '' });
+  const [customer, setCustomer] = useState({ name: '', address: '', phone: '', email: '', special_requests: '', warehouse_open_time: '', preferred_shipping_method: '' });
 
   const handleSave = () => {
     onSave(customer);
-    setCustomer({ name: '', address: '', phone: '', special_requests: '', warehouse_open_time: '' });
+    setCustomer({ name: '', address: '', phone: '', email: '', special_requests: '', warehouse_open_time: '', preferred_shipping_method: '' });
   };
 
   return (
@@ -17,8 +17,10 @@ const CustomerModal = ({ open, onClose, onSave }) => {
           <Grid item xs={12}><TextField fullWidth label="Name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} /></Grid>
           <Grid item xs={12}><TextField fullWidth label="Address" value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} /></Grid>
           <Grid item xs={12}><TextField fullWidth label="Phone" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} /></Grid>
+          <Grid item xs={12}><TextField fullWidth label="Email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></Grid>
           <Grid item xs={12}><TextField fullWidth label="Special Requests" value={customer.special_requests} onChange={(e) => setCustomer({ ...customer, special_requests: e.target.value })} /></Grid>
           <Grid item xs={12}><TextField fullWidth label="Warehouse Open Time" value={customer.warehouse_open_time} onChange={(e) => setCustomer({ ...customer, warehouse_open_time: e.target.value })} /></Grid>
+          <Grid item xs={12}><TextField fullWidth label="Preferred Shipping Method" value={customer.preferred_shipping_method} onChange={(e) => setCustomer({ ...customer, preferred_shipping_method: e.target.value })} /></Grid>
         </Grid>
       </DialogContent>
       <DialogActions>
