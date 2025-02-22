@@ -37,19 +37,24 @@ const OrderCreation = () => {
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [refreshCounter, setRefreshCounter] = useState(0); // New state for refreshing
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  const [showCustomerDetails, setShowCustomerDetails] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
+  // Fetch initial data (customers and drivers only)
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       setLoading(true);
       try {
         const [customersRes, driversRes] = await Promise.all([
           fetch('https://processing-facility-backend.onrender.com/api/customers'),
           fetch('https://processing-facility-backend.onrender.com/api/drivers'),
         ]);
-        if (!customersRes.ok || !driversRes.ok) throw new Error('Failed to fetch data');
+
+        if (!customersRes.ok || !driversRes.ok) throw new Error('Failed to fetch initial data');
         const customersData = await customersRes.json();
         const driversData = await driversRes.json();
+
         setCustomers(customersData);
         setDrivers(driversData);
       } catch (error) {
@@ -58,12 +63,21 @@ const OrderCreation = () => {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [refreshCounter]); // Depend on refreshCounter
+    fetchInitialData();
+  }, [refreshCounter]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+
+    if (name === 'customer_id' && value) {
+      const customer = customers.find(c => c.customer_id === value);
+      setSelectedCustomer(customer);
+      setShowCustomerDetails(true);
+    } else if (name === 'customer_id' && !value) {
+      setShowCustomerDetails(false);
+      setSelectedCustomer(null);
+    }
   };
 
   const handleItemChange = (index, field, value) => {
@@ -94,9 +108,9 @@ const OrderCreation = () => {
       });
       if (!res.ok) throw new Error('Failed to add customer');
       const customer = await res.json();
-      setCustomers(prev => [...prev, customer]); // Immediate update for UX
+      setCustomers(prev => [...prev, customer]);
       setFormData(prev => ({ ...prev, customer_id: customer.customer_id }));
-      setRefreshCounter(prev => prev + 1); // Trigger refetch
+      setRefreshCounter(prev => prev + 1);
       setSnackbar({ open: true, message: 'Customer added successfully', severity: 'success' });
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -113,9 +127,9 @@ const OrderCreation = () => {
       });
       if (!res.ok) throw new Error('Failed to add driver');
       const driver = await res.json();
-      setDrivers(prev => [...prev, driver]); // Immediate update for UX
+      setDrivers(prev => [...prev, driver]);
       setFormData(prev => ({ ...prev, driver_id: driver.driver_id }));
-      setRefreshCounter(prev => prev + 1); // Trigger refetch
+      setRefreshCounter(prev => prev + 1);
       setSnackbar({ open: true, message: 'Driver added successfully', severity: 'success' });
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -159,6 +173,14 @@ const OrderCreation = () => {
     addText(`Phone: ${customer ? customer.phone : '-'}`, 14, yOffset);
     yOffset += 6;
     addText(`Email: ${customer ? customer.email || '-' : '-'}`, 14, yOffset);
+    yOffset += 6;
+    addText(`Country: ${customer ? customer.country || '-' : '-'}`, 14, yOffset);
+    yOffset += 6;
+    addText(`State: ${customer ? customer.state || '-' : '-'}`, 14, yOffset);
+    yOffset += 6;
+    addText(`City: ${customer ? customer.city || '-' : '-'}`, 14, yOffset);
+    yOffset += 6;
+    addText(`Zip Code: ${customer ? customer.zip_code || '-' : '-'}`, 14, yOffset);
 
     let shippingOffset = 45;
     addText("Shipping Information:", 14 + columnWidth + 10, shippingOffset, { bold: true });
@@ -262,6 +284,8 @@ const OrderCreation = () => {
 
       setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
       setFormData({ customer_id: '', driver_id: '', items: [{ product: '', quantity: '' }], shipping_method: 'Customer' });
+      setShowCustomerDetails(false);
+      setSelectedCustomer(null);
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
     } finally {
@@ -282,6 +306,7 @@ const OrderCreation = () => {
       <Box sx={{ width: '500px' }}>
         <Typography variant="h4" gutterBottom align="center">Create New Order</Typography>
 
+        {/* Customer Selection */}
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>Customer</InputLabel>
           <Select
@@ -295,10 +320,82 @@ const OrderCreation = () => {
                 {customer.name}
               </MenuItem>
             ))}
+            <MenuItem>
+              <Button
+                fullWidth
+                variant="text"
+                onClick={() => setOpenCustomerModal(true)}
+                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+              >
+                + Add New Customer
+              </Button>
+            </MenuItem>
           </Select>
         </FormControl>
-        <Button sx={{ mb: 3 }} onClick={() => setOpenCustomerModal(true)}>Add New Customer</Button>
 
+        {/* Customer Details */}
+        {showCustomerDetails && selectedCustomer && (
+          <Box sx={{ mb: 3, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+            <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
+            <TextField
+              label="Name"
+              value={selectedCustomer.name || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Address"
+              value={selectedCustomer.address || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Phone"
+              value={selectedCustomer.phone || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Email"
+              value={selectedCustomer.email || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Country"
+              value={selectedCustomer.country || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="State"
+              value={selectedCustomer.state || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="City"
+              value={selectedCustomer.city || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Zip Code"
+              value={selectedCustomer.zip_code || '-'}
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
+          </Box>
+        )}
+
+        {/* Shipping Method */}
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>Shipping Method</InputLabel>
           <Select
@@ -312,28 +409,37 @@ const OrderCreation = () => {
           </Select>
         </FormControl>
 
+        {/* Driver Selection (Self-Arranged Only) */}
         {formData.shipping_method === 'Self' && (
-          <>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Driver</InputLabel>
-              <Select
-                name="driver_id"
-                value={formData.driver_id}
-                onChange={handleInputChange}
-                label="Driver"
-              >
-                <MenuItem value="">None</MenuItem>
-                {drivers.filter(d => d.availability_status === 'Available').map(driver => (
-                  <MenuItem key={driver.driver_id} value={driver.driver_id}>
-                    {driver.name} ({driver.vehicle_number})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Button sx={{ mb: 3 }} onClick={() => setOpenDriverModal(true)}>Add New Driver</Button>
-          </>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Driver</InputLabel>
+            <Select
+              name="driver_id"
+              value={formData.driver_id}
+              onChange={handleInputChange}
+              label="Driver"
+            >
+              <MenuItem value="">None</MenuItem>
+              {drivers.filter(d => d.availability_status === 'Available').map(driver => (
+                <MenuItem key={driver.driver_id} value={driver.driver_id}>
+                  {driver.name} ({driver.vehicle_number})
+                </MenuItem>
+              ))}
+              <MenuItem>
+                <Button
+                  fullWidth
+                  variant="text"
+                  onClick={() => setOpenDriverModal(true)}
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
+                  + Add New Driver
+                </Button>
+              </MenuItem>
+            </Select>
+          </FormControl>
         )}
 
+        {/* Items */}
         {formData.items.map((item, index) => (
           <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <TextField
@@ -361,6 +467,7 @@ const OrderCreation = () => {
         ))}
         <Button variant="outlined" onClick={addItem} sx={{ mb: 3 }}>Add Another Item</Button>
 
+        {/* Submit */}
         <Button
           variant="contained"
           color="primary"
@@ -372,9 +479,11 @@ const OrderCreation = () => {
           Create Order
         </Button>
 
+        {/* Modals */}
         <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
         <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
+        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
