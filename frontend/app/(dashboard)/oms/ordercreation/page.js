@@ -37,6 +37,7 @@ const OrderCreation = () => {
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [refreshCounter, setRefreshCounter] = useState(0); // New state for refreshing
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,7 +59,7 @@ const OrderCreation = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [refreshCounter]); // Depend on refreshCounter
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -93,8 +94,9 @@ const OrderCreation = () => {
       });
       if (!res.ok) throw new Error('Failed to add customer');
       const customer = await res.json();
-      setCustomers(prev => [...prev, customer]);
+      setCustomers(prev => [...prev, customer]); // Immediate update for UX
       setFormData(prev => ({ ...prev, customer_id: customer.customer_id }));
+      setRefreshCounter(prev => prev + 1); // Trigger refetch
       setSnackbar({ open: true, message: 'Customer added successfully', severity: 'success' });
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -111,8 +113,9 @@ const OrderCreation = () => {
       });
       if (!res.ok) throw new Error('Failed to add driver');
       const driver = await res.json();
-      setDrivers(prev => [...prev, driver]);
+      setDrivers(prev => [...prev, driver]); // Immediate update for UX
       setFormData(prev => ({ ...prev, driver_id: driver.driver_id }));
+      setRefreshCounter(prev => prev + 1); // Trigger refetch
       setSnackbar({ open: true, message: 'Driver added successfully', severity: 'success' });
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -124,33 +127,29 @@ const OrderCreation = () => {
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: [241.3, 279.4], // 9.5 x 11 inches in mm
+      format: [241.3, 279.4],
     });
 
     const customer = customers.find(c => c.customer_id === formData.customer_id);
     const driver = drivers.find(d => d.driver_id === formData.driver_id);
 
-    // Helper function for consistent Arial text styling
     const addText = (text, x, y, options = {}) => {
-      doc.setFont('Arial', options.bold ? 'bold' : 'normal'); // Use Arial instead of courier
-      doc.setFontSize(options.size || 12); // Default size 12 unless specified
+      doc.setFont('Arial', options.bold ? 'bold' : 'normal');
+      doc.setFontSize(options.size || 12);
       if (options.align) doc.text(text, x, y, { align: options.align });
       else doc.text(text, x, y);
     };
 
-    // --- Header ---
     addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 15, { align: 'center', bold: true, size: 16 });
     addText("Order List", doc.internal.pageSize.getWidth() / 2, 23, { align: 'center', bold: true, size: 14 });
     addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
     addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
-    doc.line(14, 28, doc.internal.pageSize.getWidth() - 14, 28); // Horizontal line with margins
+    doc.line(14, 28, doc.internal.pageSize.getWidth() - 14, 28);
     addText(`Order ID: ${orderId}`, 14, 35, { bold: true });
 
-    // --- Two-Column Layout (Customer and Shipping) ---
-    let yOffset = 45; // Start below header and order ID
-    const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2; // Adjusted margins
+    let yOffset = 45;
+    const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2;
 
-    // --- Customer Information (Left Column) ---
     addText("Customer Information:", 14, yOffset, { bold: true });
     yOffset += 8;
     addText(`Name: ${customer ? customer.name : '-'}`, 14, yOffset);
@@ -161,7 +160,6 @@ const OrderCreation = () => {
     yOffset += 6;
     addText(`Email: ${customer ? customer.email || '-' : '-'}`, 14, yOffset);
 
-    // --- Shipping Information (Right Column) ---
     let shippingOffset = 45;
     addText("Shipping Information:", 14 + columnWidth + 10, shippingOffset, { bold: true });
     shippingOffset += 8;
@@ -177,24 +175,22 @@ const OrderCreation = () => {
       addText(`Max Capacity: ${driver.max_capacity ? driver.max_capacity + ' kg' : '-'}`, 14 + columnWidth + 10, shippingOffset);
     }
 
-    // --- Items Table (Full Width) ---
     let tableOffset = Math.max(yOffset, driver ? shippingOffset + 6 : shippingOffset) + 10;
     addText("Items:", 14, tableOffset, { bold: true });
     doc.autoTable({
       startY: tableOffset + 8,
       head: [['Product', 'Quantity (kg)']],
       body: formData.items.map(item => [item.product, item.quantity]),
-      styles: { font: 'Arial', fontSize: 10, cellPadding: 2 }, // Use Arial for table
+      styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
       headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
       margin: { left: 14, right: 14 },
     });
 
-    // --- Signatures ---
     let signatureOffset = doc.lastAutoTable.finalY + 10;
     doc.line(14, signatureOffset, doc.internal.pageSize.getWidth() - 14, signatureOffset);
     const signatureY = signatureOffset + 20;
     const labelY = signatureY + 6;
-    const signatureLength = 30; // Slightly longer for aesthetics
+    const signatureLength = 30;
 
     addText("_".repeat(signatureLength), 14, signatureY);
     addText("Order Staff", 14, labelY);
@@ -210,7 +206,6 @@ const OrderCreation = () => {
       addText(driver.name || '-', 146, labelY + 6);
     }
 
-    // --- Footer ---
     doc.line(14, doc.internal.pageSize.getHeight() - 14, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 14);
     addText(`Printed on: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 14, doc.internal.pageSize.getHeight() - 8, { size: 10 });
 
