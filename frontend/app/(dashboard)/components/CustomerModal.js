@@ -8,8 +8,6 @@ const CustomerModal = ({ open, onClose, onSave }) => {
     phone: '',
     email: '',
     special_requests: '',
-    warehouse_open_time: '',
-    preferred_shipping_method: '',
     country: '',
     state: '',
     city: '',
@@ -20,19 +18,18 @@ const CustomerModal = ({ open, onClose, onSave }) => {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // GeoNames API configuration
-  const GEONAMES_USERNAME = 'audiarmadhani'; // Replace with your GeoNames username
-  const BASE_URL = 'http://api.geonames.org';
+  // CountriesNow API configuration
+  const BASE_URL = 'https://countriesnow.space/api/v0.1/countries';
 
   // Fetch countries on mount
   useEffect(() => {
     const fetchCountries = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${BASE_URL}/countryInfoJSON?username=${GEONAMES_USERNAME}`);
+        const res = await fetch(`${BASE_URL}/flag/images`);
         if (!res.ok) throw new Error('Failed to fetch countries');
         const data = await res.json();
-        setCountries(data.geonames);
+        setCountries(data.data); // Array of { name, iso2, ... }
       } catch (error) {
         console.error('Error fetching countries:', error);
       } finally {
@@ -53,11 +50,14 @@ const CustomerModal = ({ open, onClose, onSave }) => {
 
     const fetchStates = async () => {
       try {
-        const countryCode = countries.find(c => c.countryName === customer.country)?.countryCode;
-        const res = await fetch(`${BASE_URL}/childrenJSON?geonameId=${countryCode}&username=${GEONAMES_USERNAME}`);
+        const res = await fetch(`${BASE_URL}/states`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ country: customer.country }),
+        });
         if (!res.ok) throw new Error('Failed to fetch states');
         const data = await res.json();
-        setStates(data.geonames || []);
+        setStates(data.data.states || []); // Array of { name, iso2, ... }
         setCities([]);
         setCustomer(prev => ({ ...prev, state: '', city: '' }));
       } catch (error) {
@@ -69,7 +69,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
 
   // Fetch cities when state changes
   useEffect(() => {
-    if (!customer.state) {
+    if (!customer.country || !customer.state) {
       setCities([]);
       setCustomer(prev => ({ ...prev, city: '' }));
       return;
@@ -77,11 +77,14 @@ const CustomerModal = ({ open, onClose, onSave }) => {
 
     const fetchCities = async () => {
       try {
-        const stateGeonameId = states.find(s => s.name === customer.state)?.geonameId;
-        const res = await fetch(`${BASE_URL}/childrenJSON?geonameId=${stateGeonameId}&username=${GEONAMES_USERNAME}`);
+        const res = await fetch(`${BASE_URL}/state/cities`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ country: customer.country, state: customer.state }),
+        });
         if (!res.ok) throw new Error('Failed to fetch cities');
         const data = await res.json();
-        setCities(data.geonames || []);
+        setCities(data.data || []); // Array of city names (strings)
         setCustomer(prev => ({ ...prev, city: '' }));
       } catch (error) {
         console.error('Error fetching cities:', error);
@@ -103,8 +106,6 @@ const CustomerModal = ({ open, onClose, onSave }) => {
       phone: '',
       email: '',
       special_requests: '',
-      warehouse_open_time: '',
-      preferred_shipping_method: '',
       country: '',
       state: '',
       city: '',
@@ -164,7 +165,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
                 disabled={loading}
               >
                 {countries.map(country => (
-                  <MenuItem key={country.countryCode} value={country.countryName}>{country.countryName}</MenuItem>
+                  <MenuItem key={country.iso2} value={country.name}>{country.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -179,7 +180,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
                 label="State"
               >
                 {states.map(state => (
-                  <MenuItem key={state.geonameId} value={state.name}>{state.name}</MenuItem>
+                  <MenuItem key={state.iso2} value={state.name}>{state.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -194,7 +195,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
                 label="City"
               >
                 {cities.map(city => (
-                  <MenuItem key={city.geonameId} value={city.name}>{city.name}</MenuItem>
+                  <MenuItem key={city} value={city}>{city}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -214,24 +215,6 @@ const CustomerModal = ({ open, onClose, onSave }) => {
               label="Special Requests"
               name="special_requests"
               value={customer.special_requests}
-              onChange={handleChange}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Warehouse Open Time"
-              name="warehouse_open_time"
-              value={customer.warehouse_open_time}
-              onChange={handleChange}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Preferred Shipping Method"
-              name="preferred_shipping_method"
-              value={customer.preferred_shipping_method}
               onChange={handleChange}
             />
           </Grid>
