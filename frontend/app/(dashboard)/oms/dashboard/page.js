@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -17,7 +16,6 @@ import { useSession } from 'next-auth/react';
 
 const Dashboard = () => {
   const { data: session, status } = useSession();
-  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -55,9 +53,21 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  const handleCreateOrder = () => navigate('/orders/create');
-  const handleViewCustomers = () => navigate('/customers');
-  const handleViewDrivers = () => navigate('/drivers');
+  const handleCreateOrder = () => {
+    console.log('Navigate to /orders/create'); // Placeholder for Navbar navigation
+  };
+
+  const handleViewCustomers = () => {
+    console.log('Navigate to /customers'); // Placeholder for Navbar navigation
+  };
+
+  const handleViewDrivers = () => {
+    console.log('Navigate to /drivers'); // Placeholder for Navbar navigation
+  };
+
+  const handelViewDocuments = (orderId) => {
+    console.log(`Navigate to /orders/${orderId}/documents`); // Placeholder for Navbar navigation
+  };
 
   const columns = [
     { field: 'order_id', headerName: 'Order ID', width: 100 },
@@ -88,7 +98,7 @@ const Dashboard = () => {
         <Button 
           variant="outlined" 
           size="small" 
-          onClick={() => navigate(`/orders/${params.row.order_id}/documents`)} 
+          onClick={() => handelViewDocuments(params.row.order_id)} 
         >
           View
         </Button>
@@ -159,9 +169,6 @@ const Dashboard = () => {
           />
         </div>
       </Paper>
-
-      {/* Snackbar for future use */}
-      {/* Add Snackbar here if needed */}
     </Box>
   );
 };
