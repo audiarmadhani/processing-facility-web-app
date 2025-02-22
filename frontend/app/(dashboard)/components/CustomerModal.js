@@ -121,41 +121,27 @@ const CustomerModal = ({ open, onClose, onSave }) => {
           <Grid item xs={12}>
             <TextField
               fullWidth
+              variant="outlined"
               label="Name"
               name="name"
               value={customer.name}
               onChange={handleChange}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
             <TextField
               fullWidth
+              variant="outlined"
               label="Address"
               name="address"
               value={customer.address}
               onChange={handleChange}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Phone"
-              name="phone"
-              value={customer.phone}
-              onChange={handleChange}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              value={customer.email}
-              onChange={handleChange}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <FormControl fullWidth>
+            <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
               <InputLabel>Country</InputLabel>
               <Select
                 name="country"
@@ -171,7 +157,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
             </FormControl>
           </Grid>
           <Grid item xs={12}>
-            <FormControl fullWidth disabled={!customer.country}>
+            <FormControl fullWidth variant="outlined" sx={{ mb: 2 }} disabled={!customer.country}>
               <InputLabel>State</InputLabel>
               <Select
                 name="state"
@@ -186,7 +172,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
             </FormControl>
           </Grid>
           <Grid item xs={12}>
-            <FormControl fullWidth disabled={!customer.state}>
+            <FormControl fullWidth variant="outlined" sx={{ mb: 2 }} disabled={!customer.state}>
               <InputLabel>City</InputLabel>
               <Select
                 name="city"
@@ -203,19 +189,45 @@ const CustomerModal = ({ open, onClose, onSave }) => {
           <Grid item xs={12}>
             <TextField
               fullWidth
+              variant="outlined"
               label="Zip Code"
               name="zip_code"
               value={customer.zip_code}
               onChange={handleChange}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
             <TextField
               fullWidth
+              variant="outlined"
+              label="Phone"
+              name="phone"
+              value={customer.phone}
+              onChange={handleChange}
+              sx={{ mb: 2 }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Email"
+              name="email"
+              value={customer.email}
+              onChange={handleChange}
+              sx={{ mb: 2 }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              variant="outlined"
               label="Special Requests"
               name="special_requests"
               value={customer.special_requests}
               onChange={handleChange}
+              sx={{ mb: 2 }}
             />
           </Grid>
         </Grid>
