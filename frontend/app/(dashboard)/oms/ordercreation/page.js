@@ -218,63 +218,67 @@ const OrderCreation = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.customer_id || !formData.items.every(item => item.product && item.quantity) || !formData.shipping_method) {
-      setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Step 1: Create the order
-      const orderData = new FormData();
-      orderData.append('customer_id', formData.customer_id);
-      orderData.append('driver_id', formData.driver_id || '');
-      orderData.append('items', JSON.stringify(formData.items));
-      orderData.append('shipping_method', formData.shipping_method);
-
-      const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
-        method: 'POST',
-        body: orderData,
-      });
-
-      if (!orderRes.ok) throw new Error('Failed to create order');
-      const orderResult = await orderRes.json();
-      const orderId = orderResult.order.order_id;
-
-      // Step 2: Generate Order List PDF
-      const orderListDoc = generateOrderListPDF(orderId);
-      const orderListBlob = orderListDoc.output('blob');
-
-      // Step 3: Upload to Google Drive
-      const orderListFormData = new FormData();
-      orderListFormData.append('order_id', orderId);
-      orderListFormData.append('type', 'Order List');
-      orderListFormData.append('details', JSON.stringify({
-        customer_id: formData.customer_id,
-        items: formData.items,
-        shipping_method: formData.shipping_method,
-        driver_id: formData.driver_id || null,
-      }));
-      orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`);
-
-      const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
-        method: 'POST',
-        body: orderListFormData,
-      });
-
-      if (!docRes.ok) throw new Error('Failed to upload Order List');
-
-      // Step 4: Download PDF for printing
-      orderListDoc.save(`OrderList-${orderId}.pdf`);
-
-      setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
-      setFormData({ customer_id: '', driver_id: '', items: [{ product: '', quantity: '' }], shipping_method: 'Customer' });
-    } catch (error) {
-      setSnackbar({ open: true, message: error.message, severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
+		if (!formData.customer_id || !formData.items.every(item => item.product && item.quantity) || !formData.shipping_method) {
+			setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
+			return;
+		}
+	
+		setLoading(true);
+		try {
+			// Step 1: Create the order
+			const orderData = new FormData();
+			orderData.append('customer_id', formData.customer_id);
+			orderData.append('driver_id', formData.driver_id || '');
+			orderData.append('items', JSON.stringify(formData.items));
+			orderData.append('shipping_method', formData.shipping_method);
+	
+			const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
+				method: 'POST',
+				body: orderData,
+			});
+	
+			if (!orderRes.ok) throw new Error('Failed to create order');
+			const orderResult = await orderRes.json();
+			console.log('Order Response:', orderResult); // Debug log
+	
+			// Adjust based on actual response structure
+			const orderId = orderResult.order ? orderResult.order.order_id : orderResult.order_id;
+			if (!orderId) throw new Error('Order ID not found in response');
+	
+			// Step 2: Generate Order List PDF
+			const orderListDoc = generateOrderListPDF(orderId);
+			const orderListBlob = orderListDoc.output('blob');
+	
+			// Step 3: Upload to Google Drive
+			const orderListFormData = new FormData();
+			orderListFormData.append('order_id', orderId);
+			orderListFormData.append('type', 'Order List');
+			orderListFormData.append('details', JSON.stringify({
+				customer_id: formData.customer_id,
+				items: formData.items,
+				shipping_method: formData.shipping_method,
+				driver_id: formData.driver_id || null,
+			}));
+			orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`);
+	
+			const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+				method: 'POST',
+				body: orderListFormData,
+			});
+	
+			if (!docRes.ok) throw new Error('Failed to upload Order List');
+	
+			// Step 4: Download PDF for printing
+			orderListDoc.save(`OrderList-${orderId}.pdf`);
+	
+			setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
+			setFormData({ customer_id: '', driver_id: '', items: [{ product: '', quantity: '' }], shipping_method: 'Customer' });
+		} catch (error) {
+			setSnackbar({ open: true, message: error.message, severity: 'error' });
+		} finally {
+			setLoading(false);
+		}
+	};
 
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
 
