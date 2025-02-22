@@ -16,8 +16,8 @@ import {
   IconButton,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
-import CustomerModal from '../../components/CustomerModal'; // Adjust path as needed
-import DriverModal from '../../components/DriverModal';   // Adjust path as needed
+import CustomerModal from '../../components/CustomerModal';
+import DriverModal from '../../components/DriverModal';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
@@ -124,161 +124,155 @@ const OrderCreation = () => {
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: [241.3, 279.4], // 9.5 x 11 inches in mm (same as QC report)
+      format: [241.3, 279.4], // 9.5 x 11 inches in mm
     });
 
     const customer = customers.find(c => c.customer_id === formData.customer_id);
     const driver = drivers.find(d => d.driver_id === formData.driver_id);
 
-    // Helper function for consistent text styling (from QC report)
+    // Helper function for consistent Arial text styling
     const addText = (text, x, y, options = {}) => {
-      doc.setFont('courier');
-      doc.setFontSize(10);
-      if (options.bold) doc.setFont('courier', 'bold');
+      doc.setFont('Arial', options.bold ? 'bold' : 'normal'); // Use Arial instead of courier
+      doc.setFontSize(options.size || 12); // Default size 12 unless specified
       if (options.align) doc.text(text, x, y, { align: options.align });
       else doc.text(text, x, y);
     };
 
     // --- Header ---
-    addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 10, { align: 'center', bold: true });
-    addText("Order List", doc.internal.pageSize.getWidth() / 2, 16, { align: 'center', bold: true });
-    addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 10, 10, { align: 'right' });
-    addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 10, 16, { align: 'right' });
-    doc.line(5, 20, doc.internal.pageSize.getWidth() - 5, 20); // Horizontal line
-    addText(`Order ID: ${orderId}`, 10, 28, { bold: true });
+    addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 15, { align: 'center', bold: true, size: 16 });
+    addText("Order List", doc.internal.pageSize.getWidth() / 2, 23, { align: 'center', bold: true, size: 14 });
+    addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+    addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
+    doc.line(14, 28, doc.internal.pageSize.getWidth() - 14, 28); // Horizontal line with margins
+    addText(`Order ID: ${orderId}`, 14, 35, { bold: true });
 
     // --- Two-Column Layout (Customer and Shipping) ---
-    let yOffset = 38; // Start below header and order ID
-    const columnWidth = (doc.internal.pageSize.getWidth() - 30) / 2;
+    let yOffset = 45; // Start below header and order ID
+    const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2; // Adjusted margins
 
     // --- Customer Information (Left Column) ---
-    addText("Customer Information:", 10, yOffset, { bold: true });
+    addText("Customer Information:", 14, yOffset, { bold: true });
+    yOffset += 8;
+    addText(`Name: ${customer ? customer.name : '-'}`, 14, yOffset);
     yOffset += 6;
-    addText(`Name    : ${customer ? customer.name : '-'}`, 10, yOffset);
+    addText(`Address: ${customer ? customer.address : '-'}`, 14, yOffset);
     yOffset += 6;
-    addText(`Address : ${customer ? customer.address : '-'}`, 10, yOffset);
+    addText(`Phone: ${customer ? customer.phone : '-'}`, 14, yOffset);
     yOffset += 6;
-    addText(`Phone   : ${customer ? customer.phone : '-'}`, 10, yOffset);
-    yOffset += 6;
-    addText(`Email   : ${customer ? customer.email || '-' : '-'}`, 10, yOffset);
+    addText(`Email: ${customer ? customer.email || '-' : '-'}`, 14, yOffset);
 
     // --- Shipping Information (Right Column) ---
-    let shippingOffset = 38;
-    addText("Shipping Information:", 10 + columnWidth + 10, shippingOffset, { bold: true });
-    shippingOffset += 6;
-    addText(`Method : ${formData.shipping_method}`, 10 + columnWidth + 10, shippingOffset);
+    let shippingOffset = 45;
+    addText("Shipping Information:", 14 + columnWidth + 10, shippingOffset, { bold: true });
+    shippingOffset += 8;
+    addText(`Method: ${formData.shipping_method}`, 14 + columnWidth + 10, shippingOffset);
     shippingOffset += 6;
     if (driver) {
-      addText(`Driver Name   : ${driver.name || '-'}`, 10 + columnWidth + 10, shippingOffset);
+      addText(`Driver Name: ${driver.name || '-'}`, 14 + columnWidth + 10, shippingOffset);
       shippingOffset += 6;
-      addText(`Vehicle No.   : ${driver.vehicle_number || '-'}`, 10 + columnWidth + 10, shippingOffset);
+      addText(`Vehicle No.: ${driver.vehicle_number || '-'}`, 14 + columnWidth + 10, shippingOffset);
       shippingOffset += 6;
-      addText(`Vehicle Type  : ${driver.vehicle_type || '-'}`, 10 + columnWidth + 10, shippingOffset);
+      addText(`Vehicle Type: ${driver.vehicle_type || '-'}`, 14 + columnWidth + 10, shippingOffset);
       shippingOffset += 6;
-      addText(`Max Capacity  : ${driver.max_capacity ? driver.max_capacity + ' kg' : '-'}`, 10 + columnWidth + 10, shippingOffset);
+      addText(`Max Capacity: ${driver.max_capacity ? driver.max_capacity + ' kg' : '-'}`, 14 + columnWidth + 10, shippingOffset);
     }
 
     // --- Items Table (Full Width) ---
     let tableOffset = Math.max(yOffset, driver ? shippingOffset + 6 : shippingOffset) + 10;
-    addText("Items:", 10, tableOffset, { bold: true });
+    addText("Items:", 14, tableOffset, { bold: true });
     doc.autoTable({
-      startY: tableOffset + 6,
+      startY: tableOffset + 8,
       head: [['Product', 'Quantity (kg)']],
       body: formData.items.map(item => [item.product, item.quantity]),
-      styles: { fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [200, 200, 200] },
+      styles: { font: 'Arial', fontSize: 10, cellPadding: 2 }, // Use Arial for table
+      headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+      margin: { left: 14, right: 14 },
     });
 
     // --- Signatures ---
     let signatureOffset = doc.lastAutoTable.finalY + 10;
-    doc.line(5, signatureOffset, doc.internal.pageSize.getWidth() - 5, signatureOffset);
-    const signatureY = signatureOffset + 40;
+    doc.line(14, signatureOffset, doc.internal.pageSize.getWidth() - 14, signatureOffset);
+    const signatureY = signatureOffset + 20;
     const labelY = signatureY + 6;
-    const signatureLength = 20;
+    const signatureLength = 30; // Slightly longer for aesthetics
 
-    addText("_".repeat(signatureLength), 10, signatureY);
-    addText("Order Staff", 10, labelY);
-    addText(session.user.name || '-', 10, labelY + 6); // Assuming user name from session
+    addText("_".repeat(signatureLength), 14, signatureY);
+    addText("Order Staff", 14, labelY);
+    addText(session.user.name || '-', 14, labelY + 6);
 
-    addText("_".repeat(signatureLength), 70, signatureY);
-    addText("Manager", 70, labelY);
-    addText('(..................)', 70, labelY + 12);
+    addText("_".repeat(signatureLength), 80, signatureY);
+    addText("Manager", 80, labelY);
+    addText('(..................)', 80, labelY + 12);
 
     if (driver) {
-      addText("_".repeat(signatureLength), 130, signatureY);
-      addText("Driver", 130, labelY);
-      addText(driver.name || '-', 130, labelY + 6);
+      addText("_".repeat(signatureLength), 146, signatureY);
+      addText("Driver", 146, labelY);
+      addText(driver.name || '-', 146, labelY + 6);
     }
 
     // --- Footer ---
-    doc.line(5, doc.internal.pageSize.getHeight() - 10, doc.internal.pageSize.getWidth() - 5, doc.internal.pageSize.getHeight() - 10);
-    addText(`Printed on: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 10, doc.internal.pageSize.getHeight() - 5);
+    doc.line(14, doc.internal.pageSize.getHeight() - 14, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 14);
+    addText(`Printed on: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 14, doc.internal.pageSize.getHeight() - 8, { size: 10 });
 
     return doc;
   };
 
   const handleSubmit = async () => {
-		if (!formData.customer_id || !formData.items.every(item => item.product && item.quantity) || !formData.shipping_method) {
-			setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
-			return;
-		}
-	
-		setLoading(true);
-		try {
-			// Step 1: Create the order
-			const orderData = new FormData();
-			orderData.append('customer_id', formData.customer_id);
-			orderData.append('driver_id', formData.driver_id || '');
-			orderData.append('items', JSON.stringify(formData.items));
-			orderData.append('shipping_method', formData.shipping_method);
-	
-			const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
-				method: 'POST',
-				body: orderData,
-			});
-	
-			if (!orderRes.ok) throw new Error('Failed to create order');
-			const orderResult = await orderRes.json();
-			console.log('Order Response:', orderResult);
-	
-			// Extract order_id from the first element of the order array
-			const orderId = orderResult.order && orderResult.order.length > 0 ? orderResult.order[0].order_id : null;
-			if (!orderId) throw new Error('Order ID not found in response');
-	
-			// Step 2: Generate Order List PDF
-			const orderListDoc = generateOrderListPDF(orderId);
-			const orderListBlob = orderListDoc.output('blob');
-	
-			// Step 3: Upload to Google Drive
-			const orderListFormData = new FormData();
-			orderListFormData.append('order_id', orderId);
-			orderListFormData.append('type', 'Order List');
-			orderListFormData.append('details', JSON.stringify({
-				customer_id: formData.customer_id,
-				items: formData.items,
-				shipping_method: formData.shipping_method,
-				driver_id: formData.driver_id || null,
-			}));
-			orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`);
-	
-			const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
-				method: 'POST',
-				body: orderListFormData,
-			});
-	
-			if (!docRes.ok) throw new Error('Failed to upload Order List');
-	
-			// Step 4: Download PDF for printing
-			orderListDoc.save(`OrderList-${orderId}.pdf`);
-	
-			setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
-			setFormData({ customer_id: '', driver_id: '', items: [{ product: '', quantity: '' }], shipping_method: 'Customer' });
-		} catch (error) {
-			setSnackbar({ open: true, message: error.message, severity: 'error' });
-		} finally {
-			setLoading(false);
-		}
-	};
+    if (!formData.customer_id || !formData.items.every(item => item.product && item.quantity) || !formData.shipping_method) {
+      setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const orderData = new FormData();
+      orderData.append('customer_id', formData.customer_id);
+      orderData.append('driver_id', formData.driver_id || '');
+      orderData.append('items', JSON.stringify(formData.items));
+      orderData.append('shipping_method', formData.shipping_method);
+
+      const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
+        method: 'POST',
+        body: orderData,
+      });
+
+      if (!orderRes.ok) throw new Error('Failed to create order');
+      const orderResult = await orderRes.json();
+      console.log('Order Response:', orderResult);
+      const orderId = orderResult.order && orderResult.order.length > 0 ? orderResult.order[0].order_id : null;
+      if (!orderId) throw new Error('Order ID not found in response');
+
+      const orderListDoc = generateOrderListPDF(orderId);
+      const orderListBlob = orderListDoc.output('blob');
+
+      const orderListFormData = new FormData();
+      orderListFormData.append('order_id', orderId);
+      orderListFormData.append('type', 'Order List');
+      orderListFormData.append('details', JSON.stringify({
+        customer_id: formData.customer_id,
+        items: formData.items,
+        shipping_method: formData.shipping_method,
+        driver_id: formData.driver_id || null,
+      }));
+      orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`);
+
+      const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+        method: 'POST',
+        body: orderListFormData,
+      });
+
+      if (!docRes.ok) throw new Error('Failed to upload Order List');
+
+      orderListDoc.save(`OrderList-${orderId}.pdf`);
+
+      setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
+      setFormData({ customer_id: '', driver_id: '', items: [{ product: '', quantity: '' }], shipping_method: 'Customer' });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
 
@@ -290,10 +284,9 @@ const OrderCreation = () => {
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-      <Box sx={{ width: '500px' }}> {/* Fixed width, centered */}
+      <Box sx={{ width: '500px' }}>
         <Typography variant="h4" gutterBottom align="center">Create New Order</Typography>
 
-        {/* Customer Selection */}
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>Customer</InputLabel>
           <Select
@@ -311,7 +304,6 @@ const OrderCreation = () => {
         </FormControl>
         <Button sx={{ mb: 3 }} onClick={() => setOpenCustomerModal(true)}>Add New Customer</Button>
 
-        {/* Shipping Method */}
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>Shipping Method</InputLabel>
           <Select
@@ -325,7 +317,6 @@ const OrderCreation = () => {
           </Select>
         </FormControl>
 
-        {/* Driver Selection (Self-Arranged Only) */}
         {formData.shipping_method === 'Self' && (
           <>
             <FormControl fullWidth sx={{ mb: 2 }}>
@@ -348,7 +339,6 @@ const OrderCreation = () => {
           </>
         )}
 
-        {/* Items */}
         {formData.items.map((item, index) => (
           <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <TextField
@@ -376,7 +366,6 @@ const OrderCreation = () => {
         ))}
         <Button variant="outlined" onClick={addItem} sx={{ mb: 3 }}>Add Another Item</Button>
 
-        {/* Submit */}
         <Button
           variant="contained"
           color="primary"
@@ -388,11 +377,9 @@ const OrderCreation = () => {
           Create Order
         </Button>
 
-        {/* Modals */}
         <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
         <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
-        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
