@@ -429,6 +429,95 @@ const OrderCreation = () => {
     }
   };
 
+	// DataGrid columns and rows
+  const ordersColumns = [
+    { field: 'order_id', headerName: 'Order ID', flex: 1, editable: true },
+    { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
+    { field: 'customer_name', headerName: 'Customer Name', flex: 1, editable: false },
+    { field: 'shipping_method', headerName: 'Shipping Method', flex: 1, editable: true },
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', flex: 1, editable: true, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
+    { field: 'tax_percentage', headerName: 'Tax (%)', flex: 1, editable: true, valueFormatter: (params) => params.value ? `${parseFloat(params.value || 0)}%` : '0%' },
+    { field: 'tax', headerName: 'Tax (IDR)', flex: 1, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', flex: 1, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
+    { field: 'created_at', headerName: 'Date', flex: 1, editable: false, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
+    { field: 'status', headerName: 'Status', flex: 1, editable: true },
+    { 
+      field: 'address', 
+      headerName: 'Customer Address', 
+      flex: 1, 
+      editable: false, // Allow truncation for long addresses
+    },
+    { 
+      field: 'document', 
+      headerName: 'Order List', 
+      flex: 1, 
+      editable: false, 
+      renderCell: (params) => (
+        <Button 
+          variant="text" 
+          onClick={() => window.open(params.row.document_url || '#', '_blank')}
+          disabled={!params.row.document_url}
+        >
+          View PDF
+        </Button>
+      )
+    },
+  ];
+
+  const ordersRows = (orders || []).map(order => ({
+    id: order?.order_id || '-',
+    order_id: order?.order_id || '-',
+    customer_id: order?.customer_id || '-',
+    customer_name: order?.customer_name || '-',
+    shipping_method: order?.shipping_method || '-',
+    subtotal: order?.price || 0, // Use price as subtotal from backend
+    tax_percentage: order?.tax_percentage || 0, // Tax percentage from backend
+    tax: order?.tax_percentage ? (parseFloat(order.price || 0) * (parseFloat(order.tax_percentage || 0) / 100)) : 0, // Calculate tax on frontend
+    grand_total: order?.price && order?.tax_percentage ? (parseFloat(order.price || 0) * (1 + parseFloat(order.tax_percentage || 0) / 100)) : 0, // Calculate grand total on frontend
+    created_at: order?.created_at || new Date().toISOString(),
+    status: order?.status || 'Pending',
+    address: order?.customer_address || '-', // Customer address from backend
+    document_url: order?.documents?.find(doc => doc.type === 'Order List')?.drive_url || null, // Order List document URL
+  })) || [];
+
+  const customerListColumns = [
+    { field: 'name', headerName: 'Name', flex: 1 },
+    { field: 'email', headerName: 'Email', flex: 1 },
+    { field: 'phone', headerName: 'Phone', flex: 1 },
+    { field: 'country', headerName: 'Country', flex: 1 },
+    { field: 'state', headerName: 'State', flex: 1 },
+    { field: 'city', headerName: 'City', flex: 1 },
+    { field: 'zip_code', headerName: 'Zip Code', flex: 1 },
+  ];
+
+  const customerListRows = (customers || []).map(customer => ({
+    id: customer?.customer_id || '-',
+    name: customer?.name || '-',
+    email: customer?.email || '-',
+    phone: customer?.phone || '-',
+    country: customer?.country || '-',
+    state: customer?.state || '-',
+    city: customer?.city || '-',
+    zip_code: customer?.zip_code || '-',
+  })) || [];
+
+  const driversColumns = [
+    { field: 'name', headerName: 'Name', flex: 1 },
+    { field: 'vehicle_number', headerName: 'Vehicle No.', flex: 1 },
+    { field: 'vehicle_type', headerName: 'Vehicle Type', flex: 1 },
+    { field: 'max_capacity', headerName: 'Max Capacity (kg)', flex: 1 },
+    { field: 'availability_status', headerName: 'Availability', flex: 1 },
+  ];
+
+  const driversRows = (drivers || []).map(driver => ({
+    id: driver?.driver_id || '-',
+    name: driver?.name || '-',
+    vehicle_number: driver?.vehicle_number || '-',
+    vehicle_type: driver?.vehicle_type || '-',
+    max_capacity: driver?.max_capacity || '-',
+    availability_status: driver?.availability_status || 'Available',
+  })) || [];
+
   return (
     <Box sx={{ display: 'flex', p: 3 }}>
       {/* Form on the Left (30% width) */}
