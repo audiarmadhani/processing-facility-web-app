@@ -114,21 +114,9 @@ const CustomerModal = ({ open, onClose, onSave }) => {
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          backgroundColor: 'hsl(220, 30%, 7%)', // Modal background color
-          color: '#ffffff', // White text for contrast
-          width: '500px', // Consistent with OrderCreation form width
-          borderRadius: '8px', // Rounded corners
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Subtle shadow
-        }
-      }}
-    >
-      <DialogTitle sx={{ color: '#ffffff', p: 2, fontSize: '1.25rem' }}>Add New Customer</DialogTitle>
-      <DialogContent sx={{ p: 2 }}>
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Add New Customer</DialogTitle>
+      <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12}>
             <TextField
@@ -138,17 +126,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
               name="name"
               value={customer.name}
               onChange={handleChange}
-              sx={{ 
-                mb: 2, 
-                '& .MuiOutlinedInput-root': { 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', // Slightly lighter than modal for contrast
-                  borderRadius: '8px' 
-                }, 
-                '& .MuiInputLabel-root': { color: '#b0b0b0' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' }
-              }}
-              InputProps={{ sx: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' } } }}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
@@ -159,35 +137,18 @@ const CustomerModal = ({ open, onClose, onSave }) => {
               name="address"
               value={customer.address}
               onChange={handleChange}
-              sx={{ 
-                mb: 2, 
-                '& .MuiOutlinedInput-root': { 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px' 
-                }, 
-                '& .MuiInputLabel-root': { color: '#b0b0b0' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' }
-              }}
-              InputProps={{ sx: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' } } }}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
             <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-              <InputLabel sx={{ color: '#b0b0b0' }}>Country</InputLabel>
+              <InputLabel>Country</InputLabel>
               <Select
                 name="country"
                 value={customer.country}
                 onChange={handleChange}
                 label="Country"
                 disabled={loading}
-                sx={{ 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px', 
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' },
-                  '& .MuiMenuItem-root': { color: '#ffffff', backgroundColor: 'hsl(220, 30%, 7%)' } // Dropdown menu items
-                }}
               >
                 {countries.map(country => (
                   <MenuItem key={country.iso2} value={country.name}>{country.name}</MenuItem>
@@ -197,19 +158,12 @@ const CustomerModal = ({ open, onClose, onSave }) => {
           </Grid>
           <Grid item xs={12}>
             <FormControl fullWidth variant="outlined" sx={{ mb: 2 }} disabled={!customer.country}>
-              <InputLabel sx={{ color: '#b0b0b0' }}>State</InputLabel>
+              <InputLabel>State</InputLabel>
               <Select
                 name="state"
                 value={customer.state}
                 onChange={handleChange}
                 label="State"
-                sx={{ 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px', 
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' },
-                  '& .MuiMenuItem-root': { color: '#ffffff', backgroundColor: 'hsl(220, 30%, 7%)' } // Dropdown menu items
-                }}
               >
                 {states.map(state => (
                   <MenuItem key={state.iso2} value={state.name}>{state.name}</MenuItem>
@@ -219,19 +173,12 @@ const CustomerModal = ({ open, onClose, onSave }) => {
           </Grid>
           <Grid item xs={12}>
             <FormControl fullWidth variant="outlined" sx={{ mb: 2 }} disabled={!customer.state}>
-              <InputLabel sx={{ color: '#b0b0b0' }}>City</InputLabel>
+              <InputLabel>City</InputLabel>
               <Select
                 name="city"
                 value={customer.city}
                 onChange={handleChange}
                 label="City"
-                sx={{ 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px', 
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' },
-                  '& .MuiMenuItem-root': { color: '#ffffff', backgroundColor: 'hsl(220, 30%, 7%)' } // Dropdown menu items
-                }}
               >
                 {cities.map(city => (
                   <MenuItem key={city} value={city}>{city}</MenuItem>
@@ -247,17 +194,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
               name="zip_code"
               value={customer.zip_code}
               onChange={handleChange}
-              sx={{ 
-                mb: 2, 
-                '& .MuiOutlinedInput-root': { 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px' 
-                }, 
-                '& .MuiInputLabel-root': { color: '#b0b0b0' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' }
-              }}
-              InputProps={{ sx: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' } } }}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
@@ -268,17 +205,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
               name="phone"
               value={customer.phone}
               onChange={handleChange}
-              sx={{ 
-                mb: 2, 
-                '& .MuiOutlinedInput-root': { 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px' 
-                }, 
-                '& .MuiInputLabel-root': { color: '#b0b0b0' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' }
-              }}
-              InputProps={{ sx: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' } } }}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
@@ -289,17 +216,7 @@ const CustomerModal = ({ open, onClose, onSave }) => {
               name="email"
               value={customer.email}
               onChange={handleChange}
-              sx={{ 
-                mb: 2, 
-                '& .MuiOutlinedInput-root': { 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px' 
-                }, 
-                '& .MuiInputLabel-root': { color: '#b0b0b0' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' }
-              }}
-              InputProps={{ sx: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' } } }}
+              sx={{ mb: 2 }}
             />
           </Grid>
           <Grid item xs={12}>
@@ -310,49 +227,14 @@ const CustomerModal = ({ open, onClose, onSave }) => {
               name="special_requests"
               value={customer.special_requests}
               onChange={handleChange}
-              sx={{ 
-                mb: 2, 
-                '& .MuiOutlinedInput-root': { 
-                  color: '#ffffff', 
-                  backgroundColor: 'hsl(220, 30%, 10%)', 
-                  borderRadius: '8px' 
-                }, 
-                '& .MuiInputLabel-root': { color: '#b0b0b0' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' }
-              }}
-              InputProps={{ sx: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#b0b0b0' } } }}
+              sx={{ mb: 2 }}
             />
           </Grid>
         </Grid>
       </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button 
-          onClick={onClose} 
-          sx={{ 
-            color: '#ffffff', 
-            backgroundColor: 'hsl(220, 30%, 15%)', 
-            '&:hover': { backgroundColor: 'hsl(220, 30%, 20%)' }, 
-            borderRadius: '8px', 
-            px: 3, 
-            py: 1 
-          }}
-        >
-          Cancel
-        </Button>
-        <Button 
-          variant="contained" 
-          onClick={handleSave} 
-          disabled={loading} 
-          sx={{ 
-            backgroundColor: '#007bff', 
-            '&:hover': { backgroundColor: '#0056b3' }, 
-            borderRadius: '8px', 
-            px: 3, 
-            py: 1 
-          }}
-        >
-          Save
-        </Button>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} disabled={loading}>Save</Button>
       </DialogActions>
     </Dialog>
   );
