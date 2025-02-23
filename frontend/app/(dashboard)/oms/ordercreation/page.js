@@ -461,7 +461,7 @@ const OrderCreation = () => {
     // { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 120, sortable: true, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true, valueFormatter: (params) => (params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR' },
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true, valueFormatter: (params) => params.value ? (params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true, valueFormatter: (params) => params.value ? `${(params.value || '0')}%` : '0%' },
     { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false, valueFormatter: (params) => params.value ? (params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
     { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false, valueFormatter: (params) => params.value ? (params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
