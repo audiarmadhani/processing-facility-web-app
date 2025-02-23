@@ -124,7 +124,7 @@ const OrderCreation = () => {
     newItems[index][field] = value;
     setFormData(prev => ({ ...prev, items: newItems }));
     // Recalculate subtotal (price) when item price or quantity changes
-    const subtotal = newItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
+    const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
     setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR as string
   };
 
@@ -140,7 +140,7 @@ const OrderCreation = () => {
     const newItems = formData.items.filter((_, i) => i !== index);
     setFormData(prev => ({ ...prev, items: newItems }));
     // Recalculate subtotal (price) after removal
-    const subtotal = newItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
+    const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
     setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR as string
   };
 
@@ -189,8 +189,8 @@ const OrderCreation = () => {
     }
 
     // Validate numeric fields
-    const subtotal = (formData.price) || 0;
-    const taxPercentage = (formData.tax_percentage) || 0;
+    const subtotal = parseFloat(formData.price) || 0;
+    const taxPercentage = parseFloat(formData.tax_percentage) || 0;
 
     if (isNaN(subtotal) || subtotal < 0) {
       setSnackbar({ open: true, message: 'Invalid subtotal: must be a non-negative number', severity: 'error' });
@@ -203,8 +203,8 @@ const OrderCreation = () => {
 
     // Validate items
     for (const item of formData.items) {
-      const itemPrice = (item.price) || 0;
-      const itemQuantity = (item.quantity) || 0;
+      const itemPrice = parseFloat(item.price) || 0;
+      const itemQuantity = parseFloat(item.quantity) || 0;
 
       if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity < 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity: must be non-negative numbers', severity: 'error' });
@@ -372,7 +372,7 @@ const OrderCreation = () => {
         item.product,
         item.quantity,
         item.price || '0',
-        ((item.price || 0) * (item.quantity || 0)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+        (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
       ]),
       styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
       headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -400,8 +400,8 @@ const OrderCreation = () => {
     }
 
     // Calculate totals for PDF (frontend calculation)
-    const subtotal = (formData.price || '0') || items.reduce((sum, item) => sum + ((item.price || '0') * (item.quantity || '0')), 0);
-    const taxRate = (formData.tax_percentage || '0') / 100 || 0;
+    const subtotal = parseFloat(formData.price || '0') || items.reduce((sum, item) => sum + (parseFloat(item.price || '0') * parseFloat(item.quantity || '0')), 0);
+    const taxRate = parseFloat(formData.tax_percentage || '0') / 100 || 0;
     const tax = subtotal * taxRate;
     const grandTotal = subtotal + tax;
 
@@ -461,11 +461,11 @@ const OrderCreation = () => {
     // { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 120, sortable: true, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true, valueFormatter: (params) => params.value ? (params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true, valueFormatter: (params) => params.value ? `${(params.value || '0')}%` : '0%' },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false, valueFormatter: (params) => params.value ? (params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false, valueFormatter: (params) => params.value ? (params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true, valueFormatter: (params) => params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' || '0 IDR' })},
+    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false, valueFormatter: (params) => params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR' },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false, valueFormatter: (params) => params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR' },
+    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
     { 
       field: 'address', 
@@ -496,11 +496,11 @@ const OrderCreation = () => {
     // customer_id: order?.customer_id || '-',
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
-    subtotal: order?.price ? (order.price) : 0, // Parse string price to float
-    tax_percentage: order?.tax_percentage ? (order.tax_percentage) : 0, // Parse string tax_percentage to float
+    subtotal: order?.price || 0, // Parse string price to float
+    tax_percentage: order?.tax_percentage || 0, // Parse string tax_percentage to float
     tax: order?.price && order?.tax_percentage ? ((order.price) * ((order.tax_percentage) / 100)) : 0, // Calculate tax on frontend
     grand_total: order?.price && order?.tax_percentage ? ((order.price) * (1 + (order.tax_percentage) / 100)) : 0, // Calculate grand total on frontend
-    created_at: order?.created_at || new Date().toISOString(),
+    created_at: order?.created_at,
     status: order?.status || 'Pending',
     address: order?.customer_address || '-', // Customer address from backend
     document_url: order?.documents?.find(doc => doc.type === 'Order List')?.drive_url || null, // Order List document URL
@@ -809,7 +809,7 @@ const OrderCreation = () => {
                   fullWidth
                   label="Subtotal Price (IDR)"
                   name="price"
-                  value={formData.price ? (formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
+                  value={formData.price ? parseFloat(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
                   InputProps={{ readOnly: true }} // Calculated automatically
                   sx={{ mb: 2 }}
                 />
@@ -827,7 +827,7 @@ const OrderCreation = () => {
                   label="Grand Total (IDR)"
                   value={
                     formData.price && formData.tax_percentage
-                      ? ((formData.price || '0') * (1 + (formData.tax_percentage || '0') / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                      ? (parseFloat(formData.price || '0') * (1 + parseFloat(formData.tax_percentage || '0') / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
                       : '0 IDR'
                   }
                   InputProps={{ readOnly: true }} // Calculated on frontend
