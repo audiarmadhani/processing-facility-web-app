@@ -461,11 +461,11 @@ const OrderCreation = () => {
     // { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 120, sortable: true, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true, valueFormatter: (params) => params.value ? parseFloat(params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true, valueFormatter: (params) => params.value ? `${parseFloat(params.value || '0')}%` : '0%' },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
+    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true },
+    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
     { 
       field: 'address', 
@@ -496,10 +496,10 @@ const OrderCreation = () => {
     // customer_id: order?.customer_id || '-',
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
-    subtotal: order?.price ? parseFloat(order.price) : 0, // Parse string price to float
-    tax_percentage: order?.tax_percentage ? parseFloat(order.tax_percentage) : 0, // Parse string tax_percentage to float
-    tax: order?.price && order?.tax_percentage ? (parseFloat(order.price) * (parseFloat(order.tax_percentage) / 100)) : 0, // Calculate tax on frontend
-    grand_total: order?.price && order?.tax_percentage ? (parseFloat(order.price) * (1 + parseFloat(order.tax_percentage) / 100)) : 0, // Calculate grand total on frontend
+    subtotal: order?.price || 0, 
+    tax_percentage: order?.tax_percentage || 0, // Parse string tax_percentage to float
+    tax: order?.price && order?.tax_percentage ? (order.price) * (order.tax_percentage) / 100 : 0, // Calculate tax on frontend
+    grand_total: order?.price && order?.tax_percentage ? order.price * (1 + (order.tax_percentage) / 100) : 0, // Calculate grand total on frontend
     created_at: order?.created_at || new Date().toISOString(),
     status: order?.status || 'Pending',
     address: order?.customer_address || '-', // Customer address from backend
