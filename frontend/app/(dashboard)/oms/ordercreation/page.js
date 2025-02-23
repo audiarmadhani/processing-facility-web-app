@@ -439,8 +439,8 @@ const OrderCreation = () => {
           driver_id: newRow.driver_id,
           shipping_method: newRow.shipping_method,
           driver_details: newRow.driver_details ? JSON.parse(newRow.driver_details) : null,
-          price: newRow.price.toString(), // Send as string to match backend expectations
-          tax_percentage: newRow.tax_percentage.toString(), // Send as string to match backend expectations
+          price: newRow.subtotal.toString(), // Send subtotal as string to match backend expectations
+          tax_percentage: newRow.tax_percentage.toString(), // Send tax_percentage as string to match backend expectations
         }),
       });
 
@@ -465,7 +465,7 @@ const OrderCreation = () => {
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true, valueFormatter: (params) => params.value ? `${params.value.toFixed(2)}%` : '0%' },
     { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false, valueFormatter: (params) => params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
     { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false, valueFormatter: (params) => params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
+    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : '-' },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
     { 
       field: 'address', 
@@ -498,9 +498,9 @@ const OrderCreation = () => {
     shipping_method: order?.shipping_method || '-',
     subtotal: order?.price || 0, // Use numeric price directly
     tax_percentage: order?.tax_percentage || 0, // Use numeric tax_percentage directly
-    tax: order?.price && order?.tax_percentage ? (order.price * (order.tax_percentage / 100)) : 0, // Calculate tax on frontend
-    grand_total: order?.price && order?.tax_percentage ? (order.price * (1 + order.tax_percentage / 100)) : 0, // Calculate grand total on frontend
-    created_at: order?.created_at || new Date().toISOString(),
+    tax: order?.tax || 0, // Use tax calculated by backend
+    grand_total: order?.grand_total || 0, // Use grand_total calculated by backend
+    created_at: order?.created_at || new Date().toISOString().split('T')[0], // Format as DATE
     status: order?.status || 'Pending',
     address: order?.customer_address || '-', // Customer address from backend
     document_url: order?.documents?.find(doc => doc.type === 'Order List')?.drive_url || null, // Order List document URL
