@@ -398,21 +398,22 @@ const OrderCreation = () => {
   const ordersColumns = [
     { field: 'order_id', headerName: 'Order ID', width: 100 },
     { field: 'customer_id', headerName: 'Customer ID', width: 120 },
-    { field: 'customer_name', headerName: 'Customer Name', width: 150, valueGetter: (params) => customers.find(c => c.customer_id === params.row.customer_id)?.name || '-' },
+    { field: 'customer_name', headerName: 'Customer Name', width: 150 }, // Use direct field, no valueGetter needed
     { field: 'shipping_method', headerName: 'Shipping Method', width: 120 },
-    { field: 'price', headerName: 'Price (IDR)', width: 120, valueFormatter: (params) => params.value ? parseFloat(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '-' },
-    { field: 'created_at', headerName: 'Date', width: 150, valueFormatter: (params) => dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') },
+    { field: 'price', headerName: 'Price (IDR)', width: 120, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
+    { field: 'created_at', headerName: 'Date', width: 150, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
     { field: 'status', headerName: 'Status', width: 100 },
   ];
 
-  const ordersRows = orders.map(order => ({
-    id: order.order_id,
-    order_id: order.order_id,
-    customer_id: order.customer_id,
-    shipping_method: order.shipping_method,
-    price: order.price,
-    created_at: order.created_at,
-    status: order.status || 'Pending',
+  const ordersRows = (orders || []).map(order => ({
+    id: order?.order_id || '-',
+    order_id: order?.order_id || '-',
+    customer_id: order?.customer_id || '-',
+    customer_name: order?.customer_name || '-',
+    shipping_method: order?.shipping_method || '-',
+    price: order?.price || 0,
+    created_at: order?.created_at || new Date().toISOString(),
+    status: order?.status || 'Pending',
   })) || [];
 
   const customerListColumns = [
@@ -426,16 +427,16 @@ const OrderCreation = () => {
     { field: 'zip_code', headerName: 'Zip Code', width: 120 },
   ];
 
-  const customerListRows = customers.map(customer => ({
-    id: customer.customer_id,
-    customer_id: customer.customer_id,
-    name: customer.name,
-    email: customer.email || '-',
-    phone: customer.phone || '-',
-    country: customer.country || '-',
-    state: customer.state || '-',
-    city: customer.city || '-',
-    zip_code: customer.zip_code || '-',
+  const customerListRows = (customers || []).map(customer => ({
+    id: customer?.customer_id || '-',
+    customer_id: customer?.customer_id || '-',
+    name: customer?.name || '-',
+    email: customer?.email || '-',
+    phone: customer?.phone || '-',
+    country: customer?.country || '-',
+    state: customer?.state || '-',
+    city: customer?.city || '-',
+    zip_code: customer?.zip_code || '-',
   })) || [];
 
   const driversColumns = [
@@ -447,14 +448,14 @@ const OrderCreation = () => {
     { field: 'availability_status', headerName: 'Availability', width: 120 },
   ];
 
-  const driversRows = drivers.map(driver => ({
-    id: driver.driver_id,
-    driver_id: driver.driver_id,
-    name: driver.name,
-    vehicle_number: driver.vehicle_number,
-    vehicle_type: driver.vehicle_type,
-    max_capacity: driver.max_capacity,
-    availability_status: driver.availability_status,
+  const driversRows = (drivers || []).map(driver => ({
+    id: driver?.driver_id || '-',
+    driver_id: driver?.driver_id || '-',
+    name: driver?.name || '-',
+    vehicle_number: driver?.vehicle_number || '-',
+    vehicle_type: driver?.vehicle_type || '-',
+    max_capacity: driver?.max_capacity || '-',
+    availability_status: driver?.availability_status || 'Available',
   })) || [];
 
   return (
