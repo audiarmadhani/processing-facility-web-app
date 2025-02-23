@@ -125,7 +125,7 @@ const OrderCreation = () => {
     setFormData(prev => ({ ...prev, items: newItems }));
     // Recalculate subtotal (price) when item price or quantity changes
     const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR
+    setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR as string
   };
 
   const addItem = () => {
@@ -141,7 +141,7 @@ const OrderCreation = () => {
     setFormData(prev => ({ ...prev, items: newItems }));
     // Recalculate subtotal (price) after removal
     const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR
+    setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR as string
   };
 
   const handleSaveCustomer = async (newCustomer) => {
@@ -188,6 +188,30 @@ const OrderCreation = () => {
       return;
     }
 
+    // Validate numeric fields
+    const subtotal = parseFloat(formData.price) || 0;
+    const taxPercentage = parseFloat(formData.tax_percentage) || 0;
+
+    if (isNaN(subtotal) || subtotal < 0) {
+      setSnackbar({ open: true, message: 'Invalid subtotal: must be a non-negative number', severity: 'error' });
+      return;
+    }
+    if (isNaN(taxPercentage) || taxPercentage < 0 || taxPercentage > 100) {
+      setSnackbar({ open: true, message: 'Invalid tax percentage: must be a number between 0 and 100', severity: 'error' });
+      return;
+    }
+
+    // Validate items
+    for (const item of formData.items) {
+      const itemPrice = parseFloat(item.price) || 0;
+      const itemQuantity = parseFloat(item.quantity) || 0;
+
+      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity < 0) {
+        setSnackbar({ open: true, message: 'Invalid item price or quantity: must be non-negative numbers', severity: 'error' });
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       // Create the order first
@@ -196,8 +220,8 @@ const OrderCreation = () => {
       orderData.append('driver_id', formData.shipping_method === 'Self' ? formData.driver_id : ''); // Only for Self-Arranged
       orderData.append('shipping_method', formData.shipping_method);
       orderData.append('driver_details', JSON.stringify(formData.driver_details)); // For both methods
-      orderData.append('price', formData.price || ''); // Subtotal in IDR
-      orderData.append('tax_percentage', formData.tax_percentage || ''); // Tax percentage
+      orderData.append('price', formData.price || '0'); // Subtotal in IDR as string
+      orderData.append('tax_percentage', formData.tax_percentage || '0'); // Tax percentage as string
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
         method: 'POST',
@@ -215,8 +239,8 @@ const OrderCreation = () => {
         const itemData = new FormData();
         itemData.append('order_id', orderId);
         itemData.append('product', item.product);
-        itemData.append('quantity', item.quantity);
-        itemData.append('price', item.price);
+        itemData.append('quantity', item.quantity.toString()); // Ensure as string
+        itemData.append('price', item.price.toString()); // Ensure as string
 
         const itemRes = await fetch('https://processing-facility-backend.onrender.com/api/order-items', {
           method: 'POST',
@@ -376,8 +400,8 @@ const OrderCreation = () => {
     }
 
     // Calculate totals for PDF (frontend calculation)
-    const subtotal = parseFloat(formData.price || 0) || items.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    const taxRate = parseFloat(formData.tax_percentage || 0) / 100 || 0;
+    const subtotal = parseFloat(formData.price || '0') || items.reduce((sum, item) => sum + (parseFloat(item.price || '0') * parseFloat(item.quantity || '0')), 0);
+    const taxRate = parseFloat(formData.tax_percentage || '0') / 100 || 0;
     const tax = subtotal * taxRate;
     const grandTotal = subtotal + tax;
 
@@ -415,8 +439,8 @@ const OrderCreation = () => {
           driver_id: newRow.driver_id,
           shipping_method: newRow.shipping_method,
           driver_details: newRow.driver_details ? JSON.parse(newRow.driver_details) : null,
-          price: newRow.price, // Subtotal
-          tax_percentage: newRow.tax_percentage,
+          price: newRow.price.toString(), // Subtotal as string
+          tax_percentage: newRow.tax_percentage.toString(), // Tax percentage as string
         }),
       });
 
@@ -433,16 +457,16 @@ const OrderCreation = () => {
 
   // DataGrid columns and rows
   const ordersColumns = [
-    { field: 'order_id', headerName: 'Order ID', flex: 1, editable: true },
-    { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
-    { field: 'customer_name', headerName: 'Customer Name', flex: 1, editable: false },
-    { field: 'shipping_method', headerName: 'Shipping Method', flex: 1, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', flex: 1, editable: true, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'tax_percentage', headerName: 'Tax (%)', flex: 1, editable: true, valueFormatter: (params) => params.value ? `${parseFloat(params.value || 0)}%` : '0%' },
-    { field: 'tax', headerName: 'Tax (IDR)', flex: 1, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', flex: 1, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'created_at', headerName: 'Date', flex: 1, editable: false, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
-    { field: 'status', headerName: 'Status', flex: 1, editable: true },
+    { field: 'order_id', headerName: 'Order ID', width: 50, sortable: true, editable: true },
+    // { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
+    { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true, editable: false },
+    { field: 'shipping_method', headerName: 'Shipping Method', width: 120, sortable: true, editable: true },
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true, valueFormatter: (params) => params.value ? parseFloat(params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
+    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true, valueFormatter: (params) => params.value ? `${parseFloat(params.value || '0')}%` : '0%' },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false, valueFormatter: (params) => params.value ? parseFloat(params.value || '0').toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
+    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
+    { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
     { 
       field: 'address', 
       headerName: 'Customer Address', 
@@ -472,10 +496,10 @@ const OrderCreation = () => {
     // customer_id: order?.customer_id || '-',
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
-    subtotal: order?.price || 0, // Use price as subtotal from backend
-    tax_percentage: order?.tax_percentage || 0, // Tax percentage from backend
-    tax: order?.tax_percentage ? (parseFloat(order.price || 0) * (parseFloat(order.tax_percentage || 0) / 100)) : 0, // Calculate tax on frontend
-    grand_total: order?.price && order?.tax_percentage ? (parseFloat(order.price || 0) * (1 + parseFloat(order.tax_percentage || 0) / 100)) : 0, // Calculate grand total on frontend
+    subtotal: order?.price ? parseFloat(order.price) : 0, // Parse string price to float
+    tax_percentage: order?.tax_percentage ? parseFloat(order.tax_percentage) : 0, // Parse string tax_percentage to float
+    tax: order?.price && order?.tax_percentage ? (parseFloat(order.price) * (parseFloat(order.tax_percentage) / 100)) : 0, // Calculate tax on frontend
+    grand_total: order?.price && order?.tax_percentage ? (parseFloat(order.price) * (1 + parseFloat(order.tax_percentage) / 100)) : 0, // Calculate grand total on frontend
     created_at: order?.created_at || new Date().toISOString(),
     status: order?.status || 'Pending',
     address: order?.customer_address || '-', // Customer address from backend
@@ -483,13 +507,13 @@ const OrderCreation = () => {
   })) || [];
 
   const customerListColumns = [
-    { field: 'name', headerName: 'Name', flex: 1 },
-    { field: 'email', headerName: 'Email', flex: 1 },
-    { field: 'phone', headerName: 'Phone', flex: 1 },
-    { field: 'country', headerName: 'Country', flex: 1 },
-    { field: 'state', headerName: 'State', flex: 1 },
-    { field: 'city', headerName: 'City', flex: 1 },
-    { field: 'zip_code', headerName: 'Zip Code', flex: 1 },
+    { field: 'name', headerName: 'Name', width: 150, sortable: true },
+    { field: 'email', headerName: 'Email', width: 150, sortable: true },
+    { field: 'phone', headerName: 'Phone', width: 150, sortable: true },
+    { field: 'country', headerName: 'Country', width: 120, sortable: true },
+    { field: 'state', headerName: 'State', width: 120, sortable: true },
+    { field: 'city', headerName: 'City', width: 120, sortable: true },
+    { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
   ];
 
   const customerListRows = (customers || []).map(customer => ({
@@ -504,11 +528,11 @@ const OrderCreation = () => {
   })) || [];
 
   const driversColumns = [
-    { field: 'name', headerName: 'Name', flex: 1 },
-    { field: 'vehicle_number', headerName: 'Vehicle No.', flex: 1 },
-    { field: 'vehicle_type', headerName: 'Vehicle Type', flex: 1 },
-    { field: 'max_capacity', headerName: 'Max Capacity (kg)', flex: 1 },
-    { field: 'availability_status', headerName: 'Availability', flex: 1 },
+    { field: 'name', headerName: 'Name', width: 120, sortable: true },
+    { field: 'vehicle_number', headerName: 'Vehicle No.', width: 120, sortable: true },
+    { field: 'vehicle_type', headerName: 'Vehicle Type', width: 120, sortable: true },
+    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 80, sortable: true },
+    { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
   ];
 
   const driversRows = (drivers || []).map(driver => ({
@@ -777,11 +801,10 @@ const OrderCreation = () => {
                 <Button variant="outlined" onClick={addItem} sx={{ mb: 2 }}>Add Another Item</Button>
               </Box>
 
-							<Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
+              <Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
 
               {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
               <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
-
                 <TextField
                   fullWidth
                   label="Subtotal Price (IDR)"
@@ -790,7 +813,6 @@ const OrderCreation = () => {
                   InputProps={{ readOnly: true }} // Calculated automatically
                   sx={{ mb: 2 }}
                 />
-                
                 <TextField
                   fullWidth
                   label="Tax Percentage (%)"
@@ -800,19 +822,17 @@ const OrderCreation = () => {
                   type="number"
                   sx={{ mb: 2 }}
                 />
-
                 <TextField
                   fullWidth
                   label="Grand Total (IDR)"
                   value={
                     formData.price && formData.tax_percentage
-                      ? (parseFloat(formData.price || 0) * (1 + parseFloat(formData.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                      ? (parseFloat(formData.price || '0') * (1 + parseFloat(formData.tax_percentage || '0') / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
                       : '0 IDR'
                   }
                   InputProps={{ readOnly: true }} // Calculated on frontend
                   sx={{ mb: 2 }}
                 />
-
                 <Button
                   variant="contained"
                   color="primary"
@@ -824,7 +844,6 @@ const OrderCreation = () => {
                 >
                   Create Order
                 </Button>
-
               </Box>
             </Box>
           </CardContent>
