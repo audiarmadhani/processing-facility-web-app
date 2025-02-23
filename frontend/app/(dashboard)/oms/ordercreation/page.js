@@ -16,6 +16,8 @@ import {
   IconButton,
   Divider,
   Grid,
+  Card,
+  CardContent,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid'; // Free version for CRUD, sorting, filtering, export
 import { useSession } from 'next-auth/react';
@@ -429,7 +431,7 @@ const OrderCreation = () => {
     }
   };
 
-	// DataGrid columns and rows
+  // DataGrid columns and rows
   const ordersColumns = [
     { field: 'order_id', headerName: 'Order ID', flex: 1, editable: true },
     { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
@@ -467,7 +469,7 @@ const OrderCreation = () => {
   const ordersRows = (orders || []).map(order => ({
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
-    customer_id: order?.customer_id || '-',
+    // customer_id: order?.customer_id || '-',
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
     subtotal: order?.price || 0, // Use price as subtotal from backend
@@ -518,354 +520,408 @@ const OrderCreation = () => {
     availability_status: driver?.availability_status || 'Available',
   })) || [];
 
+  if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
+
+  if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
+    return <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Access Denied</Typography>;
+  }
+
   return (
-    <Box sx={{ display: 'flex', p: 3 }}>
-      {/* Form on the Left (30% width) */}
-      <Box sx={{ width: '30%', pr: 2 }}>
-        {/* Order Details (Customer to Driver Details) */}
-        <Box>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Customer</InputLabel>
-            <Select
-              name="customer_id"
-              value={formData.customer_id}
-              onChange={handleInputChange}
-              label="Customer"
-            >
-              {customers.map(customer => (
-                <MenuItem key={customer.customer_id} value={customer.customer_id}>
-                  {customer.name}
-                </MenuItem>
-              ))}
-              <MenuItem>
-                <Button
-                  fullWidth
-                  variant="text"
-                  onClick={() => setOpenCustomerModal(true)}
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                >
-                  + Add New Customer
-                </Button>
-              </MenuItem>
-            </Select>
-          </FormControl>
-
-          {showCustomerDetails && selectedCustomer && (
-            <Box sx={{ mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-              <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
-              <TextField
-                label="Name"
-                value={selectedCustomer.name || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="Address"
-                value={selectedCustomer.address || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="Phone"
-                value={selectedCustomer.phone || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="Email"
-                value={selectedCustomer.email || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="Country"
-                value={selectedCustomer.country || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="State"
-                value={selectedCustomer.state || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="City"
-                value={selectedCustomer.city || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="Zip Code"
-                value={selectedCustomer.zip_code || '-'}
-                InputProps={{ readOnly: true }}
-                fullWidth
-              />
-            </Box>
-          )}
-
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Shipping Method</InputLabel>
-            <Select
-              name="shipping_method"
-              value={formData.shipping_method}
-              onChange={handleInputChange}
-              label="Shipping Method"
-            >
-              <MenuItem value="Customer">Customer-Arranged</MenuItem>
-              <MenuItem value="Self">Self-Arranged</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="subtitle1" gutterBottom>Driver Details</Typography>
-            {formData.shipping_method === 'Self' && (
+    <Grid container spacing={3}>
+      {/* Order Creation Form */}
+      <Grid item xs={12} md={4}>
+        <Card variant="outlined">
+          <CardContent>
+            {/* <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+              Order Creation Form
+            </Typography> */}
+            {/* Order Details (Customer to Driver Details) */}
+            <Box>
               <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Driver</InputLabel>
+                <InputLabel>Customer</InputLabel>
                 <Select
-                  name="driver_id"
-                  value={formData.driver_id}
+                  name="customer_id"
+                  value={formData.customer_id}
                   onChange={handleInputChange}
-                  label="Driver"
+                  label="Customer"
                 >
-                  <MenuItem value="">None</MenuItem>
-                  {drivers.filter(d => d.availability_status === 'Available').map(driver => (
-                    <MenuItem key={driver.driver_id} value={driver.driver_id}>
-                      {driver.name} ({driver.vehicle_number})
+                  {customers.map(customer => (
+                    <MenuItem key={customer.customer_id} value={customer.customer_id}>
+                      {customer.name}
                     </MenuItem>
                   ))}
                   <MenuItem>
                     <Button
                       fullWidth
                       variant="text"
-                      onClick={() => setOpenDriverModal(true)}
+                      onClick={() => setOpenCustomerModal(true)}
                       sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
                     >
-                      + Add New Driver
+                      + Add New Customer
                     </Button>
                   </MenuItem>
                 </Select>
               </FormControl>
-            )}
-            {formData.shipping_method === 'Self' && formData.driver_id && drivers.find(d => d.driver_id === formData.driver_id) && (
-              <>
-                <TextField
-                  fullWidth
-                  label="Driver Name"
-                  value={drivers.find(d => d.driver_id === formData.driver_id)?.name || ''}
-                  InputProps={{ readOnly: true }}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Vehicle Number Plate"
-                  value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_number || ''}
-                  InputProps={{ readOnly: true }}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Vehicle Type"
-                  value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_type || ''}
-                  InputProps={{ readOnly: true }}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Max Capacity (kg)"
-                  value={drivers.find(d => d.driver_id === formData.driver_id)?.max_capacity || ''}
-                  InputProps={{ readOnly: true }}
-                  sx={{ mb: 2 }}
-                />
-              </>
-            )}
-            {formData.shipping_method === 'Customer' && (
-              <>
-                <TextField
-                  fullWidth
-                  label="Driver Name"
-                  name="driver_details.name"
-                  value={formData.driver_details.name}
-                  onChange={handleInputChange}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Vehicle Number Plate"
-                  name="driver_details.vehicle_number_plate"
-                  value={formData.driver_details.vehicle_number_plate}
-                  onChange={handleInputChange}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Vehicle Type"
-                  name="driver_details.vehicle_type"
-                  value={formData.driver_details.vehicle_type}
-                  onChange={handleInputChange}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Max Capacity (kg)"
-                  name="driver_details.max_capacity"
-                  value={formData.driver_details.max_capacity}
-                  onChange={handleInputChange}
-                  sx={{ mb: 2 }}
-                />
-              </>
-            )}
-          </Box>
-          <Divider sx={{ my: 4 }} /> {/* Divider between Order Details and Order Items */}
-        </Box>
 
-        {/* Order Items (Product to Grand Total) */}
-        <Box>
-          <Box sx={{ mb: 3 }}>
-            {formData.items.map((item, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <TextField
-                  label="Product"
-                  value={item.product}
-                  onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                  sx={{ mr: 2, flex: 1 }}
-                />
-                <TextField
-                  label="Quantity (kg)"
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                  sx={{ mr: 1, width: '120px' }}
-                />
-                <TextField
-                  label="Price per Unit (IDR)"
-                  type="number"
-                  value={item.price}
-                  onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                  sx={{ mr: 1, width: '120px' }}
-                />
-                <IconButton
-                  onClick={() => removeItem(index)}
-                  size="small"
-                  color="error"
-                  disabled={formData.items.length === 1}
+              {showCustomerDetails && selectedCustomer && (
+                <Box sx={{ mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                  <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
+                  <TextField
+                    label="Name"
+                    value={selectedCustomer.name || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Address"
+                    value={selectedCustomer.address || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Phone"
+                    value={selectedCustomer.phone || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Email"
+                    value={selectedCustomer.email || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Country"
+                    value={selectedCustomer.country || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="State"
+                    value={selectedCustomer.state || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="City"
+                    value={selectedCustomer.city || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Zip Code"
+                    value={selectedCustomer.zip_code || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                  />
+                </Box>
+              )}
+
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Shipping Method</InputLabel>
+                <Select
+                  name="shipping_method"
+                  value={formData.shipping_method}
+                  onChange={handleInputChange}
+                  label="Shipping Method"
                 >
-                  <CloseIcon />
-                </IconButton>
+                  <MenuItem value="Customer">Customer-Arranged</MenuItem>
+                  <MenuItem value="Self">Self-Arranged</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="subtitle1" gutterBottom>Driver Details</Typography>
+                {formData.shipping_method === 'Self' && (
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>Driver</InputLabel>
+                    <Select
+                      name="driver_id"
+                      value={formData.driver_id}
+                      onChange={handleInputChange}
+                      label="Driver"
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {drivers.filter(d => d.availability_status === 'Available').map(driver => (
+                        <MenuItem key={driver.driver_id} value={driver.driver_id}>
+                          {driver.name} ({driver.vehicle_number})
+                        </MenuItem>
+                      ))}
+                      <MenuItem>
+                        <Button
+                          fullWidth
+                          variant="text"
+                          onClick={() => setOpenDriverModal(true)}
+                          sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                        >
+                          + Add New Driver
+                        </Button>
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+                {formData.shipping_method === 'Self' && formData.driver_id && drivers.find(d => d.driver_id === formData.driver_id) && (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="Driver Name"
+                      value={drivers.find(d => d.driver_id === formData.driver_id)?.name || ''}
+                      InputProps={{ readOnly: true }}
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Vehicle Number Plate"
+                      value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_number || ''}
+                      InputProps={{ readOnly: true }}
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Vehicle Type"
+                      value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_type || ''}
+                      InputProps={{ readOnly: true }}
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Max Capacity (kg)"
+                      value={drivers.find(d => d.driver_id === formData.driver_id)?.max_capacity || ''}
+                      InputProps={{ readOnly: true }}
+                      sx={{ mb: 2 }}
+                    />
+                  </>
+                )}
+                {formData.shipping_method === 'Customer' && (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="Driver Name"
+                      name="driver_details.name"
+                      value={formData.driver_details.name}
+                      onChange={handleInputChange}
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Vehicle Number Plate"
+                      name="driver_details.vehicle_number_plate"
+                      value={formData.driver_details.vehicle_number_plate}
+                      onChange={handleInputChange}
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Vehicle Type"
+                      name="driver_details.vehicle_type"
+                      value={formData.driver_details.vehicle_type}
+                      onChange={handleInputChange}
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Max Capacity (kg)"
+                      name="driver_details.max_capacity"
+                      value={formData.driver_details.max_capacity}
+                      onChange={handleInputChange}
+                      sx={{ mb: 2 }}
+                    />
+                  </>
+                )}
               </Box>
-            ))}
-            <Button variant="outlined" onClick={addItem} sx={{ mb: 2 }}>Add Another Item</Button>
-          </Box>
+              <Divider sx={{ my: 4 }} /> {/* Divider between Order Details and Order Items */}
+            </Box>
 
-          {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
-          <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
-            <TextField
-              fullWidth
-              label="Subtotal Price (IDR)"
-              name="price"
-              value={formData.price ? parseFloat(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
-              InputProps={{ readOnly: true }} // Calculated automatically
-              sx={{ mb: 2 }}
-            />
-            <Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
-            <TextField
-              fullWidth
-              label="Tax Percentage (%)"
-              name="tax_percentage"
-              value={formData.tax_percentage}
-              onChange={handleInputChange}
-              type="number"
-              sx={{ mb: 2 }}
-            />
-            <Divider sx={{ mb: 2 }} /> {/* Divider between Tax and Grand Total */}
-            <TextField
-              fullWidth
-              label="Grand Total (IDR)"
-              value={
-                formData.price && formData.tax_percentage
-                  ? (parseFloat(formData.price || 0) * (1 + parseFloat(formData.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
-                  : '0 IDR'
-              }
-              InputProps={{ readOnly: true }} // Calculated on frontend
-              sx={{ mb: 2 }}
-            />
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSubmit}
-              disabled={loading}
-              startIcon={loading ? <CircularProgress size={20} /> : null}
-              fullWidth
-              sx={{ maxWidth: '100%' }} // Match width of totals
-            >
-              Create Order
-            </Button>
-          </Box>
-        </Box>
-      </Box>
+            {/* Order Items (Product to Grand Total) */}
+            <Box>
+              <Box sx={{ mb: 3 }}>
+                {formData.items.map((item, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <TextField
+                      label="Product"
+                      value={item.product}
+                      onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                      sx={{ mr: 2, flex: 1 }}
+                    />
+                    <TextField
+                      label="Quantity (kg)"
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                      sx={{ mr: 1, width: '120px' }}
+                    />
+                    <TextField
+                      label="Price per Unit (IDR)"
+                      type="number"
+                      value={item.price}
+                      onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                      sx={{ mr: 1, width: '120px' }}
+                    />
+                    <IconButton
+                      onClick={() => removeItem(index)}
+                      size="small"
+                      color="error"
+                      disabled={formData.items.length === 1}
+                    >
+                      <CloseIcon />
+                    </IconButton>
+                  </Box>
+                ))}
+                <Button variant="outlined" onClick={addItem} sx={{ mb: 2 }}>Add Another Item</Button>
+              </Box>
 
-      {/* DataGrids on the Right (70% width) */}
-      <Box sx={{ width: '70%', pl: 2 }}>
-        <Box sx={{ mb: 4 }}>
-          <DataGrid
-            rows={ordersRows}
-            columns={ordersColumns}
-            editMode="row" // Enable row editing for CRUD
-            rowModesModel={rowModesModel}
-            onRowEditStart={handleRowEditStart}
-            onRowEditStop={handleRowEditStop}
-            onEditRowsModelChange={handleEditRowsModelChange}
-            processRowUpdate={processRowUpdate}
-            onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
-            pageSize={10}
-            rowsPerPageOptions={[10]}
-            autoHeight
-            slots={{ toolbar: GridToolbar }} // Add toolbar for sorting, filtering, export
-            slotProps={{
-              toolbar: { showQuickFilter: true }, // Enable search in toolbar
-            }}
-          />
-        </Box>
-        <Box sx={{ mb: 4 }}>
-          <DataGrid
-            rows={customerListRows}
-            columns={customerListColumns}
-            pageSize={10}
-            rowsPerPageOptions={[10]}
-            autoHeight
-            slots={{ toolbar: GridToolbar }} // Add toolbar
-            slotProps={{
-              toolbar: { showQuickFilter: true }, // Enable search
-            }}
-          />
-        </Box>
-        <Box>
-          <DataGrid
-            rows={driversRows}
-            columns={driversColumns}
-            pageSize={10}
-            rowsPerPageOptions={[10]}
-            autoHeight
-            slots={{ toolbar: GridToolbar }} // Add toolbar
-            slotProps={{
-              toolbar: { showQuickFilter: true }, // Enable search
-            }}
-          />
-        </Box>
-      </Box>
+							<Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
+
+              {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
+              <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
+
+                <TextField
+                  fullWidth
+                  label="Subtotal Price (IDR)"
+                  name="price"
+                  value={formData.price ? parseFloat(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
+                  InputProps={{ readOnly: true }} // Calculated automatically
+                  sx={{ mb: 2 }}
+                />
+                
+                <TextField
+                  fullWidth
+                  label="Tax Percentage (%)"
+                  name="tax_percentage"
+                  value={formData.tax_percentage}
+                  onChange={handleInputChange}
+                  type="number"
+                  sx={{ mb: 2 }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Grand Total (IDR)"
+                  value={
+                    formData.price && formData.tax_percentage
+                      ? (parseFloat(formData.price || 0) * (1 + parseFloat(formData.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                      : '0 IDR'
+                  }
+                  InputProps={{ readOnly: true }} // Calculated on frontend
+                  sx={{ mb: 2 }}
+                />
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  startIcon={loading ? <CircularProgress size={20} /> : null}
+                  fullWidth
+                  sx={{ maxWidth: '100%' }} // Match width of totals
+                >
+                  Create Order
+                </Button>
+
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Data Grids for Orders, Customers, and Drivers */}
+      {['admin', 'manager', 'preprocessing'].includes(session?.user?.role) && (
+        <Grid item xs={12} md={8}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Order Data
+              </Typography>
+              <Box sx={{ mb: 4 }}>
+                <DataGrid
+                  rows={ordersRows}
+                  columns={ordersColumns}
+                  editMode="row" // Enable row editing for CRUD
+                  rowModesModel={rowModesModel}
+                  onRowEditStart={handleRowEditStart}
+                  onRowEditStop={handleRowEditStop}
+                  onEditRowsModelChange={handleEditRowsModelChange}
+                  processRowUpdate={processRowUpdate}
+                  onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                  autoHeight
+                  slots={{ toolbar: GridToolbar }} // Add toolbar for sorting, filtering, export
+                  slotProps={{
+                    toolbar: { showQuickFilter: true }, // Enable search in toolbar
+                  }}
+                  autosizeOnMount
+                  autosizeOptions={{
+                    includeHeaders: true,
+                    includeOutliers: true,
+                    expand: true,
+                  }}
+                  rowHeight={27}
+                />
+              </Box>
+              <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
+                Customer Data
+              </Typography>
+              <Box sx={{ mb: 4 }}>
+                <DataGrid
+                  rows={customerListRows}
+                  columns={customerListColumns}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                  autoHeight
+                  slots={{ toolbar: GridToolbar }} // Add toolbar
+                  slotProps={{
+                    toolbar: { showQuickFilter: true }, // Enable search
+                  }}
+                  autosizeOnMount
+                  autosizeOptions={{
+                    includeHeaders: true,
+                    includeOutliers: true,
+                    expand: true,
+                  }}
+                  rowHeight={27}
+                />
+              </Box>
+              <Typography variant="h5" gutterBottom>
+                Driver Data
+              </Typography>
+              <Box>
+                <DataGrid
+                  rows={driversRows}
+                  columns={driversColumns}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                  autoHeight
+                  slots={{ toolbar: GridToolbar }} // Add toolbar
+                  slotProps={{
+                    toolbar: { showQuickFilter: true }, // Enable search
+                  }}
+                  autosizeOnMount
+                  autosizeOptions={{
+                    includeHeaders: true,
+                    includeOutliers: true,
+                    expand: true,
+                  }}
+                  rowHeight={27}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
 
       {/* Modals */}
       <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
       <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
-      {/* Snackbar */}
+      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
@@ -876,7 +932,7 @@ const OrderCreation = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Grid>
   );
 };
 
