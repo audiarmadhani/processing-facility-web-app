@@ -14,9 +14,10 @@ import {
   Snackbar,
   Alert,
   IconButton,
+  Divider,
   Grid,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid'; // Import DataGrid for tables
+import { DataGrid, GridToolbar } from '@mui/x-data-grid'; // Free version for CRUD, sorting, filtering, export
 import { useSession } from 'next-auth/react';
 import CustomerModal from '../../components/CustomerModal';
 import DriverModal from '../../components/DriverModal';
@@ -41,7 +42,7 @@ const OrderCreation = () => {
       vehicle_type: '',
       max_capacity: '' // In kg or units
     },
-    price: '', // Total price in IDR (calculated)
+    price: '', // Total price in IDR (subtotal, calculated from items)
     tax_percentage: '' // Tax percentage for the order
   });
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,7 @@ const OrderCreation = () => {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [rowModesModel, setRowModesModel] = useState({}); // For DataGrid row editing
 
   // Fetch initial data (customers, drivers, and orders)
   useEffect(() => {
@@ -119,9 +121,9 @@ const OrderCreation = () => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
     setFormData(prev => ({ ...prev, items: newItems }));
-    // Recalculate total price when item price or quantity changes
-    const total = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setFormData(prev => ({ ...prev, price: total.toString() })); // Update total price in IDR
+    // Recalculate subtotal (price) when item price or quantity changes
+    const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+    setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR
   };
 
   const addItem = () => {
@@ -135,9 +137,9 @@ const OrderCreation = () => {
     }
     const newItems = formData.items.filter((_, i) => i !== index);
     setFormData(prev => ({ ...prev, items: newItems }));
-    // Recalculate total price after removal
-    const total = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setFormData(prev => ({ ...prev, price: total.toString() })); // Update total price in IDR
+    // Recalculate subtotal (price) after removal
+    const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+    setFormData(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR
   };
 
   const handleSaveCustomer = async (newCustomer) => {
@@ -192,7 +194,7 @@ const OrderCreation = () => {
       orderData.append('driver_id', formData.shipping_method === 'Self' ? formData.driver_id : ''); // Only for Self-Arranged
       orderData.append('shipping_method', formData.shipping_method);
       orderData.append('driver_details', JSON.stringify(formData.driver_details)); // For both methods
-      orderData.append('price', formData.price || ''); // Total price in IDR
+      orderData.append('price', formData.price || ''); // Subtotal in IDR
       orderData.append('tax_percentage', formData.tax_percentage || ''); // Tax percentage
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
@@ -235,7 +237,7 @@ const OrderCreation = () => {
         shipping_method: formData.shipping_method,
         driver_id: formData.driver_id || null,
         driver_details: formData.driver_details || null,
-        price: formData.price || null,
+        price: formData.price || null, // Subtotal
         tax_percentage: formData.tax_percentage || null,
       }));
       orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`);
@@ -371,15 +373,15 @@ const OrderCreation = () => {
       addText(driver.name || '-', 146, labelY + 6);
     }
 
-    // Calculate totals for PDF
-    const totalPrice = parseFloat(formData.price || 0) || items.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+    // Calculate totals for PDF (frontend calculation)
+    const subtotal = parseFloat(formData.price || 0) || items.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
     const taxRate = parseFloat(formData.tax_percentage || 0) / 100 || 0;
-    const taxAmount = totalPrice * taxRate;
-    const grandTotal = totalPrice + taxAmount;
+    const tax = subtotal * taxRate;
+    const grandTotal = subtotal + tax;
 
     doc.line(14, doc.internal.pageSize.getHeight() - 40, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 40);
-    addText(`Subtotal: ${totalPrice.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}`, 14, doc.internal.pageSize.getHeight() - 30, { size: 10 });
-    addText(`Tax (${(taxRate * 100).toFixed(2)}%): ${taxAmount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}`, 14, doc.internal.pageSize.getHeight() - 20, { size: 10 });
+    addText(`Subtotal: ${subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}`, 14, doc.internal.pageSize.getHeight() - 30, { size: 10 });
+    addText(`Tax (${(taxRate * 100).toFixed(2)}%): ${tax.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}`, 14, doc.internal.pageSize.getHeight() - 20, { size: 10 });
     addText(`Grand Total: ${grandTotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right', size: 10 });
 
     doc.line(14, doc.internal.pageSize.getHeight() - 14, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 14);
@@ -388,375 +390,384 @@ const OrderCreation = () => {
     return doc;
   };
 
-  if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
+  // Handle DataGrid row editing
+  const handleRowEditStart = (params, event) => {
+    event.defaultMuiPrevented = true;
+  };
 
-  if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
-    return <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Access Denied</Typography>;
-  }
+  const handleRowEditStop = (params, event) => {
+    event.defaultMuiPrevented = true;
+  };
 
-  // DataGrid columns and rows (real data from API)
-  const ordersColumns = [
-    { field: 'order_id', headerName: 'Order ID', width: 100 },
-    { field: 'customer_id', headerName: 'Customer ID', width: 120 },
-    { field: 'customer_name', headerName: 'Customer Name', width: 150 }, // Use direct field, no valueGetter needed
-    { field: 'shipping_method', headerName: 'Shipping Method', width: 120 },
-    { field: 'price', headerName: 'Price (IDR)', width: 120, valueFormatter: (params) => params.value ? parseFloat(params.value || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR' },
-    { field: 'created_at', headerName: 'Date', width: 150, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD HH:mm:ss') : '-' },
-    { field: 'status', headerName: 'Status', width: 100 },
-  ];
+  const handleEditRowsModelChange = (model) => {
+    setRowModesModel(model);
+  };
 
-  const ordersRows = (orders || []).map(order => ({
-    id: order?.order_id || '-',
-    order_id: order?.order_id || '-',
-    customer_id: order?.customer_id || '-',
-    customer_name: order?.customer_name || '-',
-    shipping_method: order?.shipping_method || '-',
-    price: order?.price || 0,
-    created_at: order?.created_at || new Date().toISOString(),
-    status: order?.status || 'Pending',
-  })) || [];
+  const processRowUpdate = async (newRow) => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${newRow.order_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: newRow.status,
+          driver_id: newRow.driver_id,
+          shipping_method: newRow.shipping_method,
+          driver_details: newRow.driver_details ? JSON.parse(newRow.driver_details) : null,
+          price: newRow.price, // Subtotal
+          tax_percentage: newRow.tax_percentage,
+        }),
+      });
 
-  const customerListColumns = [
-    { field: 'customer_id', headerName: 'ID', width: 100 },
-    { field: 'name', headerName: 'Name', width: 150 },
-    { field: 'email', headerName: 'Email', width: 200 },
-    { field: 'phone', headerName: 'Phone', width: 120 },
-    { field: 'country', headerName: 'Country', width: 120 },
-    { field: 'state', headerName: 'State', width: 120 },
-    { field: 'city', headerName: 'City', width: 120 },
-    { field: 'zip_code', headerName: 'Zip Code', width: 120 },
-  ];
-
-  const customerListRows = (customers || []).map(customer => ({
-    id: customer?.customer_id || '-',
-    customer_id: customer?.customer_id || '-',
-    name: customer?.name || '-',
-    email: customer?.email || '-',
-    phone: customer?.phone || '-',
-    country: customer?.country || '-',
-    state: customer?.state || '-',
-    city: customer?.city || '-',
-    zip_code: customer?.zip_code || '-',
-  })) || [];
-
-  const driversColumns = [
-    { field: 'driver_id', headerName: 'ID', width: 100 },
-    { field: 'name', headerName: 'Name', width: 150 },
-    { field: 'vehicle_number', headerName: 'Vehicle No.', width: 120 },
-    { field: 'vehicle_type', headerName: 'Vehicle Type', width: 120 },
-    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 120 },
-    { field: 'availability_status', headerName: 'Availability', width: 120 },
-  ];
-
-  const driversRows = (drivers || []).map(driver => ({
-    id: driver?.driver_id || '-',
-    driver_id: driver?.driver_id || '-',
-    name: driver?.name || '-',
-    vehicle_number: driver?.vehicle_number || '-',
-    vehicle_type: driver?.vehicle_type || '-',
-    max_capacity: driver?.max_capacity || '-',
-    availability_status: driver?.availability_status || 'Available',
-  })) || [];
+      if (!response.ok) throw new Error('Failed to update order');
+      const updatedOrder = await response.json();
+      setOrders(orders.map(order => order.order_id === newRow.order_id ? updatedOrder : order));
+      setSnackbar({ open: true, message: 'Order updated successfully', severity: 'success' });
+      return updatedOrder;
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+      throw error;
+    }
+  };
 
   return (
     <Box sx={{ display: 'flex', p: 3 }}>
-      {/* Form on the Left (40% width) */}
-      <Box sx={{ width: '40%', pr: 2 }}>
-        <Typography variant="h4" gutterBottom align="center">Create New Order</Typography>
-
-        {/* Customer Selection */}
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Customer</InputLabel>
-          <Select
-            name="customer_id"
-            value={formData.customer_id}
-            onChange={handleInputChange}
-            label="Customer"
-          >
-            {customers.map(customer => (
-              <MenuItem key={customer.customer_id} value={customer.customer_id}>
-                {customer.name}
+      {/* Form on the Left (30% width) */}
+      <Box sx={{ width: '30%', pr: 2 }}>
+        {/* Order Details (Customer to Driver Details) */}
+        <Box>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Customer</InputLabel>
+            <Select
+              name="customer_id"
+              value={formData.customer_id}
+              onChange={handleInputChange}
+              label="Customer"
+            >
+              {customers.map(customer => (
+                <MenuItem key={customer.customer_id} value={customer.customer_id}>
+                  {customer.name}
+                </MenuItem>
+              ))}
+              <MenuItem>
+                <Button
+                  fullWidth
+                  variant="text"
+                  onClick={() => setOpenCustomerModal(true)}
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
+                  + Add New Customer
+                </Button>
               </MenuItem>
-            ))}
-            <MenuItem>
-              <Button
-                fullWidth
-                variant="text"
-                onClick={() => setOpenCustomerModal(true)}
-                sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-              >
-                + Add New Customer
-              </Button>
-            </MenuItem>
-          </Select>
-        </FormControl>
+            </Select>
+          </FormControl>
 
-        {/* Customer Details */}
-        {showCustomerDetails && selectedCustomer && (
-          <Box sx={{ mb: 3, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-            <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
-            <TextField
-              label="Name"
-              value={selectedCustomer.name || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Address"
-              value={selectedCustomer.address || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Phone"
-              value={selectedCustomer.phone || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Email"
-              value={selectedCustomer.email || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Country"
-              value={selectedCustomer.country || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="State"
-              value={selectedCustomer.state || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="City"
-              value={selectedCustomer.city || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Zip Code"
-              value={selectedCustomer.zip_code || '-'}
-              InputProps={{ readOnly: true }}
-              fullWidth
-            />
-          </Box>
-        )}
-
-        {/* Shipping Method */}
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Shipping Method</InputLabel>
-          <Select
-            name="shipping_method"
-            value={formData.shipping_method}
-            onChange={handleInputChange}
-            label="Shipping Method"
-          >
-            <MenuItem value="Customer">Customer-Arranged</MenuItem>
-            <MenuItem value="Self">Self-Arranged</MenuItem>
-          </Select>
-        </FormControl>
-
-        {/* Driver Details (Always Displayed for Both Methods) */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" gutterBottom>Driver Details</Typography>
-          {formData.shipping_method === 'Self' && formData.driver_id && (
-            <>
-              {drivers
-                .filter(d => d.driver_id === formData.driver_id)
-                .map(driver => (
-                  <>
-                    <TextField
-                      fullWidth
-                      label="Driver Name"
-                      value={driver.name || ''}
-                      InputProps={{ readOnly: true }}
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Vehicle Number Plate"
-                      value={driver.vehicle_number || ''}
-                      InputProps={{ readOnly: true }}
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Vehicle Type"
-                      value={driver.vehicle_type || ''}
-                      InputProps={{ readOnly: true }}
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Max Capacity (kg)"
-                      value={driver.max_capacity || ''}
-                      InputProps={{ readOnly: true }}
-                      sx={{ mb: 2 }}
-                    />
-                  </>
-                ))}
-            </>
-          )}
-          {formData.shipping_method === 'Customer' && (
-            <>
+          {showCustomerDetails && selectedCustomer && (
+            <Box sx={{ mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+              <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
               <TextField
+                label="Name"
+                value={selectedCustomer.name || '-'}
+                InputProps={{ readOnly: true }}
                 fullWidth
-                label="Driver Name"
-                name="driver_details.name"
-                value={formData.driver_details.name}
-                onChange={handleInputChange}
                 sx={{ mb: 2 }}
               />
               <TextField
+                label="Address"
+                value={selectedCustomer.address || '-'}
+                InputProps={{ readOnly: true }}
                 fullWidth
-                label="Vehicle Number Plate"
-                name="driver_details.vehicle_number_plate"
-                value={formData.driver_details.vehicle_number_plate}
-                onChange={handleInputChange}
                 sx={{ mb: 2 }}
               />
               <TextField
+                label="Phone"
+                value={selectedCustomer.phone || '-'}
+                InputProps={{ readOnly: true }}
                 fullWidth
-                label="Vehicle Type"
-                name="driver_details.vehicle_type"
-                value={formData.driver_details.vehicle_type}
-                onChange={handleInputChange}
                 sx={{ mb: 2 }}
               />
               <TextField
+                label="Email"
+                value={selectedCustomer.email || '-'}
+                InputProps={{ readOnly: true }}
                 fullWidth
-                label="Max Capacity (kg)"
-                name="driver_details.max_capacity"
-                value={formData.driver_details.max_capacity}
-                onChange={handleInputChange}
                 sx={{ mb: 2 }}
               />
-            </>
-          )}
-        </Box>
-
-        {/* Items */}
-        <Box sx={{ mb: 3 }}>
-          {formData.items.map((item, index) => (
-            <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <TextField
-                label="Product"
-                value={item.product}
-                onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                sx={{ mr: 2, flex: 1 }}
+                label="Country"
+                value={selectedCustomer.country || '-'}
+                InputProps={{ readOnly: true }}
+                fullWidth
+                sx={{ mb: 2 }}
               />
               <TextField
-                label="Quantity (kg)"
-                type="number"
-                value={item.quantity}
-                onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                sx={{ mr: 1, width: '120px' }}
+                label="State"
+                value={selectedCustomer.state || '-'}
+                InputProps={{ readOnly: true }}
+                fullWidth
+                sx={{ mb: 2 }}
               />
               <TextField
-                label="Price per Unit (IDR)"
-                type="number"
-                value={item.price}
-                onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                sx={{ mr: 1, width: '120px' }}
+                label="City"
+                value={selectedCustomer.city || '-'}
+                InputProps={{ readOnly: true }}
+                fullWidth
+                sx={{ mb: 2 }}
               />
-              <IconButton
-                onClick={() => removeItem(index)}
-                size="small"
-                color="error"
-                disabled={formData.items.length === 1}
-              >
-                <CloseIcon />
-              </IconButton>
+              <TextField
+                label="Zip Code"
+                value={selectedCustomer.zip_code || '-'}
+                InputProps={{ readOnly: true }}
+                fullWidth
+              />
             </Box>
-          ))}
-          <Button variant="outlined" onClick={addItem} sx={{ mb: 2 }}>Add Another Item</Button>
+          )}
+
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Shipping Method</InputLabel>
+            <Select
+              name="shipping_method"
+              value={formData.shipping_method}
+              onChange={handleInputChange}
+              label="Shipping Method"
+            >
+              <MenuItem value="Customer">Customer-Arranged</MenuItem>
+              <MenuItem value="Self">Self-Arranged</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="subtitle1" gutterBottom>Driver Details</Typography>
+            {formData.shipping_method === 'Self' && (
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Driver</InputLabel>
+                <Select
+                  name="driver_id"
+                  value={formData.driver_id}
+                  onChange={handleInputChange}
+                  label="Driver"
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {drivers.filter(d => d.availability_status === 'Available').map(driver => (
+                    <MenuItem key={driver.driver_id} value={driver.driver_id}>
+                      {driver.name} ({driver.vehicle_number})
+                    </MenuItem>
+                  ))}
+                  <MenuItem>
+                    <Button
+                      fullWidth
+                      variant="text"
+                      onClick={() => setOpenDriverModal(true)}
+                      sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                    >
+                      + Add New Driver
+                    </Button>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            )}
+            {formData.shipping_method === 'Self' && formData.driver_id && drivers.find(d => d.driver_id === formData.driver_id) && (
+              <>
+                <TextField
+                  fullWidth
+                  label="Driver Name"
+                  value={drivers.find(d => d.driver_id === formData.driver_id)?.name || ''}
+                  InputProps={{ readOnly: true }}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Vehicle Number Plate"
+                  value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_number || ''}
+                  InputProps={{ readOnly: true }}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Vehicle Type"
+                  value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_type || ''}
+                  InputProps={{ readOnly: true }}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Max Capacity (kg)"
+                  value={drivers.find(d => d.driver_id === formData.driver_id)?.max_capacity || ''}
+                  InputProps={{ readOnly: true }}
+                  sx={{ mb: 2 }}
+                />
+              </>
+            )}
+            {formData.shipping_method === 'Customer' && (
+              <>
+                <TextField
+                  fullWidth
+                  label="Driver Name"
+                  name="driver_details.name"
+                  value={formData.driver_details.name}
+                  onChange={handleInputChange}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Vehicle Number Plate"
+                  name="driver_details.vehicle_number_plate"
+                  value={formData.driver_details.vehicle_number_plate}
+                  onChange={handleInputChange}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Vehicle Type"
+                  name="driver_details.vehicle_type"
+                  value={formData.driver_details.vehicle_type}
+                  onChange={handleInputChange}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Max Capacity (kg)"
+                  name="driver_details.max_capacity"
+                  value={formData.driver_details.max_capacity}
+                  onChange={handleInputChange}
+                  sx={{ mb: 2 }}
+                />
+              </>
+            )}
+          </Box>
+          <Divider sx={{ my: 4 }} /> {/* Divider between Order Details and Order Items */}
         </Box>
 
-        {/* Price and Tax */}
-        <TextField
-          fullWidth
-          label="Subtotal Price (IDR)"
-          name="price"
-          value={formData.price}
-          InputProps={{ readOnly: true }} // Calculated automatically
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          label="Tax Percentage (%)"
-          name="tax_percentage"
-          value={formData.tax_percentage}
-          onChange={handleInputChange}
-          type="number"
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          fullWidth
-          label="Grand Total (IDR)"
-          value={
-            formData.price && formData.tax_percentage
-              ? (parseFloat(formData.price || 0) * (1 + parseFloat(formData.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
-              : '0 IDR'
-          }
-          InputProps={{ readOnly: true }}
-          sx={{ mb: 2 }}
-        />
+        {/* Order Items (Product to Grand Total) */}
+        <Box>
+          <Box sx={{ mb: 3 }}>
+            {formData.items.map((item, index) => (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <TextField
+                  label="Product"
+                  value={item.product}
+                  onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                  sx={{ mr: 2, flex: 1 }}
+                />
+                <TextField
+                  label="Quantity (kg)"
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                  sx={{ mr: 1, width: '120px' }}
+                />
+                <TextField
+                  label="Price per Unit (IDR)"
+                  type="number"
+                  value={item.price}
+                  onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                  sx={{ mr: 1, width: '120px' }}
+                />
+                <IconButton
+                  onClick={() => removeItem(index)}
+                  size="small"
+                  color="error"
+                  disabled={formData.items.length === 1}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            ))}
+            <Button variant="outlined" onClick={addItem} sx={{ mb: 2 }}>Add Another Item</Button>
+          </Box>
 
-        {/* Submit */}
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSubmit}
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-          fullWidth
-        >
-          Create Order
-        </Button>
+          {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
+          <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
+            <TextField
+              fullWidth
+              label="Subtotal Price (IDR)"
+              name="price"
+              value={formData.price ? parseFloat(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
+              InputProps={{ readOnly: true }} // Calculated automatically
+              sx={{ mb: 2 }}
+            />
+            <Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
+            <TextField
+              fullWidth
+              label="Tax Percentage (%)"
+              name="tax_percentage"
+              value={formData.tax_percentage}
+              onChange={handleInputChange}
+              type="number"
+              sx={{ mb: 2 }}
+            />
+            <Divider sx={{ mb: 2 }} /> {/* Divider between Tax and Grand Total */}
+            <TextField
+              fullWidth
+              label="Grand Total (IDR)"
+              value={
+                formData.price && formData.tax_percentage
+                  ? (parseFloat(formData.price || 0) * (1 + parseFloat(formData.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                  : '0 IDR'
+              }
+              InputProps={{ readOnly: true }} // Calculated on frontend
+              sx={{ mb: 2 }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
+              fullWidth
+              sx={{ maxWidth: '100%' }} // Match width of totals
+            >
+              Create Order
+            </Button>
+          </Box>
+        </Box>
       </Box>
 
-      {/* DataGrids on the Right (60% width) */}
-      <Box sx={{ width: '60%', pl: 2 }}>
-        <Typography variant="h5" gutterBottom>System Overview</Typography>
+      {/* DataGrids on the Right (70% width) */}
+      <Box sx={{ width: '70%', pl: 2 }}>
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>Orders</Typography>
           <DataGrid
             rows={ordersRows}
             columns={ordersColumns}
+            editMode="row" // Enable row editing for CRUD
+            rowModesModel={rowModesModel}
+            onRowEditStart={handleRowEditStart}
+            onRowEditStop={handleRowEditStop}
+            onEditRowsModelChange={handleEditRowsModelChange}
+            processRowUpdate={processRowUpdate}
+            onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
             pageSize={10}
             rowsPerPageOptions={[10]}
             autoHeight
+            slots={{ toolbar: GridToolbar }} // Add toolbar for sorting, filtering, export
+            slotProps={{
+              toolbar: { showQuickFilter: true }, // Enable search in toolbar
+            }}
           />
         </Box>
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>Customers</Typography>
           <DataGrid
             rows={customerListRows}
             columns={customerListColumns}
             pageSize={10}
             rowsPerPageOptions={[10]}
             autoHeight
+            slots={{ toolbar: GridToolbar }} // Add toolbar
+            slotProps={{
+              toolbar: { showQuickFilter: true }, // Enable search
+            }}
           />
         </Box>
         <Box>
-          <Typography variant="h6" gutterBottom>Drivers</Typography>
           <DataGrid
             rows={driversRows}
             columns={driversColumns}
             pageSize={10}
             rowsPerPageOptions={[10]}
             autoHeight
+            slots={{ toolbar: GridToolbar }} // Add toolbar
+            slotProps={{
+              toolbar: { showQuickFilter: true }, // Enable search
+            }}
           />
         </Box>
       </Box>
@@ -769,7 +780,7 @@ const OrderCreation = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={handleCloseSnackbar} // Single instance here
+        onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
