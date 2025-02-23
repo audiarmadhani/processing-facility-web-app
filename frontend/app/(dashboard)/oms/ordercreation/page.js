@@ -68,9 +68,11 @@ const OrderCreation = () => {
         const driversData = await driversRes.json();
         const ordersData = await ordersRes.json();
 
-        setCustomers(customersData);
-        setDrivers(driversData);
-        setOrders(ordersData);
+        console.log('Orders Data:', ordersData); // Log to debug API response
+
+        setCustomers(customersData || []);
+        setDrivers(driversData || []);
+        setOrders(ordersData || []);
       } catch (error) {
         setSnackbar({ open: true, message: error.message, severity: 'error' });
       } finally {
