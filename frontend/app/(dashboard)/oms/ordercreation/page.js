@@ -276,9 +276,9 @@ const OrderCreation = () => {
       orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`);
 
       const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
-        method: 'POST',
-        body: orderData,
-      });
+				method: 'POST',
+				body: orderListFormData,
+			});
 
       if (!docRes.ok) throw new Error('Failed to upload Order List');
 
