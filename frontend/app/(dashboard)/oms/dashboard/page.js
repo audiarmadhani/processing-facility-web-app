@@ -2,26 +2,37 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+  Box,
   Button,
+  Typography,
+  Grid,
   Card,
   CardContent,
-  Grid,
-  Typography,
   CircularProgress,
-  Box,
+  Snackbar,
+  Alert,
+  Modal,
   Paper,
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation'; // For navigation in App Router
+import dayjs from 'dayjs';
 
 const Dashboard = () => {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [openOrderModal, setOpenOrderModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [rowModesModel, setRowModesModel] = useState({});
 
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -45,6 +56,7 @@ const Dashboard = () => {
         setDrivers(driversData);
       } catch (err) {
         setError(err.message);
+        setSnackbar({ open: true, message: err.message, severity: 'error' });
       } finally {
         setLoading(false);
       }
@@ -53,30 +65,70 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  // Handle navigation
   const handleCreateOrder = () => {
-    console.log('Navigate to /orders/create'); // Placeholder for Navbar navigation
+    router.push('/orders/create');
   };
 
   const handleViewCustomers = () => {
-    console.log('Navigate to /customers'); // Placeholder for Navbar navigation
+    router.push('/customers');
   };
 
   const handleViewDrivers = () => {
-    console.log('Navigate to /drivers'); // Placeholder for Navbar navigation
+    router.push('/drivers');
   };
 
-  const handelViewDocuments = (orderId) => {
-    console.log(`Navigate to /orders/${orderId}/documents`); // Placeholder for Navbar navigation
+  const handleViewDocuments = (orderId) => {
+    router.push(`/orders/${orderId}/documents`);
+  };
+
+  // Handle opening order details modal
+  const handleOpenOrderModal = async (orderId) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
+      if (!res.ok) throw new Error('Failed to fetch order details');
+      const fullOrder = await res.json();
+      setSelectedOrder(fullOrder);
+      setOpenOrderModal(true);
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseOrderModal = () => {
+    setOpenOrderModal(false);
+    setSelectedOrder(null);
+  };
+
+  // Handle DataGrid row editing (if needed, though not implemented here for simplicity)
+  const handleRowEditStart = (params, event) => {
+    event.defaultMuiPrevented = true;
+  };
+
+  const handleRowEditStop = (params, event) => {
+    event.defaultMuiPrevented = true;
+  };
+
+  const handleEditRowsModelChange = (model) => {
+    setRowModesModel(model);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const columns = [
-    { field: 'order_id', headerName: 'Order ID', width: 100 },
-    { field: 'customer_name', headerName: 'Customer', width: 150 },
-    { field: 'shipping_method', headerName: 'Shipping Method', width: 150 },
+    { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
+    { field: 'customer_name', headerName: 'Customer', width: 150, sortable: true },
+    { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true },
     { 
       field: 'status', 
       headerName: 'Status', 
-      width: 130,
+      width: 130, 
+      sortable: true,
       renderCell: (params) => (
         <Box sx={{ 
           bgcolor: params.value === 'Delivered' ? 'success.light' : params.value === 'Shipped' ? 'info.light' : 'warning.light', 
@@ -88,17 +140,51 @@ const Dashboard = () => {
         </Box>
       ),
     },
-    { field: 'created_at', headerName: 'Created At', width: 180, valueFormatter: (params) => new Date(params.value).toLocaleDateString() },
-    { field: 'driver_name', headerName: 'Driver', width: 150, renderCell: (params) => params.value || 'N/A' },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : '-' },
+    { field: 'driver_name', headerName: 'Driver', width: 150, sortable: true, renderCell: (params) => params.value || 'N/A' },
+    { 
+      field: 'details', 
+      headerName: 'Details', 
+      width: 120, 
+      sortable: false, 
+      renderCell: (params) => (
+        <Button 
+          variant="outlined" 
+          size="small"
+          onClick={() => handleOpenOrderModal(params.row.order_id)}
+          sx={{ 
+            height: '20px', 
+            minWidth: '80px', 
+            padding: '0 8px', 
+            fontSize: '0.75rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+          }}
+        >
+          View Details
+        </Button>
+      )
+    },
     { 
       field: 'documents', 
       headerName: 'Documents', 
-      width: 150,
+      width: 150, 
+      sortable: false, 
       renderCell: (params) => (
         <Button 
           variant="outlined" 
           size="small" 
-          onClick={() => handelViewDocuments(params.row.order_id)} 
+          onClick={() => handleViewDocuments(params.row.order_id)} 
+          sx={{ 
+            height: '20px', 
+            minWidth: '80px', 
+            padding: '0 8px', 
+            fontSize: '0.75rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+          }}
         >
           View
         </Button>
@@ -123,17 +209,37 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>OMS Dashboard</Typography>
-      {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
+      <Typography variant="h4" gutterBottom sx={{ color: '#333' }}>OMS Dashboard</Typography>
+      {error && (
+        <Snackbar
+          open={!!error}
+          autoHideDuration={6000}
+          onClose={() => setError(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        </Snackbar>
+      )}
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {summaryData.map((item, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{item.title}</Typography>
-                <Typography variant="h4">{loading ? <CircularProgress size={24} /> : item.value}</Typography>
+            <Card 
+              sx={{ 
+                bgcolor: '#f5f5f5', 
+                borderRadius: 2, 
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', 
+                '&:hover': { boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', bgcolor: '#e0e0e0' }
+              }}
+            >
+              <CardContent sx={{ p: 2 }}>
+                <Typography variant="h6" sx={{ color: '#333', fontWeight: 'bold' }}>{item.title}</Typography>
+                <Typography variant="h4" sx={{ color: '#1976d2' }}>
+                  {loading ? <CircularProgress size={24} /> : item.value}
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -141,22 +247,37 @@ const Dashboard = () => {
       </Grid>
 
       {/* Action Buttons */}
-      <Box sx={{ mb: 4 }}>
-        <Button variant="contained" color="primary" onClick={handleCreateOrder} sx={{ mr: 2 }}>
-          Create New Order
-        </Button>
-        <Button variant="outlined" onClick={handleViewCustomers} sx={{ mr: 2 }}>
+      <Box sx={{ mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        {['admin', 'manager'].includes(session.user.role) && (
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleCreateOrder} 
+            sx={{ mb: 2 }}
+          >
+            Create New Order
+          </Button>
+        )}
+        <Button 
+          variant="outlined" 
+          onClick={handleViewCustomers} 
+          sx={{ mb: 2 }}
+        >
           View Customers
         </Button>
-        <Button variant="outlined" onClick={handleViewDrivers}>
+        <Button 
+          variant="outlined" 
+          onClick={handleViewDrivers} 
+          sx={{ mb: 2 }}
+        >
           View Drivers
         </Button>
       </Box>
 
       {/* Orders Table */}
-      <Paper elevation={3}>
-        <Typography variant="h6" sx={{ p: 2 }}>Recent Orders</Typography>
-        <div style={{ height: 400, width: '100%' }}>
+      <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Typography variant="h6" sx={{ p: 2, color: '#333' }}>Recent Orders</Typography>
+        <Box sx={{ height: 400, width: '100%' }}>
           <DataGrid
             rows={orders}
             columns={columns}
@@ -165,10 +286,253 @@ const Dashboard = () => {
             loading={loading}
             getRowId={(row) => row.order_id}
             disableSelectionOnClick
-            autoHeight
+            slots={{ toolbar: GridToolbar }}
+            slotProps={{
+              toolbar: { showQuickFilter: true },
+            }}
+            autosizeOnMount
+            autosizeOptions={{
+              includeHeaders: true,
+              includeOutliers: true,
+              expand: true,
+            }}
+            rowHeight={27}
+            sx={{ border: 'none' }}
           />
-        </div>
+        </Box>
       </Paper>
+
+      {/* Order Details Modal */}
+      <Modal
+        open={openOrderModal}
+        onClose={handleCloseOrderModal}
+        aria-labelledby="order-details-modal-title"
+        aria-describedby="order-details-modal-description"
+      >
+        <Paper sx={{ 
+          position: 'absolute', 
+          top: '50%', 
+          left: '50%', 
+          transform: 'translate(-50%, -50%)', 
+          p: 3, 
+          maxWidth: 600, 
+          maxHeight: '80vh', 
+          overflowY: 'auto', 
+          bgcolor: 'background.paper', 
+          borderRadius: 2, 
+          boxShadow: 24, 
+        }}>
+          {loading ? (
+            <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
+          ) : selectedOrder ? (
+            <Box>
+              <Typography 
+                variant="h5" 
+                id="order-details-modal-title" 
+                gutterBottom 
+                sx={{ 
+                  textAlign: 'center', 
+                  color: '#333', 
+                  fontWeight: 'bold', 
+                  mb: 2,
+                }}
+              >
+                Order Details - Order ID: {selectedOrder.order_id || 'N/A'}
+              </Typography>
+
+              {/* Header Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    color: '#666', 
+                    fontStyle: 'italic', 
+                    mb: 1 
+                  }}
+                >
+                  PT. Berkas Tuaian Melimpah
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    color: '#666', 
+                    mb: 1 
+                  }}
+                >
+                  Date: {dayjs().format('YYYY-MM-DD')}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    color: '#666', 
+                    mb: 1 
+                  }}
+                >
+                  Time: {dayjs().format('HH:mm:ss')}
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+              </Box>
+
+              {/* Two-Column Layout for Customer and Shipping Information */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {/* Customer Information (Left Column) */}
+                <Grid item xs={6}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      color: '#333', 
+                      mb: 1,
+                      borderBottom: '1px solid #e0e0e0',
+                      pb: 1,
+                    }}
+                  >
+                    Customer Information
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography variant="body2"><strong>Name:</strong> {selectedOrder.customer_name || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Address:</strong> {selectedOrder.address || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Phone:</strong> {selectedOrder.customer_phone || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Email:</strong> {selectedOrder.customer_email || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Country:</strong> {selectedOrder.customer_country || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>State:</strong> {selectedOrder.customer_state || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>City:</strong> {selectedOrder.customer_city || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Zip Code:</strong> {selectedOrder.customer_zip_code || 'N/A'}</Typography>
+                  </Box>
+                </Grid>
+
+                {/* Shipping Information (Right Column) */}
+                <Grid item xs={6}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      color: '#333', 
+                      mb: 1,
+                      borderBottom: '1px solid #e0e0e0',
+                      pb: 1,
+                    }}
+                  >
+                    Shipping Information
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography variant="body2"><strong>Method:</strong> {selectedOrder.shipping_method || 'N/A'}</Typography>
+                    {selectedOrder.driver_id && (
+                      <>
+                        <Typography variant="body2"><strong>Driver Name:</strong> {selectedOrder.driver_name || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle No.:</strong> {selectedOrder.driver_vehicle_number || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle Type:</strong> {selectedOrder.driver_vehicle_type || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Max Capacity:</strong> {selectedOrder.driver_max_capacity ? `${selectedOrder.driver_max_capacity} kg` : 'N/A'}</Typography>
+                      </>
+                    )}
+                    {selectedOrder.driver_details && (
+                      <>
+                        <Typography variant="body2"><strong>Driver Name:</strong> {JSON.parse(selectedOrder.driver_details).name || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle No.:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_number_plate || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle Type:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_type || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Max Capacity:</strong> {JSON.parse(selectedOrder.driver_details).max_capacity ? `${JSON.parse(selectedOrder.driver_details).max_capacity} kg` : 'N/A'}</Typography>
+                      </>
+                    )}
+                  </Box>
+                </Grid>
+              </Grid>
+
+              {/* Items Ordered Section */}
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#333', 
+                    mb: 1,
+                    borderBottom: '1px solid #e0e0e0',
+                    pb: 1,
+                  }}
+                >
+                  Items Ordered
+                </Typography>
+                {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                  <Box sx={{ pl: 1 }}>
+                    {selectedOrder.items.map((item, index) => (
+                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dotted #e0e0e0', pb: 1 }}>
+                        <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
+                        <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                        <Typography variant="body2"><strong>Subtotal (IDR):</strong> {(item.price * item.quantity).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR'}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" sx={{ pl: 1 }}>No items ordered.</Typography>
+                )}
+              </Box>
+
+              {/* Totals and Signatures */}
+              <Box sx={{ mb: 3 }}>
+                <Divider sx={{ my: 2 }} />
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={6}>
+                    <Typography variant="body2"><strong>Subtotal (IDR):</strong> {selectedOrder.subtotal ? selectedOrder.subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                    <Typography variant="body2"><strong>Tax ({selectedOrder.tax_percentage ? `${selectedOrder.tax_percentage.toFixed(2)}%` : '0%'}):</strong> {selectedOrder.tax ? selectedOrder.tax.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                    <Typography variant="body2"><strong>Grand Total (IDR):</strong> {selectedOrder.grand_total ? selectedOrder.grand_total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                  </Grid>
+                  <Grid item xs={6} sx={{ textAlign: 'right' }}>
+                    <Typography variant="body2">Printed on: {dayjs().format('YYYY-MM-DD HH:mm:ss')}</Typography>
+                  </Grid>
+                </Grid>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Signatures */}
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                    <Typography variant="body2">Order Staff</Typography>
+                    <Typography variant="body2">{session.user.name || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                    <Typography variant="body2">Manager</Typography>
+                    <Typography variant="body2">(..................)</Typography>
+                  </Grid>
+                  {selectedOrder.driver_id && (
+                    <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                      <Typography variant="body2">Driver</Typography>
+                      <Typography variant="body2">{selectedOrder.driver_name || '-'}</Typography>
+                    </Grid>
+                  )}
+                  {selectedOrder.driver_details && (
+                    <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                      <Typography variant="body2">Driver</Typography>
+                      <Typography variant="body2">{JSON.parse(selectedOrder.driver_details).name || '-'}</Typography>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+
+              <Button 
+                variant="contained" 
+                onClick={handleCloseOrderModal} 
+                sx={{ 
+                  mt: 3, 
+                  width: '100%', 
+                  backgroundColor: '#1976d2', 
+                  '&:hover': { backgroundColor: '#1565c0' } 
+                }}
+              >
+                Close
+              </Button>
+            </Box>
+          ) : (
+            <Typography variant="body1" sx={{ textAlign: 'center' }}>No order details available.</Typography>
+          )}
+        </Paper>
+      </Modal>
     </Box>
   );
 };

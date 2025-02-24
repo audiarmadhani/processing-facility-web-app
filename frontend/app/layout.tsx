@@ -76,12 +76,7 @@ const NAVIGATION: Navigation = [
     children: [
       { segment: "dashboard", title: "OMS Dashboard", icon: <StorefrontIcon /> },
       { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
-      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
-
-      { kind: "divider" },
-
-      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
-      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
+      { segment: "orderprocessing", title: "Process Order", icon: <AddShoppingCartIcon /> },
     ],
   },
 
