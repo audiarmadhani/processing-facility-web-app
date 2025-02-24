@@ -57,8 +57,8 @@ const OrderCreation = () => {
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [rowModesModel, setRowModesModel] = useState({}); // For DataGrid row editing
-	const [openOrderModal, setOpenOrderModal] = useState(false); // State for order details modal
-	const [selectedOrder, setSelectedOrder] = useState(null); // State for the selected order details
+  const [openOrderModal, setOpenOrderModal] = useState(false); // State for order details modal
+  const [selectedOrder, setSelectedOrder] = useState(null); // State for the selected order details
 
   // Fetch initial data (customers, drivers, and orders)
   useEffect(() => {
@@ -76,7 +76,7 @@ const OrderCreation = () => {
         const driversData = await driversRes.json();
         const ordersData = await ordersRes.json();
 
-        console.log('Orders Data:', ordersData); // Log to debug API response
+        console.log('Raw Orders API Response:', ordersData); // Log the raw API response
 
         setCustomers(customersData || []);
         setDrivers(driversData || []);
@@ -226,6 +226,7 @@ const OrderCreation = () => {
       orderData.append('driver_details', JSON.stringify(formData.driver_details)); // For both methods
       orderData.append('price', formData.price || '0'); // Subtotal in IDR as string
       orderData.append('tax_percentage', formData.tax_percentage || '0'); // Tax percentage as string
+      orderData.append('items', JSON.stringify(formData.items)); // Add items to the FormData as JSON string
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
         method: 'POST',
@@ -238,7 +239,8 @@ const OrderCreation = () => {
 
       if (!orderId) throw new Error('Order ID not found in response');
 
-      // Create order items
+      // Create order items (optional, as items are now sent in the order payload)
+      /* 
       for (const item of formData.items) {
         const itemData = new FormData();
         itemData.append('order_id', orderId);
@@ -253,6 +255,7 @@ const OrderCreation = () => {
 
         if (!itemRes.ok) throw new Error('Failed to create order item');
       }
+      */
 
       // Generate PDF
       const orderListDoc = generateOrderListPDF(orderId);
@@ -274,7 +277,7 @@ const OrderCreation = () => {
 
       const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
         method: 'POST',
-        body: orderListFormData,
+        body: orderData,
       });
 
       if (!docRes.ok) throw new Error('Failed to upload Order List');
@@ -459,51 +462,46 @@ const OrderCreation = () => {
     }
   };
 
-	const handleOpenOrderModal = (order) => {
-		setSelectedOrder(order);
-		setOpenOrderModal(true);
-	};
-	
-	const handleCloseOrderModal = () => {
-		setOpenOrderModal(false);
-		setSelectedOrder(null);
-	};
+  // Handle opening the order details modal
+  const handleOpenOrderModal = (order) => {
+    setSelectedOrder(order);
+    setOpenOrderModal(true);
+  };
+
+  const handleCloseOrderModal = () => {
+    setOpenOrderModal(false);
+    setSelectedOrder(null);
+  };
 
   // DataGrid columns and rows
   const ordersColumns = [
-    { field: 'order_id', headerName: 'Order ID', width: 80, sortable: true, editable: true },
-    // { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true, editable: false },
-    { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 160, sortable: true, editable: true },
+    { field: 'order_id', headerName: 'Order ID', width: 50, sortable: true, editable: true },
+    { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true, editable: false },
+    { field: 'shipping_method', headerName: 'Shipping Method', width: 120, sortable: true, editable: true },
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, editable: false },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 170, sortable: true, editable: false },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false },
     { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
     { 
       field: 'address', 
       headerName: 'Customer Address', 
-      width: 200, 
+      flex: 1, 
       editable: false, // Allow truncation for long addresses
     },
-		{ field: 'details', headerName: 'Details', width: 100, sortable: false, renderCell: (params) => (
-			<Button variant="outlined" size="small" onClick={() => handleOpenOrderModal(params.row)}>
-				View Details
-			</Button>
-		)},
     { 
-      field: 'document', 
-      headerName: 'Order List', 
-      width: 110, 
-      editable: false, 
+      field: 'details', 
+      headerName: 'Details', 
+      width: 100, 
+      sortable: false, 
       renderCell: (params) => (
         <Button 
-          variant="text" 
-          onClick={() => window.open(params.row.document_url || '#', '_blank')}
-          disabled={!params.row.document_url}
+          variant="outlined" 
+          size="small"
+          onClick={() => handleOpenOrderModal(params.row)}
         >
-          View PDF
+          View Details
         </Button>
       )
     },
@@ -512,7 +510,6 @@ const OrderCreation = () => {
   const ordersRows = (orders || []).map(order => ({
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
-    // customer_id: order?.customer_id || '-',
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
     subtotal: order?.price || 0, // Use numeric price directly
@@ -526,12 +523,12 @@ const OrderCreation = () => {
   })) || [];
 
   const customerListColumns = [
-    { field: 'name', headerName: 'Name', width: 200, sortable: true },
-    { field: 'email', headerName: 'Email', width: 200, sortable: true },
+    { field: 'name', headerName: 'Name', width: 150, sortable: true },
+    { field: 'email', headerName: 'Email', width: 150, sortable: true },
     { field: 'phone', headerName: 'Phone', width: 150, sortable: true },
     { field: 'country', headerName: 'Country', width: 120, sortable: true },
     { field: 'state', headerName: 'State', width: 120, sortable: true },
-    { field: 'city', headerName: 'City', width: 180, sortable: true },
+    { field: 'city', headerName: 'City', width: 120, sortable: true },
     { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
   ];
 
@@ -550,7 +547,7 @@ const OrderCreation = () => {
     { field: 'name', headerName: 'Name', width: 120, sortable: true },
     { field: 'vehicle_number', headerName: 'Vehicle No.', width: 120, sortable: true },
     { field: 'vehicle_type', headerName: 'Vehicle Type', width: 120, sortable: true },
-    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 150, sortable: true },
+    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 80, sortable: true },
     { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
   ];
 
@@ -959,7 +956,7 @@ const OrderCreation = () => {
       <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
       <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
-			{/* Order Details Modal */}
+      {/* Order Details Modal */}
       <Modal
         open={openOrderModal}
         onClose={handleCloseOrderModal}
