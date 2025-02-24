@@ -457,26 +457,38 @@ const OrderCreation = () => {
 
   // DataGrid columns and rows
   const ordersColumns = [
-    { field: 'order_id', headerName: 'Order ID', width: 50, sortable: true, editable: true },
+    { field: 'order_id', headerName: 'Order ID', width: 80, sortable: true, editable: true },
     // { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true, editable: false },
-    { field: 'shipping_method', headerName: 'Shipping Method', width: 120, sortable: true, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
-    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false },
+    { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true, editable: false },
+    { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 160, sortable: true, editable: true, valueFormatter: (params) => {
+      console.log('Subtotal params.value:', params.value); // Debug log
+      return params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0 IDR';
+    }},
+    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true, valueFormatter: (params) => {
+      console.log('Tax Percentage params.value:', params.value); // Debug log
+      return params.value ? `${params.value.toFixed(2)}%` : '0%';
+    }},
+    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, editable: false, valueFormatter: (params) => {
+      console.log('Tax params.value:', params.value); // Debug log
+      return params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0 IDR';
+    }},
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 170, sortable: true, editable: false, valueFormatter: (params) => {
+      console.log('Grand Total params.value:', params.value); // Debug log
+      return params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0 IDR';
+    }},
     { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
     { 
       field: 'address', 
       headerName: 'Customer Address', 
-      flex: 1, 
+      width: 200, 
       editable: false, // Allow truncation for long addresses
     },
     { 
       field: 'document', 
       headerName: 'Order List', 
-      flex: 1, 
+      width: 100, 
       editable: false, 
       renderCell: (params) => (
         <Button 
@@ -507,12 +519,12 @@ const OrderCreation = () => {
   })) || [];
 
   const customerListColumns = [
-    { field: 'name', headerName: 'Name', width: 150, sortable: true },
-    { field: 'email', headerName: 'Email', width: 150, sortable: true },
+    { field: 'name', headerName: 'Name', width: 200, sortable: true },
+    { field: 'email', headerName: 'Email', width: 200, sortable: true },
     { field: 'phone', headerName: 'Phone', width: 150, sortable: true },
     { field: 'country', headerName: 'Country', width: 120, sortable: true },
     { field: 'state', headerName: 'State', width: 120, sortable: true },
-    { field: 'city', headerName: 'City', width: 120, sortable: true },
+    { field: 'city', headerName: 'City', width: 180, sortable: true },
     { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
   ];
 
@@ -531,7 +543,7 @@ const OrderCreation = () => {
     { field: 'name', headerName: 'Name', width: 120, sortable: true },
     { field: 'vehicle_number', headerName: 'Vehicle No.', width: 120, sortable: true },
     { field: 'vehicle_type', headerName: 'Vehicle Type', width: 120, sortable: true },
-    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 80, sortable: true },
+    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 150, sortable: true },
     { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
   ];
 
