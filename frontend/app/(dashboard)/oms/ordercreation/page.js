@@ -55,6 +55,8 @@ const OrderCreation = () => {
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [rowModesModel, setRowModesModel] = useState({}); // For DataGrid row editing
+	const [openOrderModal, setOpenOrderModal] = useState(false); // State for order details modal
+	const [selectedOrder, setSelectedOrder] = useState(null); // State for the selected order details
 
   // Fetch initial data (customers, drivers, and orders)
   useEffect(() => {
@@ -455,6 +457,16 @@ const OrderCreation = () => {
     }
   };
 
+	const handleOpenOrderModal = (order) => {
+		setSelectedOrder(order);
+		setOpenOrderModal(true);
+	};
+	
+	const handleCloseOrderModal = () => {
+		setOpenOrderModal(false);
+		setSelectedOrder(null);
+	};
+
   // DataGrid columns and rows
   const ordersColumns = [
     { field: 'order_id', headerName: 'Order ID', width: 80, sortable: true, editable: true },
@@ -473,6 +485,11 @@ const OrderCreation = () => {
       width: 200, 
       editable: false, // Allow truncation for long addresses
     },
+		{ field: 'details', headerName: 'Details', width: 100, sortable: false, renderCell: (params) => (
+			<Button variant="outlined" size="small" onClick={() => handleOpenOrderModal(params.row)}>
+				View Details
+			</Button>
+		)},
     { 
       field: 'document', 
       headerName: 'Order List', 
@@ -939,6 +956,56 @@ const OrderCreation = () => {
       {/* Modals */}
       <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
       <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
+
+			{/* Order Details Modal */}
+      <Modal
+        open={openOrderModal}
+        onClose={handleCloseOrderModal}
+        aria-labelledby="order-details-modal-title"
+        aria-describedby="order-details-modal-description"
+      >
+        <Paper sx={{ p: 3, maxWidth: 600, maxHeight: '80vh', overflowY: 'auto', mx: 'auto', mt: '5vh' }}>
+          <Typography variant="h5" id="order-details-modal-title" gutterBottom>
+            Order Details - Order ID: {selectedOrder?.order_id || 'N/A'}
+          </Typography>
+          {selectedOrder && (
+            <Box>
+              <Typography variant="body1"><strong>Customer ID:</strong> {selectedOrder.customer_id || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Customer Name:</strong> {selectedOrder.customer_name || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Customer Address:</strong> {selectedOrder.address || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Driver ID:</strong> {selectedOrder.driver_id || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Driver Name:</strong> {selectedOrder.driver_name || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Shipping Method:</strong> {selectedOrder.shipping_method || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Status:</strong> {selectedOrder.status || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Created At:</strong> {dayjs(selectedOrder.created_at).format('YYYY-MM-DD') || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Updated At:</strong> {dayjs(selectedOrder.updated_at).format('YYYY-MM-DD') || 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Driver Details:</strong> {selectedOrder.driver_details ? JSON.stringify(selectedOrder.driver_details) : 'N/A'}</Typography>
+              <Typography variant="body1"><strong>Subtotal (IDR):</strong> {selectedOrder.subtotal ? selectedOrder.subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+              <Typography variant="body1"><strong>Tax Percentage:</strong> {selectedOrder.tax_percentage ? `${selectedOrder.tax_percentage.toFixed(2)}%` : '0%'}</Typography>
+              <Typography variant="body1"><strong>Tax (IDR):</strong> {selectedOrder.tax ? selectedOrder.tax.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+              <Typography variant="body1"><strong>Grand Total (IDR):</strong> {selectedOrder.grand_total ? selectedOrder.grand_total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+
+              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Items Ordered:</Typography>
+              {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                selectedOrder.items.map((item, index) => (
+                  <Box key={index} sx={{ mb: 1, pl: 2 }}>
+                    <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
+                    <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                    <Typography variant="body2"><strong>Subtotal (IDR):</strong> {(item.price * item.quantity).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR'}</Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="body2">No items ordered.</Typography>
+              )}
+
+              <Button variant="contained" onClick={handleCloseOrderModal} sx={{ mt: 2 }}>
+                Close
+              </Button>
+            </Box>
+          )}
+        </Paper>
+      </Modal>
 
       {/* Snackbar for notifications */}
       <Snackbar
