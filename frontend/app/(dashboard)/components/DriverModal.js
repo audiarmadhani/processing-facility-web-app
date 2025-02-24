@@ -1,30 +1,28 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  IconButton,
-  Divider,
-  Grid,
-  Card,
-  CardContent,
-  Modal,
-  Paper,
+import React, { useState } from 'react';
+import { 
+  Modal, 
+  Box, 
+  Typography, 
+  TextField, 
+  Grid, 
+  Button 
 } from '@mui/material';
-import { useSession } from 'next-auth/react';
 
 const DriverModal = ({ open, onClose, onSave }) => {
-  const [driver, setDriver] = useState({ name: '', phone: '', vehicle_number: '', vehicle_type: '', max_capacity: '' });
+  const [driver, setDriver] = useState({ 
+    name: '', 
+    phone: '', 
+    vehicle_number: '', 
+    vehicle_type: '', 
+    max_capacity: '' 
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setDriver(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSave = () => {
     onSave(driver);
@@ -32,23 +30,112 @@ const DriverModal = ({ open, onClose, onSave }) => {
   };
 
   return (
-    <Modal>
-        <Dialog open={open} onClose={onClose}>
-        <DialogTitle>Add New Driver</DialogTitle>
-        <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}><TextField fullWidth label="Name" value={driver.name} onChange={(e) => setDriver({ ...driver, name: e.target.value })} /></Grid>
-            <Grid item xs={12}><TextField fullWidth label="Phone" value={driver.phone} onChange={(e) => setDriver({ ...driver, phone: e.target.value })} /></Grid>
-            <Grid item xs={12}><TextField fullWidth label="Vehicle Number" value={driver.vehicle_number} onChange={(e) => setDriver({ ...driver, vehicle_number: e.target.value })} /></Grid>
-            <Grid item xs={12}><TextField fullWidth label="Vehicle Type" value={driver.vehicle_type} onChange={(e) => setDriver({ ...driver, vehicle_type: e.target.value })} /></Grid>
-            <Grid item xs={12}><TextField fullWidth label="Max Capacity (kg)" type="number" value={driver.max_capacity} onChange={(e) => setDriver({ ...driver, max_capacity: e.target.value })} /></Grid>
+    <Modal
+      open={open}
+      onClose={onClose}
+      aria-labelledby="driver-modal-title"
+      aria-describedby="driver-modal-description"
+    >
+      <Box 
+        sx={{ 
+          position: 'absolute', 
+          top: '50%', 
+          left: '50%', 
+          transform: 'translate(-50%, -50%)', 
+          width: 400, // Slightly narrower than Dialog's default for a custom look
+          bgcolor: 'background.paper', 
+          borderRadius: 2, 
+          boxShadow: 24, 
+          p: 4, 
+          maxHeight: '80vh', 
+          overflowY: 'auto', 
+        }}
+      >
+        <Typography 
+          id="driver-modal-title" 
+          variant="h5" 
+          sx={{ 
+            mb: 2, 
+            textAlign: 'center', 
+            fontWeight: 'bold', 
+            color: '#333' 
+          }}
+        >
+          Add New Driver
+        </Typography>
+        <Box id="driver-modal-description">
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Name" 
+                name="name"
+                value={driver.name} 
+                onChange={handleChange} 
+                variant="outlined" 
+                sx={{ mb: 2 }}
+              />
             </Grid>
-        </DialogContent>
-        <DialogActions>
-            <Button onClick={onClose}>Cancel</Button>
-            <Button variant="contained" onClick={handleSave}>Save</Button>
-        </DialogActions>
-        </Dialog>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Phone" 
+                name="phone"
+                value={driver.phone} 
+                onChange={handleChange} 
+                variant="outlined" 
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Vehicle Number" 
+                name="vehicle_number"
+                value={driver.vehicle_number} 
+                onChange={handleChange} 
+                variant="outlined" 
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Vehicle Type" 
+                name="vehicle_type"
+                value={driver.vehicle_type} 
+                onChange={handleChange} 
+                variant="outlined" 
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                fullWidth 
+                label="Max Capacity (kg)" 
+                type="number" 
+                name="max_capacity"
+                value={driver.max_capacity} 
+                onChange={handleChange} 
+                variant="outlined" 
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+          <Button onClick={onClose} variant="outlined">
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleSave} 
+            sx={{ backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#1565c0' } }}
+          >
+            Save
+          </Button>
+        </Box>
+      </Box>
     </Modal>
   );
 };
