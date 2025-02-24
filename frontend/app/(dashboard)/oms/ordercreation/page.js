@@ -1091,7 +1091,7 @@ const OrderCreation = () => {
                 {selectedOrder.items && selectedOrder.items.length > 0 ? (
                   <Box sx={{ pl: 1 }}>
                     {selectedOrder.items.map((item, index) => (
-                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dotted', pb: 1 }}>
+                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px', pb: 1 }}>
                         <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
                         <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
                         <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
