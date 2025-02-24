@@ -58,7 +58,6 @@ const DriverModal = ({ open, onClose, onSave }) => {
             mb: 2, 
             textAlign: 'center', 
             fontWeight: 'bold', 
-            color: '#333' 
           }}
         >
           Add New Driver
