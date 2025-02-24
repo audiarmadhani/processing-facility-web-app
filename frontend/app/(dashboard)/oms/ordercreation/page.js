@@ -971,9 +971,7 @@ const OrderCreation = () => {
           overflowY: 'auto', 
           mx: 'auto', 
           mt: '5vh', 
-          backgroundColor: '#ffffff', 
           borderRadius: 2, 
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         }}>
           {loading ? (
             <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
@@ -985,7 +983,6 @@ const OrderCreation = () => {
                 gutterBottom 
                 sx={{ 
                   textAlign: 'center', 
-                  color: '#333', 
                   fontWeight: 'bold', 
                   mb: 2,
                 }}
@@ -999,7 +996,6 @@ const OrderCreation = () => {
                   variant="body2" 
                   sx={{ 
                     textAlign: 'center', 
-                    color: '#666', 
                     fontStyle: 'italic', 
                     mb: 1 
                   }}
@@ -1010,21 +1006,9 @@ const OrderCreation = () => {
                   variant="body2" 
                   sx={{ 
                     textAlign: 'center', 
-                    color: '#666', 
                     mb: 1 
                   }}
                 >
-                  Date: {dayjs().format('YYYY-MM-DD')}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    textAlign: 'center', 
-                    color: '#666', 
-                    mb: 1 
-                  }}
-                >
-                  Time: {dayjs().format('HH:mm:ss')}
                 </Typography>
                 <Divider sx={{ my: 1 }} />
               </Box>
@@ -1037,9 +1021,8 @@ const OrderCreation = () => {
                     variant="subtitle1" 
                     sx={{ 
                       fontWeight: 'bold', 
-                      color: '#333', 
                       mb: 1,
-                      borderBottom: '1px solid #e0e0e0',
+                      borderBottom: '1px',
                       pb: 1,
                     }}
                   >
@@ -1063,9 +1046,8 @@ const OrderCreation = () => {
                     variant="subtitle1" 
                     sx={{ 
                       fontWeight: 'bold', 
-                      color: '#333', 
                       mb: 1,
-                      borderBottom: '1px solid #e0e0e0',
+											borderBottom: '1px',
                       pb: 1,
                     }}
                   >
@@ -1099,9 +1081,8 @@ const OrderCreation = () => {
                   variant="subtitle1" 
                   sx={{ 
                     fontWeight: 'bold', 
-                    color: '#333', 
                     mb: 1,
-                    borderBottom: '1px solid #e0e0e0',
+										borderBottom: '1px',
                     pb: 1,
                   }}
                 >
@@ -1110,7 +1091,7 @@ const OrderCreation = () => {
                 {selectedOrder.items && selectedOrder.items.length > 0 ? (
                   <Box sx={{ pl: 1 }}>
                     {selectedOrder.items.map((item, index) => (
-                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dotted #e0e0e0', pb: 1 }}>
+                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dotted', pb: 1 }}>
                         <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
                         <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
                         <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
@@ -1132,40 +1113,10 @@ const OrderCreation = () => {
                     <Typography variant="body2"><strong>Tax ({selectedOrder.tax_percentage ? `${selectedOrder.tax_percentage.toFixed(2)}%` : '0%'}):</strong> {selectedOrder.tax ? selectedOrder.tax.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
                     <Typography variant="body2"><strong>Grand Total (IDR):</strong> {selectedOrder.grand_total ? selectedOrder.grand_total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
                   </Grid>
-                  <Grid item xs={6} sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2">Printed on: {dayjs().format('YYYY-MM-DD HH:mm:ss')}</Typography>
-                  </Grid>
                 </Grid>
 
                 <Divider sx={{ my: 2 }} />
 
-                {/* Signatures */}
-                <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
-                    <Typography variant="body2">Order Staff</Typography>
-                    <Typography variant="body2">{session.user.name || '-'}</Typography>
-                  </Grid>
-                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
-                    <Typography variant="body2">Manager</Typography>
-                    <Typography variant="body2">(..................)</Typography>
-                  </Grid>
-                  {selectedOrder.driver_id && (
-                    <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
-                      <Typography variant="body2">Driver</Typography>
-                      <Typography variant="body2">{selectedOrder.driver_name || '-'}</Typography>
-                    </Grid>
-                  )}
-                  {selectedOrder.driver_details && (
-                    <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
-                      <Typography variant="body2">Driver</Typography>
-                      <Typography variant="body2">{JSON.parse(selectedOrder.driver_details).name || '-'}</Typography>
-                    </Grid>
-                  )}
-                </Grid>
               </Box>
 
               <Button 
@@ -1174,8 +1125,6 @@ const OrderCreation = () => {
                 sx={{ 
                   mt: 3, 
                   width: '100%', 
-                  backgroundColor: '#1976d2', 
-                  '&:hover': { backgroundColor: '#1565c0' } 
                 }}
               >
                 Close
