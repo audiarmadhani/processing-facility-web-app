@@ -461,22 +461,10 @@ const OrderCreation = () => {
     // { field: 'customer_id', headerName: 'Customer ID', flex: 1, editable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 160, sortable: true, editable: true, valueFormatter: (params) => {
-      console.log('Subtotal params.value:', params.value); // Debug log
-      return params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0 IDR';
-    }},
-    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true, valueFormatter: (params) => {
-      console.log('Tax Percentage params.value:', params.value); // Debug log
-      return params.value ? `${params.value.toFixed(2)}%` : '0%';
-    }},
-    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, editable: false, valueFormatter: (params) => {
-      console.log('Tax params.value:', params.value); // Debug log
-      return params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0 IDR';
-    }},
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 170, sortable: true, editable: false, valueFormatter: (params) => {
-      console.log('Grand Total params.value:', params.value); // Debug log
-      return params.value ? params.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0 IDR';
-    }},
+    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 160, sortable: true, editable: true },
+    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, editable: false },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 170, sortable: true, editable: false },
     { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
     { 
@@ -488,7 +476,7 @@ const OrderCreation = () => {
     { 
       field: 'document', 
       headerName: 'Order List', 
-      width: 100, 
+      width: 110, 
       editable: false, 
       renderCell: (params) => (
         <Button 
