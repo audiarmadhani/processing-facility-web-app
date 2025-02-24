@@ -239,31 +239,13 @@ const OrderCreation = () => {
 
       if (!orderId) throw new Error('Order ID not found in response');
 
-      // Create order items (optional, as items are now sent in the order payload)
-      /* 
-      for (const item of formData.items) {
-        const itemData = new FormData();
-        itemData.append('order_id', orderId);
-        itemData.append('product', item.product);
-        itemData.append('quantity', item.quantity.toString()); // Ensure as string
-        itemData.append('price', item.price.toString()); // Ensure as string
-
-        const itemRes = await fetch('https://processing-facility-backend.onrender.com/api/order-items', {
-          method: 'POST',
-          body: itemData,
-        });
-
-        if (!itemRes.ok) throw new Error('Failed to create order item');
-      }
-      */
-
       // Generate PDF
       const orderListDoc = generateOrderListPDF(orderId);
       const orderListBlob = orderListDoc.output('blob');
 
       const orderListFormData = new FormData();
-      orderListFormData.append('order_id', orderId);
-      orderListFormData.append('type', 'Order List');
+      orderListFormData.append('order_id', orderId); // Add order_id
+      orderListFormData.append('type', 'Order List'); // Add type
       orderListFormData.append('details', JSON.stringify({
         customer_id: formData.customer_id,
         items: formData.items,
@@ -273,12 +255,12 @@ const OrderCreation = () => {
         price: formData.price || null, // Subtotal
         tax_percentage: formData.tax_percentage || null,
       }));
-      orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`);
+      orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`); // Add file (PDF blob)
 
       const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
-				method: 'POST',
-				body: orderListFormData,
-			});
+        method: 'POST',
+        body: orderListFormData,
+      });
 
       if (!docRes.ok) throw new Error('Failed to upload Order List');
 
@@ -463,9 +445,19 @@ const OrderCreation = () => {
   };
 
   // Handle opening the order details modal
-  const handleOpenOrderModal = (order) => {
-    setSelectedOrder(order);
-    setOpenOrderModal(true);
+  const handleOpenOrderModal = async (order) => {
+    setLoading(true); // Show loading state while fetching
+    try {
+      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${order.order_id}`);
+      if (!orderRes.ok) throw new Error('Failed to fetch order details');
+      const fullOrder = await orderRes.json(); // Fetch the full order with items
+      setSelectedOrder(fullOrder); // Set the full order data, including items
+      setOpenOrderModal(true);
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    } finally {
+      setLoading(false); // Hide loading state
+    }
   };
 
   const handleCloseOrderModal = () => {
@@ -475,35 +467,44 @@ const OrderCreation = () => {
 
   // DataGrid columns and rows
   const ordersColumns = [
-    { field: 'order_id', headerName: 'Order ID', width: 50, sortable: true, editable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true, editable: false },
-    { field: 'shipping_method', headerName: 'Shipping Method', width: 120, sortable: true, editable: true },
+    { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true, editable: true },
+		{ 
+			field: 'details', 
+			headerName: 'Details', 
+			width: 120, 
+			sortable: false, 
+			renderCell: (params) => (
+				<Button 
+					variant="outlined" 
+					size="small"
+					onClick={() => handleOpenOrderModal(params.row)}
+					sx={{ 
+						height: '20px', 
+						minWidth: '80px', 
+						padding: '0 8px', 
+						fontSize: '0.75rem', 
+						display: 'flex', 
+						alignItems: 'center', 
+						justifyContent: 'center', 
+					}}
+				>
+					View Details
+				</Button>
+			)
+		},
+    { field: 'customer_name', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
+    { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
     { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
     { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false },
     { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false },
     { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
-    { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
+    { field: 'status', headerName: 'Status', width: 100, sortable: true, editable: true },
     { 
       field: 'address', 
       headerName: 'Customer Address', 
-      flex: 1, 
+      width: 200, 
       editable: false, // Allow truncation for long addresses
-    },
-    { 
-      field: 'details', 
-      headerName: 'Details', 
-      width: 100, 
-      sortable: false, 
-      renderCell: (params) => (
-        <Button 
-          variant="outlined" 
-          size="small"
-          onClick={() => handleOpenOrderModal(params.row)}
-        >
-          View Details
-        </Button>
-      )
     },
   ];
 
@@ -523,12 +524,12 @@ const OrderCreation = () => {
   })) || [];
 
   const customerListColumns = [
-    { field: 'name', headerName: 'Name', width: 150, sortable: true },
-    { field: 'email', headerName: 'Email', width: 150, sortable: true },
+    { field: 'name', headerName: 'Name', width: 220, sortable: true },
+    { field: 'email', headerName: 'Email', width: 200, sortable: true },
     { field: 'phone', headerName: 'Phone', width: 150, sortable: true },
     { field: 'country', headerName: 'Country', width: 120, sortable: true },
     { field: 'state', headerName: 'State', width: 120, sortable: true },
-    { field: 'city', headerName: 'City', width: 120, sortable: true },
+    { field: 'city', headerName: 'City', width: 150, sortable: true },
     { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
   ];
 
@@ -547,7 +548,7 @@ const OrderCreation = () => {
     { field: 'name', headerName: 'Name', width: 120, sortable: true },
     { field: 'vehicle_number', headerName: 'Vehicle No.', width: 120, sortable: true },
     { field: 'vehicle_type', headerName: 'Vehicle Type', width: 120, sortable: true },
-    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 80, sortable: true },
+    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 150, sortable: true },
     { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
   ];
 
@@ -963,45 +964,225 @@ const OrderCreation = () => {
         aria-labelledby="order-details-modal-title"
         aria-describedby="order-details-modal-description"
       >
-        <Paper sx={{ p: 3, maxWidth: 600, maxHeight: '80vh', overflowY: 'auto', mx: 'auto', mt: '5vh' }}>
-          <Typography variant="h5" id="order-details-modal-title" gutterBottom>
-            Order Details - Order ID: {selectedOrder?.order_id || 'N/A'}
-          </Typography>
-          {selectedOrder && (
+        <Paper sx={{ 
+          p: 3, 
+          maxWidth: 600, 
+          maxHeight: '80vh', 
+          overflowY: 'auto', 
+          mx: 'auto', 
+          mt: '5vh', 
+          backgroundColor: '#ffffff', 
+          borderRadius: 2, 
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        }}>
+          {loading ? (
+            <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
+          ) : selectedOrder ? (
             <Box>
-              <Typography variant="body1"><strong>Customer ID:</strong> {selectedOrder.customer_id || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Customer Name:</strong> {selectedOrder.customer_name || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Customer Address:</strong> {selectedOrder.address || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Driver ID:</strong> {selectedOrder.driver_id || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Driver Name:</strong> {selectedOrder.driver_name || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Shipping Method:</strong> {selectedOrder.shipping_method || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Status:</strong> {selectedOrder.status || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Created At:</strong> {dayjs(selectedOrder.created_at).format('YYYY-MM-DD') || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Updated At:</strong> {dayjs(selectedOrder.updated_at).format('YYYY-MM-DD') || 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Driver Details:</strong> {selectedOrder.driver_details ? JSON.stringify(selectedOrder.driver_details) : 'N/A'}</Typography>
-              <Typography variant="body1"><strong>Subtotal (IDR):</strong> {selectedOrder.subtotal ? selectedOrder.subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
-              <Typography variant="body1"><strong>Tax Percentage:</strong> {selectedOrder.tax_percentage ? `${selectedOrder.tax_percentage.toFixed(2)}%` : '0%'}</Typography>
-              <Typography variant="body1"><strong>Tax (IDR):</strong> {selectedOrder.tax ? selectedOrder.tax.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
-              <Typography variant="body1"><strong>Grand Total (IDR):</strong> {selectedOrder.grand_total ? selectedOrder.grand_total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+              <Typography 
+                variant="h5" 
+                id="order-details-modal-title" 
+                gutterBottom 
+                sx={{ 
+                  textAlign: 'center', 
+                  color: '#333', 
+                  fontWeight: 'bold', 
+                  mb: 2,
+                }}
+              >
+                Order Details - Order ID: {selectedOrder.order_id || 'N/A'}
+              </Typography>
 
-              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Items Ordered:</Typography>
-              {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                selectedOrder.items.map((item, index) => (
-                  <Box key={index} sx={{ mb: 1, pl: 2 }}>
-                    <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
-                    <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
-                    <Typography variant="body2"><strong>Subtotal (IDR):</strong> {(item.price * item.quantity).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR'}</Typography>
+              {/* Header Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    color: '#666', 
+                    fontStyle: 'italic', 
+                    mb: 1 
+                  }}
+                >
+                  PT. Berkas Tuaian Melimpah
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    color: '#666', 
+                    mb: 1 
+                  }}
+                >
+                  Date: {dayjs().format('YYYY-MM-DD')}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    color: '#666', 
+                    mb: 1 
+                  }}
+                >
+                  Time: {dayjs().format('HH:mm:ss')}
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+              </Box>
+
+              {/* Two-Column Layout for Customer and Shipping Information */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {/* Customer Information (Left Column) */}
+                <Grid item xs={6}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      color: '#333', 
+                      mb: 1,
+                      borderBottom: '1px solid #e0e0e0',
+                      pb: 1,
+                    }}
+                  >
+                    Customer Information
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography variant="body2"><strong>Name:</strong> {selectedOrder.customer_name || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Address:</strong> {selectedOrder.address || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Phone:</strong> {selectedOrder.customer_phone || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Email:</strong> {selectedOrder.customer_email || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Country:</strong> {selectedOrder.customer_country || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>State:</strong> {selectedOrder.customer_state || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>City:</strong> {selectedOrder.customer_city || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Zip Code:</strong> {selectedOrder.customer_zip_code || 'N/A'}</Typography>
                   </Box>
-                ))
-              ) : (
-                <Typography variant="body2">No items ordered.</Typography>
-              )}
+                </Grid>
 
-              <Button variant="contained" onClick={handleCloseOrderModal} sx={{ mt: 2 }}>
+                {/* Shipping Information (Right Column) */}
+                <Grid item xs={6}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      color: '#333', 
+                      mb: 1,
+                      borderBottom: '1px solid #e0e0e0',
+                      pb: 1,
+                    }}
+                  >
+                    Shipping Information
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography variant="body2"><strong>Method:</strong> {selectedOrder.shipping_method || 'N/A'}</Typography>
+                    {selectedOrder.driver_id && (
+                      <>
+                        <Typography variant="body2"><strong>Driver Name:</strong> {selectedOrder.driver_name || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle No.:</strong> {selectedOrder.driver_vehicle_number || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle Type:</strong> {selectedOrder.driver_vehicle_type || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Max Capacity:</strong> {selectedOrder.driver_max_capacity ? `${selectedOrder.driver_max_capacity} kg` : 'N/A'}</Typography>
+                      </>
+                    )}
+                    {selectedOrder.driver_details && (
+                      <>
+                        <Typography variant="body2"><strong>Driver Name:</strong> {JSON.parse(selectedOrder.driver_details).name || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle No.:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_number_plate || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle Type:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_type || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Max Capacity:</strong> {JSON.parse(selectedOrder.driver_details).max_capacity ? `${JSON.parse(selectedOrder.driver_details).max_capacity} kg` : 'N/A'}</Typography>
+                      </>
+                    )}
+                  </Box>
+                </Grid>
+              </Grid>
+
+              {/* Items Ordered Section */}
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#333', 
+                    mb: 1,
+                    borderBottom: '1px solid #e0e0e0',
+                    pb: 1,
+                  }}
+                >
+                  Items Ordered
+                </Typography>
+                {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                  <Box sx={{ pl: 1 }}>
+                    {selectedOrder.items.map((item, index) => (
+                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dotted #e0e0e0', pb: 1 }}>
+                        <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
+                        <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                        <Typography variant="body2"><strong>Subtotal (IDR):</strong> {(item.price * item.quantity).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR'}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" sx={{ pl: 1 }}>No items ordered.</Typography>
+                )}
+              </Box>
+
+              {/* Totals and Signatures */}
+              <Box sx={{ mb: 3 }}>
+                <Divider sx={{ my: 2 }} />
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={6}>
+                    <Typography variant="body2"><strong>Subtotal (IDR):</strong> {selectedOrder.subtotal ? selectedOrder.subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                    <Typography variant="body2"><strong>Tax ({selectedOrder.tax_percentage ? `${selectedOrder.tax_percentage.toFixed(2)}%` : '0%'}):</strong> {selectedOrder.tax ? selectedOrder.tax.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                    <Typography variant="body2"><strong>Grand Total (IDR):</strong> {selectedOrder.grand_total ? selectedOrder.grand_total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                  </Grid>
+                  <Grid item xs={6} sx={{ textAlign: 'right' }}>
+                    <Typography variant="body2">Printed on: {dayjs().format('YYYY-MM-DD HH:mm:ss')}</Typography>
+                  </Grid>
+                </Grid>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Signatures */}
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                    <Typography variant="body2">Order Staff</Typography>
+                    <Typography variant="body2">{session.user.name || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                    <Typography variant="body2">Manager</Typography>
+                    <Typography variant="body2">(..................)</Typography>
+                  </Grid>
+                  {selectedOrder.driver_id && (
+                    <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                      <Typography variant="body2">Driver</Typography>
+                      <Typography variant="body2">{selectedOrder.driver_name || '-'}</Typography>
+                    </Grid>
+                  )}
+                  {selectedOrder.driver_details && (
+                    <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>_ _ _ _ _ _ _ _ _ _</Typography>
+                      <Typography variant="body2">Driver</Typography>
+                      <Typography variant="body2">{JSON.parse(selectedOrder.driver_details).name || '-'}</Typography>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+
+              <Button 
+                variant="contained" 
+                onClick={handleCloseOrderModal} 
+                sx={{ 
+                  mt: 3, 
+                  width: '100%', 
+                  backgroundColor: '#1976d2', 
+                  '&:hover': { backgroundColor: '#1565c0' } 
+                }}
+              >
                 Close
               </Button>
             </Box>
+          ) : (
+            <Typography variant="body1" sx={{ textAlign: 'center' }}>No order details available.</Typography>
           )}
         </Paper>
       </Modal>
