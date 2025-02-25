@@ -34,7 +34,9 @@ const OrderProcessing = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const res = await fetch('https://processing-facility-backend.onrender.com/api/orders');
+        const res = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
+          headers: { 'Accept': 'application/json' }, // Ensure JSON response
+        });
         if (!res.ok) {
           throw new Error('Failed to fetch orders: ' + (await res.text()));
         }
@@ -59,7 +61,9 @@ const OrderProcessing = () => {
     setProcessing(true);
     try {
       // Fetch the current order details with enhanced error handling
-      const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
+      const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+        headers: { 'Accept': 'application/json' }, // Ensure JSON response
+      });
       if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
       const data = await res.json();
       console.log('Order Fetch Response:', data); // Log the response for debugging
@@ -68,10 +72,14 @@ const OrderProcessing = () => {
       }
       const order = data;
 
+      if (!order.order_id || typeof order.order_id !== 'number') {
+        throw new Error('Invalid order_id received: ' + order.order_id);
+      }
+
       // Update the order status to "Processing", reusing existing values for other fields
       const updateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           status: 'Processing',
           driver_id: order.driver_id, // Reuse existing driver_id
@@ -92,7 +100,7 @@ const OrderProcessing = () => {
         created_at: updatedOrder.created_at || order.created_at || null,
       };
 
-      // Update the orders state to reflect the new status
+      // Update the orders state safely with the previous state
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? orderWithCreatedAt : o));
       
       setSelectedOrder(orderWithCreatedAt);
@@ -114,6 +122,10 @@ const OrderProcessing = () => {
       throw new Error('Invalid order object for document processing');
     }
 
+    if (!order.order_id || typeof order.order_id !== 'number') {
+      throw new Error('Invalid order_id for document processing: ' + order.order_id);
+    }
+
     try {
       // Generate SPK, SPM, and DO PDFs
       const spkDoc = generateSPKPDF(order);
@@ -127,8 +139,12 @@ const OrderProcessing = () => {
 
       // Upload each document to Google Drive
       const uploadDocument = async (blob, type, filename) => {
+        if (!order.order_id || typeof order.order_id !== 'number') {
+          throw new Error('Invalid order_id for upload: ' + order.order_id);
+        }
+
         const formData = new FormData();
-        formData.append('order_id', order.order_id);
+        formData.append('order_id', order.order_id.toString()); // Convert to string for FormData
         formData.append('type', type);
         formData.append('file', blob, filename);
 
@@ -171,7 +187,7 @@ const OrderProcessing = () => {
       // Update status to "Processed" after successful processing, reusing existing values for other fields
       const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${order.order_id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           status: 'Processed', // Adjust status as needed
           driver_id: order.driver_id, // Reuse existing driver_id
@@ -192,7 +208,7 @@ const OrderProcessing = () => {
         created_at: finalUpdatedOrder.created_at || order.created_at || null,
       };
 
-      // Update the orders state to reflect the new status
+      // Update the orders state safely with the previous state
       setOrders(prevOrders => prevOrders.map(o => o.order_id === order.order_id ? finalOrderWithCreatedAt : o));
 
       setSnackbar({ open: true, message: 'Documents generated, uploaded, merged, and print dialog shown successfully', severity: 'success' });
@@ -259,8 +275,7 @@ const OrderProcessing = () => {
     doc.text(`Status: ${order.status}`, 20, 80); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
-      console.warn('No items found for order:', order);
-      doc.text('No items available', 20, 100);
+      doc.text('No items available', 20, 90);
     } else {
       doc.autoTable({
         startY: 90,
@@ -276,9 +291,9 @@ const OrderProcessing = () => {
       });
     }
 
-    doc.line(20, doc.lastAutoTable?.finalY + 10 || 110, 190, doc.lastAutoTable?.finalY + 10 || 110);
-    doc.text('Prepared by:', 20, doc.lastAutoTable?.finalY + 20 || 120);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 130);
+    doc.line(20, doc.lastAutoTable?.finalY + 10 || 100, 190, doc.lastAutoTable?.finalY + 10 || 100);
+    doc.text('Prepared by:', 20, doc.lastAutoTable?.finalY + 20 || 110);
+    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 120);
 
     return doc;
   };
@@ -307,8 +322,7 @@ const OrderProcessing = () => {
     doc.text(`Status: ${order.status}`, 20, 70); // Show current status in SPM
 
     if (!order.items || !Array.isArray(order.items)) {
-      console.warn('No items found for order:', order);
-      doc.text('No items available', 20, 90);
+      doc.text('No items available', 20, 80);
     } else {
       doc.autoTable({
         startY: 80,
@@ -324,9 +338,9 @@ const OrderProcessing = () => {
       });
     }
 
-    doc.line(20, doc.lastAutoTable?.finalY + 10 || 100, 190, doc.lastAutoTable?.finalY + 10 || 100);
-    doc.text('Requested by:', 20, doc.lastAutoTable?.finalY + 20 || 110);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 120);
+    doc.line(20, doc.lastAutoTable?.finalY + 10 || 90, 190, doc.lastAutoTable?.finalY + 10 || 90);
+    doc.text('Requested by:', 20, doc.lastAutoTable?.finalY + 20 || 100);
+    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 110);
 
     return doc;
   };
@@ -357,8 +371,7 @@ const OrderProcessing = () => {
     doc.text(`Status: ${order.status}`, 20, 90); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
-      console.warn('No items found for order:', order);
-      doc.text('No items available', 20, 110);
+      doc.text('No items available', 20, 100);
     } else {
       doc.autoTable({
         startY: 100,
@@ -374,9 +387,9 @@ const OrderProcessing = () => {
       });
     }
 
-    doc.line(20, doc.lastAutoTable?.finalY + 10 || 120, 190, doc.lastAutoTable?.finalY + 10 || 120);
-    doc.text('Authorized by:', 20, doc.lastAutoTable?.finalY + 20 || 130);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 140);
+    doc.line(20, doc.lastAutoTable?.finalY + 10 || 110, 190, doc.lastAutoTable?.finalY + 10 || 110);
+    doc.text('Authorized by:', 20, doc.lastAutoTable?.finalY + 20 || 120);
+    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 130);
 
     return doc;
   };
@@ -423,15 +436,18 @@ const OrderProcessing = () => {
     },
   ];
 
-  // Ensure ordersRows handles undefined or null orders safely
-  const ordersRows = Array.isArray(orders) ? orders.map(order => ({
-    id: order?.order_id || '-',
-    order_id: order?.order_id || '-',
-    customer_name: order?.customer_name || '-',
-    shipping_method: order?.shipping_method || '-',
-    status: order?.status || 'Pending',
-    created_at: order?.created_at || null, // Ensure created_at is properly handled
-  })) : [];
+  // Ensure ordersRows handles undefined or null orders safely with additional logging
+  const ordersRows = Array.isArray(orders) ? orders.map(order => {
+    console.log('Mapping order:', order); // Log each order being mapped for debugging
+    return {
+      id: order?.order_id || '-',
+      order_id: order?.order_id || '-',
+      customer_name: order?.customer_name || '-',
+      shipping_method: order?.shipping_method || '-',
+      status: order?.status || 'Pending',
+      created_at: order?.created_at || null, // Ensure created_at is properly handled
+    };
+  }) : [];
 
   if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
 
