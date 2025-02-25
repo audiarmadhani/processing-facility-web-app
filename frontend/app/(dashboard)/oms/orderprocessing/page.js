@@ -352,7 +352,7 @@ const OrderProcessing = () => {
         </Box>
       ),
     },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : 'N/A' },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true },
     { 
       field: 'actions', 
       headerName: 'Actions', 
