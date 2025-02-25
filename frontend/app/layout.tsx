@@ -25,6 +25,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 
 export const metadata = {
   title: "Kopi Fabriek Platform",
@@ -76,7 +77,7 @@ const NAVIGATION: Navigation = [
     children: [
       { segment: "dashboard", title: "OMS Dashboard", icon: <StorefrontIcon /> },
       { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
-      { segment: "orderprocessing", title: "Process Order", icon: <AddShoppingCartIcon /> },
+      { segment: "orderprocessing", title: "Process Order", icon: <ShoppingCartCheckoutIcon /> },
     ],
   },
 

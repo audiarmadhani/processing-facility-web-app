@@ -48,14 +48,29 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order selection for processing
+  // Handle order selection for processing and update status
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     try {
+      // Fetch the current order details
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
       if (!res.ok) throw new Error('Failed to fetch order details');
       const order = await res.json();
-      setSelectedOrder(order);
+      
+      // Update the order status to "Processing"
+      const updateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Processing' }),
+      });
+
+      if (!updateRes.ok) throw new Error('Failed to update order status');
+      const updatedOrder = await updateRes.json();
+
+      // Update the orders state to reflect the new status
+      setOrders(orders.map(o => o.order_id === orderId ? updatedOrder : o));
+      
+      setSelectedOrder(updatedOrder);
       setOpenConfirmModal(true);
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -101,6 +116,17 @@ const OrderProcessing = () => {
       await uploadDocument(spmBlob, 'SPM', `SPM_${selectedOrder.order_id}.pdf`);
       await uploadDocument(doBlob, 'DO', `DO_${selectedOrder.order_id}.pdf`);
 
+      // Optionally update status to "Processed" or another state after successful upload
+      const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Processed' }), // Adjust status as needed
+      });
+
+      if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing');
+      const finalUpdatedOrder = await finalUpdateRes.json();
+      setOrders(orders.map(o => o.order_id === selectedOrder.order_id ? finalUpdatedOrder : o));
+
       setSnackbar({ open: true, message: 'Documents generated and uploaded successfully', severity: 'success' });
       setOpenSuccessModal(true);
     } catch (error) {
@@ -129,9 +155,10 @@ const OrderProcessing = () => {
     doc.text(`Customer: ${order.customer_name}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
     doc.text(`Shipping Method: ${order.shipping_method}`, 20, 70);
+    doc.text(`Status: ${order.status}`, 20, 80); // Show current status in SPK
 
     doc.autoTable({
-      startY: 80,
+      startY: 90,
       head: [['Product', 'Quantity (kg)', 'Price (IDR)']],
       body: order.items.map(item => [
         item.product,
@@ -167,9 +194,10 @@ const OrderProcessing = () => {
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
     doc.text(`Customer: ${order.customer_name}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
+    doc.text(`Status: ${order.status}`, 20, 70); // Show current status in SPM
 
     doc.autoTable({
-      startY: 70,
+      startY: 80,
       head: [['Product', 'Quantity (kg)', 'Required By']],
       body: order.items.map(item => [
         item.product,
@@ -207,9 +235,10 @@ const OrderProcessing = () => {
     doc.text(`Address: ${order.address}`, 20, 60);
     doc.text(`Shipping Method: ${order.shipping_method}`, 20, 70);
     doc.text(`Driver: ${order.driver_name || JSON.parse(order.driver_details || '{}').name || 'N/A'}`, 20, 80);
+    doc.text(`Status: ${order.status}`, 20, 90); // Show current status in DO
 
     doc.autoTable({
-      startY: 90,
+      startY: 100,
       head: [['Product', 'Quantity (kg)', 'Delivery Date']],
       body: order.items.map(item => [
         item.product,
@@ -247,9 +276,23 @@ const OrderProcessing = () => {
 
   const columns = [
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 180, sortable: true },
+    { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true },
-    { field: 'status', headerName: 'Status', width: 120, sortable: true },
+    { 
+        field: 'status', 
+        headerName: 'Status', 
+        width: 130, 
+        sortable: true,
+        renderCell: (params) => (
+        <Box sx={{ 
+            bgcolor: params.value === 'Delivered' ? 'success.light' : params.value === 'Shipped' ? 'info.light' : 'warning.light', 
+            px: 1, 
+            color: 'text.primary' 
+        }}>
+            {params.value}
+        </Box>
+        ),
+    },
     { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : '-' },
     { 
       field: 'actions', 
@@ -295,13 +338,13 @@ const OrderProcessing = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>Order Processing</Typography>
+      <Typography variant="h4" gutterBottom sx={{ color: '#333' }}>Order Processing</Typography>
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
       )}
-      <Card variant="outlined" sx={{ mt: 2 }}>
+      <Card variant="outlined" sx={{ mt: 2, borderRadius: 2, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
         <CardContent>
           <DataGrid
             rows={ordersRows}
@@ -322,6 +365,7 @@ const OrderProcessing = () => {
               expand: true,
             }}
             rowHeight={27}
+            sx={{ border: 'none', '& .MuiDataGrid-cell': { py: 1 } }}
           />
         </CardContent>
       </Card>
@@ -339,19 +383,21 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
+          bgcolor: 'background.paper', 
           borderRadius: 2, 
+          boxShadow: 24, 
           p: 4, 
         }}>
           <Typography 
             id="confirm-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
           >
             Confirm Document Generation
           </Typography>
           <Typography 
             id="confirm-modal-description" 
-            sx={{ mb: 3, textAlign: 'center' }}
+            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
           >
             Are you sure you want to generate and upload SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'}?
           </Typography>
@@ -368,7 +414,7 @@ const OrderProcessing = () => {
                 '&:hover': { backgroundColor: '#1565c0' }
               }}
             >
-              {processing ? <CircularProgress size={24} /> : 'Confirm'}
+              {processing ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Confirm'}
             </Button>
           </Box>
         </Paper>
@@ -387,6 +433,7 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
+          bgcolor: 'background.paper', 
           borderRadius: 2, 
           boxShadow: 24, 
           p: 4, 
@@ -394,13 +441,13 @@ const OrderProcessing = () => {
           <Typography 
             id="success-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
           >
             Success
           </Typography>
           <Typography 
             id="success-modal-description" 
-            sx={{ mb: 3, textAlign: 'center' }}
+            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
           >
             SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated and uploaded to Google Drive.
           </Typography>

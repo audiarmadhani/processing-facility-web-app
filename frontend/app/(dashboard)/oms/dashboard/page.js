@@ -13,6 +13,7 @@ import {
   Alert,
   Modal,
   Paper,
+  Divider,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -132,7 +133,6 @@ const Dashboard = () => {
       renderCell: (params) => (
         <Box sx={{ 
           bgcolor: params.value === 'Delivered' ? 'success.light' : params.value === 'Shipped' ? 'info.light' : 'warning.light', 
-          borderRadius: 1, 
           px: 1, 
           color: 'text.primary' 
         }}>
@@ -209,7 +209,7 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: '#333' }}>OMS Dashboard</Typography>
+      <Typography variant="h4" gutterBottom >OMS Dashboard</Typography>
       {error && (
         <Snackbar
           open={!!error}
@@ -227,17 +227,10 @@ const Dashboard = () => {
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {summaryData.map((item, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card 
-              sx={{ 
-                bgcolor: '#f5f5f5', 
-                borderRadius: 2, 
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', 
-                '&:hover': { boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', bgcolor: '#e0e0e0' }
-              }}
-            >
+            <Card>
               <CardContent sx={{ p: 2 }}>
-                <Typography variant="h6" sx={{ color: '#333', fontWeight: 'bold' }}>{item.title}</Typography>
-                <Typography variant="h4" sx={{ color: '#1976d2' }}>
+                <Typography variant="h6" >{item.title}</Typography>
+                <Typography variant="h4" >
                   {loading ? <CircularProgress size={24} /> : item.value}
                 </Typography>
               </CardContent>
@@ -275,8 +268,8 @@ const Dashboard = () => {
       </Box>
 
       {/* Orders Table */}
-      <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-        <Typography variant="h6" sx={{ p: 2, color: '#333' }}>Recent Orders</Typography>
+      <Paper elevation={3} sx={{ overflow: 'hidden' }}>
+        <Typography variant="h6" sx={{ p: 2 }}>Recent Orders</Typography>
         <Box sx={{ height: 400, width: '100%' }}>
           <DataGrid
             rows={orders}
@@ -318,8 +311,6 @@ const Dashboard = () => {
           maxWidth: 600, 
           maxHeight: '80vh', 
           overflowY: 'auto', 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
           boxShadow: 24, 
         }}>
           {loading ? (
@@ -332,7 +323,6 @@ const Dashboard = () => {
                 gutterBottom 
                 sx={{ 
                   textAlign: 'center', 
-                  color: '#333', 
                   fontWeight: 'bold', 
                   mb: 2,
                 }}
@@ -346,7 +336,6 @@ const Dashboard = () => {
                   variant="body2" 
                   sx={{ 
                     textAlign: 'center', 
-                    color: '#666', 
                     fontStyle: 'italic', 
                     mb: 1 
                   }}
@@ -357,7 +346,6 @@ const Dashboard = () => {
                   variant="body2" 
                   sx={{ 
                     textAlign: 'center', 
-                    color: '#666', 
                     mb: 1 
                   }}
                 >
@@ -367,7 +355,6 @@ const Dashboard = () => {
                   variant="body2" 
                   sx={{ 
                     textAlign: 'center', 
-                    color: '#666', 
                     mb: 1 
                   }}
                 >
@@ -384,9 +371,7 @@ const Dashboard = () => {
                     variant="subtitle1" 
                     sx={{ 
                       fontWeight: 'bold', 
-                      color: '#333', 
                       mb: 1,
-                      borderBottom: '1px solid #e0e0e0',
                       pb: 1,
                     }}
                   >
@@ -410,9 +395,7 @@ const Dashboard = () => {
                     variant="subtitle1" 
                     sx={{ 
                       fontWeight: 'bold', 
-                      color: '#333', 
                       mb: 1,
-                      borderBottom: '1px solid #e0e0e0',
                       pb: 1,
                     }}
                   >
@@ -446,9 +429,7 @@ const Dashboard = () => {
                   variant="subtitle1" 
                   sx={{ 
                     fontWeight: 'bold', 
-                    color: '#333', 
                     mb: 1,
-                    borderBottom: '1px solid #e0e0e0',
                     pb: 1,
                   }}
                 >
@@ -457,7 +438,7 @@ const Dashboard = () => {
                 {selectedOrder.items && selectedOrder.items.length > 0 ? (
                   <Box sx={{ pl: 1 }}>
                     {selectedOrder.items.map((item, index) => (
-                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dotted #e0e0e0', pb: 1 }}>
+                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dotted', pb: 1 }}>
                         <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
                         <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
                         <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
