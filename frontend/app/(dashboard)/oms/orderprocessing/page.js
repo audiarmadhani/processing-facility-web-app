@@ -476,7 +476,7 @@ const OrderProcessing = () => {
         sortable: true,
         renderCell: (params) => (
           <Button
-            variant="outlined" // Use outlined variant for a visible border, keeping it unclickable
+            variant="contained" // Use outlined variant for a visible border, keeping it unclickable
             disabled // Ensures the button is unclickable
             sx={{
               minWidth: 100,
@@ -484,13 +484,13 @@ const OrderProcessing = () => {
               borderRadius: '16px', // Pill shape
               border: '2px solid',
               borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Very light colors for each status (light pink for Pending, light green for Processing, light red for Rejected, light gray for default)
-              backgroundColor: 'transparent', // Transparent background for outline effect
-              color: params.value === 'Pending' ? '#ffffff' : params.value === 'Processing' ? '#ffffff' : params.value === 'Rejected' ? '#ffffff' : '#ffffff', // Match border colors for text (light pink, light green, light red, light gray)
+            //   backgroundColor: 'transparent', // Transparent background for outline effect
+              color: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Match border colors for text (light pink, light green, light red, light gray)
               fontSize: '0.875rem',
               textTransform: 'none',
               '&:hover': {
-                backgroundColor: 'transparent', // Prevent hover background change
-                borderColor: params.value === 'Pending' ? '#ffffff' : params.value === 'Processing' ? '#ffffff' : params.value === 'Rejected' ? '#ffffff' : '#ffffff', // Maintain matching border color on hover
+                // backgroundColor: 'transparent', // Prevent hover background change
+                borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Maintain matching border color on hover
               },
             }}
           >
