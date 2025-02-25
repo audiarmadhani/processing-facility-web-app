@@ -470,31 +470,32 @@ const OrderProcessing = () => {
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
     { 
-        field: 'status', 
-        headerName: 'Status', 
-        width: 150, 
-        sortable: true,
-        renderCell: (params) => (
-          <Button
-            variant="contained" // Use contained variant for a filled button
-						size="small"
-            sx={{
-              minWidth: 100,
-              padding: '4px 16px',
-              borderRadius: '16px', // Pill shape
-              backgroundColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Very light colors for background (light pink for Pending, light green for Processing, light red for Rejected, light gray for default)
-              fontSize: '0.875rem',
-              textTransform: 'none',
-							alignItems: 'center',
-              '&:hover': {
-                backgroundColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Maintain background color on hover
-              },
-            }}
-          >
-            {params.value}
-          </Button>
-        ),
-      },
+			field: 'status', 
+			headerName: 'Status', 
+			width: 150, 
+			sortable: true,
+			renderCell: (params) => (
+				<Button
+					variant="contained" // Use contained variant for a filled button
+					size="small"
+					disabled // Ensures the button is unclickable (added for consistency, though not strictly necessary here)
+					sx={{
+						minWidth: 100,
+						padding: '4px 16px',
+						borderRadius: '16px', // Pill shape
+						backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Darker colors for background (orange for Pending, green for Processing, red for Rejected, gray for default)
+						fontSize: '0.875rem',
+						textTransform: 'none',
+						alignItems: 'center',
+						'&:hover': {
+							backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Maintain background color on hover
+						},
+					}}
+				>
+					{params.value}
+				</Button>
+			),
+		},
     { 
         field: 'actions', 
         headerName: 'Actions', 
