@@ -472,25 +472,25 @@ const OrderProcessing = () => {
     { 
         field: 'status', 
         headerName: 'Status', 
-        width: 130, 
+        width: 150, 
         sortable: true,
         renderCell: (params) => (
           <Button
-            variant="outlined" // Use text variant to make it unclickable and remove default button styles
+            variant="outlined" // Use outlined variant for a visible border, keeping it unclickable
             disabled // Ensures the button is unclickable
             sx={{
               minWidth: 100,
               padding: '4px 16px',
               borderRadius: '16px', // Pill shape
               border: '2px solid',
-              borderColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : '#e0e0e0', // Yellow, Green, Red, or default gray border
+              borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Very light colors for each status (light pink for Pending, light green for Processing, light red for Rejected, light gray for default)
               backgroundColor: 'transparent', // Transparent background for outline effect
-              color: params.value === 'Pending' ? '#000' : params.value === 'Processing' ? '#fff' : params.value === 'Rejected' ? '#fff' : '#000', // Black for Pending, White for Processing/Rejected
+              color: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Match border colors for text (light pink, light green, light red, light gray)
               fontSize: '0.875rem',
               textTransform: 'none',
               '&:hover': {
                 backgroundColor: 'transparent', // Prevent hover background change
-                borderColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : '#e0e0e0', // Maintain border color on hover
+                borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Maintain matching border color on hover
               },
             }}
           >
@@ -501,7 +501,7 @@ const OrderProcessing = () => {
     { 
         field: 'actions', 
         headerName: 'Actions', 
-        width: 130, 
+        width: 150, 
         sortable: false, 
         renderCell: (params) => (
           <div>
@@ -519,9 +519,9 @@ const OrderProcessing = () => {
                 fontSize: '0.875rem',
                 '&:hover': {
                   borderColor: theme => theme.palette.primary.main,
-                  backgroundColor: 'rgba(0, 0, 255, 0.1)', // Light blue background on hover
+                  backgroundColor: 'rgb(47, 107, 210)', // Light blue background on hover
                 },
-                gap: 1, // Space between text and icon
+                gap: 0, // Space between text and icon
               }}
             >
               Actions
@@ -542,7 +542,7 @@ const OrderProcessing = () => {
     { 
       field: 'details', 
       headerName: 'Details', 
-      width: 130, 
+      width: 150, 
       sortable: false, 
       renderCell: (params) => (
         <Button
@@ -559,7 +559,7 @@ const OrderProcessing = () => {
             textTransform: 'none',
             '&:hover': {
               borderColor: theme => theme.palette.secondary.main,
-              backgroundColor: 'rgba(128, 128, 128, 0.1)', // Light gray background on hover
+              backgroundColor: 'rgb(163, 124, 175)', // Light gray background on hover
             },
           }}
         >
