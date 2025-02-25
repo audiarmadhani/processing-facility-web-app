@@ -15,6 +15,7 @@ import {
   Paper,
   Menu,
   MenuItem,
+  Divider,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -29,7 +30,7 @@ const OrderProcessing = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [openDetailsModal, setOpenDetailsModal] = useState(false);
+  const [openOrderModal, setOpenOrderModal] = useState(false); // State for order details modal
   const [anchorEl, setAnchorEl] = useState(null); // For dropdown menu in Actions column
 
   // Fetch orders with enhanced error handling and logging
@@ -106,6 +107,14 @@ const OrderProcessing = () => {
         shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
         items: updatedProcessingOrder.items || order.items || [], // Default to empty array if missing
         created_at: updatedProcessingOrder.created_at || order.created_at || null,
+        driver_name: updatedProcessingOrder.driver_name || 'N/A',
+        driver_id: updatedProcessingOrder.driver_id || 'N/A',
+        price: updatedProcessingOrder.price || '0',
+        tax_percentage: updatedProcessingOrder.tax_percentage || '0',
+        tax: updatedProcessingOrder.tax || '0',
+        grand_total: updatedProcessingOrder.grand_total || '0',
+        driver_details: updatedProcessingOrder.driver_details || '{}',
+        customer_address: updatedProcessingOrder.customer_address || 'N/A',
       };
 
       if (!order.order_id || typeof order.order_id !== 'number') {
@@ -162,14 +171,23 @@ const OrderProcessing = () => {
   };
 
   // Handle showing order details in modal
-  const handleOpenDetailsModal = (order) => {
-    setSelectedOrder(order);
-    setOpenDetailsModal(true);
+  const handleOpenOrderModal = async (order) => {
+    setLoading(true); // Show loading state while fetching
+    try {
+      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${order.order_id}`);
+      if (!orderRes.ok) throw new Error('Failed to fetch order details');
+      const fullOrder = await orderRes.json(); // Fetch the full order with items
+      setSelectedOrder(fullOrder); // Set the full order data, including items
+      setOpenOrderModal(true);
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    } finally {
+      setLoading(false); // Hide loading state
+    }
   };
 
-  // Handle closing order details modal
-  const handleCloseDetailsModal = () => {
-    setOpenDetailsModal(false);
+  const handleCloseOrderModal = () => {
+    setOpenOrderModal(false);
     setSelectedOrder(null);
   };
 
@@ -411,7 +429,6 @@ const OrderProcessing = () => {
   const columns = [
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true },
-    { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true },
     { 
       field: 'status', 
       headerName: 'Status', 
@@ -422,7 +439,7 @@ const OrderProcessing = () => {
           sx={{
             padding: '4px 8px',
             borderRadius: '4px',
-            backgroundColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : 'inherit', // Yellow for Pending, Green for Processing
+            backgroundColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : 'inherit', // Yellow for Pending, Green for Processing, Red for Rejected
             color: '#000',
           }}
         >
@@ -430,14 +447,6 @@ const OrderProcessing = () => {
         </Box>
       ),
     },
-    { field: 'driver_name', headerName: 'Driver Name', width: 150, sortable: true },
-    { field: 'driver_id', headerName: 'Driver ID', width: 100, sortable: true },
-    { field: 'price', headerName: 'Price (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
-    { field: 'tax_percentage', headerName: 'Tax %', width: 100, sortable: true },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 150, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
-    { field: 'driver_details', headerName: 'Driver Details', width: 200, sortable: true },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
     { 
       field: 'actions', 
       headerName: 'Actions', 
@@ -475,16 +484,25 @@ const OrderProcessing = () => {
       sortable: false, 
       renderCell: (params) => (
         <Button
-          variant="contained"
+          variant="outlined"
           size="small"
           color="secondary"
-          onClick={() => handleOpenDetailsModal(params.row)}
-          sx={{ minWidth: 80 }} // Ensure button fits within row
+          onClick={() => handleOpenOrderModal(params.row)}
+          sx={{ 
+            height: '20px', 
+            minWidth: '80px', 
+            padding: '0 8px', 
+            fontSize: '0.75rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+          }}
         >
           View Details
         </Button>
       ),
     },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
   ];
 
   // Ensure ordersRows handles undefined or null orders safely with additional logging
@@ -504,13 +522,14 @@ const OrderProcessing = () => {
       grand_total: order?.grand_total || '0',
       driver_details: order?.driver_details || '{}',
       created_at: order?.created_at || null, // Removed valueFormatter
+      customer_address: order?.customer_address || 'N/A',
     };
   }) : [];
 
   if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
 
   if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
-    return <Typography variant="h6">Access Denied</Typography>;
+    return <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Access Denied</Typography>;
   }
 
   return (
@@ -548,50 +567,191 @@ const OrderProcessing = () => {
 
       {/* Order Details Modal */}
       <Modal
-        open={openDetailsModal}
-        onClose={handleCloseDetailsModal}
-        aria-labelledby="details-modal-title"
-        aria-describedby="details-modal-description"
+        open={openOrderModal}
+        onClose={handleCloseOrderModal}
+        aria-labelledby="order-details-modal-title"
+        aria-describedby="order-details-modal-description"
       >
-        <Paper sx={{ p: 3, maxWidth: 500, margin: 'auto', mt: 5 }}>
-          <Typography id="details-modal-title" variant="h5" gutterBottom>
-            Order Details - ID: {selectedOrder?.order_id || 'N/A'}
-          </Typography>
-          <Typography id="details-modal-description" gutterBottom>
-            <strong>Customer Name:</strong> {selectedOrder?.customer_name || 'Unknown Customer'}<br />
-            <strong>Status:</strong> {selectedOrder?.status || 'Pending'}<br />
-            <strong>Shipping Method:</strong> {selectedOrder?.shipping_method || 'Self'}<br />
-            <strong>Driver Name:</strong> {selectedOrder?.driver_name || 'N/A'}<br />
-            <strong>Driver ID:</strong> {selectedOrder?.driver_id || 'N/A'}<br />
-            <strong>Price:</strong> {selectedOrder?.price ? Number(selectedOrder.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}<br />
-            <strong>Tax Percentage:</strong> {selectedOrder?.tax_percentage || '0'}%<br />
-            <strong>Tax:</strong> {selectedOrder?.tax ? Number(selectedOrder.tax).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}<br />
-            <strong>Grand Total:</strong> {selectedOrder?.grand_total ? Number(selectedOrder.grand_total).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}<br />
-            <strong>Created At:</strong> {selectedOrder?.created_at || 'N/A'}<br />
-            <strong>Driver Details:</strong> {selectedOrder?.driver_details ? JSON.stringify(selectedOrder.driver_details) : '{}'}<br />
-            <strong>Items:</strong>
-            <ul>
-              {Array.isArray(selectedOrder?.items) ? selectedOrder.items.map((item, index) => (
-                <li key={index}>
-                  {item.product || 'N/A'} - {item.quantity || 0} kg - {item.price ? Number(item.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}
-                </li>
-              )) : 'No items available'}
-            </ul>
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-            <Button 
-              variant="contained" 
-              onClick={handleDownloadDocuments}
-            >
-              Download Documents
-            </Button>
-            <Button 
-              variant="contained" 
-              onClick={handleCloseDetailsModal}
-            >
-              Close
-            </Button>
-          </Box>
+        <Paper sx={{ 
+          p: 3, 
+          maxWidth: 600, 
+          maxHeight: '80vh', 
+          overflowY: 'auto', 
+          mx: 'auto', 
+          mt: '5vh', 
+          borderRadius: 2, 
+        }}>
+          {loading ? (
+            <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
+          ) : selectedOrder ? (
+            <Box>
+              <Typography 
+                variant="h5" 
+                id="order-details-modal-title" 
+                gutterBottom 
+                sx={{ 
+                  textAlign: 'center', 
+                  fontWeight: 'bold', 
+                  mb: 2,
+                }}
+              >
+                Order Details - Order ID: {selectedOrder.order_id || 'N/A'}
+              </Typography>
+
+              {/* Header Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    fontStyle: 'italic', 
+                    mb: 1 
+                  }}
+                >
+                  PT. Berkas Tuaian Melimpah
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    textAlign: 'center', 
+                    mb: 1 
+                  }}
+                >
+                </Typography>
+                <Divider sx={{ my: 1 }} />
+              </Box>
+
+              {/* Two-Column Layout for Customer and Shipping Information */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {/* Customer Information (Left Column) */}
+                <Grid item xs={6}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      mb: 1,
+                      borderBottom: '1px solid #e0e0e0',
+                      pb: 1,
+                    }}
+                  >
+                    Customer Information
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography variant="body2"><strong>Name:</strong> {selectedOrder.customer_name || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Address:</strong> {selectedOrder.customer_address || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Phone:</strong> {selectedOrder.customer_phone || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Email:</strong> {selectedOrder.customer_email || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Country:</strong> {selectedOrder.customer_country || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>State:</strong> {selectedOrder.customer_state || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>City:</strong> {selectedOrder.customer_city || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Zip Code:</strong> {selectedOrder.customer_zip_code || 'N/A'}</Typography>
+                  </Box>
+                </Grid>
+
+                {/* Shipping Information (Right Column) */}
+                <Grid item xs={6}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      mb: 1,
+                      borderBottom: '1px solid #e0e0e0',
+                      pb: 1,
+                    }}
+                  >
+                    Shipping Information
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography variant="body2"><strong>Method:</strong> {selectedOrder.shipping_method || 'N/A'}</Typography>
+                    {selectedOrder.driver_id && (
+                      <>
+                        <Typography variant="body2"><strong>Driver Name:</strong> {selectedOrder.driver_name || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle No.:</strong> {selectedOrder.driver_vehicle_number || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle Type:</strong> {selectedOrder.driver_vehicle_type || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Max Capacity:</strong> {selectedOrder.driver_max_capacity ? `${selectedOrder.driver_max_capacity} kg` : 'N/A'}</Typography>
+                      </>
+                    )}
+                    {selectedOrder.driver_details && (
+                      <>
+                        <Typography variant="body2"><strong>Driver Name:</strong> {JSON.parse(selectedOrder.driver_details).name || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle No.:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_number_plate || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Vehicle Type:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_type || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Max Capacity:</strong> {JSON.parse(selectedOrder.driver_details).max_capacity ? `${JSON.parse(selectedOrder.driver_details).max_capacity} kg` : 'N/A'}</Typography>
+                      </>
+                    )}
+                  </Box>
+                </Grid>
+              </Grid>
+
+              {/* Items Ordered Section */}
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    mb: 1,
+                    borderBottom: '1px solid #e0e0e0',
+                    pb: 1,
+                  }}
+                >
+                  Items Ordered
+                </Typography>
+                {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                  <Box sx={{ pl: 1 }}>
+                    {selectedOrder.items.map((item, index) => (
+                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px dashed #e0e0e0', pb: 1 }}>
+                        <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
+                        <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
+                        <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? Number(item.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                        <Typography variant="body2"><strong>Subtotal (IDR):</strong> {(item.price * item.quantity).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR'}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" sx={{ pl: 1 }}>No items ordered.</Typography>
+                )}
+              </Box>
+
+              {/* Totals and Signatures */}
+              <Box sx={{ mb: 3 }}>
+                <Divider sx={{ my: 2 }} />
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={6}>
+                    <Typography variant="body2"><strong>Subtotal (IDR):</strong> {selectedOrder.price ? Number(selectedOrder.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                    <Typography variant="body2"><strong>Tax ({selectedOrder.tax_percentage ? `${selectedOrder.tax_percentage}%` : '0%'}):</strong> {selectedOrder.tax ? Number(selectedOrder.tax).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                    <Typography variant="body2"><strong>Grand Total (IDR):</strong> {selectedOrder.grand_total ? Number(selectedOrder.grand_total).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
+                  </Grid>
+                </Grid>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Download Documents Button */}
+                <Button 
+                  variant="contained" 
+                  onClick={handleDownloadDocuments} 
+                  sx={{ 
+                    mt: 2, 
+                    width: '100%', 
+                  }}
+                >
+                  Download Documents
+                </Button>
+              </Box>
+
+              <Button 
+                variant="contained" 
+                onClick={handleCloseOrderModal} 
+                sx={{ 
+                  mt: 2, 
+                  width: '100%', 
+                }}
+              >
+                Close
+              </Button>
+            </Box>
+          ) : (
+            <Typography variant="body1" sx={{ textAlign: 'center' }}>No order details available.</Typography>
+          )}
         </Paper>
       </Modal>
 
@@ -602,7 +762,7 @@ const OrderProcessing = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
