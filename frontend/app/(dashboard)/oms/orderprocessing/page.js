@@ -19,9 +19,56 @@ import {
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
+import { darken, lighten, styled } from '@mui/material/styles';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
+
+const getBackgroundColor = (color, theme, coefficient) => ({
+  backgroundColor: darken(color, coefficient),
+  ...theme.applyStyles('light', {
+    backgroundColor: lighten(color, coefficient),
+  }),
+});
+
+const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
+  '& .super-app-theme--Pending': {
+    ...getBackgroundColor(theme.palette.warning.main, theme, 0.7), // Yellow for Pending
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.warning.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.warning.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.warning.main, theme, 0.4),
+      },
+    },
+  },
+  '& .super-app-theme--Processing': {
+    ...getBackgroundColor(theme.palette.success.main, theme, 0.7), // Green for Processing
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.success.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.success.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.success.main, theme, 0.4),
+      },
+    },
+  },
+  '& .super-app-theme--Rejected': {
+    ...getBackgroundColor(theme.palette.error.main, theme, 0.7), // Red for Rejected
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.error.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.error.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.error.main, theme, 0.4),
+      },
+    },
+  },
+}));
 
 const OrderProcessing = () => {
   const { data: session, status } = useSession();
@@ -144,7 +191,7 @@ const OrderProcessing = () => {
           body: formData,
         });
 
-        if (!res.ok) throw new Error(`Failed to upload ${type} document: ` + (await res.text()));
+        if (!res.ok) throw new Error(`Failed to upload ${type} document: ' + (await res.text())`);
         return await res.json(); // No need to return drive_url since we’re saving locally
       };
 
@@ -437,10 +484,17 @@ const OrderProcessing = () => {
       renderCell: (params) => (
         <Box
           sx={{
-            padding: '4px 8px',
-            borderRadius: '4px',
-            backgroundColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : 'inherit', // Yellow for Pending, Green for Processing, Red for Rejected
-            color: '#000',
+            padding: '4px 12px',
+            borderRadius: '16px', // Pill shape
+            border: '2px solid',
+            borderColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : '#e0e0e0', // Yellow, Green, Red, or default gray border
+            backgroundColor: 'transparent', // Transparent background for outline effect
+            color: params.value === 'Pending' ? '#000' : params.value === 'Processing' ? '#fff' : params.value === 'Rejected' ? '#fff' : '#000', // Black for Pending, White for Processing/Rejected
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.875rem',
+            fontWeight: '500',
           }}
         >
           {params.value}
@@ -455,13 +509,19 @@ const OrderProcessing = () => {
       renderCell: (params) => (
         <div>
           <Button
-            variant="contained"
+            variant="outlined"
             size="small"
             color="primary"
             aria-controls={`actions-menu-${params.row.order_id}`}
             aria-haspopup="true"
             onClick={(event) => handleActionsClick(event, params.row.order_id)}
-            sx={{ minWidth: 100 }} // Ensure button fits within row
+            sx={{
+              minWidth: 100,
+              borderRadius: '16px', // Pill shape
+              padding: '4px 16px',
+              fontSize: '0.875rem',
+              textTransform: 'none',
+            }}
           >
             Actions
           </Button>
@@ -488,21 +548,32 @@ const OrderProcessing = () => {
           size="small"
           color="secondary"
           onClick={() => handleOpenOrderModal(params.row)}
-          sx={{ 
-            height: '20px', 
-            minWidth: '80px', 
-            padding: '0 8px', 
-            fontSize: '0.75rem', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
+          sx={{
+            height: '32px', // Adjusted for pill shape
+            minWidth: '80px',
+            padding: '4px 16px',
+            borderRadius: '16px', // Pill shape
+            fontSize: '0.875rem',
+            textTransform: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           View Details
         </Button>
       ),
     },
+    { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true },
+    { field: 'driver_name', headerName: 'Driver Name', width: 150, sortable: true },
+    { field: 'driver_id', headerName: 'Driver ID', width: 100, sortable: true },
+    { field: 'price', headerName: 'Price (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
+    { field: 'tax_percentage', headerName: 'Tax %', width: 100, sortable: true },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 150, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
+    { field: 'driver_details', headerName: 'Driver Details', width: 200, sortable: true },
     { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
+    { field: 'customer_address', headerName: 'Customer Address', width: 200, sortable: true },
   ];
 
   // Ensure ordersRows handles undefined or null orders safely with additional logging
@@ -542,7 +613,7 @@ const OrderProcessing = () => {
       )}
       <Card variant="outlined">
         <CardContent>
-          <DataGrid
+          <StyledDataGrid
             rows={ordersRows}
             columns={columns}
             pageSize={5}
@@ -561,6 +632,7 @@ const OrderProcessing = () => {
               expand: true,
             }}
             rowHeight={50} // Increased row height to accommodate buttons
+            getRowClassName={(params) => `super-app-theme--${params.row.status}`}
           />
         </CardContent>
       </Card>
