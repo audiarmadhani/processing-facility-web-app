@@ -18,6 +18,55 @@ import { useSession } from 'next-auth/react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
+import { darken, lighten, styled } from '@mui/material/styles';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
+
+const getBackgroundColor = (color, theme, coefficient) => ({
+  backgroundColor: darken(color, coefficient),
+  ...theme.applyStyles('light', {
+    backgroundColor: lighten(color, coefficient),
+  }),
+});
+
+const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
+  '& .super-app-theme--Pending': {
+    ...getBackgroundColor(theme.palette.warning.main, theme, 0.7), // Yellow for Pending
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.warning.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.warning.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.warning.main, theme, 0.4),
+      },
+    },
+  },
+  '& .super-app-theme--Processing': {
+    ...getBackgroundColor(theme.palette.success.main, theme, 0.7), // Green for Processing
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.success.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.success.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.success.main, theme, 0.4),
+      },
+    },
+  },
+  '& .super-app-theme--Rejected': {
+    ...getBackgroundColor(theme.palette.error.main, theme, 0.7), // Red for Rejected
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.error.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.error.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.error.main, theme, 0.4),
+      },
+    },
+  },
+}));
 
 const ShipmentPreparation = () => {
   const { data: session, status } = useSession();
@@ -231,44 +280,39 @@ const ShipmentPreparation = () => {
   };
 
   const columns = [
-    { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true },
+    { field: 'order_id', headerName: 'Order ID', width: 80, sortable: true },
+    { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
     { 
-      field: 'status', 
-      headerName: 'Status', 
-      width: 150, 
-      sortable: true,
-      renderCell: (params) => (
-        <Button
-          variant="contained"
-          size="small"
-          disabled // Ensures the button is unclickable
-          sx={{
-            minWidth: 100,
-            padding: '8px 16px',
-            borderRadius: '16px', // Pill shape
-            backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Darker colors for background
-            color: '#fff', // White text for contrast
-            fontSize: '0.875rem',
-            textTransform: 'none',
-            display: 'flex',
-            flexDirection: 'column', // Stack content vertically
-            justifyContent: 'center', // Center vertically within the button
-            alignItems: 'center',
-            height: '100%', // Ensure the button takes full cell height
-            '&:hover': {
-              backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Maintain background color on hover
-            },
-          }}
-        >
-          {params.value}
-        </Button>
-      ),
+        field: 'status', 
+        headerName: 'Status', 
+        width: 150, 
+        sortable: true,
+        renderCell: (params) => (
+            <Button
+                variant="contained" // Use contained variant for a filled button
+                size="small"
+                sx={{
+                    minWidth: 100,
+                    padding: '4px 16px',
+                    borderRadius: '16px', // Pill shape
+                    backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Darker colors for background (orange for Pending, green for Processing, red for Rejected, gray for default)
+                    color: '#fff', // White text for contrast against darker backgrounds
+                    fontSize: '0.875rem',
+                    textTransform: 'none',
+                    alignItems: 'center',
+                    '&:hover': {
+                        backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Maintain background color on hover
+                    },
+                }}
+            >
+                {params.value}
+            </Button>
+        ),
     },
     { 
       field: 'actions', 
       headerName: 'Actions', 
-      width: 120, 
+      width: 180, 
       sortable: false, 
       renderCell: (params) => (
         <div>
@@ -280,15 +324,12 @@ const ShipmentPreparation = () => {
             aria-haspopup="true"
             onClick={(event) => handleGenerateDocuments(params.row.order_id)}
             sx={{
-              minWidth: 90,
               borderRadius: '16px', // Pill shape
-              padding: '8px 16px', // Increased padding for consistency
+							padding: '4px 16px',
               fontSize: '0.875rem',
               textTransform: 'none',
-              display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center', // Center horizontally
-              height: '100%', // Ensure the button takes full cell height
+							height: '32px', // Adjusted for pill shape
               '&:hover': {
                 backgroundColor: theme => theme.palette.primary.dark, // Darker blue on hover
               },
@@ -330,26 +371,27 @@ const ShipmentPreparation = () => {
       )}
       <Card variant="outlined">
         <CardContent>
-          <DataGrid
-            rows={ordersRows}
-            columns={columns}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10, 20]}
-            loading={loading}
-            getRowId={(row) => row.order_id}
-            disableSelectionOnClick
-            slots={{ toolbar: GridToolbar }}
-            slotProps={{
-              toolbar: { showQuickFilter: true },
-            }}
-            autosizeOnMount
-            autosizeOptions={{
-              includeHeaders: true,
-              includeOutliers: true,
-              expand: true,
-            }}
-            rowHeight={50} // Increased row height to accommodate buttons
-          />
+					<StyledDataGrid
+						rows={ordersRows}
+						columns={columns}
+						pageSize={5}
+						rowsPerPageOptions={[5, 10, 20]}
+						loading={loading}
+						getRowId={(row) => row.order_id}
+						disableSelectionOnClick
+						slots={{ toolbar: GridToolbar }}
+						slotProps={{
+							toolbar: { showQuickFilter: true },
+						}}
+						autosizeOnMount
+						autosizeOptions={{
+							includeHeaders: true,
+							includeOutliers: true,
+							expand: true,
+						}}
+						rowHeight={45} // Increased row height to accommodate buttons
+						getRowClassName={(params) => `super-app-theme--${params.row.status}`}
+					/>
         </CardContent>
       </Card>
 

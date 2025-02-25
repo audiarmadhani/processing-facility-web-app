@@ -478,7 +478,6 @@ const OrderProcessing = () => {
 				<Button
 					variant="contained" // Use contained variant for a filled button
 					size="small"
-					disabled // Ensures the button is unclickable (added for consistency, though not strictly necessary here)
 					sx={{
 						minWidth: 100,
 						padding: '4px 16px',
