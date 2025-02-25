@@ -477,7 +477,7 @@ const OrderProcessing = () => {
         renderCell: (params) => (
           <Button
             variant="contained" // Use contained variant for a filled button
-            disabled // Ensures the button is unclickable
+						size="small"
             sx={{
               minWidth: 100,
               padding: '4px 16px',
@@ -485,9 +485,7 @@ const OrderProcessing = () => {
               backgroundColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Very light colors for background (light pink for Pending, light green for Processing, light red for Rejected, light gray for default)
               fontSize: '0.875rem',
               textTransform: 'none',
-              display: 'flex',
 							alignItems: 'center',
-							justifyContent: 'center', // Center horizontally
               '&:hover': {
                 backgroundColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Maintain background color on hover
               },
@@ -517,9 +515,7 @@ const OrderProcessing = () => {
                 padding: '4px 16px',
                 fontSize: '0.875rem',
 								textTransform: 'none',
-								display: 'flex',
 								alignItems: 'center',
-								justifyContent: 'center', // Center horizontally
                 '&:hover': {
                   borderColor: theme => theme.palette.primary.main,
                   backgroundColor: 'rgb(47, 107, 210)', // Light blue background on hover
@@ -560,9 +556,7 @@ const OrderProcessing = () => {
             borderRadius: '16px', // Pill shape
             fontSize: '0.875rem',
             textTransform: 'none',
-						display: 'flex',
 						alignItems: 'center',
-						justifyContent: 'center', // Center horizontally
             '&:hover': {
               borderColor: theme => theme.palette.secondary.main,
               backgroundColor: 'rgb(163, 124, 175)', // Light gray background on hover
