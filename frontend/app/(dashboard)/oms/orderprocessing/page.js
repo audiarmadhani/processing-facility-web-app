@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   Typography,
-  Grid,
   Card,
   CardContent,
   CircularProgress,
@@ -154,14 +153,6 @@ const OrderProcessing = () => {
         shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
         items: updatedProcessingOrder.items || order.items || [], // Default to empty array if missing
         created_at: updatedProcessingOrder.created_at || order.created_at || null,
-        driver_name: updatedProcessingOrder.driver_name || 'N/A',
-        driver_id: updatedProcessingOrder.driver_id || 'N/A',
-        price: updatedProcessingOrder.price || '0',
-        tax_percentage: updatedProcessingOrder.tax_percentage || '0',
-        tax: updatedProcessingOrder.tax || '0',
-        grand_total: updatedProcessingOrder.grand_total || '0',
-        driver_details: updatedProcessingOrder.driver_details || '{}',
-        customer_address: updatedProcessingOrder.customer_address || 'N/A',
       };
 
       if (!order.order_id || typeof order.order_id !== 'number') {
@@ -504,7 +495,7 @@ const OrderProcessing = () => {
     { 
       field: 'actions', 
       headerName: 'Actions', 
-      width: 150, 
+      width: 120, 
       sortable: false, 
       renderCell: (params) => (
         <div>
@@ -516,11 +507,15 @@ const OrderProcessing = () => {
             aria-haspopup="true"
             onClick={(event) => handleActionsClick(event, params.row.order_id)}
             sx={{
-              minWidth: 100,
+              minWidth: 90,
               borderRadius: '16px', // Pill shape
               padding: '4px 16px',
               fontSize: '0.875rem',
               textTransform: 'none',
+              '&:hover': {
+                borderColor: theme => theme.palette.primary.main,
+                backgroundColor: 'rgba(0, 0, 255, 0.1)', // Light blue background on hover
+              },
             }}
           >
             Actions
@@ -550,30 +545,22 @@ const OrderProcessing = () => {
           onClick={() => handleOpenOrderModal(params.row)}
           sx={{
             height: '32px', // Adjusted for pill shape
-            minWidth: '80px',
+            minWidth: '90px',
             padding: '4px 16px',
             borderRadius: '16px', // Pill shape
             fontSize: '0.875rem',
             textTransform: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            '&:hover': {
+              borderColor: theme => theme.palette.secondary.main,
+              backgroundColor: 'rgba(128, 128, 128, 0.1)', // Light gray background on hover
+            },
           }}
         >
           View Details
         </Button>
       ),
     },
-    { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true },
-    { field: 'driver_name', headerName: 'Driver Name', width: 150, sortable: true },
-    { field: 'driver_id', headerName: 'Driver ID', width: 100, sortable: true },
-    { field: 'price', headerName: 'Price (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
-    { field: 'tax_percentage', headerName: 'Tax %', width: 100, sortable: true },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 150, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
-    { field: 'driver_details', headerName: 'Driver Details', width: 200, sortable: true },
     { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
-    { field: 'customer_address', headerName: 'Customer Address', width: 200, sortable: true },
   ];
 
   // Ensure ordersRows handles undefined or null orders safely with additional logging
@@ -583,17 +570,8 @@ const OrderProcessing = () => {
       id: order?.order_id || '-',
       order_id: order?.order_id || '-',
       customer_name: order?.customer_name || '-',
-      shipping_method: order?.shipping_method || 'Self', // Default to 'Self' if missing
       status: order?.status || 'Pending',
-      driver_name: order?.driver_name || 'N/A',
-      driver_id: order?.driver_id || 'N/A',
-      price: order?.price || '0',
-      tax_percentage: order?.tax_percentage || '0',
-      tax: order?.tax || '0',
-      grand_total: order?.grand_total || '0',
-      driver_details: order?.driver_details || '{}',
       created_at: order?.created_at || null, // Removed valueFormatter
-      customer_address: order?.customer_address || 'N/A',
     };
   }) : [];
 
