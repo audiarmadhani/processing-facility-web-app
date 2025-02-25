@@ -285,7 +285,7 @@ const ShipmentPreparation = () => {
     { 
         field: 'status', 
         headerName: 'Status', 
-        width: 150, 
+        width: 130, 
         sortable: true,
         renderCell: (params) => (
             <Button
@@ -312,7 +312,7 @@ const ShipmentPreparation = () => {
     { 
       field: 'actions', 
       headerName: 'Actions', 
-      width: 180, 
+      width: 200, 
       sortable: false, 
       renderCell: (params) => (
         <div>

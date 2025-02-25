@@ -472,7 +472,7 @@ const OrderProcessing = () => {
     { 
 			field: 'status', 
 			headerName: 'Status', 
-			width: 150, 
+			width: 130, 
 			sortable: true,
 			renderCell: (params) => (
 				<Button
@@ -499,7 +499,7 @@ const OrderProcessing = () => {
     { 
         field: 'actions', 
         headerName: 'Actions', 
-        width: 150, 
+        width: 120, 
         sortable: false, 
         renderCell: (params) => (
           <div>
@@ -542,7 +542,7 @@ const OrderProcessing = () => {
     { 
       field: 'details', 
       headerName: 'Details', 
-      width: 150, 
+      width: 130, 
       sortable: false, 
       renderCell: (params) => (
         <Button
