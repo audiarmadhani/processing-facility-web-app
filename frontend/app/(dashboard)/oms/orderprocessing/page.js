@@ -25,7 +25,6 @@ const OrderProcessing = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [pdfUrls, setPdfUrls] = useState([]); // Store Google Drive URLs for downloaded PDFs
 
   // Fetch orders with enhanced error handling and logging
   useEffect(() => {
@@ -53,7 +52,7 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order processing with a single update to "Processing" before upload, auto-download after
+  // Handle order processing with a single update to "Processing" before upload, save PDFs locally after
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
@@ -112,13 +111,14 @@ const OrderProcessing = () => {
       const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
       const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
 
-      // Convert PDFs to blobs for upload
-      const spkBlob = spkDoc.output('blob');
-      const spmBlob = spmDoc.output('blob');
-      const doBlob = doDoc.output('blob');
+      // Save PDFs locally using jsPDF.save()
+      spkDoc.save(`SPK_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+      spmDoc.save(`SPM_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doDoc.save(`DO_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
 
       // Upload each document to Google Drive
-      const uploadDocument = async (blob, type, filename) => {
+      const uploadDocument = async (doc, type, filename) => {
+        const blob = doc.output('blob');
         const formData = new FormData();
         formData.append('order_id', orderId.toString()); // Use validated orderId as string
         formData.append('type', type);
@@ -130,28 +130,22 @@ const OrderProcessing = () => {
         });
 
         if (!res.ok) throw new Error(`Failed to upload ${type} document: ` + (await res.text()));
-        const data = await res.json();
-        return data.drive_url; // Assuming the backend returns the Google Drive URL
+        return await res.json(); // No need to return drive_url since we’re saving locally
       };
 
-      // Upload and collect Google Drive URLs
-      const urls = await Promise.all([
-        uploadDocument(spkBlob, 'SPK', `SPK_${orderId}.pdf`),
-        uploadDocument(spmBlob, 'SPM', `SPM_${orderId}.pdf`),
-        uploadDocument(doBlob, 'DO', `DO_${orderId}.pdf`),
+      // Upload PDFs to Google Drive (without storing URLs for download)
+      await Promise.all([
+        uploadDocument(spkDoc, 'SPK', `SPK_${order.order_id}.pdf`),
+        uploadDocument(spmDoc, 'SPM', `SPM_${order.order_id}.pdf`),
+        uploadDocument(doDoc, 'DO', `DO_${order.order_id}.pdf`),
       ]);
-
-      setPdfUrls(urls); // Store URLs for automatic download
-
-      // Automatically download PDFs without modal
-      handleDownloadPdfs();
 
       // Update the orders state safely with the current "Processing" status
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
 
       setSelectedOrder(order);
 
-      setSnackbar({ open: true, message: 'Documents generated, uploaded, and downloaded successfully', severity: 'success' });
+      setSnackbar({ open: true, message: 'Documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
     } catch (error) {
       console.error('Error processing order:', error);
       setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
@@ -159,24 +153,6 @@ const OrderProcessing = () => {
       setLoading(false);
       setProcessing(false);
     }
-  };
-
-  // Handle downloading all PDFs (now called automatically after upload)
-  const handleDownloadPdfs = () => {
-    if (pdfUrls.length === 0) {
-      setSnackbar({ open: true, message: 'No PDFs available for download', severity: 'warning' });
-      return;
-    }
-
-    pdfUrls.forEach((url, index) => {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Document_${index + 1}_${selectedOrder?.order_id || 'N/A'}_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
-    // No Snackbar message here, as it's handled in handleProcessOrder
   };
 
   // Generate SPK PDF
@@ -413,7 +389,7 @@ const OrderProcessing = () => {
         </CardContent>
       </Card>
 
-      {/* Snackbar for notifications (no modal) */}
+      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
