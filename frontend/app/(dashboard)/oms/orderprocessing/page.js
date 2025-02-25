@@ -55,7 +55,7 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order processing with additional checks for order_id
+  // Handle order processing with additional checks for order_id and data
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
@@ -94,24 +94,27 @@ const OrderProcessing = () => {
       const updatedOrder = await updateRes.json();
       console.log('Updated Order:', updatedOrder); // Log the updated order for debugging
 
-      // Ensure order_id is preserved or defaulted from the original order if missing
-      const orderWithCreatedAt = {
+      // Ensure order_id, customer_name, status, and items are preserved or defaulted
+      const orderWithData = {
         ...updatedOrder,
         order_id: updatedOrder.order_id || order.order_id, // Ensure order_id is always present
+        customer_name: updatedOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
+        status: updatedOrder.status || order.status || 'Pending', // Default if missing
+        items: updatedOrder.items || order.items || [], // Default to empty array if missing
         created_at: updatedOrder.created_at || order.created_at || null,
       };
 
-      if (!orderWithCreatedAt.order_id || typeof orderWithCreatedAt.order_id !== 'number') {
-        throw new Error('Invalid order_id after update: ' + orderWithCreatedAt.order_id);
+      if (!orderWithData.order_id || typeof orderWithData.order_id !== 'number') {
+        throw new Error('Invalid order_id after update: ' + orderWithData.order_id);
       }
 
       // Update the orders state safely with the previous state
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? orderWithCreatedAt : o));
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? orderWithData : o));
       
-      setSelectedOrder(orderWithCreatedAt);
+      setSelectedOrder(orderWithData);
 
       // Generate, upload, merge, and print documents
-      await generateAndProcessDocuments(orderWithCreatedAt);
+      await generateAndProcessDocuments(orderWithData);
     } catch (error) {
       console.error('Error processing order:', error);
       setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
@@ -121,23 +124,29 @@ const OrderProcessing = () => {
     }
   };
 
-  // Generate, upload, merge, and print documents with additional checks for order_id
+  // Generate, upload, merge, and print documents with additional checks for order_id and data
   const generateAndProcessDocuments = async (order) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for document processing');
     }
 
-    // Ensure order_id is a number, default to null if missing and throw an error
+    // Ensure order_id, customer_name, status, and items are valid
     const orderId = order.order_id;
     if (!orderId || typeof orderId !== 'number') {
       throw new Error('Invalid order_id for document processing: ' + orderId);
     }
 
+    const customerName = order.customer_name || 'Unknown Customer';
+    const status = order.status || 'Pending';
+    const items = Array.isArray(order.items) ? order.items : [];
+
+    console.log('Order for document processing:', { orderId, customerName, status, items }); // Log for debugging
+
     try {
       // Generate SPK, SPM, and DO PDFs
-      const spkDoc = generateSPKPDF(order);
-      const spmDoc = generateSPMPDF(order);
-      const doDoc = generateDOPDF(order);
+      const spkDoc = generateSPKPDF({ ...order, customerName, status, items });
+      const spmDoc = generateSPMPDF({ ...order, customerName, status, items });
+      const doDoc = generateDOPDF({ ...order, customerName, status, items });
 
       // Convert PDFs to blobs for upload
       const spkBlob = spkDoc.output('blob');
@@ -205,19 +214,22 @@ const OrderProcessing = () => {
       const finalUpdatedOrder = await finalUpdateRes.json();
       console.log('Final Updated Order:', finalUpdatedOrder); // Log the final updated order for debugging
 
-      // Ensure order_id and created_at are included or defaulted from the original order if missing
-      const finalOrderWithCreatedAt = {
+      // Ensure order_id, customer_name, status, and items are preserved or defaulted
+      const finalOrderWithData = {
         ...finalUpdatedOrder,
         order_id: finalUpdatedOrder.order_id || orderId, // Ensure order_id is always present
+        customer_name: finalUpdatedOrder.customer_name || customerName, // Default if missing
+        status: finalUpdatedOrder.status || 'Processed', // Default if missing
+        items: finalUpdatedOrder.items || items, // Default to original items if missing
         created_at: finalUpdatedOrder.created_at || order.created_at || null,
       };
 
-      if (!finalOrderWithCreatedAt.order_id || typeof finalOrderWithCreatedAt.order_id !== 'number') {
-        throw new Error('Invalid order_id after final update: ' + finalOrderWithCreatedAt.order_id);
+      if (!finalOrderWithData.order_id || typeof finalOrderWithData.order_id !== 'number') {
+        throw new Error('Invalid order_id after final update: ' + finalOrderWithData.order_id);
       }
 
       // Update the orders state safely with the previous state
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? finalOrderWithCreatedAt : o));
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? finalOrderWithData : o));
 
       setSnackbar({ open: true, message: 'Documents generated, uploaded, merged, and print dialog shown successfully', severity: 'success' });
       setOpenSuccessModal(true);
@@ -227,7 +239,7 @@ const OrderProcessing = () => {
     }
   };
 
-  // Merge PDFs into a single document using jsPDF (simulating concatenation by adding pages)
+  // Merge PDFs into a single document using jsPDF (improved handling for page content)
   const mergePDFs = (pdfDocs) => {
     if (!pdfDocs || !Array.isArray(pdfDocs)) {
       throw new Error('Invalid PDF documents for merging');
@@ -240,18 +252,25 @@ const OrderProcessing = () => {
     });
 
     pdfDocs.forEach((doc, index) => {
-      if (!doc || typeof doc.internal !== 'object') {
+      if (!doc || typeof doc !== 'object' || !doc.internal || !doc.getPageCount) {
         console.warn('Invalid PDF document skipped:', doc);
         return;
       }
-      const pages = doc.internal.getNumberOfPages();
+      const pages = doc.getPageCount(); // Use getPageCount instead of internal.getNumberOfPages
       for (let i = 1; i <= pages; i++) {
         if (index > 0 || i > 1) {
           mergedDoc.addPage(); // Add a new page for each subsequent page or document
         }
-        doc.setPage(i);
-        const pageContent = doc.internal.getPageContent(i);
-        mergedDoc.internal.write(pageContent);
+        // Try to copy page content safely
+        try {
+          doc.setPage(i);
+          const pageData = doc.output('arraybuffer'); // Get page data as arraybuffer
+          mergedDoc.internal.getCurrentPageInfo().putPage(mergedDoc, pageData);
+        } catch (error) {
+          console.error('Error copying page content:', error);
+          // Fallback: Copy text content manually if getPageContent fails
+          mergedDoc.text(`Page ${i} from ${doc.internal.getCurrentPageInfo().pageNumber} (content unavailable)`, 10, 10);
+        }
       }
     });
 
@@ -277,10 +296,10 @@ const OrderProcessing = () => {
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
-    doc.text(`Customer: ${order.customer_name}`, 20, 50);
+    doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shipping_method}`, 20, 70);
-    doc.text(`Status: ${order.status}`, 20, 80); // Show current status in SPK
+    doc.text(`Shipping Method: ${order.shipping_method || 'N/A'}`, 20, 70);
+    doc.text(`Status: ${order.status || 'Pending'}`, 20, 80); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 90);
@@ -325,9 +344,9 @@ const OrderProcessing = () => {
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
-    doc.text(`Customer: ${order.customer_name}`, 20, 50);
+    doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
-    doc.text(`Status: ${order.status}`, 20, 70); // Show current status in SPM
+    doc.text(`Status: ${order.status || 'Pending'}`, 20, 70); // Show current status in SPM
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 80);
@@ -372,11 +391,11 @@ const OrderProcessing = () => {
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
-    doc.text(`Customer: ${order.customer_name}`, 20, 50);
-    doc.text(`Address: ${order.address}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shipping_method}`, 20, 70);
+    doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
+    doc.text(`Address: ${order.customer_address || 'N/A'}`, 20, 60);
+    doc.text(`Shipping Method: ${order.shipping_method || 'N/A'}`, 20, 70);
     doc.text(`Driver: ${order.driver_name || JSON.parse(order.driver_details || '{}').name || 'N/A'}`, 20, 80);
-    doc.text(`Status: ${order.status}`, 20, 90); // Show current status in DO
+    doc.text(`Status: ${order.status || 'Pending'}`, 20, 90); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 100);
