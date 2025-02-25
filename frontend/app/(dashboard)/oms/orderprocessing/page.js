@@ -484,6 +484,7 @@ const OrderProcessing = () => {
 						padding: '4px 16px',
 						borderRadius: '16px', // Pill shape
 						backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Darker colors for background (orange for Pending, green for Processing, red for Rejected, gray for default)
+						color: '#fff', // White text for contrast against darker backgrounds
 						fontSize: '0.875rem',
 						textTransform: 'none',
 						alignItems: 'center',
