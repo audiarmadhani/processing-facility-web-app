@@ -470,37 +470,43 @@ const OrderProcessing = () => {
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true },
     { 
-      field: 'status', 
-      headerName: 'Status', 
-      width: 130, 
-      sortable: true,
-      renderCell: (params) => (
-        <Box
-          sx={{
-            minWidth: 90,
-            padding: '4px 16px',
-            borderRadius: '16px', // Pill shape
-            border: '2px solid',
-            borderColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : '#e0e0e0', // Yellow, Green, Red, or default gray border
-            backgroundColor: 'transparent', // Transparent background for outline effect
-            color: params.value === 'Pending' ? '#000' : params.value === 'Processing' ? '#fff' : params.value === 'Rejected' ? '#fff' : '#000', // Black for Pending, White for Processing/Rejected
-            fontSize: '0.875rem',
-            textTransform: 'none',
-          }}
-        >
-          {params.value}
-        </Box>
-      ),
+        field: 'status', 
+        headerName: 'Status', 
+        width: 130, 
+        sortable: true,
+        renderCell: (params) => (
+          <Button
+            variant="outlined" // Use text variant to make it unclickable and remove default button styles
+            disabled // Ensures the button is unclickable
+            sx={{
+              minWidth: 100,
+              padding: '4px 16px',
+              borderRadius: '16px', // Pill shape
+              border: '2px solid',
+              borderColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : '#e0e0e0', // Yellow, Green, Red, or default gray border
+              backgroundColor: 'transparent', // Transparent background for outline effect
+              color: params.value === 'Pending' ? '#000' : params.value === 'Processing' ? '#fff' : params.value === 'Rejected' ? '#fff' : '#000', // Black for Pending, White for Processing/Rejected
+              fontSize: '0.875rem',
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: 'transparent', // Prevent hover background change
+                borderColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : '#e0e0e0', // Maintain border color on hover
+              },
+            }}
+          >
+            {params.value}
+          </Button>
+        ),
     },
     { 
         field: 'actions', 
         headerName: 'Actions', 
-        width: 120, 
+        width: 130, 
         sortable: false, 
         renderCell: (params) => (
           <div>
             <Button
-              variant="outlined"
+              variant="contained"
               size="small"
               color="primary"
               aria-controls={`actions-menu-${params.row.order_id}`}
@@ -515,7 +521,7 @@ const OrderProcessing = () => {
                   borderColor: theme => theme.palette.primary.main,
                   backgroundColor: 'rgba(0, 0, 255, 0.1)', // Light blue background on hover
                 },
-                gap: 4, // Space between text and icon
+                gap: 1, // Space between text and icon
               }}
             >
               Actions
@@ -536,11 +542,11 @@ const OrderProcessing = () => {
     { 
       field: 'details', 
       headerName: 'Details', 
-      width: 120, 
+      width: 130, 
       sortable: false, 
       renderCell: (params) => (
         <Button
-          variant="outlined"
+          variant="contained"
           size="small"
           color="secondary"
           onClick={() => handleOpenOrderModal(params.row)}
