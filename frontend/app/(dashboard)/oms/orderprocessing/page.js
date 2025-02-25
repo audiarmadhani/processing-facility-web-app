@@ -86,8 +86,8 @@ const OrderProcessing = () => {
     }
   };
 
-  // Generate and upload documents
-  const generateAndUploadDocuments = async () => {
+  // Generate, upload, merge, and print documents
+  const generateAndProcessDocuments = async () => {
     if (!selectedOrder) return;
 
     setProcessing(true);
@@ -119,11 +119,30 @@ const OrderProcessing = () => {
         return await res.json();
       };
 
+      // Upload individual PDFs
       await uploadDocument(spkBlob, 'SPK', `SPK_${selectedOrder.order_id}.pdf`);
       await uploadDocument(spmBlob, 'SPM', `SPM_${selectedOrder.order_id}.pdf`);
       await uploadDocument(doBlob, 'DO', `DO_${selectedOrder.order_id}.pdf`);
 
-      // Update status to "Processed" after successful upload, reusing existing values for other fields
+      // Merge PDFs into a single document
+      const mergedDoc = mergePDFs([spkDoc, spmDoc, doDoc]);
+
+      // Convert merged PDF to blob for printing
+      const mergedBlob = mergedDoc.output('blob');
+
+      // Create a URL for the merged PDF and trigger print dialog
+      const mergedUrl = URL.createObjectURL(mergedBlob);
+      const printWindow = window.open(mergedUrl, '_blank');
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+
+      // Clean up URL object
+      setTimeout(() => {
+        URL.revokeObjectURL(mergedUrl);
+      }, 1000);
+
+      // Update status to "Processed" after successful processing, reusing existing values for other fields
       const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -141,7 +160,7 @@ const OrderProcessing = () => {
       const finalUpdatedOrder = await finalUpdateRes.json();
       setOrders(orders.map(o => o.order_id === selectedOrder.order_id ? finalUpdatedOrder : o));
 
-      setSnackbar({ open: true, message: 'Documents generated and uploaded successfully', severity: 'success' });
+      setSnackbar({ open: true, message: 'Documents generated, uploaded, merged, and print dialog shown successfully', severity: 'success' });
       setOpenSuccessModal(true);
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -149,6 +168,31 @@ const OrderProcessing = () => {
       setProcessing(false);
       setSelectedOrder(null);
     }
+  };
+
+  // Merge PDFs into a single document using jsPDF (simulating concatenation by adding pages)
+  const mergePDFs = (pdfDocs) => {
+    const mergedDoc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [210, 297], // A4 size
+    });
+
+    let currentY = 10; // Starting Y position for each page
+
+    pdfDocs.forEach((doc, index) => {
+      const pages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        if (index > 0 || i > 1) {
+          mergedDoc.addPage(); // Add a new page for each subsequent page or document
+        }
+        doc.setPage(i);
+        const pageContent = doc.internal.getPageContent(i);
+        mergedDoc.internal.write(pageContent);
+      }
+    });
+
+    return mergedDoc;
   };
 
   // Generate SPK PDF
@@ -276,7 +320,7 @@ const OrderProcessing = () => {
   };
 
   const handleConfirmProcess = () => {
-    generateAndUploadDocuments();
+    generateAndProcessDocuments();
   };
 
   const handleCloseConfirmModal = () => {
@@ -293,21 +337,22 @@ const OrderProcessing = () => {
     { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true },
     { 
-        field: 'status', 
-        headerName: 'Status', 
-        width: 130, 
-        sortable: true,
-        renderCell: (params) => (
+      field: 'status', 
+      headerName: 'Status', 
+      width: 130, 
+      sortable: true,
+      renderCell: (params) => (
         <Box sx={{ 
-            bgcolor: params.value === 'Delivered' ? 'success.light' : params.value === 'Shipped' ? 'info.light' : 'warning.light', 
-            px: 1, 
-            color: 'text.primary' 
+          bgcolor: params.value === 'Processing' ? 'success.light' : params.value === 'Pending' ? 'warning.light' : 'info.light', 
+          px: 1, 
+          color: 'text.primary', 
+          borderRadius: 1 
         }}>
-            {params.value}
+          {params.value}
         </Box>
-        ),
+      ),
     },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : '-' },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : 'N/A' },
     { 
       field: 'actions', 
       headerName: 'Actions', 
@@ -341,7 +386,7 @@ const OrderProcessing = () => {
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
     status: order?.status || 'Pending',
-    created_at: order?.created_at || new Date().toISOString(),
+    created_at: order?.created_at || null, // Ensure created_at is properly handled
   }));
 
   if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
@@ -352,13 +397,13 @@ const OrderProcessing = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom >Order Processing</Typography>
+      <Typography variant="h4" gutterBottom sx={{ color: '#333' }}>Order Processing</Typography>
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
       )}
-      <Card variant="outlined" sx={{ mt: 2 }}>
+      <Card variant="outlined" sx={{ mt: 2, borderRadius: 2, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
         <CardContent>
           <DataGrid
             rows={ordersRows}
@@ -379,6 +424,7 @@ const OrderProcessing = () => {
               expand: true,
             }}
             rowHeight={27}
+            sx={{ border: 'none', '& .MuiDataGrid-cell': { py: 1 } }}
           />
         </CardContent>
       </Card>
@@ -396,20 +442,23 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
+          bgcolor: 'background.paper', 
+          borderRadius: 2, 
+          boxShadow: 24, 
           p: 4, 
         }}>
           <Typography 
             id="confirm-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
           >
             Confirm Document Generation
           </Typography>
           <Typography 
             id="confirm-modal-description" 
-            sx={{ mb: 3, textAlign: 'center' }}
+            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
           >
-            Are you sure you want to generate and upload SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'}?
+            Are you sure you want to generate, upload, merge, and print SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'}?
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button onClick={handleCloseConfirmModal} variant="outlined">
@@ -419,8 +468,12 @@ const OrderProcessing = () => {
               variant="contained" 
               onClick={handleConfirmProcess} 
               disabled={processing}
+              sx={{ 
+                backgroundColor: '#1976d2', 
+                '&:hover': { backgroundColor: '#1565c0' }
+              }}
             >
-              {processing ? <CircularProgress size={24} /> : 'Confirm'}
+              {processing ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Confirm'}
             </Button>
           </Box>
         </Paper>
@@ -439,25 +492,32 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
+          bgcolor: 'background.paper', 
+          borderRadius: 2, 
+          boxShadow: 24, 
           p: 4, 
         }}>
           <Typography 
             id="success-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
           >
             Success
           </Typography>
           <Typography 
             id="success-modal-description" 
-            sx={{ mb: 3, textAlign: 'center' }}
+            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
           >
-            SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated and uploaded to Google Drive.
+            SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated, uploaded, merged, and the print dialog is ready.
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button 
               variant="contained" 
               onClick={handleCloseSuccessModal} 
+              sx={{ 
+                backgroundColor: '#1976d2', 
+                '&:hover': { backgroundColor: '#1565c0' }
+              }}
             >
               Close
             </Button>
