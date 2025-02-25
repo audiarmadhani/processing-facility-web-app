@@ -28,6 +28,7 @@ const OrderProcessing = () => {
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [openSuccessModal, setOpenSuccessModal] = useState(false);
+  const [pdfUrls, setPdfUrls] = useState([]); // Store Google Drive URLs for downloaded PDFs
 
   // Fetch orders with enhanced error handling and logging
   useEffect(() => {
@@ -113,8 +114,8 @@ const OrderProcessing = () => {
       
       setSelectedOrder(orderWithData);
 
-      // Generate, upload, merge, and print documents
-      await generateAndProcessDocuments(orderWithData);
+      // Generate, upload, and prepare for download
+      await generateAndUploadDocuments(orderWithData);
     } catch (error) {
       console.error('Error processing order:', error);
       setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
@@ -124,8 +125,8 @@ const OrderProcessing = () => {
     }
   };
 
-  // Generate, upload, merge, and print documents with additional checks for order_id and data
-  const generateAndProcessDocuments = async (order) => {
+  // Generate and upload documents, then provide download links
+  const generateAndUploadDocuments = async (order) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for document processing');
     }
@@ -166,37 +167,20 @@ const OrderProcessing = () => {
         });
 
         if (!res.ok) throw new Error(`Failed to upload ${type} document: ` + (await res.text()));
-        return await res.json();
+        const data = await res.json();
+        return data.drive_url; // Assuming the backend returns the Google Drive URL
       };
 
-      // Upload individual PDFs
-      await uploadDocument(spkBlob, 'SPK', `SPK_${orderId}.pdf`);
-      await uploadDocument(spmBlob, 'SPM', `SPM_${orderId}.pdf`);
-      await uploadDocument(doBlob, 'DO', `DO_${orderId}.pdf`);
+      // Upload and collect Google Drive URLs
+      const urls = await Promise.all([
+        uploadDocument(spkBlob, 'SPK', `SPK_${orderId}.pdf`),
+        uploadDocument(spmBlob, 'SPM', `SPM_${orderId}.pdf`),
+        uploadDocument(doBlob, 'DO', `DO_${orderId}.pdf`),
+      ]);
 
-      // Merge PDFs into a single document
-      const mergedDoc = mergePDFs([spkDoc, spmDoc, doDoc]);
+      setPdfUrls(urls); // Store URLs for download links
 
-      // Convert merged PDF to blob for printing
-      const mergedBlob = mergedDoc.output('blob');
-
-      // Create a URL for the merged PDF and trigger print dialog
-      const mergedUrl = URL.createObjectURL(mergedBlob);
-      const printWindow = window.open(mergedUrl, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-      } else {
-        throw new Error('Failed to open print window. Please allow popups for this site.');
-      }
-
-      // Clean up URL object
-      setTimeout(() => {
-        URL.revokeObjectURL(mergedUrl);
-      }, 1000);
-
-      // Update status to "Processed" after successful processing, reusing existing values for other fields
+      // Update status to "Processed" after successful upload, reusing existing values for other fields
       const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -231,7 +215,7 @@ const OrderProcessing = () => {
       // Update the orders state safely with the previous state
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? finalOrderWithData : o));
 
-      setSnackbar({ open: true, message: 'Documents generated, uploaded, merged, and print dialog shown successfully', severity: 'success' });
+      setSnackbar({ open: true, message: 'Documents generated, uploaded, and ready for download successfully', severity: 'success' });
       setOpenSuccessModal(true);
     } catch (error) {
       console.error('Error processing documents:', error);
@@ -239,42 +223,22 @@ const OrderProcessing = () => {
     }
   };
 
-  // Merge PDFs into a single document using jsPDF (improved handling for page content)
-  const mergePDFs = (pdfDocs) => {
-    if (!pdfDocs || !Array.isArray(pdfDocs)) {
-      throw new Error('Invalid PDF documents for merging');
+  // Handle downloading all PDFs
+  const handleDownloadPdfs = () => {
+    if (pdfUrls.length === 0) {
+      setSnackbar({ open: true, message: 'No PDFs available for download', severity: 'warning' });
+      return;
     }
 
-    const mergedDoc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: [210, 297], // A4 size
+    pdfUrls.forEach((url, index) => {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Document_${index + 1}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     });
-
-    pdfDocs.forEach((doc, index) => {
-      if (!doc || typeof doc !== 'object' || !doc.internal || !doc.getPageCount) {
-        console.warn('Invalid PDF document skipped:', doc);
-        return;
-      }
-      const pages = doc.getPageCount(); // Use getPageCount instead of internal.getNumberOfPages
-      for (let i = 1; i <= pages; i++) {
-        if (index > 0 || i > 1) {
-          mergedDoc.addPage(); // Add a new page for each subsequent page or document
-        }
-        // Try to copy page content safely
-        try {
-          doc.setPage(i);
-          const pageData = doc.output('arraybuffer'); // Get page data as arraybuffer
-          mergedDoc.internal.getCurrentPageInfo().putPage(mergedDoc, pageData);
-        } catch (error) {
-          console.error('Error copying page content:', error);
-          // Fallback: Copy text content manually if getPageContent fails
-          mergedDoc.text(`Page ${i} from ${doc.internal.getCurrentPageInfo().pageNumber} (content unavailable)`, 10, 10);
-        }
-      }
-    });
-
-    return mergedDoc;
+    setSnackbar({ open: true, message: 'Downloading PDFs...', severity: 'success' });
   };
 
   // Generate SPK PDF
@@ -427,6 +391,7 @@ const OrderProcessing = () => {
 
   const handleCloseSuccessModal = () => {
     setOpenSuccessModal(false);
+    setPdfUrls([]); // Clear PDF URLs after closing modal
   };
 
   const columns = [
@@ -515,7 +480,7 @@ const OrderProcessing = () => {
         </CardContent>
       </Card>
 
-      {/* Success Modal */}
+      {/* Success Modal with Download Option */}
       <Modal
         open={openSuccessModal}
         onClose={handleCloseSuccessModal}
@@ -534,12 +499,22 @@ const OrderProcessing = () => {
             id="success-modal-description" 
             gutterBottom
           >
-            SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated, uploaded, merged, and the print dialog is ready.
+            SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated and uploaded to Google Drive. Download them below:
           </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+            {pdfUrls.map((url, index) => (
+              <Button 
+                key={index} 
+                variant="contained" 
+                href={url}
+                download={`Document_${index + 1}_${selectedOrder?.order_id || 'N/A'}_${new Date().toISOString().split('T')[0]}.pdf`}
+              >
+                Download Document {index + 1}
+              </Button>
+            ))}
             <Button 
               variant="contained" 
-              onClick={handleCloseSuccessModal} 
+              onClick={handleCloseSuccessModal}
             >
               Close
             </Button>
