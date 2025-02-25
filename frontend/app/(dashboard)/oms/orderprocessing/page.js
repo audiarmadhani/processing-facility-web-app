@@ -258,15 +258,18 @@ const OrderProcessing = () => {
       sortable: false, 
       renderCell: (params) => (
         <Button 
-          variant="contained" 
+          variant="contained"
+          size="small"
           color="primary"
           onClick={() => handleProcessOrder(params.row.order_id)}
           sx={{ 
-            height: '36px', 
-            minWidth: '120px', 
-            fontSize: '0.875rem',
-            backgroundColor: '#1976d2',
-            '&:hover': { backgroundColor: '#1565c0' },
+            height: '20px', 
+            minWidth: '80px', 
+            padding: '0 8px', 
+            fontSize: '0.75rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
           }}
         >
           Process Order
@@ -292,13 +295,13 @@ const OrderProcessing = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: '#333' }}>Order Processing</Typography>
+      <Typography variant="h4" gutterBottom>Order Processing</Typography>
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
       )}
-      <Card variant="outlined" sx={{ mt: 2, borderRadius: 2, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+      <Card variant="outlined" sx={{ mt: 2 }}>
         <CardContent>
           <DataGrid
             rows={ordersRows}
@@ -319,7 +322,6 @@ const OrderProcessing = () => {
               expand: true,
             }}
             rowHeight={27}
-            sx={{ border: 'none', '& .MuiDataGrid-cell': { py: 1 } }}
           />
         </CardContent>
       </Card>
@@ -337,21 +339,19 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
-          bgcolor: 'background.paper', 
           borderRadius: 2, 
-          boxShadow: 24, 
           p: 4, 
         }}>
           <Typography 
             id="confirm-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
           >
             Confirm Document Generation
           </Typography>
           <Typography 
             id="confirm-modal-description" 
-            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
+            sx={{ mb: 3, textAlign: 'center' }}
           >
             Are you sure you want to generate and upload SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'}?
           </Typography>
@@ -368,7 +368,7 @@ const OrderProcessing = () => {
                 '&:hover': { backgroundColor: '#1565c0' }
               }}
             >
-              {processing ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Confirm'}
+              {processing ? <CircularProgress size={24} /> : 'Confirm'}
             </Button>
           </Box>
         </Paper>
@@ -387,7 +387,6 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
-          bgcolor: 'background.paper', 
           borderRadius: 2, 
           boxShadow: 24, 
           p: 4, 
@@ -395,13 +394,13 @@ const OrderProcessing = () => {
           <Typography 
             id="success-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
           >
             Success
           </Typography>
           <Typography 
             id="success-modal-description" 
-            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
+            sx={{ mb: 3, textAlign: 'center' }}
           >
             SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated and uploaded to Google Drive.
           </Typography>
