@@ -11,6 +11,10 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Modal,
+  Paper,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -25,6 +29,8 @@ const OrderProcessing = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [openDetailsModal, setOpenDetailsModal] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null); // For dropdown menu in Actions column
 
   // Fetch orders with enhanced error handling and logging
   useEffect(() => {
@@ -155,6 +161,105 @@ const OrderProcessing = () => {
     }
   };
 
+  // Handle showing order details in modal
+  const handleOpenDetailsModal = (order) => {
+    setSelectedOrder(order);
+    setOpenDetailsModal(true);
+  };
+
+  // Handle closing order details modal
+  const handleCloseDetailsModal = () => {
+    setOpenDetailsModal(false);
+    setSelectedOrder(null);
+  };
+
+  // Regenerate and download PDFs from modal
+  const handleDownloadDocuments = () => {
+    if (!selectedOrder) return;
+
+    try {
+      const spkDoc = generateSPKPDF({
+        ...selectedOrder,
+        customerName: selectedOrder.customer_name || 'Unknown Customer',
+        status: selectedOrder.status || 'Processing',
+        shippingMethod: selectedOrder.shipping_method || 'Self',
+        items: selectedOrder.items || [],
+      });
+      const spmDoc = generateSPMPDF({
+        ...selectedOrder,
+        customerName: selectedOrder.customer_name || 'Unknown Customer',
+        status: selectedOrder.status || 'Processing',
+        shippingMethod: selectedOrder.shipping_method || 'Self',
+        items: selectedOrder.items || [],
+      });
+      const doDoc = generateDOPDF({
+        ...selectedOrder,
+        customerName: selectedOrder.customer_name || 'Unknown Customer',
+        status: selectedOrder.status || 'Processing',
+        shippingMethod: selectedOrder.shipping_method || 'Self',
+        items: selectedOrder.items || [],
+      });
+
+      // Save PDFs locally using jsPDF.save()
+      spkDoc.save(`SPK_${selectedOrder.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+      spmDoc.save(`SPM_${selectedOrder.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doDoc.save(`DO_${selectedOrder.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      setSnackbar({ open: true, message: 'Documents regenerated and saved locally successfully', severity: 'success' });
+    } catch (error) {
+      console.error('Error regenerating documents:', error);
+      setSnackbar({ open: true, message: `Error regenerating documents: ${error.message}`, severity: 'error' });
+    }
+  };
+
+  // Handle actions dropdown (Process or Reject)
+  const handleActionsClick = (event, orderId) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedOrder(orders.find(order => order.order_id === orderId) || null);
+  };
+
+  const handleActionsClose = () => {
+    setAnchorEl(null);
+    setSelectedOrder(null);
+  };
+
+  const handleProcess = async () => {
+    if (!selectedOrder) return;
+    await handleProcessOrder(selectedOrder.order_id);
+    handleActionsClose();
+  };
+
+  const handleReject = async () => {
+    if (!selectedOrder) return;
+    try {
+      const rejectUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          status: 'Rejected',
+          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
+          shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
+          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
+          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
+          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+        }),
+      });
+
+      if (!rejectUpdateRes.ok) throw new Error('Failed to reject order: ' + (await rejectUpdateRes.text()));
+      const updatedOrder = await rejectUpdateRes.json();
+      console.log('Rejected Order:', updatedOrder);
+
+      // Update the orders state safely with the "Rejected" status
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === selectedOrder.order_id ? updatedOrder : o));
+
+      setSnackbar({ open: true, message: 'Order rejected successfully', severity: 'success' });
+    } catch (error) {
+      console.error('Error rejecting order:', error);
+      setSnackbar({ open: true, message: `Error rejecting order: ${error.message}`, severity: 'error' });
+    }
+    handleActionsClose();
+  };
+
   // Generate SPK PDF
   const generateSPKPDF = (order) => {
     if (!order || typeof order !== 'object') {
@@ -174,9 +279,9 @@ const OrderProcessing = () => {
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
-    doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
+    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shipping_method || 'Self'}`, 20, 70);
+    doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 70);
     doc.text(`Status: ${order.status || 'Pending'}`, 20, 80); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
@@ -222,7 +327,7 @@ const OrderProcessing = () => {
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
-    doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
+    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
     doc.text(`Status: ${order.status || 'Pending'}`, 20, 70); // Show current status in SPM
 
@@ -269,9 +374,9 @@ const OrderProcessing = () => {
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
-    doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
+    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Address: ${order.customer_address || 'N/A'}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shipping_method || 'Self'}`, 20, 70);
+    doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 70);
     doc.text(`Driver: ${order.driver_name || JSON.parse(order.driver_details || '{}').name || 'N/A'}`, 20, 80);
     doc.text(`Status: ${order.status || 'Pending'}`, 20, 90); // Show current status in DO
 
@@ -305,7 +410,7 @@ const OrderProcessing = () => {
 
   const columns = [
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
+    { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true },
     { 
       field: 'status', 
@@ -313,27 +418,72 @@ const OrderProcessing = () => {
       width: 130, 
       sortable: true,
       renderCell: (params) => (
-        <Box>
+        <Box
+          sx={{
+            padding: '4px 8px',
+            borderRadius: '4px',
+            backgroundColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : 'inherit', // Yellow for Pending, Green for Processing
+            color: '#000',
+          }}
+        >
           {params.value}
         </Box>
       ),
     },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : 'N/A' },
+    { field: 'driver_name', headerName: 'Driver Name', width: 150, sortable: true },
+    { field: 'driver_id', headerName: 'Driver ID', width: 100, sortable: true },
+    { field: 'price', headerName: 'Price (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
+    { field: 'tax_percentage', headerName: 'Tax %', width: 100, sortable: true },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 150, sortable: true, valueFormatter: (params) => params.value ? Number(params.value).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0' },
+    { field: 'driver_details', headerName: 'Driver Details', width: 200, sortable: true },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
     { 
       field: 'actions', 
       headerName: 'Actions', 
       width: 150, 
       sortable: false, 
       renderCell: (params) => (
-        <Button 
+        <div>
+          <Button
+            variant="contained"
+            size="small"
+            color="primary"
+            aria-controls={`actions-menu-${params.row.order_id}`}
+            aria-haspopup="true"
+            onClick={(event) => handleActionsClick(event, params.row.order_id)}
+            sx={{ minWidth: 100 }} // Ensure button fits within row
+          >
+            Actions
+          </Button>
+          <Menu
+            id={`actions-menu-${params.row.order_id}`}
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
+            onClose={handleActionsClose}
+          >
+            <MenuItem onClick={handleProcess}>Process Order</MenuItem>
+            <MenuItem onClick={handleReject}>Reject Order</MenuItem>
+          </Menu>
+        </div>
+      ),
+    },
+    { 
+      field: 'details', 
+      headerName: 'Details', 
+      width: 120, 
+      sortable: false, 
+      renderCell: (params) => (
+        <Button
           variant="contained"
           size="small"
-          color="primary"
-          onClick={() => handleProcessOrder(params.row.order_id)}
+          color="secondary"
+          onClick={() => handleOpenDetailsModal(params.row)}
+          sx={{ minWidth: 80 }} // Ensure button fits within row
         >
-          Process Order
+          View Details
         </Button>
-      )
+      ),
     },
   ];
 
@@ -346,7 +496,14 @@ const OrderProcessing = () => {
       customer_name: order?.customer_name || '-',
       shipping_method: order?.shipping_method || 'Self', // Default to 'Self' if missing
       status: order?.status || 'Pending',
-      created_at: order?.created_at || null, // Ensure created_at is properly handled
+      driver_name: order?.driver_name || 'N/A',
+      driver_id: order?.driver_id || 'N/A',
+      price: order?.price || '0',
+      tax_percentage: order?.tax_percentage || '0',
+      tax: order?.tax || '0',
+      grand_total: order?.grand_total || '0',
+      driver_details: order?.driver_details || '{}',
+      created_at: order?.created_at || null, // Removed valueFormatter
     };
   }) : [];
 
@@ -384,10 +541,59 @@ const OrderProcessing = () => {
               includeOutliers: true,
               expand: true,
             }}
-            rowHeight={30}
+            rowHeight={50} // Increased row height to accommodate buttons
           />
         </CardContent>
       </Card>
+
+      {/* Order Details Modal */}
+      <Modal
+        open={openDetailsModal}
+        onClose={handleCloseDetailsModal}
+        aria-labelledby="details-modal-title"
+        aria-describedby="details-modal-description"
+      >
+        <Paper sx={{ p: 3, maxWidth: 500, margin: 'auto', mt: 5 }}>
+          <Typography id="details-modal-title" variant="h5" gutterBottom>
+            Order Details - ID: {selectedOrder?.order_id || 'N/A'}
+          </Typography>
+          <Typography id="details-modal-description" gutterBottom>
+            <strong>Customer Name:</strong> {selectedOrder?.customer_name || 'Unknown Customer'}<br />
+            <strong>Status:</strong> {selectedOrder?.status || 'Pending'}<br />
+            <strong>Shipping Method:</strong> {selectedOrder?.shipping_method || 'Self'}<br />
+            <strong>Driver Name:</strong> {selectedOrder?.driver_name || 'N/A'}<br />
+            <strong>Driver ID:</strong> {selectedOrder?.driver_id || 'N/A'}<br />
+            <strong>Price:</strong> {selectedOrder?.price ? Number(selectedOrder.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}<br />
+            <strong>Tax Percentage:</strong> {selectedOrder?.tax_percentage || '0'}%<br />
+            <strong>Tax:</strong> {selectedOrder?.tax ? Number(selectedOrder.tax).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}<br />
+            <strong>Grand Total:</strong> {selectedOrder?.grand_total ? Number(selectedOrder.grand_total).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}<br />
+            <strong>Created At:</strong> {selectedOrder?.created_at || 'N/A'}<br />
+            <strong>Driver Details:</strong> {selectedOrder?.driver_details ? JSON.stringify(selectedOrder.driver_details) : '{}'}<br />
+            <strong>Items:</strong>
+            <ul>
+              {Array.isArray(selectedOrder?.items) ? selectedOrder.items.map((item, index) => (
+                <li key={index}>
+                  {item.product || 'N/A'} - {item.quantity || 0} kg - {item.price ? Number(item.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}
+                </li>
+              )) : 'No items available'}
+            </ul>
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+            <Button 
+              variant="contained" 
+              onClick={handleDownloadDocuments}
+            >
+              Download Documents
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleCloseDetailsModal}
+            >
+              Close
+            </Button>
+          </Box>
+        </Paper>
+      </Modal>
 
       {/* Snackbar for notifications */}
       <Snackbar
