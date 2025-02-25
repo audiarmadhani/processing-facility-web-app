@@ -56,7 +56,7 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order processing with additional checks for order_id and data
+  // Handle order processing with a single update to "Processing" before upload
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
@@ -71,83 +71,49 @@ const OrderProcessing = () => {
       if (!data || typeof data !== 'object') {
         throw new Error('Invalid order data received');
       }
-      const order = data;
+      let order = data;
 
       if (!order.order_id || typeof order.order_id !== 'number') {
         throw new Error('Invalid order_id fetched: ' + order.order_id);
       }
 
-      // Update the order status to "Processing", reusing existing values for other fields
-      const updateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+      // Update status to "Processing" before uploading documents
+      const processingUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           status: 'Processing',
           driver_id: order.driver_id, // Reuse existing driver_id
-          shipping_method: order.shipping_method, // Reuse existing shipping_method
+          shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
           driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
         }),
       });
 
-      if (!updateRes.ok) throw new Error('Failed to update order status: ' + (await updateRes.text()));
-      const updatedOrder = await updateRes.json();
-      console.log('Updated Order:', updatedOrder); // Log the updated order for debugging
+      if (!processingUpdateRes.ok) throw new Error('Failed to update order status to Processing: ' + (await processingUpdateRes.text()));
+      const updatedProcessingOrder = await processingUpdateRes.json();
+      console.log('Updated Order (Processing):', updatedProcessingOrder); // Log the updated order for debugging
 
-      // Ensure order_id, customer_name, status, and items are preserved or defaulted
-      const orderWithData = {
-        ...updatedOrder,
-        order_id: updatedOrder.order_id || order.order_id, // Ensure order_id is always present
-        customer_name: updatedOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
-        status: updatedOrder.status || order.status || 'Pending', // Default if missing
-        items: updatedOrder.items || order.items || [], // Default to empty array if missing
-        created_at: updatedOrder.created_at || order.created_at || null,
+      // Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "Processing" update
+      order = {
+        ...updatedProcessingOrder,
+        order_id: updatedProcessingOrder.order_id || order.order_id, // Ensure order_id is always present
+        customer_name: updatedProcessingOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
+        status: updatedProcessingOrder.status || 'Processing', // Should be "Processing" now
+        shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
+        items: updatedProcessingOrder.items || order.items || [], // Default to empty array if missing
+        created_at: updatedProcessingOrder.created_at || order.created_at || null,
       };
 
-      if (!orderWithData.order_id || typeof orderWithData.order_id !== 'number') {
-        throw new Error('Invalid order_id after update: ' + orderWithData.order_id);
+      if (!order.order_id || typeof order.order_id !== 'number') {
+        throw new Error('Invalid order_id after Processing update: ' + order.order_id);
       }
 
-      // Update the orders state safely with the previous state
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? orderWithData : o));
-      
-      setSelectedOrder(orderWithData);
-
-      // Generate, upload, and prepare for download
-      await generateAndUploadDocuments(orderWithData);
-    } catch (error) {
-      console.error('Error processing order:', error);
-      setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
-    } finally {
-      setLoading(false);
-      setProcessing(false);
-    }
-  };
-
-  // Generate and upload documents, then provide download links
-  const generateAndUploadDocuments = async (order) => {
-    if (!order || typeof order !== 'object') {
-      throw new Error('Invalid order object for document processing');
-    }
-
-    // Ensure order_id, customer_name, status, and items are valid
-    const orderId = order.order_id;
-    if (!orderId || typeof orderId !== 'number') {
-      throw new Error('Invalid order_id for document processing: ' + orderId);
-    }
-
-    const customerName = order.customer_name || 'Unknown Customer';
-    const status = order.status || 'Pending';
-    const items = Array.isArray(order.items) ? order.items : [];
-
-    console.log('Order for document processing:', { orderId, customerName, status, items }); // Log for debugging
-
-    try {
       // Generate SPK, SPM, and DO PDFs
-      const spkDoc = generateSPKPDF({ ...order, customerName, status, items });
-      const spmDoc = generateSPMPDF({ ...order, customerName, status, items });
-      const doDoc = generateDOPDF({ ...order, customerName, status, items });
+      const spkDoc = generateSPKPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
 
       // Convert PDFs to blobs for upload
       const spkBlob = spkDoc.output('blob');
@@ -180,46 +146,21 @@ const OrderProcessing = () => {
 
       setPdfUrls(urls); // Store URLs for download links
 
-    //   // Update status to "Processed" after successful upload, reusing existing values for other fields
-    //   const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-    //     method: 'PUT',
-    //     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    //     body: JSON.stringify({
-    //       status: 'Processed', // Adjust status as needed
-    //       driver_id: order.driver_id, // Reuse existing driver_id
-    //       shipping_method: order.shipping_method, // Reuse existing shipping_method
-    //       driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
-    //       price: order.price?.toString() || '0', // Reuse existing price, converted to string
-    //       tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-    //     }),
-    //   });
+      // No update to "Processed" – status remains "Processing" after upload
 
-    //   if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing: ' + (await finalUpdateRes.text()));
-    //   const finalUpdatedOrder = await finalUpdateRes.json();
-    //   console.log('Final Updated Order:', finalUpdatedOrder); // Log the final updated order for debugging
+      // Update the orders state safely with the current "Processing" status
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
 
-      // Ensure order_id, customer_name, status, and items are preserved or defaulted
-      const finalOrderWithData = {
-        ...finalUpdatedOrder,
-        order_id: finalUpdatedOrder.order_id || orderId, // Ensure order_id is always present
-        customer_name: finalUpdatedOrder.customer_name || customerName, // Default if missing
-        status: finalUpdatedOrder.status || status, // Default if missing
-        items: finalUpdatedOrder.items || items, // Default to original items if missing
-        created_at: finalUpdatedOrder.created_at || order.created_at || null,
-      };
-
-      if (!finalOrderWithData.order_id || typeof finalOrderWithData.order_id !== 'number') {
-        throw new Error('Invalid order_id after final update: ' + finalOrderWithData.order_id);
-      }
-
-      // Update the orders state safely with the previous state
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? finalOrderWithData : o));
+      setSelectedOrder(order);
 
       setSnackbar({ open: true, message: 'Documents generated, uploaded, and ready for download successfully', severity: 'success' });
       setOpenSuccessModal(true);
     } catch (error) {
-      console.error('Error processing documents:', error);
-      setSnackbar({ open: true, message: `Error processing documents: ${error.message}`, severity: 'error' });
+      console.error('Error processing order:', error);
+      setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
+      setProcessing(false);
     }
   };
 
@@ -233,7 +174,7 @@ const OrderProcessing = () => {
     pdfUrls.forEach((url, index) => {
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Document_${index + 1}_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = `Document_${index + 1}_${selectedOrder?.order_id || 'N/A'}_${new Date().toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -262,7 +203,7 @@ const OrderProcessing = () => {
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
     doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shipping_method || 'N/A'}`, 20, 70);
+    doc.text(`Shipping Method: ${order.shipping_method || 'Self'}`, 20, 70);
     doc.text(`Status: ${order.status || 'Pending'}`, 20, 80); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
@@ -357,7 +298,7 @@ const OrderProcessing = () => {
     doc.text(`Order ID: ${order.order_id}`, 20, 40);
     doc.text(`Customer: ${order.customer_name || 'Unknown Customer'}`, 20, 50);
     doc.text(`Address: ${order.customer_address || 'N/A'}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shipping_method || 'N/A'}`, 20, 70);
+    doc.text(`Shipping Method: ${order.shipping_method || 'Self'}`, 20, 70);
     doc.text(`Driver: ${order.driver_name || JSON.parse(order.driver_details || '{}').name || 'N/A'}`, 20, 80);
     doc.text(`Status: ${order.status || 'Pending'}`, 20, 90); // Show current status in DO
 
@@ -409,7 +350,7 @@ const OrderProcessing = () => {
         </Box>
       ),
     },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : 'N/A' },
     { 
       field: 'actions', 
       headerName: 'Actions', 
@@ -435,7 +376,7 @@ const OrderProcessing = () => {
       id: order?.order_id || '-',
       order_id: order?.order_id || '-',
       customer_name: order?.customer_name || '-',
-      shipping_method: order?.shipping_method || '-',
+      shipping_method: order?.shipping_method || 'Self', // Default to 'Self' if missing
       status: order?.status || 'Pending',
       created_at: order?.created_at || null, // Ensure created_at is properly handled
     };
