@@ -57,11 +57,18 @@ const OrderProcessing = () => {
       if (!res.ok) throw new Error('Failed to fetch order details');
       const order = await res.json();
       
-      // Update the order status to "Processing"
+      // Update the order status to "Processing", reusing existing values for other fields
       const updateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Processing' }),
+        body: JSON.stringify({
+          status: 'Processing',
+          driver_id: order.driver_id, // Reuse existing driver_id
+          shipping_method: order.shipping_method, // Reuse existing shipping_method
+          driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+          price: order.price?.toString() || '0', // Reuse existing price, converted to string
+          tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+        }),
       });
 
       if (!updateRes.ok) throw new Error('Failed to update order status');
@@ -116,11 +123,18 @@ const OrderProcessing = () => {
       await uploadDocument(spmBlob, 'SPM', `SPM_${selectedOrder.order_id}.pdf`);
       await uploadDocument(doBlob, 'DO', `DO_${selectedOrder.order_id}.pdf`);
 
-      // Optionally update status to "Processed" or another state after successful upload
+      // Update status to "Processed" after successful upload, reusing existing values for other fields
       const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Processed' }), // Adjust status as needed
+        body: JSON.stringify({
+          status: 'Processed', // Adjust status as needed
+          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
+          shipping_method: selectedOrder.shipping_method, // Reuse existing shipping_method
+          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
+          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
+          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+        }),
       });
 
       if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing');
@@ -338,13 +352,13 @@ const OrderProcessing = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: '#333' }}>Order Processing</Typography>
+      <Typography variant="h4" gutterBottom >Order Processing</Typography>
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
       )}
-      <Card variant="outlined" sx={{ mt: 2, borderRadius: 2, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+      <Card variant="outlined" sx={{ mt: 2 }}>
         <CardContent>
           <DataGrid
             rows={ordersRows}
@@ -365,7 +379,6 @@ const OrderProcessing = () => {
               expand: true,
             }}
             rowHeight={27}
-            sx={{ border: 'none', '& .MuiDataGrid-cell': { py: 1 } }}
           />
         </CardContent>
       </Card>
@@ -383,21 +396,18 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          boxShadow: 24, 
           p: 4, 
         }}>
           <Typography 
             id="confirm-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
           >
             Confirm Document Generation
           </Typography>
           <Typography 
             id="confirm-modal-description" 
-            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
+            sx={{ mb: 3, textAlign: 'center' }}
           >
             Are you sure you want to generate and upload SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'}?
           </Typography>
@@ -409,12 +419,8 @@ const OrderProcessing = () => {
               variant="contained" 
               onClick={handleConfirmProcess} 
               disabled={processing}
-              sx={{ 
-                backgroundColor: '#1976d2', 
-                '&:hover': { backgroundColor: '#1565c0' }
-              }}
             >
-              {processing ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Confirm'}
+              {processing ? <CircularProgress size={24} /> : 'Confirm'}
             </Button>
           </Box>
         </Paper>
@@ -433,21 +439,18 @@ const OrderProcessing = () => {
           left: '50%', 
           transform: 'translate(-50%, -50%)', 
           width: 400, 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          boxShadow: 24, 
           p: 4, 
         }}>
           <Typography 
             id="success-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', color: '#333', fontWeight: 'bold' }}
+            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
           >
             Success
           </Typography>
           <Typography 
             id="success-modal-description" 
-            sx={{ mb: 3, textAlign: 'center', color: '#666' }}
+            sx={{ mb: 3, textAlign: 'center' }}
           >
             SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated and uploaded to Google Drive.
           </Typography>
@@ -455,10 +458,6 @@ const OrderProcessing = () => {
             <Button 
               variant="contained" 
               onClick={handleCloseSuccessModal} 
-              sx={{ 
-                backgroundColor: '#1976d2', 
-                '&:hover': { backgroundColor: '#1565c0' }
-              }}
             >
               Close
             </Button>
