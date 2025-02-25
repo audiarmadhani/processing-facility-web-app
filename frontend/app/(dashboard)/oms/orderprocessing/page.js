@@ -180,30 +180,30 @@ const OrderProcessing = () => {
 
       setPdfUrls(urls); // Store URLs for download links
 
-      // Update status to "Processed" after successful upload, reusing existing values for other fields
-      const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          status: 'Processed', // Adjust status as needed
-          driver_id: order.driver_id, // Reuse existing driver_id
-          shipping_method: order.shipping_method, // Reuse existing shipping_method
-          driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
-          price: order.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-        }),
-      });
+    //   // Update status to "Processed" after successful upload, reusing existing values for other fields
+    //   const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+    //     method: 'PUT',
+    //     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    //     body: JSON.stringify({
+    //       status: 'Processed', // Adjust status as needed
+    //       driver_id: order.driver_id, // Reuse existing driver_id
+    //       shipping_method: order.shipping_method, // Reuse existing shipping_method
+    //       driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+    //       price: order.price?.toString() || '0', // Reuse existing price, converted to string
+    //       tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+    //     }),
+    //   });
 
-      if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing: ' + (await finalUpdateRes.text()));
-      const finalUpdatedOrder = await finalUpdateRes.json();
-      console.log('Final Updated Order:', finalUpdatedOrder); // Log the final updated order for debugging
+    //   if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing: ' + (await finalUpdateRes.text()));
+    //   const finalUpdatedOrder = await finalUpdateRes.json();
+    //   console.log('Final Updated Order:', finalUpdatedOrder); // Log the final updated order for debugging
 
       // Ensure order_id, customer_name, status, and items are preserved or defaulted
       const finalOrderWithData = {
         ...finalUpdatedOrder,
         order_id: finalUpdatedOrder.order_id || orderId, // Ensure order_id is always present
         customer_name: finalUpdatedOrder.customer_name || customerName, // Default if missing
-        status: finalUpdatedOrder.status || 'Processed', // Default if missing
+        status: finalUpdatedOrder.status || status, // Default if missing
         items: finalUpdatedOrder.items || items, // Default to original items if missing
         created_at: finalUpdatedOrder.created_at || order.created_at || null,
       };
@@ -409,7 +409,7 @@ const OrderProcessing = () => {
         </Box>
       ),
     },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : 'N/A' },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true },
     { 
       field: 'actions', 
       headerName: 'Actions', 
