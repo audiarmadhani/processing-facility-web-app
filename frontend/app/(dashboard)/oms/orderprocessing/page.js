@@ -55,7 +55,7 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order processing with additional checks
+  // Handle order processing with additional checks for order_id
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
@@ -73,7 +73,7 @@ const OrderProcessing = () => {
       const order = data;
 
       if (!order.order_id || typeof order.order_id !== 'number') {
-        throw new Error('Invalid order_id received: ' + order.order_id);
+        throw new Error('Invalid order_id fetched: ' + order.order_id);
       }
 
       // Update the order status to "Processing", reusing existing values for other fields
@@ -94,11 +94,16 @@ const OrderProcessing = () => {
       const updatedOrder = await updateRes.json();
       console.log('Updated Order:', updatedOrder); // Log the updated order for debugging
 
-      // Ensure created_at is included or default to the original order's created_at if missing
+      // Ensure order_id is preserved or defaulted from the original order if missing
       const orderWithCreatedAt = {
         ...updatedOrder,
+        order_id: updatedOrder.order_id || order.order_id, // Ensure order_id is always present
         created_at: updatedOrder.created_at || order.created_at || null,
       };
+
+      if (!orderWithCreatedAt.order_id || typeof orderWithCreatedAt.order_id !== 'number') {
+        throw new Error('Invalid order_id after update: ' + orderWithCreatedAt.order_id);
+      }
 
       // Update the orders state safely with the previous state
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? orderWithCreatedAt : o));
@@ -116,14 +121,16 @@ const OrderProcessing = () => {
     }
   };
 
-  // Generate, upload, merge, and print documents with additional checks
+  // Generate, upload, merge, and print documents with additional checks for order_id
   const generateAndProcessDocuments = async (order) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for document processing');
     }
 
-    if (!order.order_id || typeof order.order_id !== 'number') {
-      throw new Error('Invalid order_id for document processing: ' + order.order_id);
+    // Ensure order_id is a number, default to null if missing and throw an error
+    const orderId = order.order_id;
+    if (!orderId || typeof orderId !== 'number') {
+      throw new Error('Invalid order_id for document processing: ' + orderId);
     }
 
     try {
@@ -139,12 +146,8 @@ const OrderProcessing = () => {
 
       // Upload each document to Google Drive
       const uploadDocument = async (blob, type, filename) => {
-        if (!order.order_id || typeof order.order_id !== 'number') {
-          throw new Error('Invalid order_id for upload: ' + order.order_id);
-        }
-
         const formData = new FormData();
-        formData.append('order_id', order.order_id.toString()); // Convert to string for FormData
+        formData.append('order_id', orderId.toString()); // Use validated orderId as string
         formData.append('type', type);
         formData.append('file', blob, filename);
 
@@ -158,9 +161,9 @@ const OrderProcessing = () => {
       };
 
       // Upload individual PDFs
-      await uploadDocument(spkBlob, 'SPK', `SPK_${order.order_id}.pdf`);
-      await uploadDocument(spmBlob, 'SPM', `SPM_${order.order_id}.pdf`);
-      await uploadDocument(doBlob, 'DO', `DO_${order.order_id}.pdf`);
+      await uploadDocument(spkBlob, 'SPK', `SPK_${orderId}.pdf`);
+      await uploadDocument(spmBlob, 'SPM', `SPM_${orderId}.pdf`);
+      await uploadDocument(doBlob, 'DO', `DO_${orderId}.pdf`);
 
       // Merge PDFs into a single document
       const mergedDoc = mergePDFs([spkDoc, spmDoc, doDoc]);
@@ -185,7 +188,7 @@ const OrderProcessing = () => {
       }, 1000);
 
       // Update status to "Processed" after successful processing, reusing existing values for other fields
-      const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${order.order_id}`, {
+      const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
@@ -202,14 +205,19 @@ const OrderProcessing = () => {
       const finalUpdatedOrder = await finalUpdateRes.json();
       console.log('Final Updated Order:', finalUpdatedOrder); // Log the final updated order for debugging
 
-      // Ensure created_at is included or default to the original order's created_at if missing
+      // Ensure order_id and created_at are included or defaulted from the original order if missing
       const finalOrderWithCreatedAt = {
         ...finalUpdatedOrder,
+        order_id: finalUpdatedOrder.order_id || orderId, // Ensure order_id is always present
         created_at: finalUpdatedOrder.created_at || order.created_at || null,
       };
 
+      if (!finalOrderWithCreatedAt.order_id || typeof finalOrderWithCreatedAt.order_id !== 'number') {
+        throw new Error('Invalid order_id after final update: ' + finalOrderWithCreatedAt.order_id);
+      }
+
       // Update the orders state safely with the previous state
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === order.order_id ? finalOrderWithCreatedAt : o));
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? finalOrderWithCreatedAt : o));
 
       setSnackbar({ open: true, message: 'Documents generated, uploaded, merged, and print dialog shown successfully', severity: 'success' });
       setOpenSuccessModal(true);
