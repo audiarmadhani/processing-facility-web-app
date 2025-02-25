@@ -22,14 +22,14 @@ import dayjs from 'dayjs';
 
 const OrderProcessing = () => {
   const { data: session, status } = useSession();
-  const [orders, setOrders] = useState([]); // Ensure orders starts as an empty array
+  const [orders, setOrders] = useState([]); // Explicitly initialize as empty array
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [openSuccessModal, setOpenSuccessModal] = useState(false);
 
-  // Fetch orders
+  // Fetch orders with enhanced error handling and logging
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
@@ -39,12 +39,13 @@ const OrderProcessing = () => {
           throw new Error('Failed to fetch orders: ' + (await res.text()));
         }
         const data = await res.json();
+        console.log('Fetch Response Data:', data); // Log the response for debugging
         // Ensure data is an array, default to empty array if not
         setOrders(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching orders:', error);
-        setOrders([]); // Set to empty array on error to prevent undefined
-        setSnackbar({ open: true, message: error.message, severity: 'error' });
+        setOrders([]); // Set to empty array on error
+        setSnackbar({ open: true, message: `Error fetching orders: ${error.message}`, severity: 'error' });
       } finally {
         setLoading(false);
       }
@@ -52,19 +53,20 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order processing (update status, generate/upload PDFs, merge, and print)
+  // Handle order processing with additional checks
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
     try {
-      // Fetch the current order details
+      // Fetch the current order details with enhanced error handling
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
       if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
-      const order = await res.json();
-      
-      if (!order || typeof order !== 'object') {
+      const data = await res.json();
+      console.log('Order Fetch Response:', data); // Log the response for debugging
+      if (!data || typeof data !== 'object') {
         throw new Error('Invalid order data received');
       }
+      const order = data;
 
       // Update the order status to "Processing", reusing existing values for other fields
       const updateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
@@ -82,6 +84,7 @@ const OrderProcessing = () => {
 
       if (!updateRes.ok) throw new Error('Failed to update order status: ' + (await updateRes.text()));
       const updatedOrder = await updateRes.json();
+      console.log('Updated Order:', updatedOrder); // Log the updated order for debugging
 
       // Ensure created_at is included or default to the original order's created_at if missing
       const orderWithCreatedAt = {
@@ -90,7 +93,7 @@ const OrderProcessing = () => {
       };
 
       // Update the orders state to reflect the new status
-      setOrders(orders.map(o => o.order_id === orderId ? orderWithCreatedAt : o));
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? orderWithCreatedAt : o));
       
       setSelectedOrder(orderWithCreatedAt);
 
@@ -98,16 +101,18 @@ const OrderProcessing = () => {
       await generateAndProcessDocuments(orderWithCreatedAt);
     } catch (error) {
       console.error('Error processing order:', error);
-      setSnackbar({ open: true, message: error.message, severity: 'error' });
+      setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
     } finally {
       setLoading(false);
       setProcessing(false);
     }
   };
 
-  // Generate, upload, merge, and print documents
+  // Generate, upload, merge, and print documents with additional checks
   const generateAndProcessDocuments = async (order) => {
-    if (!order) return;
+    if (!order || typeof order !== 'object') {
+      throw new Error('Invalid order object for document processing');
+    }
 
     try {
       // Generate SPK, SPM, and DO PDFs
@@ -179,6 +184,7 @@ const OrderProcessing = () => {
 
       if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing: ' + (await finalUpdateRes.text()));
       const finalUpdatedOrder = await finalUpdateRes.json();
+      console.log('Final Updated Order:', finalUpdatedOrder); // Log the final updated order for debugging
 
       // Ensure created_at is included or default to the original order's created_at if missing
       const finalOrderWithCreatedAt = {
@@ -187,18 +193,22 @@ const OrderProcessing = () => {
       };
 
       // Update the orders state to reflect the new status
-      setOrders(orders.map(o => o.order_id === order.order_id ? finalOrderWithCreatedAt : o));
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === order.order_id ? finalOrderWithCreatedAt : o));
 
       setSnackbar({ open: true, message: 'Documents generated, uploaded, merged, and print dialog shown successfully', severity: 'success' });
       setOpenSuccessModal(true);
     } catch (error) {
       console.error('Error processing documents:', error);
-      setSnackbar({ open: true, message: error.message, severity: 'error' });
+      setSnackbar({ open: true, message: `Error processing documents: ${error.message}`, severity: 'error' });
     }
   };
 
   // Merge PDFs into a single document using jsPDF (simulating concatenation by adding pages)
   const mergePDFs = (pdfDocs) => {
+    if (!pdfDocs || !Array.isArray(pdfDocs)) {
+      throw new Error('Invalid PDF documents for merging');
+    }
+
     const mergedDoc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -206,6 +216,10 @@ const OrderProcessing = () => {
     });
 
     pdfDocs.forEach((doc, index) => {
+      if (!doc || typeof doc.internal !== 'object') {
+        console.warn('Invalid PDF document skipped:', doc);
+        return;
+      }
       const pages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pages; i++) {
         if (index > 0 || i > 1) {
@@ -222,6 +236,10 @@ const OrderProcessing = () => {
 
   // Generate SPK PDF
   const generateSPKPDF = (order) => {
+    if (!order || typeof order !== 'object') {
+      throw new Error('Invalid order object for SPK PDF generation');
+    }
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -240,28 +258,37 @@ const OrderProcessing = () => {
     doc.text(`Shipping Method: ${order.shipping_method}`, 20, 70);
     doc.text(`Status: ${order.status}`, 20, 80); // Show current status in SPK
 
-    doc.autoTable({
-      startY: 90,
-      head: [['Product', 'Quantity (kg)', 'Price (IDR)']],
-      body: order.items.map(item => [
-        item.product,
-        item.quantity,
-        item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
-      ]),
-      styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
-      margin: { left: 20, right: 20 },
-    });
+    if (!order.items || !Array.isArray(order.items)) {
+      console.warn('No items found for order:', order);
+      doc.text('No items available', 20, 100);
+    } else {
+      doc.autoTable({
+        startY: 90,
+        head: [['Product', 'Quantity (kg)', 'Price (IDR)']],
+        body: order.items.map(item => [
+          item.product || 'N/A',
+          item.quantity || 0,
+          (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
+        ]),
+        styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
+        headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+        margin: { left: 20, right: 20 },
+      });
+    }
 
-    doc.line(20, doc.lastAutoTable.finalY + 10, 190, doc.lastAutoTable.finalY + 10);
-    doc.text('Prepared by:', 20, doc.lastAutoTable.finalY + 20);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable.finalY + 30);
+    doc.line(20, doc.lastAutoTable?.finalY + 10 || 110, 190, doc.lastAutoTable?.finalY + 10 || 110);
+    doc.text('Prepared by:', 20, doc.lastAutoTable?.finalY + 20 || 120);
+    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 130);
 
     return doc;
   };
 
   // Generate SPM PDF
   const generateSPMPDF = (order) => {
+    if (!order || typeof order !== 'object') {
+      throw new Error('Invalid order object for SPM PDF generation');
+    }
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -279,28 +306,37 @@ const OrderProcessing = () => {
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
     doc.text(`Status: ${order.status}`, 20, 70); // Show current status in SPM
 
-    doc.autoTable({
-      startY: 80,
-      head: [['Product', 'Quantity (kg)', 'Required By']],
-      body: order.items.map(item => [
-        item.product,
-        item.quantity,
-        dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
-      ]),
-      styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
-      margin: { left: 20, right: 20 },
-    });
+    if (!order.items || !Array.isArray(order.items)) {
+      console.warn('No items found for order:', order);
+      doc.text('No items available', 20, 90);
+    } else {
+      doc.autoTable({
+        startY: 80,
+        head: [['Product', 'Quantity (kg)', 'Required By']],
+        body: order.items.map(item => [
+          item.product || 'N/A',
+          item.quantity || 0,
+          dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
+        ]),
+        styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
+        headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+        margin: { left: 20, right: 20 },
+      });
+    }
 
-    doc.line(20, doc.lastAutoTable.finalY + 10, 190, doc.lastAutoTable.finalY + 10);
-    doc.text('Requested by:', 20, doc.lastAutoTable.finalY + 20);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable.finalY + 30);
+    doc.line(20, doc.lastAutoTable?.finalY + 10 || 100, 190, doc.lastAutoTable?.finalY + 10 || 100);
+    doc.text('Requested by:', 20, doc.lastAutoTable?.finalY + 20 || 110);
+    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 120);
 
     return doc;
   };
 
   // Generate DO PDF
   const generateDOPDF = (order) => {
+    if (!order || typeof order !== 'object') {
+      throw new Error('Invalid order object for DO PDF generation');
+    }
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -320,22 +356,27 @@ const OrderProcessing = () => {
     doc.text(`Driver: ${order.driver_name || JSON.parse(order.driver_details || '{}').name || 'N/A'}`, 20, 80);
     doc.text(`Status: ${order.status}`, 20, 90); // Show current status in DO
 
-    doc.autoTable({
-      startY: 100,
-      head: [['Product', 'Quantity (kg)', 'Delivery Date']],
-      body: order.items.map(item => [
-        item.product,
-        item.quantity,
-        dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
-      ]),
-      styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
-      margin: { left: 20, right: 20 },
-    });
+    if (!order.items || !Array.isArray(order.items)) {
+      console.warn('No items found for order:', order);
+      doc.text('No items available', 20, 110);
+    } else {
+      doc.autoTable({
+        startY: 100,
+        head: [['Product', 'Quantity (kg)', 'Delivery Date']],
+        body: order.items.map(item => [
+          item.product || 'N/A',
+          item.quantity || 0,
+          dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
+        ]),
+        styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
+        headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+        margin: { left: 20, right: 20 },
+      });
+    }
 
-    doc.line(20, doc.lastAutoTable.finalY + 10, 190, doc.lastAutoTable.finalY + 10);
-    doc.text('Authorized by:', 20, doc.lastAutoTable.finalY + 20);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable.finalY + 30);
+    doc.line(20, doc.lastAutoTable?.finalY + 10 || 120, 190, doc.lastAutoTable?.finalY + 10 || 120);
+    doc.text('Authorized by:', 20, doc.lastAutoTable?.finalY + 20 || 130);
+    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 140);
 
     return doc;
   };
@@ -382,14 +423,15 @@ const OrderProcessing = () => {
     },
   ];
 
-  const ordersRows = (orders || []).map(order => ({
+  // Ensure ordersRows handles undefined or null orders safely
+  const ordersRows = Array.isArray(orders) ? orders.map(order => ({
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
     status: order?.status || 'Pending',
     created_at: order?.created_at || null, // Ensure created_at is properly handled
-  }));
+  })) : [];
 
   if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
 
