@@ -22,12 +22,11 @@ import dayjs from 'dayjs';
 
 const OrderProcessing = () => {
   const { data: session, status } = useSession();
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState([]); // Ensure orders starts as an empty array
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [openConfirmModal, setOpenConfirmModal] = useState(false);
   const [openSuccessModal, setOpenSuccessModal] = useState(false);
 
   // Fetch orders
@@ -36,10 +35,15 @@ const OrderProcessing = () => {
       setLoading(true);
       try {
         const res = await fetch('https://processing-facility-backend.onrender.com/api/orders');
-        if (!res.ok) throw new Error('Failed to fetch orders');
+        if (!res.ok) {
+          throw new Error('Failed to fetch orders: ' + (await res.text()));
+        }
         const data = await res.json();
-        setOrders(data || []);
+        // Ensure data is an array, default to empty array if not
+        setOrders(Array.isArray(data) ? data : []);
       } catch (error) {
+        console.error('Error fetching orders:', error);
+        setOrders([]); // Set to empty array on error to prevent undefined
         setSnackbar({ open: true, message: error.message, severity: 'error' });
       } finally {
         setLoading(false);
@@ -48,15 +52,20 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order selection for processing and update status
+  // Handle order processing (update status, generate/upload PDFs, merge, and print)
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
+    setProcessing(true);
     try {
       // Fetch the current order details
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
-      if (!res.ok) throw new Error('Failed to fetch order details');
+      if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
       const order = await res.json();
       
+      if (!order || typeof order !== 'object') {
+        throw new Error('Invalid order data received');
+      }
+
       // Update the order status to "Processing", reusing existing values for other fields
       const updateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
@@ -71,32 +80,40 @@ const OrderProcessing = () => {
         }),
       });
 
-      if (!updateRes.ok) throw new Error('Failed to update order status');
+      if (!updateRes.ok) throw new Error('Failed to update order status: ' + (await updateRes.text()));
       const updatedOrder = await updateRes.json();
 
+      // Ensure created_at is included or default to the original order's created_at if missing
+      const orderWithCreatedAt = {
+        ...updatedOrder,
+        created_at: updatedOrder.created_at || order.created_at || null,
+      };
+
       // Update the orders state to reflect the new status
-      setOrders(orders.map(o => o.order_id === orderId ? updatedOrder : o));
+      setOrders(orders.map(o => o.order_id === orderId ? orderWithCreatedAt : o));
       
-      setSelectedOrder(updatedOrder);
-      setOpenConfirmModal(true);
+      setSelectedOrder(orderWithCreatedAt);
+
+      // Generate, upload, merge, and print documents
+      await generateAndProcessDocuments(orderWithCreatedAt);
     } catch (error) {
+      console.error('Error processing order:', error);
       setSnackbar({ open: true, message: error.message, severity: 'error' });
     } finally {
       setLoading(false);
+      setProcessing(false);
     }
   };
 
   // Generate, upload, merge, and print documents
-  const generateAndProcessDocuments = async () => {
-    if (!selectedOrder) return;
+  const generateAndProcessDocuments = async (order) => {
+    if (!order) return;
 
-    setProcessing(true);
-    setOpenConfirmModal(false);
     try {
       // Generate SPK, SPM, and DO PDFs
-      const spkDoc = generateSPKPDF(selectedOrder);
-      const spmDoc = generateSPMPDF(selectedOrder);
-      const doDoc = generateDOPDF(selectedOrder);
+      const spkDoc = generateSPKPDF(order);
+      const spmDoc = generateSPMPDF(order);
+      const doDoc = generateDOPDF(order);
 
       // Convert PDFs to blobs for upload
       const spkBlob = spkDoc.output('blob');
@@ -106,7 +123,7 @@ const OrderProcessing = () => {
       // Upload each document to Google Drive
       const uploadDocument = async (blob, type, filename) => {
         const formData = new FormData();
-        formData.append('order_id', selectedOrder.order_id);
+        formData.append('order_id', order.order_id);
         formData.append('type', type);
         formData.append('file', blob, filename);
 
@@ -115,14 +132,14 @@ const OrderProcessing = () => {
           body: formData,
         });
 
-        if (!res.ok) throw new Error(`Failed to upload ${type} document`);
+        if (!res.ok) throw new Error(`Failed to upload ${type} document: ` + (await res.text()));
         return await res.json();
       };
 
       // Upload individual PDFs
-      await uploadDocument(spkBlob, 'SPK', `SPK_${selectedOrder.order_id}.pdf`);
-      await uploadDocument(spmBlob, 'SPM', `SPM_${selectedOrder.order_id}.pdf`);
-      await uploadDocument(doBlob, 'DO', `DO_${selectedOrder.order_id}.pdf`);
+      await uploadDocument(spkBlob, 'SPK', `SPK_${order.order_id}.pdf`);
+      await uploadDocument(spmBlob, 'SPM', `SPM_${order.order_id}.pdf`);
+      await uploadDocument(doBlob, 'DO', `DO_${order.order_id}.pdf`);
 
       // Merge PDFs into a single document
       const mergedDoc = mergePDFs([spkDoc, spmDoc, doDoc]);
@@ -133,9 +150,13 @@ const OrderProcessing = () => {
       // Create a URL for the merged PDF and trigger print dialog
       const mergedUrl = URL.createObjectURL(mergedBlob);
       const printWindow = window.open(mergedUrl, '_blank');
-      printWindow.onload = () => {
-        printWindow.print();
-      };
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      } else {
+        throw new Error('Failed to open print window. Please allow popups for this site.');
+      }
 
       // Clean up URL object
       setTimeout(() => {
@@ -143,30 +164,36 @@ const OrderProcessing = () => {
       }, 1000);
 
       // Update status to "Processed" after successful processing, reusing existing values for other fields
-      const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
+      const finalUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${order.order_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'Processed', // Adjust status as needed
-          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
-          shipping_method: selectedOrder.shipping_method, // Reuse existing shipping_method
-          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
-          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+          driver_id: order.driver_id, // Reuse existing driver_id
+          shipping_method: order.shipping_method, // Reuse existing shipping_method
+          driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+          price: order.price?.toString() || '0', // Reuse existing price, converted to string
+          tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
         }),
       });
 
-      if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing');
+      if (!finalUpdateRes.ok) throw new Error('Failed to update order status after processing: ' + (await finalUpdateRes.text()));
       const finalUpdatedOrder = await finalUpdateRes.json();
-      setOrders(orders.map(o => o.order_id === selectedOrder.order_id ? finalUpdatedOrder : o));
+
+      // Ensure created_at is included or default to the original order's created_at if missing
+      const finalOrderWithCreatedAt = {
+        ...finalUpdatedOrder,
+        created_at: finalUpdatedOrder.created_at || order.created_at || null,
+      };
+
+      // Update the orders state to reflect the new status
+      setOrders(orders.map(o => o.order_id === order.order_id ? finalOrderWithCreatedAt : o));
 
       setSnackbar({ open: true, message: 'Documents generated, uploaded, merged, and print dialog shown successfully', severity: 'success' });
       setOpenSuccessModal(true);
     } catch (error) {
+      console.error('Error processing documents:', error);
       setSnackbar({ open: true, message: error.message, severity: 'error' });
-    } finally {
-      setProcessing(false);
-      setSelectedOrder(null);
     }
   };
 
@@ -177,8 +204,6 @@ const OrderProcessing = () => {
       unit: 'mm',
       format: [210, 297], // A4 size
     });
-
-    let currentY = 10; // Starting Y position for each page
 
     pdfDocs.forEach((doc, index) => {
       const pages = doc.internal.getNumberOfPages();
@@ -319,15 +344,6 @@ const OrderProcessing = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleConfirmProcess = () => {
-    generateAndProcessDocuments();
-  };
-
-  const handleCloseConfirmModal = () => {
-    setOpenConfirmModal(false);
-    setSelectedOrder(null);
-  };
-
   const handleCloseSuccessModal = () => {
     setOpenSuccessModal(false);
   };
@@ -342,17 +358,12 @@ const OrderProcessing = () => {
       width: 130, 
       sortable: true,
       renderCell: (params) => (
-        <Box sx={{ 
-          bgcolor: params.value === 'Processing' ? 'success.light' : params.value === 'Pending' ? 'warning.light' : 'info.light', 
-          px: 1, 
-          color: 'text.primary', 
-          borderRadius: 1 
-        }}>
+        <Box>
           {params.value}
         </Box>
       ),
     },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true },
+    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true, valueFormatter: (params) => params.value ? dayjs(params.value).format('YYYY-MM-DD') : 'N/A' },
     { 
       field: 'actions', 
       headerName: 'Actions', 
@@ -364,15 +375,6 @@ const OrderProcessing = () => {
           size="small"
           color="primary"
           onClick={() => handleProcessOrder(params.row.order_id)}
-          sx={{ 
-            height: '20px', 
-            minWidth: '80px', 
-            padding: '0 8px', 
-            fontSize: '0.75rem', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-          }}
         >
           Process Order
         </Button>
@@ -392,18 +394,18 @@ const OrderProcessing = () => {
   if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
 
   if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
-    return <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Access Denied</Typography>;
+    return <Typography variant="h6">Access Denied</Typography>;
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box p={3}>
       <Typography variant="h4" gutterBottom>Order Processing</Typography>
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
       )}
-      <Card variant="outlined" sx={{ mt: 2 }}>
+      <Card variant="outlined">
         <CardContent>
           <DataGrid
             rows={ordersRows}
@@ -428,48 +430,6 @@ const OrderProcessing = () => {
         </CardContent>
       </Card>
 
-      {/* Confirmation Modal */}
-      <Modal
-        open={openConfirmModal}
-        onClose={handleCloseConfirmModal}
-        aria-labelledby="confirm-modal-title"
-        aria-describedby="confirm-modal-description"
-      >
-        <Paper sx={{ 
-          position: 'absolute', 
-          top: '50%', 
-          left: '50%', 
-          transform: 'translate(-50%, -50%)', 
-          width: 400, 
-          p: 4, 
-        }}>
-          <Typography 
-            id="confirm-modal-title" 
-            variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
-          >
-            Confirm Document Generation
-          </Typography>
-          <Typography 
-            id="confirm-modal-description" 
-            sx={{ mb: 3, textAlign: 'center' }}
-          >
-            Are you sure you want to generate, upload, merge, and print SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'}?
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-            <Button onClick={handleCloseConfirmModal} variant="outlined">
-              Cancel
-            </Button>
-            <Button 
-              variant="contained" 
-              onClick={handleConfirmProcess} 
-              disabled={processing}
-            >
-            </Button>
-          </Box>
-        </Paper>
-      </Modal>
-
       {/* Success Modal */}
       <Modal
         open={openSuccessModal}
@@ -477,24 +437,17 @@ const OrderProcessing = () => {
         aria-labelledby="success-modal-title"
         aria-describedby="success-modal-description"
       >
-        <Paper sx={{ 
-          position: 'absolute', 
-          top: '50%', 
-          left: '50%', 
-          transform: 'translate(-50%, -50%)', 
-          width: 400, 
-          p: 4, 
-        }}>
+        <Paper>
           <Typography 
             id="success-modal-title" 
             variant="h5" 
-            sx={{ mb: 2, textAlign: 'center', fontWeight: 'bold' }}
+            gutterBottom
           >
             Success
           </Typography>
           <Typography 
             id="success-modal-description" 
-            sx={{ mb: 3, textAlign: 'center' }}
+            gutterBottom
           >
             SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated, uploaded, merged, and the print dialog is ready.
           </Typography>
@@ -516,7 +469,7 @@ const OrderProcessing = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
