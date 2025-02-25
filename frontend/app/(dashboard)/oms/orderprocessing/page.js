@@ -468,7 +468,7 @@ const OrderProcessing = () => {
 
   const columns = [
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 200, sortable: true },
+    { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
     { 
         field: 'status', 
         headerName: 'Status', 
@@ -485,12 +485,12 @@ const OrderProcessing = () => {
               border: '2px solid',
               borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Very light colors for each status (light pink for Pending, light green for Processing, light red for Rejected, light gray for default)
               backgroundColor: 'transparent', // Transparent background for outline effect
-              color: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Match border colors for text (light pink, light green, light red, light gray)
+              color: params.value === 'Pending' ? '#ffffff' : params.value === 'Processing' ? '#ffffff' : params.value === 'Rejected' ? '#ffffff' : '#ffffff', // Match border colors for text (light pink, light green, light red, light gray)
               fontSize: '0.875rem',
               textTransform: 'none',
               '&:hover': {
                 backgroundColor: 'transparent', // Prevent hover background change
-                borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Maintain matching border color on hover
+                borderColor: params.value === 'Pending' ? '#ffffff' : params.value === 'Processing' ? '#ffffff' : params.value === 'Rejected' ? '#ffffff' : '#ffffff', // Maintain matching border color on hover
               },
             }}
           >
@@ -616,7 +616,7 @@ const OrderProcessing = () => {
               includeOutliers: true,
               expand: true,
             }}
-            rowHeight={50} // Increased row height to accommodate buttons
+            rowHeight={45} // Increased row height to accommodate buttons
             getRowClassName={(params) => `super-app-theme--${params.row.status}`}
           />
         </CardContent>
