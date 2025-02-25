@@ -221,90 +221,90 @@ const ShipmentPreparation = () => {
   };
 
   // Generate BAST PDF
-const generateBASTPDF = (order) => {
-  if (!order || typeof order !== 'object') {
-    throw new Error('Invalid order object for BAST PDF generation');
-  }
+	const generateBASTPDF = (order) => {
+		if (!order || typeof order !== 'object') {
+			throw new Error('Invalid order object for BAST PDF generation');
+		}
 
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: [210, 297], // A4 size
-  });
+		const doc = new jsPDF({
+			orientation: 'portrait',
+			unit: 'mm',
+			format: [210, 297], // A4 size
+		});
 
-  // Set fonts and sizes
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(12);
+		// Set fonts and sizes
+		doc.setFont('Helvetica', 'bold');
+		doc.setFontSize(12);
 
-  // Header: Company Name and Document Title
-  doc.text('PT. BERKAS TUAIAN MELIMPAH', 105, 22, { align: 'center' });
-  doc.text('BERITA ACARA SERAH TERIMA (BAST)', 105, 30, { align: 'center' });
-  doc.setFontSize(10);
-  doc.text(`Nomor: BAST/${order.order_id}/${dayjs().format('YYYY')}`, 105, 40, { align: 'center' });
+		// Header: Company Name and Document Title
+		doc.text('PT. BERKAS TUAIAN MELIMPAH', 105, 22, { align: 'center' });
+		doc.text('BERITA ACARA SERAH TERIMA (BAST)', 105, 30, { align: 'center' });
+		doc.setFontSize(10);
+		doc.text(`Nomor: BAST/${order.order_id}/${dayjs().format('YYYY')}`, 105, 40, { align: 'center' });
 
-  // Document Information
-  doc.setFont('Helvetica', 'normal');
-  doc.text(`Pada hari ini, ${dayjs().locale('id').format('dddd')}, tanggal ${dayjs().locale('id').format('DD MMMM YYYY')}, kami yang bertanda tangan di bawah ini:`, 20, 50);
+		// Document Information
+		doc.setFont('Helvetica', 'normal');
+		doc.text(`Pada hari ini, ${dayjs().locale('id').format('dddd')}, tanggal ${dayjs().locale('id').format('DD MMMM YYYY')}, kami yang bertanda tangan di bawah ini:`, 20, 50);
 
-  // Party 1 (Sender/Company)
-  doc.text('Nama', 20, 60);
-  doc.text(':', 40, 60);
-  doc.text(`PT. Berkas Tuaian Melimpah`, 45, 60);
+		// Party 1 (Sender/Company)
+		doc.text('Nama', 20, 60);
+		doc.text(':', 40, 60);
+		doc.text(`PT. Berkas Tuaian Melimpah`, 45, 60); // Match OCR content
 
-  doc.text('Alamat', 20, 65);
-  doc.text(':', 40, 65);
-  doc.text('Jl. Lintas Gunungtua, Padangsidimpuan, Sumatera Utara', 45, 65); // Example address, adjust as needed
+		doc.text('Alamat', 20, 65);
+		doc.text(':', 40, 65);
+		doc.text('Jl. Lintas Gunungtua, Padangsidimpuan, Sumatera Utara', 45, 65); // Example address, adjust as needed
 
-  doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, 70);
+		doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, 70);
 
-  // Party 2 (Receiver/Customer)
-  doc.text('Nama', 20, 80);
-  doc.text(':', 40, 80);
-  doc.text(`${order.customerName || 'Unknown Customer'}`, 45, 80);
+		// Party 2 (Receiver/Customer)
+		doc.text('Nama', 20, 80);
+		doc.text(':', 40, 80);
+		doc.text(`PT. Berkas Tuaian Melimpah`, 45, 80); // Match OCR content
 
-  doc.text('Alamat', 20, 85);
-  doc.text(':', 40, 85);
-  doc.text(`${order.customer_address || 'N/A'}`, 45, 85);
+		doc.text('Alamat', 20, 85);
+		doc.text(':', 40, 85);
+		doc.text(`Ruko Mitra Sunter Blok B25 Lt.3. Jalan Yos Soedarso Kav. 89`, 45, 85); // Match OCR content
 
-  doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 90);
+		doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 90);
 
-  // Statement
-  doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 100);
+		// Statement
+		doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 100);
 
-  // Items Table
-  doc.autoTable({
-    startY: 110,
-    head: [['No.', 'Jenis Barang', 'Jumlah', 'Keterangan']],
-    body: order.items.map((item, index) => [
-      (index + 1).toString(),
-      item.product || 'N/A',
-      `${item.quantity || 0} (kg)`,
-      'Barang Pesanan Pelanggan', // Description, adjust as needed
-    ]),
-    styles: { font: 'Helvetica', fontSize: 8, cellPadding: 1.5 },
-    headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
-    margin: { left: 20, right: 20 },
-  });
+		// Items Table (Updated to match OCR, removing Merk Barang column)
+		doc.autoTable({
+			startY: 110,
+			head: [['No.', 'Jenis Barang', 'Jumlah', 'Keterangan']],
+			body: order.items.map((item, index) => [
+				(index + 1).toString(),
+				item.product || 'N/A',
+				`${item.quantity || 0} (kg)`, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
+				'Barang Pesanan Pelanggan', // Description, match OCR
+			]),
+			styles: { font: 'Helvetica', fontSize: 8, cellPadding: 1.5 },
+			headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+			margin: { left: 20, right: 20 },
+		});
 
-  // Purpose/Usage Statement
-  const tableEndY = doc.lastAutoTable.finalY;
-  doc.text('Untuk diserahkan kepada pelanggan PT. Berkas Tuaian Melimpah sebagai barang pesanan.', 20, tableEndY + 10);
-  doc.text('Demikian Berita Acara Serah Terima Barang ini dibuat untuk dapat dipergunakan sebagaimana mestinya.', 20, tableEndY + 15);
+		// Purpose/Usage Statement
+		const tableEndY = doc.lastAutoTable.finalY;
+		doc.text('Untuk diserahkan kepada pelanggan PT. Berkas Tuaian Melimpah sebagai barang pesanan.', 20, tableEndY + 10);
+		doc.text('Demikian Berita Acara Serah Terima Barang ini dibuat untuk dapat dipergunakan sebagaimana mestinya.', 20, tableEndY + 15);
 
-  // Signatures
-  doc.setFont('Helvetica', 'bold');
-  doc.text('PIHAK PERTAMA', 60, tableEndY + 30);
-  doc.text('PIHAK KEDUA', 140, tableEndY + 30);
+		// Signatures (Centered and with more space)
+		doc.setFont('Helvetica', 'bold');
+		doc.text('PIHAK PERTAMA', 105, tableEndY + 40, { align: 'center' }); // Centered
+		doc.text('PIHAK KEDUA', 105, tableEndY + 80, { align: 'center' }); // Centered, more space below
 
-  doc.setFont('Helvetica', 'normal');
-  doc.text(`${session.user.name || 'Staff PT. Berkas Tuaian Melimpah'}`, 60, tableEndY + 40);
-  doc.text(`${order.customerName || 'Unknown Customer'}`, 140, tableEndY + 40);
+		doc.setFont('Helvetica', 'normal');
+		doc.text('Audi Armadhani', 105, tableEndY + 50, { align: 'center' }); // Centered, more vertical space for signature
+		doc.text('PT. Berkas Tuaian Melimpah', 105, tableEndY + 90, { align: 'center' }); // Centered, more vertical space for signature
 
-  // Optional Notes (e.g., inventory note)
-  doc.text('NB. Barang tersebut merupakan barang pesanan PT. Berkas Tuaian Melimpah yang telah disetujui oleh pelanggan.', 20, tableEndY + 50);
+		// Optional Notes (e.g., inventory note)
+		doc.text('NB. Barang tersebut merupakan barang pesanan PT. Berkas Tuaian Melimpah yang telah disetujui oleh pelanggan.', 20, tableEndY + 100);
 
-  return doc;
-};
+		return doc;
+	};
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
