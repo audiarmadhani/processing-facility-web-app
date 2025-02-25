@@ -15,6 +15,7 @@ import {
   Menu,
   MenuItem,
   Divider,
+  Grid,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -22,6 +23,7 @@ import { darken, lighten, styled } from '@mui/material/styles';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 const getBackgroundColor = (color, theme, coefficient) => ({
   backgroundColor: darken(color, coefficient),
@@ -475,17 +477,15 @@ const OrderProcessing = () => {
       renderCell: (params) => (
         <Box
           sx={{
-            padding: '4px 12px',
+            minWidth: 90,
+            padding: '4px 16px',
             borderRadius: '16px', // Pill shape
             border: '2px solid',
             borderColor: params.value === 'Pending' ? '#ffeb3b' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#f44336' : '#e0e0e0', // Yellow, Green, Red, or default gray border
             backgroundColor: 'transparent', // Transparent background for outline effect
             color: params.value === 'Pending' ? '#000' : params.value === 'Processing' ? '#fff' : params.value === 'Rejected' ? '#fff' : '#000', // Black for Pending, White for Processing/Rejected
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             fontSize: '0.875rem',
-            fontWeight: '500',
+            textTransform: 'none',
           }}
         >
           {params.value}
@@ -493,44 +493,45 @@ const OrderProcessing = () => {
       ),
     },
     { 
-      field: 'actions', 
-      headerName: 'Actions', 
-      width: 120, 
-      sortable: false, 
-      renderCell: (params) => (
-        <div>
-          <Button
-            variant="outlined"
-            size="small"
-            color="primary"
-            aria-controls={`actions-menu-${params.row.order_id}`}
-            aria-haspopup="true"
-            onClick={(event) => handleActionsClick(event, params.row.order_id)}
-            sx={{
-              minWidth: 90,
-              borderRadius: '16px', // Pill shape
-              padding: '4px 16px',
-              fontSize: '0.875rem',
-              textTransform: 'none',
-              '&:hover': {
-                borderColor: theme => theme.palette.primary.main,
-                backgroundColor: 'rgba(0, 0, 255, 0.1)', // Light blue background on hover
-              },
-            }}
-          >
-            Actions
-          </Button>
-          <Menu
-            id={`actions-menu-${params.row.order_id}`}
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
-            onClose={handleActionsClose}
-          >
-            <MenuItem onClick={handleProcess}>Process Order</MenuItem>
-            <MenuItem onClick={handleReject}>Reject Order</MenuItem>
-          </Menu>
-        </div>
-      ),
+        field: 'actions', 
+        headerName: 'Actions', 
+        width: 120, 
+        sortable: false, 
+        renderCell: (params) => (
+          <div>
+            <Button
+              variant="outlined"
+              size="small"
+              color="primary"
+              aria-controls={`actions-menu-${params.row.order_id}`}
+              aria-haspopup="true"
+              onClick={(event) => handleActionsClick(event, params.row.order_id)}
+              sx={{
+                minWidth: 90,
+                borderRadius: '16px', // Pill shape
+                padding: '4px 16px',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  borderColor: theme => theme.palette.primary.main,
+                  backgroundColor: 'rgba(0, 0, 255, 0.1)', // Light blue background on hover
+                },
+                gap: 4, // Space between text and icon
+              }}
+            >
+              Actions
+              <KeyboardArrowDownIcon fontSize="small" />
+            </Button>
+            <Menu
+              id={`actions-menu-${params.row.order_id}`}
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
+              onClose={handleActionsClose}
+            >
+              <MenuItem onClick={handleProcess}>Process Order</MenuItem>
+              <MenuItem onClick={handleReject}>Reject Order</MenuItem>
+            </Menu>
+          </div>
+        ),
     },
     { 
       field: 'details', 
@@ -584,11 +585,11 @@ const OrderProcessing = () => {
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom>Order Processing</Typography>
-      {loading && (
+      {/* {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
-      )}
+      )} */}
       <Card variant="outlined">
         <CardContent>
           <StyledDataGrid
