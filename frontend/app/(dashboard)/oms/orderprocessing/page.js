@@ -476,28 +476,29 @@ const OrderProcessing = () => {
         sortable: true,
         renderCell: (params) => (
           <Button
-            variant="contained" // Use outlined variant for a visible border, keeping it unclickable
+            variant="contained" // Use contained variant for a filled button
             disabled // Ensures the button is unclickable
             sx={{
               minWidth: 100,
               padding: '4px 16px',
               borderRadius: '16px', // Pill shape
-              border: '2px solid',
-              borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Very light colors for each status (light pink for Pending, light green for Processing, light red for Rejected, light gray for default)
-            //   backgroundColor: 'transparent', // Transparent background for outline effect
-              color: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Match border colors for text (light pink, light green, light red, light gray)
+              backgroundColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Very light colors for background (light pink for Pending, light green for Processing, light red for Rejected, light gray for default)
+              color: '#000', // Black text for better contrast against light backgrounds
               fontSize: '0.875rem',
               textTransform: 'none',
+              display: 'flex',
+              flexDirection: 'column', // Stack content vertically
+              justifyContent: 'flex-start', // Align text to the top
+              alignItems: 'center',
               '&:hover': {
-                // backgroundColor: 'transparent', // Prevent hover background change
-                borderColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Maintain matching border color on hover
+                backgroundColor: params.value === 'Pending' ? '#fff5f5' : params.value === 'Processing' ? '#f0fff0' : params.value === 'Rejected' ? '#fff0f0' : '#f5f5f5', // Maintain background color on hover
               },
             }}
           >
             {params.value}
           </Button>
         ),
-    },
+      },
     { 
         field: 'actions', 
         headerName: 'Actions', 
