@@ -11,8 +11,6 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  Modal,
-  Paper,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -27,7 +25,6 @@ const OrderProcessing = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [openSuccessModal, setOpenSuccessModal] = useState(false);
   const [pdfUrls, setPdfUrls] = useState([]); // Store Google Drive URLs for downloaded PDFs
 
   // Fetch orders with enhanced error handling and logging
@@ -56,7 +53,7 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
-  // Handle order processing with a single update to "Processing" before upload
+  // Handle order processing with a single update to "Processing" before upload, auto-download after
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
@@ -144,17 +141,17 @@ const OrderProcessing = () => {
         uploadDocument(doBlob, 'DO', `DO_${orderId}.pdf`),
       ]);
 
-      setPdfUrls(urls); // Store URLs for download links
+      setPdfUrls(urls); // Store URLs for automatic download
 
-      // No update to "Processed" – status remains "Processing" after upload
+      // Automatically download PDFs without modal
+      handleDownloadPdfs();
 
       // Update the orders state safely with the current "Processing" status
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
 
       setSelectedOrder(order);
 
-      setSnackbar({ open: true, message: 'Documents generated, uploaded, and ready for download successfully', severity: 'success' });
-      setOpenSuccessModal(true);
+      setSnackbar({ open: true, message: 'Documents generated, uploaded, and downloaded successfully', severity: 'success' });
     } catch (error) {
       console.error('Error processing order:', error);
       setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
@@ -164,7 +161,7 @@ const OrderProcessing = () => {
     }
   };
 
-  // Handle downloading all PDFs
+  // Handle downloading all PDFs (now called automatically after upload)
   const handleDownloadPdfs = () => {
     if (pdfUrls.length === 0) {
       setSnackbar({ open: true, message: 'No PDFs available for download', severity: 'warning' });
@@ -179,7 +176,7 @@ const OrderProcessing = () => {
       link.click();
       document.body.removeChild(link);
     });
-    setSnackbar({ open: true, message: 'Downloading PDFs...', severity: 'success' });
+    // No Snackbar message here, as it's handled in handleProcessOrder
   };
 
   // Generate SPK PDF
@@ -330,11 +327,6 @@ const OrderProcessing = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleCloseSuccessModal = () => {
-    setOpenSuccessModal(false);
-    setPdfUrls([]); // Clear PDF URLs after closing modal
-  };
-
   const columns = [
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
@@ -421,49 +413,7 @@ const OrderProcessing = () => {
         </CardContent>
       </Card>
 
-      {/* Success Modal with Download Option */}
-      <Modal
-        open={openSuccessModal}
-        onClose={handleCloseSuccessModal}
-        aria-labelledby="success-modal-title"
-        aria-describedby="success-modal-description"
-      >
-        <Paper>
-          <Typography 
-            id="success-modal-title" 
-            variant="h5" 
-            gutterBottom
-          >
-            Success
-          </Typography>
-          <Typography 
-            id="success-modal-description" 
-            gutterBottom
-          >
-            SPK, SPM, and DO documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated and uploaded to Google Drive. Download them below:
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            {pdfUrls.map((url, index) => (
-              <Button 
-                key={index} 
-                variant="contained" 
-                href={url}
-                download={`Document_${index + 1}_${selectedOrder?.order_id || 'N/A'}_${new Date().toISOString().split('T')[0]}.pdf`}
-              >
-                Download Document {index + 1}
-              </Button>
-            ))}
-            <Button 
-              variant="contained" 
-              onClick={handleCloseSuccessModal}
-            >
-              Close
-            </Button>
-          </Box>
-        </Paper>
-      </Modal>
-
-      {/* Snackbar for notifications */}
+      {/* Snackbar for notifications (no modal) */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
