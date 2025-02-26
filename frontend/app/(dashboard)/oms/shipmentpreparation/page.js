@@ -294,11 +294,12 @@ const ShipmentPreparation = () => {
 		// Signatures
 		doc.setFont('Helvetica', 'bold');
 		doc.text('PIHAK PERTAMA', 30, tableEndY + 30);
-		doc.text('PIHAK KEDUA', 100, tableEndY + 30);
+		doc.text('PIHAK KEDUA', 120, tableEndY + 30);
 	
 		doc.setFont('Helvetica', 'normal');
-		doc.text(`${session.user.name || 'Staff PT. Berkas Tuaian Melimpah'}`, 30, tableEndY + 60);
-		doc.text(`${order.customerName || 'Unknown Customer'}`, 100, tableEndY + 60);
+		doc.text(`(..................)`, 30, tableEndY + 60);
+		doc.text(`Manager`, 40, tableEndY + 65);
+		doc.text(`${order.customerName || 'Unknown Customer'}`, 120, tableEndY + 60);
 
 		// Optional Notes (e.g., inventory note)
 		doc.text('NB. Barang tersebut merupakan barang pesanan PT. Berkas Tuaian Melimpah yang telah disetujui oleh pelanggan.', 20, tableEndY + 140);
@@ -399,12 +400,6 @@ const ShipmentPreparation = () => {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>Shipment Preparation</Typography>
-      {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
-      )}
       <Card variant="outlined">
         <CardContent>
 					<StyledDataGrid
