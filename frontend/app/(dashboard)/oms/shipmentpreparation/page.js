@@ -76,7 +76,6 @@ const ShipmentPreparation = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [openSuccessModal, setOpenSuccessModal] = useState(false); // Optional modal for confirmation
 
   // Fetch orders with enhanced error handling and logging
   useEffect(() => {
@@ -163,7 +162,6 @@ const ShipmentPreparation = () => {
       setSelectedOrder(order);
 
       setSnackbar({ open: true, message: 'Shipment documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
-      setOpenSuccessModal(true); // Optionally show a modal for confirmation
     } catch (error) {
       console.error('Error generating shipment documents:', error);
       setSnackbar({ open: true, message: `Error generating shipment documents: ${error.message}`, severity: 'error' });
@@ -282,7 +280,7 @@ const ShipmentPreparation = () => {
 				`${item.quantity || 0} (kg)`, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
 				'Barang Pesanan Pelanggan', // Description, match OCR
 			]),
-			styles: { font: 'Helvetica', fontSize: 12, cellPadding: 1.5 },
+			styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
 			headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
 			margin: { left: 20, right: 20 },
 		});
@@ -307,11 +305,6 @@ const ShipmentPreparation = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
-  };
-
-  const handleCloseSuccessModal = () => {
-    setOpenSuccessModal(false);
-    setSelectedOrder(null);
   };
 
   const columns = [
@@ -423,26 +416,6 @@ const ShipmentPreparation = () => {
 					/>
         </CardContent>
       </Card>
-
-      {/* Success Modal (optional) */}
-      <Modal
-        open={openSuccessModal}
-        onClose={handleCloseSuccessModal}
-        aria-labelledby="success-modal-title"
-        aria-describedby="success-modal-description"
-      >
-        <Paper sx={{ p: 3, maxWidth: 400, margin: 'auto', mt: 5 }}>
-          <Typography id="success-modal-title" variant="h5" gutterBottom>
-            Success
-          </Typography>
-          <Typography id="success-modal-description" gutterBottom>
-            Shipment documents for Order ID {selectedOrder?.order_id || 'N/A'} have been generated, uploaded to Google Drive, and saved locally.
-          </Typography>
-          <Button variant="contained" onClick={handleCloseSuccessModal} sx={{ mt: 2 }}>
-            Close
-          </Button>
-        </Paper>
-      </Modal>
 
       {/* Snackbar for notifications */}
       <Snackbar
