@@ -18,6 +18,7 @@ import { useSession } from 'next-auth/react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
+import 'dayjs/locale/id'
 import { darken, lighten, styled } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
@@ -237,10 +238,10 @@ const ShipmentPreparation = () => {
 		doc.setFontSize(12);
 
 		// Header: Company Name and Document Title
-		doc.text('PT. BERKAS TUAIAN MELIMPAH', 105, 22, { align: 'center' });
+		doc.text('PT. BERKAS TUAIAN MELIMPAH', 105, 24, { align: 'center' });
 		doc.text('BERITA ACARA SERAH TERIMA (BAST)', 105, 30, { align: 'center' });
 		doc.setFontSize(10);
-		doc.text(`Nomor: BAST/${order.order_id}/${dayjs().format('YYYY')}`, 105, 40, { align: 'center' });
+		doc.text(`Nomor: BAST/${order.order_id}/${dayjs().format('YYYY')}`, 105, 37, { align: 'center' });
 
 		// Document Information
 		doc.setFont('Helvetica', 'normal');
@@ -281,7 +282,7 @@ const ShipmentPreparation = () => {
 				`${item.quantity || 0} (kg)`, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
 				'Barang Pesanan Pelanggan', // Description, match OCR
 			]),
-			styles: { font: 'Helvetica', fontSize: 8, cellPadding: 1.5 },
+			styles: { font: 'Helvetica', fontSize: 12, cellPadding: 1.5 },
 			headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
 			margin: { left: 20, right: 20 },
 		});
@@ -297,12 +298,9 @@ const ShipmentPreparation = () => {
 		doc.text('PIHAK KEDUA', 120, tableEndY + 30);
 	
 		doc.setFont('Helvetica', 'normal');
-		doc.text(`(..................)`, 30, tableEndY + 60);
+		doc.text(`(....................................)`, 30, tableEndY + 60);
 		doc.text(`Manager`, 40, tableEndY + 65);
 		doc.text(`${order.customerName || 'Unknown Customer'}`, 120, tableEndY + 60);
-
-		// Optional Notes (e.g., inventory note)
-		doc.text('NB. Barang tersebut merupakan barang pesanan PT. Berkas Tuaian Melimpah yang telah disetujui oleh pelanggan.', 20, tableEndY + 140);
 
 		return doc;
 	};
