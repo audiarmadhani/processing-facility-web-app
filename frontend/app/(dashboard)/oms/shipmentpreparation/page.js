@@ -172,52 +172,106 @@ const ShipmentPreparation = () => {
   };
 
   // Generate Surat Jalan PDF
-  const generateSuratJalanPDF = (order) => {
-    if (!order || typeof order !== 'object') {
-      throw new Error('Invalid order object for Surat Jalan PDF generation');
-    }
+	const generateSuratJalanPDF = (order) => {
+		if (!order || typeof order !== 'object') {
+			throw new Error('Invalid order object for Surat Jalan PDF generation');
+		}
 
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: [210, 297], // A4 size
-    });
+		const doc = new jsPDF({
+			orientation: 'portrait',
+			unit: 'mm',
+			format: [210, 297], // A4 size
+		});
 
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('Surat Jalan', 105, 20, { align: 'center' });
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(12);
+		// Set fonts and sizes
+		doc.setFont('Helvetica', 'bold');
+		doc.setFontSize(12);
 
-    doc.text(`Order ID: ${order.order_id}`, 20, 40);
-    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
-    doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 70);
-    doc.text(`Status: ${order.status || 'Processing'}`, 20, 80); // Show current status
+		// Header: Left-aligned company details, Right-aligned title on the same line
+		doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
+		doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
+		doc.text('Telp. 085175027797', 20, 30);
+		doc.setFontSize(16); // Larger font for "SURAT JALAN"
+		doc.text('SURAT JALAN', 190, 20, { align: 'right' });
+		doc.setFontSize(12); // Reset font size
 
-    if (!order.items || !Array.isArray(order.items)) {
-      doc.text('No items available', 20, 90);
-    } else {
-      doc.autoTable({
-        startY: 90,
-        head: [['Product', 'Quantity (kg)', 'Delivery Date']],
-        body: order.items.map(item => [
-          item.product || 'N/A',
-          item.quantity || 0,
-          dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
-        ]),
-        styles: { font: 'Helvetica', fontSize: 10, cellPadding: 2 },
-        headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
-        margin: { left: 20, right: 20 },
-      });
-    }
+		// Divider
+		doc.line(20, 35, 190, 35); // Horizontal line
 
-    doc.line(20, doc.lastAutoTable?.finalY + 10 || 110, 190, doc.lastAutoTable?.finalY + 10 || 110);
-    doc.text('Prepared by:', 20, doc.lastAutoTable?.finalY + 20 || 120);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 130);
+		// Customer and Document Details: Left-aligned customer, Right-aligned details on the same line
+		doc.setFont('Helvetica', 'normal');
+		doc.text('Kepada Yth.', 20, 45);
+		doc.text(`${order.customerName || 'Unknown Customer'}`, 45, 45);
+		doc.text('Alamat:', 20, 50);
 
-    return doc;
-  };
+		// Truncate and split address into multiple lines if too long
+		const address = order.customer_address || 'N/A';
+		const maxWidth = 145; // Available width for address (from x: 45 to x: 190)
+		const fontSize = 10; // Current font size
+		const lines = doc.splitTextToSize(address, maxWidth / (fontSize / 2)); // Split text to fit width, approximate scaling
+		lines.forEach((line, index) => {
+			doc.text(line, 45, 50 + (index * 5)); // 5mm line height, starting at y: 50
+		});
+
+		doc.text('Telp:', 20, 50 + (lines.length * 5));
+		doc.text('N/A', 45, 50 + (lines.length * 5)); // Placeholder, replace with order.customer_phone if available
+
+		// Right-aligned document details on the same line as "Kepada Yth."
+		const expedition = order.shippingMethod === 'Self' ? 'Warehouse arranged' : 'Customer arranged';
+		doc.text(`No. Surat Jalan: SJ/${order.order_id}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
+		doc.text(`Tanggal: ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
+		doc.text(`Ekspedisi: ${expedition}`, 190, 55, { align: 'right' });
+
+		// Items Table
+		let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
+		if (tableStartY < 65) tableStartY = 65; // Ensure table doesn’t start too early
+
+		doc.autoTable({
+			startY: tableStartY,
+			head: [['Nama Barang', 'Qty', 'Berat Jml (kg)', 'Keterangan']],
+			body: order.items.map((item, index) => [
+				item.product || 'N/A',
+				item.quantity || 0,
+				item.quantity || 0, // Assuming weight equals quantity in kg for simplicity, adjust if needed
+				'Barang Pesanan Pelanggan', // Description
+			]),
+			styles: { font: 'Helvetica', fontSize: 8, cellPadding: 1.5 },
+			headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+			margin: { left: 20, right: 20 },
+		});
+
+		// Totals and Notes
+		const tableEndY = doc.lastAutoTable.finalY;
+		doc.text(`Total Berat: ${order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} kg`, 20, tableEndY + 10);
+		doc.text('Catatan:', 20, tableEndY + 15);
+		doc.text('1. Surat Jalan ini merupakan bukti resmi pengiriman barang.', 20, tableEndY + 20);
+		doc.text('2. Surat Jalan harus dibawa dan ditunjukkan pada saat pengiriman barang.', 20, tableEndY + 25);
+		doc.text('3. Surat Jalan ini akan digunakan sebagai bukti pengiriman barang sesuai invoice.', 20, tableEndY + 30);
+		doc.text('4. Barang sudah diterima dalam keadaan baik dan cukup oleh:', 20, tableEndY + 35);
+	
+		// Signatures (Three lines, distributed horizontally on one line)
+		const signatureY = tableEndY + 55;
+		const signatureWidth = 170 / 3; // Divide 170mm (page width minus margins) by 3 for equal spacing
+		const positions = [
+			20 + (signatureWidth / 2), // Center of first third for Penerima/Pembeli
+			20 + signatureWidth + (signatureWidth / 2), // Center of second third for Bagian Pengiriman
+			20 + (2 * signatureWidth) + (signatureWidth / 2), // Center of third third for Petugas Gudang
+		];
+	
+		doc.line(positions[0] - 37.5, signatureY, positions[0] + 37.5, signatureY); // Line for Penerima/Pembeli (75mm wide)
+		doc.text('Penerima/Pembeli', positions[0], signatureY + 5, { align: 'center' });
+		doc.text(`${order.customerName || 'Unknown Customer'}`, positions[0], signatureY + 15, { align: 'center' });
+	
+		doc.line(positions[1] - 37.5, signatureY, positions[1] + 37.5, signatureY); // Line for Bagian Pengiriman (75mm wide)
+		doc.text('Bagian Pengiriman', positions[1], signatureY + 5, { align: 'center' });
+		doc.text(`${session.user.name || 'Staff PT. Berkas Tuaian Melimpah'}`, positions[1], signatureY + 15, { align: 'center' });
+	
+		doc.line(positions[2] - 37.5, signatureY, positions[2] + 37.5, signatureY); // Line for Petugas Gudang (75mm wide)
+		doc.text('Petugas Gudang', positions[2], signatureY + 5, { align: 'center' });
+		doc.text(`${order.warehouse_staff || 'N/A'}`, positions[2], signatureY + 15, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
+	
+		return doc;
+	};
 
   // Generate BAST PDF
 	const generateBASTPDF = (order) => {
