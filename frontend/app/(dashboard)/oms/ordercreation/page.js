@@ -255,7 +255,7 @@ const OrderCreation = () => {
         price: formData.price || null, // Subtotal
         tax_percentage: formData.tax_percentage || null,
       }));
-      orderListFormData.append('file', orderListBlob, `OrderList-${orderId}.pdf`); // Add file (PDF blob)
+      orderListFormData.append('file', orderListBlob, `OrderList-${String(orderId).padStart(4, '0')}.pdf`); // Add file (PDF blob)
 
       const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
         method: 'POST',
@@ -264,7 +264,7 @@ const OrderCreation = () => {
 
       if (!docRes.ok) throw new Error('Failed to upload Order List');
 
-      orderListDoc.save(`OrderList-${orderId}.pdf`);
+      orderListDoc.save(`OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
       setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
       setFormData({ 
@@ -312,7 +312,7 @@ const OrderCreation = () => {
     addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
     addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
     doc.line(14, 28, doc.internal.pageSize.getWidth() - 14, 28);
-    addText(`Order ID: ${orderId}`, 14, 35, { bold: true });
+    addText(`Order ID: ${String(orderId).padStart(4, '0')}`, 14, 35, { bold: true });
 
     let yOffset = 45;
     const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2;

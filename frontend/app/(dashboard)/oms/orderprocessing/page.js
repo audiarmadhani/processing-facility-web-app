@@ -167,9 +167,9 @@ const OrderProcessing = () => {
       const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
 
       // Save PDFs locally using jsPDF.save()
-      spkDoc.save(`SPK_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
-      spmDoc.save(`SPM_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
-      doDoc.save(`DO_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+      spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
       // Upload each document to Google Drive
       const uploadDocument = async (doc, type, filename) => {
@@ -190,9 +190,9 @@ const OrderProcessing = () => {
 
       // Upload PDFs to Google Drive (without storing URLs for download)
       await Promise.all([
-        uploadDocument(spkDoc, 'SPK', `SPK_${order.order_id}.pdf`),
-        uploadDocument(spmDoc, 'SPM', `SPM_${order.order_id}.pdf`),
-        uploadDocument(doDoc, 'DO', `DO_${order.order_id}.pdf`),
+        uploadDocument(spkDoc, 'SPK', `SPK_${String(order.order_id).padStart(4, '0')}.pdf`),
+        uploadDocument(spmDoc, 'SPM', `SPM_${String(order.order_id).padStart(4, '0')}.pdf`),
+        uploadDocument(doDoc, 'DO', `DO_${String(order.order_id).padStart(4, '0')}.pdf`),
       ]);
 
       // Update the orders state safely with the current "Processing" status
@@ -259,9 +259,9 @@ const OrderProcessing = () => {
       });
 
       // Save PDFs locally using jsPDF.save()
-      spkDoc.save(`SPK_${selectedOrder.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
-      spmDoc.save(`SPM_${selectedOrder.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
-      doDoc.save(`DO_${selectedOrder.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+      spkDoc.save(`SPK_${String(selectedOrder.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      spmDoc.save(`SPM_${String(selectedOrder.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doDoc.save(`DO_${String(selectedOrder.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
       setSnackbar({ open: true, message: 'Documents regenerated and saved locally successfully', severity: 'success' });
     } catch (error) {
@@ -336,7 +336,7 @@ const OrderProcessing = () => {
     doc.setFont('Arial', 'normal');
     doc.setFontSize(12);
 
-    doc.text(`Order ID: ${order.order_id}`, 20, 40);
+    doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
     doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 70);
@@ -384,7 +384,7 @@ const OrderProcessing = () => {
     doc.setFont('Arial', 'normal');
     doc.setFontSize(12);
 
-    doc.text(`Order ID: ${order.order_id}`, 20, 40);
+    doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
     doc.text(`Status: ${order.status || 'Pending'}`, 20, 70); // Show current status in SPM
@@ -431,7 +431,7 @@ const OrderProcessing = () => {
     doc.setFont('Arial', 'normal');
     doc.setFontSize(12);
 
-    doc.text(`Order ID: ${order.order_id}`, 20, 40);
+    doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Address: ${order.customer_address || 'N/A'}`, 20, 60);
     doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 70);

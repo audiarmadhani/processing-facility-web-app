@@ -218,7 +218,7 @@ const ShipmentPreparation = () => {
 
 		// Right-aligned document details on the same line as "Kepada Yth."
 		const expedition = order.shippingMethod === 'Self' ? 'Warehouse arranged' : 'Customer arranged';
-		doc.text(`No. Surat Jalan: SJ/${order.order_id}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
+		doc.text(`No. Surat Jalan: SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
 		doc.text(`Tanggal: ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
 		doc.text(`Ekspedisi: ${expedition}`, 190, 55, { align: 'right' });
 
@@ -295,7 +295,7 @@ const ShipmentPreparation = () => {
 		doc.text('PT. BERKAS TUAIAN MELIMPAH', 105, 24, { align: 'center' });
 		doc.text('BERITA ACARA SERAH TERIMA (BAST)', 105, 30, { align: 'center' });
 		doc.setFontSize(10);
-		doc.text(`Nomor: BAST/${order.order_id}/${dayjs().format('YYYY')}`, 105, 37, { align: 'center' });
+		doc.text(`Nomor: BAST/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 105, 37, { align: 'center' });
 
 		// Document Information
 		doc.setFont('Helvetica', 'normal');
