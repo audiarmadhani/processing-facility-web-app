@@ -241,6 +241,7 @@ const ShipmentPreparation = () => {
 		});
 
 		// Totals and Notes
+		doc.setFontSize(8);
 		const tableEndY = doc.lastAutoTable.finalY;
 		doc.text(`Total Berat: ${order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} kg`, 20, tableEndY + 10);
 		doc.text('Catatan:', 20, tableEndY + 20);
@@ -250,6 +251,7 @@ const ShipmentPreparation = () => {
 		doc.text('4. Barang sudah diterima dalam keadaan baik dan cukup oleh:', 20, tableEndY + 40);
 	
 		// Signatures (Three lines, distributed horizontally on one line)
+		doc.setFontSize(10);
 		const signatureY = tableEndY + 80;
 		const signatureWidth = 145 / 3; // Divide 170mm (page width minus margins) by 3 for equal spacing
 		const positions = [
@@ -306,18 +308,18 @@ const ShipmentPreparation = () => {
 
 		doc.text('Alamat', 20, 65);
 		doc.text(':', 40, 65);
-		doc.text('Jl. Lintas Gunungtua, Padangsidimpuan, Sumatera Utara', 45, 65); // Example address, adjust as needed
+		doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 45, 65); // Example address, adjust as needed
 
 		doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, 70);
 
 		// Party 2 (Receiver/Customer)
 		doc.text('Nama', 20, 80);
 		doc.text(':', 40, 80);
-		doc.text(`PT. Berkas Tuaian Melimpah`, 45, 80); // Match OCR content
+		doc.text(`${order.customerName || 'Unknown Customer'}`, 45, 80);
 
 		doc.text('Alamat', 20, 85);
 		doc.text(':', 40, 85);
-		doc.text(`Ruko Mitra Sunter Blok B25 Lt.3. Jalan Yos Soedarso Kav. 89`, 45, 85); // Match OCR content
+		doc.text(`${order.customer_address || 'Unknown Customer'}`, 45, 85);
 
 		doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 90);
 
@@ -346,13 +348,13 @@ const ShipmentPreparation = () => {
 
 		// Signatures
 		doc.setFont('Helvetica', 'bold');
-		doc.text('PIHAK PERTAMA', 30, tableEndY + 30, { align: 'center' });
-		doc.text('PIHAK KEDUA', 120, tableEndY + 30, { align: 'center' });
+		doc.text('PIHAK PERTAMA', 50, tableEndY + 30, { align: 'center' });
+		doc.text('PIHAK KEDUA', 130, tableEndY + 30, { align: 'center' });
 	
 		doc.setFont('Helvetica', 'normal');
-		doc.text(`(....................................)`, 30, tableEndY + 60, { align: 'center' });
-		doc.text(`Manager`, 40, tableEndY + 65, { align: 'center' });
-		doc.text(`${order.customerName || 'Unknown Customer'}`, 120, tableEndY + 60, { align: 'center' });
+		doc.text(`(....................................)`, 50, tableEndY + 60, { align: 'center' });
+		doc.text(`Manager`, 50, tableEndY + 65, { align: 'center' });
+		doc.text(`${order.customerName || 'Unknown Customer'}`, 130, tableEndY + 60, { align: 'center' });
 
 		return doc;
 	};
