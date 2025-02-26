@@ -206,7 +206,7 @@ const ShipmentPreparation = () => {
 
 		// Truncate and split address into multiple lines if too long
 		const address = order.customer_address || 'N/A';
-		const maxWidth = 170; // Available width for address (from x: 45 to x: 190)
+		const maxWidth = 200; // Available width for address (from x: 45 to x: 190)
 		const fontSize = 10; // Current font size
 		const lines = doc.splitTextToSize(address, maxWidth / (fontSize / 2)); // Split text to fit width, approximate scaling
 		lines.forEach((line, index) => {
@@ -250,25 +250,25 @@ const ShipmentPreparation = () => {
 		doc.text('4. Barang sudah diterima dalam keadaan baik dan cukup oleh:', 20, tableEndY + 40);
 	
 		// Signatures (Three lines, distributed horizontally on one line)
-		const signatureY = tableEndY + 60;
-		const signatureWidth = 120 / 3; // Divide 170mm (page width minus margins) by 3 for equal spacing
+		const signatureY = tableEndY + 80;
+		const signatureWidth = 145 / 3; // Divide 170mm (page width minus margins) by 3 for equal spacing
 		const positions = [
 			20 + (signatureWidth / 2), // Center of first third for Penerima/Pembeli
 			20 + signatureWidth + (signatureWidth / 2), // Center of second third for Bagian Pengiriman
 			20 + (2 * signatureWidth) + (signatureWidth / 2), // Center of third third for Petugas Gudang
 		];
 	
-		doc.line(positions[0] - 37.5, signatureY, positions[0] + 37.5, signatureY); // Line for Penerima/Pembeli (75mm wide)
+		doc.line(positions[0] - 30, signatureY, positions[0] + 30, signatureY); // Line for Penerima/Pembeli (75mm wide)
 		doc.text('Penerima/Pembeli', positions[0], signatureY + 5, { align: 'center' });
-		doc.text(`${order.customerName || 'Unknown Customer'}`, positions[0], signatureY + 15, { align: 'center' });
+		doc.text(`${order.customerName || 'Unknown Customer'}`, positions[0], signatureY + 10, { align: 'center' });
 	
-		doc.line(positions[1] - 37.5, signatureY, positions[1] + 37.5, signatureY); // Line for Bagian Pengiriman (75mm wide)
+		doc.line(positions[1] - 30, signatureY, positions[1] + 30, signatureY); // Line for Bagian Pengiriman (75mm wide)
 		doc.text('Bagian Pengiriman', positions[1], signatureY + 5, { align: 'center' });
-		doc.text(`${session.user.name || 'Staff PT. Berkas Tuaian Melimpah'}`, positions[1], signatureY + 15, { align: 'center' });
+		doc.text(`${session.user.name || 'Staff PT. Berkas Tuaian Melimpah'}`, positions[1], signatureY + 10, { align: 'center' });
 	
-		doc.line(positions[2] - 37.5, signatureY, positions[2] + 37.5, signatureY); // Line for Petugas Gudang (75mm wide)
+		doc.line(positions[2] - 30, signatureY, positions[2] + 30, signatureY); // Line for Petugas Gudang (75mm wide)
 		doc.text('Petugas Gudang', positions[2], signatureY + 5, { align: 'center' });
-		doc.text(`${order.warehouse_staff || 'N/A'}`, positions[2], signatureY + 15, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
+		doc.text(`${order.warehouse_staff || 'N/A'}`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
 	
 		return doc;
 	};
@@ -346,13 +346,13 @@ const ShipmentPreparation = () => {
 
 		// Signatures
 		doc.setFont('Helvetica', 'bold');
-		doc.text('PIHAK PERTAMA', 30, tableEndY + 30);
-		doc.text('PIHAK KEDUA', 120, tableEndY + 30);
+		doc.text('PIHAK PERTAMA', 30, tableEndY + 30, { align: 'center' });
+		doc.text('PIHAK KEDUA', 120, tableEndY + 30, { align: 'center' });
 	
 		doc.setFont('Helvetica', 'normal');
-		doc.text(`(....................................)`, 30, tableEndY + 60);
-		doc.text(`Manager`, 40, tableEndY + 65);
-		doc.text(`${order.customerName || 'Unknown Customer'}`, 120, tableEndY + 60);
+		doc.text(`(....................................)`, 30, tableEndY + 60, { align: 'center' });
+		doc.text(`Manager`, 40, tableEndY + 65, { align: 'center' });
+		doc.text(`${order.customerName || 'Unknown Customer'}`, 120, tableEndY + 60, { align: 'center' });
 
 		return doc;
 	};
