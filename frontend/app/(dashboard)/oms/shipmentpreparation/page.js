@@ -185,15 +185,15 @@ const ShipmentPreparation = () => {
 
 		// Set fonts and sizes
 		doc.setFont('Helvetica', 'bold');
-		doc.setFontSize(12);
+		doc.setFontSize(10);
 
 		// Header: Left-aligned company details, Right-aligned title on the same line
 		doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
 		doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
 		doc.text('Telp. 085175027797', 20, 30);
-		doc.setFontSize(16); // Larger font for "SURAT JALAN"
+		doc.setFontSize(20); // Larger font for "SURAT JALAN"
 		doc.text('SURAT JALAN', 190, 20, { align: 'right' });
-		doc.setFontSize(12); // Reset font size
+		doc.setFontSize(10); // Reset font size
 
 		// Divider
 		doc.line(20, 35, 190, 35); // Horizontal line
@@ -235,7 +235,7 @@ const ShipmentPreparation = () => {
 				item.quantity || 0, // Assuming weight equals quantity in kg for simplicity, adjust if needed
 				'Barang Pesanan Pelanggan', // Description
 			]),
-			styles: { font: 'Helvetica', fontSize: 8, cellPadding: 1.5 },
+			styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
 			headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
 			margin: { left: 20, right: 20 },
 		});
