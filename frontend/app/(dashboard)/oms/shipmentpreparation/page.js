@@ -185,7 +185,7 @@ const ShipmentPreparation = () => {
 
 		// Set fonts and sizes
 		doc.setFont('Helvetica', 'bold');
-		doc.setFontSize(10);
+		doc.setFontSize(12);
 
 		// Header: Left-aligned company details, Right-aligned title on the same line
 		doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
@@ -206,7 +206,7 @@ const ShipmentPreparation = () => {
 
 		// Truncate and split address into multiple lines if too long
 		const address = order.customer_address || 'N/A';
-		const maxWidth = 145; // Available width for address (from x: 45 to x: 190)
+		const maxWidth = 170; // Available width for address (from x: 45 to x: 190)
 		const fontSize = 10; // Current font size
 		const lines = doc.splitTextToSize(address, maxWidth / (fontSize / 2)); // Split text to fit width, approximate scaling
 		lines.forEach((line, index) => {
@@ -243,15 +243,15 @@ const ShipmentPreparation = () => {
 		// Totals and Notes
 		const tableEndY = doc.lastAutoTable.finalY;
 		doc.text(`Total Berat: ${order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} kg`, 20, tableEndY + 10);
-		doc.text('Catatan:', 20, tableEndY + 15);
-		doc.text('1. Surat Jalan ini merupakan bukti resmi pengiriman barang.', 20, tableEndY + 20);
-		doc.text('2. Surat Jalan harus dibawa dan ditunjukkan pada saat pengiriman barang.', 20, tableEndY + 25);
-		doc.text('3. Surat Jalan ini akan digunakan sebagai bukti pengiriman barang sesuai invoice.', 20, tableEndY + 30);
-		doc.text('4. Barang sudah diterima dalam keadaan baik dan cukup oleh:', 20, tableEndY + 35);
+		doc.text('Catatan:', 20, tableEndY + 20);
+		doc.text('1. Surat Jalan ini merupakan bukti resmi pengiriman barang.', 20, tableEndY + 25);
+		doc.text('2. Surat Jalan harus dibawa dan ditunjukkan pada saat pengiriman barang.', 20, tableEndY + 30);
+		doc.text('3. Surat Jalan ini akan digunakan sebagai bukti pengiriman barang sesuai invoice.', 20, tableEndY + 35);
+		doc.text('4. Barang sudah diterima dalam keadaan baik dan cukup oleh:', 20, tableEndY + 40);
 	
 		// Signatures (Three lines, distributed horizontally on one line)
-		const signatureY = tableEndY + 55;
-		const signatureWidth = 170 / 3; // Divide 170mm (page width minus margins) by 3 for equal spacing
+		const signatureY = tableEndY + 60;
+		const signatureWidth = 120 / 3; // Divide 170mm (page width minus margins) by 3 for equal spacing
 		const positions = [
 			20 + (signatureWidth / 2), // Center of first third for Penerima/Pembeli
 			20 + signatureWidth + (signatureWidth / 2), // Center of second third for Bagian Pengiriman
