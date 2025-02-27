@@ -241,10 +241,11 @@ const ShipmentPreparation = () => {
 		});
 
 		// Totals and Notes
-		doc.setFontSize(8);
+		doc.setFontSize(10);
 		const tableEndY = doc.lastAutoTable.finalY;
-		doc.text(`Total Berat: ${order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} kg`, 20, tableEndY + 10);
+		doc.text(`Total Berat: ${Math.floor(order.items.reduce((sum, item) => sum + (parseFloat(item.quantity || 0) || 0), 0)).toLocaleString('id-ID')} kg`, 20, tableEndY + 10); // Format total as integer with dots for thousands (e.g., 10.000)
 		doc.text('Catatan:', 20, tableEndY + 20);
+		doc.setFontSize(8);
 		doc.text('1. Surat Jalan ini merupakan bukti resmi pengiriman barang.', 20, tableEndY + 25);
 		doc.text('2. Surat Jalan harus dibawa dan ditunjukkan pada saat pengiriman barang.', 20, tableEndY + 30);
 		doc.text('3. Surat Jalan ini akan digunakan sebagai bukti pengiriman barang sesuai invoice.', 20, tableEndY + 35);

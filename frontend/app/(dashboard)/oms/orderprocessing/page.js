@@ -467,7 +467,7 @@ const OrderProcessing = () => {
   };
 
   const columns = [
-    { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true },
+    { field: 'order_id', headerName: 'Order ID', width: 80, sortable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
     { 
 			field: 'status', 
@@ -542,7 +542,7 @@ const OrderProcessing = () => {
     { 
       field: 'details', 
       headerName: 'Details', 
-      width: 130, 
+      width: 140, 
       sortable: false, 
       renderCell: (params) => (
         <Button
