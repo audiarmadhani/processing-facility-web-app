@@ -125,7 +125,7 @@ const ShipmentPreparation = () => {
       }
 
       // Generate Surat Jalan PDF
-      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name });
       // Generate BAST PDF
       const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
 
@@ -266,12 +266,12 @@ const ShipmentPreparation = () => {
 		doc.text(`${order.customerName || 'Unknown Customer'}`, positions[0], signatureY + 10, { align: 'center' });
 	
 		doc.line(positions[1] - 20, signatureY, positions[1] + 20, signatureY); // Line for Bagian Pengiriman (75mm wide)
-		doc.text('Bagian Pengiriman', positions[1], signatureY + 5, { align: 'center' });
-		doc.text(`${session.user.name || 'Staff PT. Berkas Tuaian Melimpah'}`, positions[1], signatureY + 10, { align: 'center' });
+		doc.text('Pengantar/Supir', positions[1], signatureY + 5, { align: 'center' });
+		doc.text(`${order.driver_name || 'Pengantar/Supir'}`, positions[1], signatureY + 10, { align: 'center' });
 	
 		doc.line(positions[2] - 20, signatureY, positions[2] + 20, signatureY); // Line for Petugas Gudang (75mm wide)
-		doc.text('Petugas Gudang', positions[2], signatureY + 5, { align: 'center' });
-		doc.text(`${order.warehouse_staff || 'N/A'}`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
+		doc.text('Manager', positions[2], signatureY + 5, { align: 'center' });
+		doc.text(`(....................................)`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
 	
 		return doc;
 	};
