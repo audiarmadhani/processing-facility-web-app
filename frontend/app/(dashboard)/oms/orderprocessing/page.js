@@ -70,7 +70,7 @@ const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
       },
     },
   },
-  '& .super-app-theme--ReadyForShipment': {
+  '& .super-app-theme--Ready for Shipment': {
     ...getBackgroundColor(theme.palette.info.main, theme, 0.7), // Blue for Ready for Shipment
     '&:hover': {
       ...getBackgroundColor(theme.palette.info.main, theme, 0.6),
@@ -82,7 +82,7 @@ const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
       },
     },
   },
-  '& .super-app-theme--InTransit': {
+  '& .super-app-theme--In Transit': {
     ...getBackgroundColor(theme.palette.secondary.main, theme, 0.7), // Purple for In Transit
     '&:hover': {
       ...getBackgroundColor(theme.palette.secondary.main, theme, 0.6),
@@ -1019,27 +1019,23 @@ const OrderProcessing = () => {
       <Typography variant="h4" gutterBottom>Order Processing</Typography>
       <Card variant="outlined">
         <CardContent>
-          <StyledDataGrid
-            rows={ordersRows}
-            columns={columns}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10, 20]}
-            loading={loading}
-            getRowId={(row) => row.order_id}
-            disableSelectionOnClick
-            slots={{ toolbar: GridToolbar }}
-            slotProps={{
-              toolbar: { showQuickFilter: true },
-            }}
-            autosizeOnMount
-            autosizeOptions={{
-              includeHeaders: true,
-              includeOutliers: true,
-              expand: true,
-            }}
-            rowHeight={45} // Increased row height to accommodate buttons
-            getRowClassName={(params) => `super-app-theme--${params.row.status}`}
-          />
+					<div style={{ height: 800, width: "100%" }}>
+						<StyledDataGrid
+							rows={ordersRows}
+							columns={columns}
+							pageSize={5}
+							rowsPerPageOptions={[5, 10, 20]}
+							loading={loading}
+							getRowId={(row) => row.order_id}
+							disableSelectionOnClick
+							slots={{ toolbar: GridToolbar }}
+							slotProps={{
+								toolbar: { showQuickFilter: true },
+							}}
+							rowHeight={45} // Increased row height to accommodate buttons
+							getRowClassName={(params) => `super-app-theme--${params.row.status}`}
+						/>
+					</div>
         </CardContent>
       </Card>
 

@@ -599,7 +599,7 @@ const OrderCreation = () => {
     { 
       field: 'details', 
       headerName: 'Details', 
-      width: 120, 
+      width: 130, 
       sortable: false, 
       renderCell: (params) => (
         <Button 
@@ -607,7 +607,7 @@ const OrderCreation = () => {
           size="small"
           onClick={() => handleOpenOrderModal(params.row)}
           sx={{ 
-            height: '20px', 
+            height: '24px', 
             minWidth: '80px', 
             padding: '0 8px', 
             fontSize: '0.75rem', 
@@ -999,77 +999,62 @@ const OrderCreation = () => {
                 Order Data
               </Typography>
               <Box sx={{ mb: 4 }}>
-                <DataGrid
-                  rows={ordersRows}
-                  columns={ordersColumns}
-                  editMode="row" // Enable row editing for CRUD
-                  rowModesModel={rowModesModel}
-                  onRowEditStart={handleRowEditStart}
-                  onRowEditStop={handleRowEditStop}
-                  onEditRowsModelChange={handleEditRowsModelChange}
-                  processRowUpdate={processRowUpdate}
-                  onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 20]}
-                  autoHeight
-                  slots={{ toolbar: GridToolbar }} // Add toolbar for sorting, filtering, export
-                  slotProps={{
-                    toolbar: { showQuickFilter: true }, // Enable search in toolbar
-                  }}
-                  autosizeOnMount
-                  autosizeOptions={{
-                    includeHeaders: true,
-                    includeOutliers: true,
-                    expand: true,
-                  }}
-                  rowHeight={27}
-                />
+								<div style={{ height: 600, width: "100%" }}>
+									<DataGrid
+										rows={ordersRows}
+										columns={ordersColumns}
+										editMode="row" // Enable row editing for CRUD
+										rowModesModel={rowModesModel}
+										onRowEditStart={handleRowEditStart}
+										onRowEditStop={handleRowEditStop}
+										onEditRowsModelChange={handleEditRowsModelChange}
+										processRowUpdate={processRowUpdate}
+										onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
+										pageSize={5}
+										rowsPerPageOptions={[5, 10, 20]}
+										slots={{ toolbar: GridToolbar }} // Add toolbar for sorting, filtering, export
+										slotProps={{
+											toolbar: { showQuickFilter: true }, // Enable search in toolbar
+										}}
+										rowHeight={30}
+									/>
+								</div>
               </Box>
               <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
                 Customer Data
               </Typography>
               <Box sx={{ mb: 4 }}>
-                <DataGrid
-                  rows={customerListRows}
-                  columns={customerListColumns}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 20]}
-                  autoHeight
-                  slots={{ toolbar: GridToolbar }} // Add toolbar
-                  slotProps={{
-                    toolbar: { showQuickFilter: true }, // Enable search
-                  }}
-                  autosizeOnMount
-                  autosizeOptions={{
-                    includeHeaders: true,
-                    includeOutliers: true,
-                    expand: true,
-                  }}
-                  rowHeight={27}
-                />
+								<div style={{ height: 600, width: "100%" }}>
+									<DataGrid
+										rows={customerListRows}
+										columns={customerListColumns}
+										pageSize={5}
+										rowsPerPageOptions={[5, 10, 20]}
+										slots={{ toolbar: GridToolbar }} // Add toolbar
+										slotProps={{
+											toolbar: { showQuickFilter: true }, // Enable search
+										}}
+										rowHeight={27}
+									/>
+								</div>
               </Box>
               <Typography variant="h5" gutterBottom>
                 Driver Data
               </Typography>
               <Box>
-                <DataGrid
-                  rows={driversRows}
-                  columns={driversColumns}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 20]}
-                  autoHeight
-                  slots={{ toolbar: GridToolbar }} // Add toolbar
-                  slotProps={{
-                    toolbar: { showQuickFilter: true }, // Enable search
-                  }}
-                  autosizeOnMount
-                  autosizeOptions={{
-                    includeHeaders: true,
-                    includeOutliers: true,
-                    expand: true,
-                  }}
-                  rowHeight={27}
-                />
+								<div style={{ height: 600, width: "100%" }}>
+									<DataGrid
+										rows={driversRows}
+										columns={driversColumns}
+										pageSize={5}
+										rowsPerPageOptions={[5, 10, 20]}
+										slots={{ toolbar: GridToolbar }} // Add toolbar
+										slotProps={{
+											toolbar: { showQuickFilter: true }, // Enable search
+										}}
+										rowHeight={27}
+									/>
+								</div>
               </Box>
             </CardContent>
           </Card>
