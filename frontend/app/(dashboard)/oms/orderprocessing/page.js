@@ -140,6 +140,7 @@ const OrderProcessing = () => {
           driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+					items: order.items
         }),
       });
 
@@ -155,7 +156,7 @@ const OrderProcessing = () => {
         customer_name: updatedProcessingOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
         status: updatedProcessingOrder.status || 'Processing', // Should be "Processing" now
         shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
-        items: updatedProcessingOrder.items || order.items || [], // Default to empty array if missing
+        items: updatedProcessingOrder.items || order.items, // Default to empty array if missing
         created_at: updatedProcessingOrder.created_at || order.created_at || null,
       };
 
