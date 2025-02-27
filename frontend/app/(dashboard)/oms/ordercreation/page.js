@@ -29,6 +29,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
 import CloseIcon from '@mui/icons-material/Close';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'; // For dropdown indicator
 
 const OrderCreation = () => {
   const { data: session, status } = useSession();
@@ -57,8 +58,8 @@ const OrderCreation = () => {
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [rowModesModel, setRowModesModel] = useState({}); // For DataGrid row editing
-  const [openOrderModal, setOpenOrderModal] = useState(false); // State for order details modal
-  const [selectedOrder, setSelectedOrder] = useState(null); // State for the selected order details
+  const [openOrderModal, setOpenOrderModal] = useState(false); // State for order details/edit modal
+  const [editOrder, setEditOrder] = useState(null); // State for the order being edited
 
   // Fetch initial data (customers, drivers, and orders)
   useEffect(() => {
@@ -428,8 +429,8 @@ const OrderCreation = () => {
           driver_id: newRow.driver_id,
           shipping_method: newRow.shipping_method,
           driver_details: newRow.driver_details ? JSON.parse(newRow.driver_details) : null,
-          price: newRow.subtotal.toString(), // Send subtotal as string to match backend expectations
-          tax_percentage: newRow.tax_percentage.toString(), // Send tax_percentage as string to match backend expectations
+          price: newRow.price.toString(), // Send price as string to match backend expectations
+          tax_percentage: newRow.tax_percentage.toString(), // Send tax_percentage as string
         }),
       });
 
@@ -444,14 +445,23 @@ const OrderCreation = () => {
     }
   };
 
-  // Handle opening the order details modal
+  // Handle opening the order details/edit modal
   const handleOpenOrderModal = async (order) => {
     setLoading(true); // Show loading state while fetching
     try {
       const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${order.order_id}`);
       if (!orderRes.ok) throw new Error('Failed to fetch order details');
       const fullOrder = await orderRes.json(); // Fetch the full order with items
-      setSelectedOrder(fullOrder); // Set the full order data, including items
+      setEditOrder({
+        order_id: fullOrder.order_id,
+        customer_id: fullOrder.customer_id,
+        driver_id: fullOrder.driver_id || '', // Default to empty if null
+        items: fullOrder.items || [{ product: '', quantity: '', price: '' }],
+        shipping_method: fullOrder.shipping_method || 'Customer',
+        driver_details: fullOrder.driver_details ? JSON.parse(fullOrder.driver_details) : { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
+        price: fullOrder.price || '0', // Subtotal in IDR as string
+        tax_percentage: fullOrder.tax_percentage || '0', // Tax percentage as string
+      });
       setOpenOrderModal(true);
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -462,39 +472,157 @@ const OrderCreation = () => {
 
   const handleCloseOrderModal = () => {
     setOpenOrderModal(false);
-    setSelectedOrder(null);
+    setEditOrder(null);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'shipping_method') {
+      setEditOrder(prev => ({
+        ...prev,
+        shipping_method: value,
+        driver_id: value === 'Self' ? '' : prev.driver_id, // Reset for Self-Arranged
+        driver_details: value === 'Self' 
+          ? { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' } 
+          : prev.driver_details // Retain for Customer-Arranged
+      }));
+    } else if (name.startsWith('driver_details.')) {
+      const field = name.split('.')[1];
+      setEditOrder(prev => ({
+        ...prev,
+        driver_details: { ...prev.driver_details, [field]: value }
+      }));
+    } else if (name === 'tax_percentage') {
+      setEditOrder(prev => ({ ...prev, [name]: value }));
+    } else {
+      setEditOrder(prev => ({ ...prev, [name]: value }));
+    }
+
+    if (name === 'customer_id' && value) {
+      const customer = customers.find(c => c.customer_id === value);
+      setSelectedCustomer(customer);
+      setShowCustomerDetails(true);
+    } else if (name === 'customer_id' && !value) {
+      setShowCustomerDetails(false);
+      setSelectedCustomer(null);
+    }
+  };
+
+  const handleEditItemChange = (index, field, value) => {
+    const newItems = [...editOrder.items];
+    newItems[index][field] = value;
+    setEditOrder(prev => ({ ...prev, items: newItems }));
+    // Recalculate subtotal (price) when item price or quantity changes
+    const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+    setEditOrder(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR as string
+  };
+
+  const addEditItem = () => {
+    setEditOrder(prev => ({ ...prev, items: [...prev.items, { product: '', quantity: '', price: '' }] }));
+  };
+
+  const removeEditItem = (index) => {
+    if (editOrder.items.length === 1) {
+      setSnackbar({ open: true, message: 'At least one item is required', severity: 'warning' });
+      return;
+    }
+    const newItems = editOrder.items.filter((_, i) => i !== index);
+    setEditOrder(prev => ({ ...prev, items: newItems }));
+    // Recalculate subtotal (price) after removal
+    const subtotal = newItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+    setEditOrder(prev => ({ ...prev, price: subtotal.toString() })); // Update subtotal in IDR as string
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editOrder.customer_id || !editOrder.items.every(item => item.product && item.quantity && item.price) || !editOrder.shipping_method) {
+      setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
+      return;
+    }
+
+    // Validate numeric fields
+    const subtotal = parseFloat(editOrder.price) || 0;
+    const taxPercentage = parseFloat(editOrder.tax_percentage) || 0;
+
+    if (isNaN(subtotal) || subtotal < 0) {
+      setSnackbar({ open: true, message: 'Invalid subtotal: must be a non-negative number', severity: 'error' });
+      return;
+    }
+    if (isNaN(taxPercentage) || taxPercentage < 0 || taxPercentage > 100) {
+      setSnackbar({ open: true, message: 'Invalid tax percentage: must be a number between 0 and 100', severity: 'error' });
+      return;
+    }
+
+    // Validate items
+    for (const item of editOrder.items) {
+      const itemPrice = parseFloat(item.price) || 0;
+      const itemQuantity = parseFloat(item.quantity) || 0;
+
+      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity < 0) {
+        setSnackbar({ open: true, message: 'Invalid item price or quantity: must be non-negative numbers', severity: 'error' });
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const orderData = new FormData();
+      orderData.append('customer_id', editOrder.customer_id);
+      orderData.append('driver_id', editOrder.shipping_method === 'Self' ? editOrder.driver_id : ''); // Only for Self-Arranged
+      orderData.append('shipping_method', editOrder.shipping_method);
+      orderData.append('driver_details', JSON.stringify(editOrder.driver_details)); // For both methods
+      orderData.append('price', editOrder.price || '0'); // Subtotal in IDR as string
+      orderData.append('tax_percentage', editOrder.tax_percentage || '0'); // Tax percentage as string
+      orderData.append('items', JSON.stringify(editOrder.items)); // Add items to the FormData as JSON string
+
+      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${editOrder.order_id}`, {
+        method: 'PUT',
+        body: orderData,
+      });
+
+      if (!orderRes.ok) throw new Error('Failed to update order');
+      const updatedOrder = await orderRes.json();
+
+      setOrders(orders.map(order => order.order_id === editOrder.order_id ? updatedOrder : order));
+      setSnackbar({ open: true, message: 'Order updated successfully', severity: 'success' });
+      handleCloseOrderModal();
+      setRefreshCounter(prev => prev + 1); // Refresh data after update
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // DataGrid columns and rows
   const ordersColumns = [
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true, editable: true },
-		{ 
-			field: 'details', 
-			headerName: 'Details', 
-			width: 120, 
-			sortable: false, 
-			renderCell: (params) => (
-				<Button 
-					variant="outlined" 
-					size="small"
-					onClick={() => handleOpenOrderModal(params.row)}
-					sx={{ 
-						height: '20px', 
-						minWidth: '80px', 
-						padding: '0 8px', 
-						fontSize: '0.75rem', 
-						display: 'flex', 
-						alignItems: 'center', 
-						justifyContent: 'center', 
-					}}
-				>
-					View Details
-				</Button>
-			)
-		},
+    { 
+      field: 'details', 
+      headerName: 'Details', 
+      width: 120, 
+      sortable: false, 
+      renderCell: (params) => (
+        <Button 
+          variant="outlined" 
+          size="small"
+          onClick={() => handleOpenOrderModal(params.row)}
+          sx={{ 
+            height: '20px', 
+            minWidth: '80px', 
+            padding: '0 8px', 
+            fontSize: '0.75rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+          }}
+        >
+          View Details
+        </Button>
+      )
+    },
     { field: 'customer_name', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
-    { field: 'subtotal', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
+    { field: 'price', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
     { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false },
     { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false },
@@ -513,10 +641,10 @@ const OrderCreation = () => {
     order_id: order?.order_id || '-',
     customer_name: order?.customer_name || '-',
     shipping_method: order?.shipping_method || '-',
-    subtotal: order?.price || 0, // Use numeric price directly
-    tax_percentage: order?.tax_percentage || 0, // Use numeric tax_percentage directly
-    tax: order?.tax || 0, // Use tax calculated by backend
-    grand_total: order?.grand_total || 0, // Use grand_total calculated by backend
+    price: order?.price || '0', // Use price as string for consistency
+    tax_percentage: order?.tax_percentage || '0', // Use tax_percentage as string
+    tax: order?.tax || '0', // Use tax calculated by backend
+    grand_total: order?.grand_total || '0', // Use grand_total calculated by backend
     created_at: order?.created_at || new Date().toISOString().split('T')[0], // Format as DATE
     status: order?.status || 'Pending',
     address: order?.customer_address || '-', // Customer address from backend
@@ -573,9 +701,6 @@ const OrderCreation = () => {
       <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
-            {/* <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-              Order Creation Form
-            </Typography> */}
             {/* Order Details (Customer to Driver Details) */}
             <Box>
               <FormControl fullWidth sx={{ mb: 2 }}>
@@ -957,7 +1082,7 @@ const OrderCreation = () => {
       <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
       <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
-      {/* Order Details Modal */}
+      {/* Order Details/Edit Modal */}
       <Modal
         open={openOrderModal}
         onClose={handleCloseOrderModal}
@@ -975,7 +1100,7 @@ const OrderCreation = () => {
         }}>
           {loading ? (
             <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
-          ) : selectedOrder ? (
+          ) : editOrder ? (
             <Box>
               <Typography 
                 variant="h5" 
@@ -987,7 +1112,7 @@ const OrderCreation = () => {
                   mb: 2,
                 }}
               >
-                Order Details - Order ID: {selectedOrder.order_id || 'N/A'}
+                Edit Order - Order ID: {editOrder.order_id || 'N/A'}
               </Typography>
 
               {/* Header Information */}
@@ -1013,122 +1138,303 @@ const OrderCreation = () => {
                 <Divider sx={{ my: 1 }} />
               </Box>
 
-              {/* Two-Column Layout for Customer and Shipping Information */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                {/* Customer Information (Left Column) */}
-                <Grid item xs={6}>
-                  <Typography 
-                    variant="subtitle1" 
-                    sx={{ 
-                      fontWeight: 'bold', 
-                      mb: 1,
-                      borderBottom: '1px',
-                      pb: 1,
-                    }}
+              {/* Order Edit Form */}
+              <Box>
+                {/* Customer Selection */}
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Customer</InputLabel>
+                  <Select
+                    name="customer_id"
+                    value={editOrder.customer_id}
+                    onChange={handleEditInputChange}
+                    label="Customer"
                   >
-                    Customer Information
-                  </Typography>
-                  <Box sx={{ pl: 1 }}>
-                    <Typography variant="body2"><strong>Name:</strong> {selectedOrder.customer_name || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>Address:</strong> {selectedOrder.address || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>Phone:</strong> {selectedOrder.customer_phone || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>Email:</strong> {selectedOrder.customer_email || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>Country:</strong> {selectedOrder.customer_country || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>State:</strong> {selectedOrder.customer_state || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>City:</strong> {selectedOrder.customer_city || 'N/A'}</Typography>
-                    <Typography variant="body2"><strong>Zip Code:</strong> {selectedOrder.customer_zip_code || 'N/A'}</Typography>
-                  </Box>
-                </Grid>
-
-                {/* Shipping Information (Right Column) */}
-                <Grid item xs={6}>
-                  <Typography 
-                    variant="subtitle1" 
-                    sx={{ 
-                      fontWeight: 'bold', 
-                      mb: 1,
-											borderBottom: '1px',
-                      pb: 1,
-                    }}
-                  >
-                    Shipping Information
-                  </Typography>
-                  <Box sx={{ pl: 1 }}>
-                    <Typography variant="body2"><strong>Method:</strong> {selectedOrder.shipping_method || 'N/A'}</Typography>
-                    {selectedOrder.driver_id && (
-                      <>
-                        <Typography variant="body2"><strong>Driver Name:</strong> {selectedOrder.driver_name || 'N/A'}</Typography>
-                        <Typography variant="body2"><strong>Vehicle No.:</strong> {selectedOrder.driver_vehicle_number || 'N/A'}</Typography>
-                        <Typography variant="body2"><strong>Vehicle Type:</strong> {selectedOrder.driver_vehicle_type || 'N/A'}</Typography>
-                        <Typography variant="body2"><strong>Max Capacity:</strong> {selectedOrder.driver_max_capacity ? `${selectedOrder.driver_max_capacity} kg` : 'N/A'}</Typography>
-                      </>
-                    )}
-                    {selectedOrder.driver_details && (
-                      <>
-                        <Typography variant="body2"><strong>Driver Name:</strong> {JSON.parse(selectedOrder.driver_details).name || 'N/A'}</Typography>
-                        <Typography variant="body2"><strong>Vehicle No.:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_number_plate || 'N/A'}</Typography>
-                        <Typography variant="body2"><strong>Vehicle Type:</strong> {JSON.parse(selectedOrder.driver_details).vehicle_type || 'N/A'}</Typography>
-                        <Typography variant="body2"><strong>Max Capacity:</strong> {JSON.parse(selectedOrder.driver_details).max_capacity ? `${JSON.parse(selectedOrder.driver_details).max_capacity} kg` : 'N/A'}</Typography>
-                      </>
-                    )}
-                  </Box>
-                </Grid>
-              </Grid>
-
-              {/* Items Ordered Section */}
-              <Box sx={{ mb: 3 }}>
-                <Typography 
-                  variant="subtitle1" 
-                  sx={{ 
-                    fontWeight: 'bold', 
-                    mb: 1,
-										borderBottom: '1px',
-                    pb: 1,
-                  }}
-                >
-                  Items Ordered
-                </Typography>
-                {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                  <Box sx={{ pl: 1 }}>
-                    {selectedOrder.items.map((item, index) => (
-                      <Box key={index} sx={{ mb: 1, pl: 2, borderBottom: '1px', pb: 1 }}>
-                        <Typography variant="body2"><strong>Product:</strong> {item.product || 'N/A'}</Typography>
-                        <Typography variant="body2"><strong>Quantity (kg):</strong> {item.quantity || '0'}</Typography>
-                        <Typography variant="body2"><strong>Price per Unit (IDR):</strong> {item.price ? item.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
-                        <Typography variant="body2"><strong>Subtotal (IDR):</strong> {(item.price * item.quantity).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) || '0 IDR'}</Typography>
-                      </Box>
+                    {customers.map(customer => (
+                      <MenuItem key={customer.customer_id} value={customer.customer_id}>
+                        {customer.name}
+                      </MenuItem>
                     ))}
+                    <MenuItem>
+                      <Button
+                        fullWidth
+                        variant="text"
+                        onClick={() => setOpenCustomerModal(true)}
+                        sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                      >
+                        + Add New Customer
+                      </Button>
+                    </MenuItem>
+                  </Select>
+                </FormControl>
+
+                {showCustomerDetails && selectedCustomer && (
+                  <Box sx={{ mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                    <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
+                    <TextField
+                      label="Name"
+                      value={selectedCustomer.name || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      label="Address"
+                      value={selectedCustomer.address || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      label="Phone"
+                      value={selectedCustomer.phone || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      label="Email"
+                      value={selectedCustomer.email || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      label="Country"
+                      value={selectedCustomer.country || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      label="State"
+                      value={selectedCustomer.state || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      label="City"
+                      value={selectedCustomer.city || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      label="Zip Code"
+                      value={selectedCustomer.zip_code || '-'}
+                      InputProps={{ readOnly: true }}
+                      fullWidth
+                    />
                   </Box>
-                ) : (
-                  <Typography variant="body2" sx={{ pl: 1 }}>No items ordered.</Typography>
                 )}
+
+                {/* Shipping Method and Driver Details */}
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Shipping Method</InputLabel>
+                  <Select
+                    name="shipping_method"
+                    value={editOrder.shipping_method}
+                    onChange={handleEditInputChange}
+                    label="Shipping Method"
+                  >
+                    <MenuItem value="Customer">Customer-Arranged</MenuItem>
+                    <MenuItem value="Self">Self-Arranged</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="subtitle1" gutterBottom>Driver Details</Typography>
+                  {editOrder.shipping_method === 'Self' && (
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                      <InputLabel>Driver</InputLabel>
+                      <Select
+                        name="driver_id"
+                        value={editOrder.driver_id}
+                        onChange={handleEditInputChange}
+                        label="Driver"
+                        endIcon={<KeyboardArrowDownIcon />}
+                      >
+                        <MenuItem value="">None</MenuItem>
+                        {drivers.filter(d => d.availability_status === 'Available').map(driver => (
+                          <MenuItem key={driver.driver_id} value={driver.driver_id}>
+                            {driver.name} ({driver.vehicle_number})
+                          </MenuItem>
+                        ))}
+                        <MenuItem>
+                          <Button
+                            fullWidth
+                            variant="text"
+                            onClick={() => setOpenDriverModal(true)}
+                            sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                          >
+                            + Add New Driver
+                          </Button>
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                  {editOrder.shipping_method === 'Self' && editOrder.driver_id && drivers.find(d => d.driver_id === editOrder.driver_id) && (
+                    <>
+                      <TextField
+                        fullWidth
+                        label="Driver Name"
+                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.name || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ mb: 2 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Vehicle Number Plate"
+                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.vehicle_number || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ mb: 2 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Vehicle Type"
+                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.vehicle_type || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ mb: 2 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Max Capacity (kg)"
+                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.max_capacity || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ mb: 2 }}
+                      />
+                    </>
+                  )}
+                  {editOrder.shipping_method === 'Customer' && (
+                    <>
+                      <TextField
+                        fullWidth
+                        label="Driver Name"
+                        name="driver_details.name"
+                        value={editOrder.driver_details.name}
+                        onChange={handleEditInputChange}
+                        sx={{ mb: 2 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Vehicle Number Plate"
+                        name="driver_details.vehicle_number_plate"
+                        value={editOrder.driver_details.vehicle_number_plate}
+                        onChange={handleEditInputChange}
+                        sx={{ mb: 2 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Vehicle Type"
+                        name="driver_details.vehicle_type"
+                        value={editOrder.driver_details.vehicle_type}
+                        onChange={handleEditInputChange}
+                        sx={{ mb: 2 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Max Capacity (kg)"
+                        name="driver_details.max_capacity"
+                        value={editOrder.driver_details.max_capacity}
+                        onChange={handleEditInputChange}
+                        sx={{ mb: 2 }}
+                      />
+                    </>
+                  )}
+                </Box>
+                <Divider sx={{ my: 4 }} /> {/* Divider between Order Details and Order Items */}
+
+                {/* Order Items */}
+                <Box sx={{ mb: 3 }}>
+                  {editOrder.items.map((item, index) => (
+                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <TextField
+                        label="Product"
+                        value={item.product}
+                        onChange={(e) => handleEditItemChange(index, 'product', e.target.value)}
+                        sx={{ mr: 2, flex: 1 }}
+                      />
+                      <TextField
+                        label="Quantity (kg)"
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleEditItemChange(index, 'quantity', e.target.value)}
+                        sx={{ mr: 1, width: '120px' }}
+                      />
+                      <TextField
+                        label="Price per Unit (IDR)"
+                        type="number"
+                        value={item.price}
+                        onChange={(e) => handleEditItemChange(index, 'price', e.target.value)}
+                        sx={{ mr: 1, width: '120px' }}
+                      />
+                      <IconButton
+                        onClick={() => removeEditItem(index)}
+                        size="small"
+                        color="error"
+                        disabled={editOrder.items.length === 1}
+                      >
+                        <CloseIcon />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  <Button variant="outlined" onClick={addEditItem} sx={{ mb: 2 }}>Add Another Item</Button>
+                </Box>
+
+                <Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
+
+                {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
+                <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Subtotal Price (IDR)"
+                    name="price"
+                    value={editOrder.price ? Number(editOrder.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
+                    InputProps={{ readOnly: true }} // Calculated automatically
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Tax Percentage (%)"
+                    name="tax_percentage"
+                    value={editOrder.tax_percentage}
+                    onChange={handleEditInputChange}
+                    type="number"
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Grand Total (IDR)"
+                    value={
+                      editOrder.price && editOrder.tax_percentage
+                        ? (Number(editOrder.price || 0) * (1 + Number(editOrder.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                        : '0 IDR'
+                    }
+                    InputProps={{ readOnly: true }} // Calculated on frontend
+                    sx={{ mb: 2 }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleSaveEdit}
+                      disabled={loading}
+                      startIcon={loading ? <CircularProgress size={20} /> : null}
+                      sx={{ flex: 1 }}
+                    >
+                      Save Changes
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={handleCloseOrderModal}
+                      sx={{ flex: 1 }}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                </Box>
               </Box>
-
-              {/* Totals and Signatures */}
-              <Box sx={{ mb: 3 }}>
-                <Divider sx={{ my: 2 }} />
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={6}>
-                    <Typography variant="body2"><strong>Subtotal (IDR):</strong> {selectedOrder.subtotal ? selectedOrder.subtotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
-                    <Typography variant="body2"><strong>Tax ({selectedOrder.tax_percentage ? `${selectedOrder.tax_percentage.toFixed(2)}%` : '0%'}):</strong> {selectedOrder.tax ? selectedOrder.tax.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
-                    <Typography variant="body2"><strong>Grand Total (IDR):</strong> {selectedOrder.grand_total ? selectedOrder.grand_total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}</Typography>
-                  </Grid>
-                </Grid>
-
-                <Divider sx={{ my: 2 }} />
-
-              </Box>
-
-              <Button 
-                variant="contained" 
-                onClick={handleCloseOrderModal} 
-                sx={{ 
-                  mt: 3, 
-                  width: '100%', 
-                }}
-              >
-                Close
-              </Button>
             </Box>
           ) : (
             <Typography variant="body1" sx={{ textAlign: 'center' }}>No order details available.</Typography>

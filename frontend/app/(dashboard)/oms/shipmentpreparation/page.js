@@ -350,12 +350,12 @@ const ShipmentPreparation = () => {
 		// Signatures
 		doc.setFont('Helvetica', 'bold');
 		doc.text('PIHAK PERTAMA', 50, tableEndY + 30, { align: 'center' });
-		doc.text('PIHAK KEDUA', 130, tableEndY + 30, { align: 'center' });
+		doc.text('PIHAK KEDUA', 140, tableEndY + 30, { align: 'center' });
 	
 		doc.setFont('Helvetica', 'normal');
 		doc.text(`(....................................)`, 50, tableEndY + 60, { align: 'center' });
 		doc.text(`Manager`, 50, tableEndY + 65, { align: 'center' });
-		doc.text(`${order.customerName || 'Unknown Customer'}`, 130, tableEndY + 60, { align: 'center' });
+		doc.text(`${order.customerName || 'Unknown Customer'}`, 140, tableEndY + 60, { align: 'center' });
 
 		return doc;
 	};
