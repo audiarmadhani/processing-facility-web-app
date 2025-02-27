@@ -80,6 +80,8 @@ const OrderProcessing = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [openOrderModal, setOpenOrderModal] = useState(false); // State for order details modal
   const [anchorEl, setAnchorEl] = useState(null); // For dropdown menu in Actions column
+  const [openConfirmProcess, setOpenConfirmProcess] = useState(false); // State for Process Order confirmation modal
+  const [openConfirmReject, setOpenConfirmReject] = useState(false); // State for Reject Order confirmation modal
 
   // Fetch orders with enhanced error handling and logging
   useEffect(() => {
@@ -273,7 +275,7 @@ const OrderProcessing = () => {
     }
   };
 
-  // Handle actions dropdown (Process or Reject)
+  // Handle actions dropdown (Process, Reject, or View Details)
   const handleActionsClick = (event, orderId) => {
     setAnchorEl(event.currentTarget);
     setSelectedOrder(orders.find(order => order.order_id === orderId) || null);
@@ -284,13 +286,22 @@ const OrderProcessing = () => {
     setSelectedOrder(null);
   };
 
-  const handleProcess = async () => {
-    if (!selectedOrder) return;
-    await handleProcessOrder(selectedOrder.order_id);
-    handleActionsClose();
+  const handleProcessConfirm = () => {
+    setOpenConfirmProcess(false);
+    if (selectedOrder) handleProcessOrder(selectedOrder.order_id);
   };
 
-  const handleReject = async () => {
+  const handleRejectConfirm = () => {
+    setOpenConfirmReject(false);
+    if (selectedOrder) handleReject(selectedOrder.order_id);
+  };
+
+  const handleProcess = () => {
+    if (!selectedOrder) return;
+    setOpenConfirmProcess(true);
+  };
+
+  const handleReject = async (orderId) => {
     if (!selectedOrder) return;
     try {
       const rejectUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
@@ -319,7 +330,6 @@ const OrderProcessing = () => {
       console.error('Error rejecting order:', error);
       setSnackbar({ open: true, message: `Error rejecting order: ${error.message}`, severity: 'error' });
     }
-    handleActionsClose();
   };
 
   // Generate SPK PDF
@@ -470,106 +480,86 @@ const OrderProcessing = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleCloseConfirmProcess = () => {
+    setOpenConfirmProcess(false);
+  };
+
+  const handleCloseConfirmReject = () => {
+    setOpenConfirmReject(false);
+  };
+
   const columns = [
     { field: 'order_id', headerName: 'Order ID', width: 80, sortable: true },
     { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
     { 
-			field: 'status', 
-			headerName: 'Status', 
-			width: 130, 
-			sortable: true,
-			renderCell: (params) => (
-				<Button
-					variant="contained" // Use contained variant for a filled button
-					size="small"
-					sx={{
-						minWidth: 100,
-						padding: '4px 16px',
-						borderRadius: '16px', // Pill shape
-						backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Darker colors for background (orange for Pending, green for Processing, red for Rejected, gray for default)
-						color: '#fff', // White text for contrast against darker backgrounds
-						fontSize: '0.875rem',
-						textTransform: 'none',
-						alignItems: 'center',
-						'&:hover': {
-							backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Maintain background color on hover
-						},
-					}}
-				>
-					{params.value}
-				</Button>
-			),
-		},
-    { 
-        field: 'actions', 
-        headerName: 'Actions', 
-        width: 120, 
-        sortable: false, 
-        renderCell: (params) => (
-          <div>
-            <Button
-              variant="contained"
-              size="small"
-              color="primary"
-              aria-controls={`actions-menu-${params.row.order_id}`}
-              aria-haspopup="true"
-              onClick={(event) => handleActionsClick(event, params.row.order_id)}
-              sx={{
-                minWidth: 90,
-                borderRadius: '16px', // Pill shape
-                padding: '4px 16px',
-                fontSize: '0.875rem',
-								textTransform: 'none',
-								alignItems: 'center',
-                '&:hover': {
-                  borderColor: theme => theme.palette.primary.main,
-                  backgroundColor: 'rgb(47, 107, 210)', // Light blue background on hover
-                },
-                gap: 0, // Space between text and icon
-              }}
-            >
-              Actions
-              <KeyboardArrowDownIcon fontSize="small" />
-            </Button>
-            <Menu
-              id={`actions-menu-${params.row.order_id}`}
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
-              onClose={handleActionsClose}
-            >
-              <MenuItem onClick={handleProcess}>Process Order</MenuItem>
-              <MenuItem onClick={handleReject}>Reject Order</MenuItem>
-            </Menu>
-          </div>
-        ),
-    },
-    { 
-      field: 'details', 
-      headerName: 'Details', 
-      width: 140, 
-      sortable: false, 
+      field: 'status', 
+      headerName: 'Status', 
+      width: 130, 
+      sortable: true,
       renderCell: (params) => (
         <Button
-          variant="contained"
+          variant="contained" // Use contained variant for a filled button
           size="small"
-          color="secondary"
-          onClick={() => handleOpenOrderModal(params.row)}
           sx={{
-            height: '32px', // Adjusted for pill shape
-            minWidth: '90px',
+            minWidth: 100,
             padding: '4px 16px',
             borderRadius: '16px', // Pill shape
+            backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Darker colors for background (orange for Pending, green for Processing, red for Rejected, gray for default)
+            color: '#fff', // White text for contrast against darker backgrounds
             fontSize: '0.875rem',
             textTransform: 'none',
-						alignItems: 'center',
+            alignItems: 'center',
             '&:hover': {
-              borderColor: theme => theme.palette.secondary.main,
-              backgroundColor: 'rgb(163, 124, 175)', // Light gray background on hover
+              backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Maintain background color on hover
             },
           }}
         >
-          View Details
+          {params.value}
         </Button>
+      ),
+    },
+    { 
+      field: 'actions', 
+      headerName: 'Actions', 
+      width: 120, 
+      sortable: false, 
+      renderCell: (params) => (
+        <div>
+          <Button
+            variant="contained"
+            size="small"
+            color="primary"
+            aria-controls={`actions-menu-${params.row.order_id}`}
+            aria-haspopup="true"
+            onClick={(event) => handleActionsClick(event, params.row.order_id)}
+            sx={{
+              minWidth: 90,
+              borderRadius: '16px', // Pill shape
+              padding: '4px 16px',
+              fontSize: '0.875rem',
+              textTransform: 'none',
+              alignItems: 'center',
+              '&:hover': {
+                borderColor: theme => theme.palette.primary.main,
+                backgroundColor: 'rgb(47, 107, 210)', // Light blue background on hover
+              },
+              gap: 0, // Space between text and icon
+            }}
+          >
+            Actions
+            <KeyboardArrowDownIcon fontSize="small" />
+          </Button>
+          <Menu
+            id={`actions-menu-${params.row.order_id}`}
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
+            onClose={handleActionsClose}
+          >
+            <MenuItem onClick={handleProcess}>Process Order</MenuItem>
+            <MenuItem onClick={handleReject}>Reject Order</MenuItem>
+            <MenuItem onClick={() => handleOpenOrderModal(params.row)}>View Details</MenuItem>
+          </Menu>
+        </div>
       ),
     },
     { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
@@ -596,11 +586,6 @@ const OrderProcessing = () => {
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom>Order Processing</Typography>
-      {/* {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
-      )} */}
       <Card variant="outlined">
         <CardContent>
           <StyledDataGrid
@@ -814,6 +799,116 @@ const OrderProcessing = () => {
           ) : (
             <Typography variant="body1" sx={{ textAlign: 'center' }}>No order details available.</Typography>
           )}
+        </Paper>
+      </Modal>
+
+      {/* Process Order Confirmation Modal */}
+      <Modal
+        open={openConfirmProcess}
+        onClose={handleCloseConfirmProcess}
+        aria-labelledby="confirm-process-modal-title"
+        aria-describedby="confirm-process-modal-description"
+      >
+        <Paper sx={{ 
+          p: 3, 
+          maxWidth: 400, 
+          mx: 'auto', 
+          mt: '20vh', 
+          borderRadius: 2, 
+        }}>
+          <Typography 
+            variant="h6" 
+            id="confirm-process-modal-title" 
+            gutterBottom 
+            sx={{ 
+              textAlign: 'center', 
+              fontWeight: 'bold', 
+            }}
+          >
+            Confirm Process Order
+          </Typography>
+          <Typography 
+            variant="body1" 
+            id="confirm-process-modal-description" 
+            sx={{ 
+              textAlign: 'center', 
+              mb: 3, 
+            }}
+          >
+            Are you sure you want to process Order ID {selectedOrder?.order_id || 'N/A'}? This will generate and upload documents.
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleProcessConfirm} 
+              disabled={loading}
+            >
+              Proceed
+            </Button>
+            <Button 
+              variant="outlined" 
+              color="secondary" 
+              onClick={handleCloseConfirmProcess}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </Paper>
+      </Modal>
+
+      {/* Reject Order Confirmation Modal */}
+      <Modal
+        open={openConfirmReject}
+        onClose={handleCloseConfirmReject}
+        aria-labelledby="confirm-reject-modal-title"
+        aria-describedby="confirm-reject-modal-description"
+      >
+        <Paper sx={{ 
+          p: 3, 
+          maxWidth: 400, 
+          mx: 'auto', 
+          mt: '20vh', 
+          borderRadius: 2, 
+        }}>
+          <Typography 
+            variant="h6" 
+            id="confirm-reject-modal-title" 
+            gutterBottom 
+            sx={{ 
+              textAlign: 'center', 
+              fontWeight: 'bold', 
+            }}
+          >
+            Confirm Reject Order
+          </Typography>
+          <Typography 
+            variant="body1" 
+            id="confirm-reject-modal-description" 
+            sx={{ 
+              textAlign: 'center', 
+              mb: 3, 
+            }}
+          >
+            Are you sure you want to reject Order ID {selectedOrder?.order_id || 'N/A'}?
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+            <Button 
+              variant="contained" 
+              color="error" 
+              onClick={handleRejectConfirm} 
+              disabled={loading}
+            >
+              Proceed
+            </Button>
+            <Button 
+              variant="outlined" 
+              color="secondary" 
+              onClick={handleCloseConfirmReject}
+            >
+              Cancel
+            </Button>
+          </Box>
         </Paper>
       </Modal>
 
