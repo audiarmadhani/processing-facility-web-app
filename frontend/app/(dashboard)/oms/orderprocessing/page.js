@@ -23,6 +23,7 @@ import { darken, lighten, styled } from '@mui/material/styles';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
+import 'dayjs/locale/id';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 const getBackgroundColor = (color, theme, coefficient) => ({
@@ -69,6 +70,30 @@ const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
       },
     },
   },
+  '& .super-app-theme--ReadyForShipment': {
+    ...getBackgroundColor(theme.palette.info.main, theme, 0.7), // Blue for Ready for Shipment
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.info.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.info.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.info.main, theme, 0.4),
+      },
+    },
+  },
+  '& .super-app-theme--InTransit': {
+    ...getBackgroundColor(theme.palette.secondary.main, theme, 0.7), // Purple for In Transit
+    '&:hover': {
+      ...getBackgroundColor(theme.palette.secondary.main, theme, 0.6),
+    },
+    '&.Mui-selected': {
+      ...getBackgroundColor(theme.palette.secondary.main, theme, 0.5),
+      '&:hover': {
+        ...getBackgroundColor(theme.palette.secondary.main, theme, 0.4),
+      },
+    },
+  },
 }));
 
 const OrderProcessing = () => {
@@ -82,6 +107,8 @@ const OrderProcessing = () => {
   const [anchorEl, setAnchorEl] = useState(null); // For dropdown menu in Actions column
   const [openConfirmProcess, setOpenConfirmProcess] = useState(false); // State for Process Order confirmation modal
   const [openConfirmReject, setOpenConfirmReject] = useState(false); // State for Reject Order confirmation modal
+  const [openConfirmReadyForShipment, setOpenConfirmReadyForShipment] = useState(false); // State for Ready for Shipment confirmation modal
+  const [openConfirmInTransit, setOpenConfirmInTransit] = useState(false); // State for In Transit confirmation modal
 
   // Fetch orders with enhanced error handling and logging
   useEffect(() => {
@@ -135,14 +162,14 @@ const OrderProcessing = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-					customer_id: order.customer_id,
+          customer_id: order.customer_id,
           status: 'Processing',
           driver_id: order.driver_id, // Reuse existing driver_id
           shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
           driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-					items: order.items
+          items: order.items
         }),
       });
 
@@ -154,7 +181,7 @@ const OrderProcessing = () => {
       order = {
         ...updatedProcessingOrder,
         order_id: updatedProcessingOrder.order_id || order.order_id, // Ensure order_id is always present
-				customer_id: updatedProcessingOrder.customer_id || order.customer_id,
+        customer_id: updatedProcessingOrder.customer_id || order.customer_id,
         customer_name: updatedProcessingOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
         status: updatedProcessingOrder.status || 'Processing', // Should be "Processing" now
         shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
@@ -214,6 +241,181 @@ const OrderProcessing = () => {
       setProcessing(false);
     }
   };
+
+  // Handle generating shipment documents (Surat Jalan and BAST) with status update to "Ready for Shipment"
+	const handleReadyForShipment = async (orderId) => {
+		setLoading(true);
+		setProcessing(true);
+		try {
+			// Fetch the current order details with enhanced error handling
+			const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+				headers: { 'Accept': 'application/json' }, // Ensure JSON response
+			});
+			if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
+			const data = await res.json();
+			console.log('Order Fetch Response:', data); // Log the response for debugging
+			if (!data || typeof data !== 'object') {
+				throw new Error('Invalid order data received');
+			}
+			let order = data;
+
+			if (!order.order_id || typeof order.order_id !== 'number') {
+				throw new Error('Invalid order_id fetched: ' + order.order_id);
+			}
+
+			// Update status to "Ready for Shipment" before generating documents
+			const readyUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+				body: JSON.stringify({
+					customer_id: order.customer_id,
+					status: 'Ready for Shipment',
+					driver_id: order.driver_id, // Reuse existing driver_id
+					shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
+					driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+					price: order.price?.toString() || '0', // Reuse existing price, converted to string
+					tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+					items: order.items
+				}),
+			});
+
+			if (!readyUpdateRes.ok) throw new Error('Failed to update order status to Ready for Shipment: ' + (await readyUpdateRes.text()));
+			const updatedReadyOrder = await readyUpdateRes.json();
+			console.log('Updated Order (Ready for Shipment):', updatedReadyOrder); // Log the updated order for debugging
+
+			// Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "Ready for Shipment" update
+			order = {
+				...updatedReadyOrder,
+				order_id: updatedReadyOrder.order_id || order.order_id, // Ensure order_id is always present
+				customer_id: updatedReadyOrder.customer_id || order.customer_id,
+				customer_name: updatedReadyOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
+				status: updatedReadyOrder.status || 'Ready for Shipment', // Should be "Ready for Shipment" now
+				shipping_method: updatedReadyOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
+				items: updatedReadyOrder.items || order.items, // Default to empty array if missing
+				created_at: updatedReadyOrder.created_at || order.created_at || null,
+			};
+
+			if (!order.order_id || typeof order.order_id !== 'number') {
+				throw new Error('Invalid order_id after Ready for Shipment update: ' + order.order_id);
+			}
+
+			// Generate Surat Jalan and BAST PDFs
+			const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name });
+			const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+
+			// Save PDFs locally using jsPDF.save()
+			suratJalanDoc.save(`SuratJalan_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+			bastDoc.save(`BAST_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+
+			// Upload each document to Google Drive
+			const uploadDocument = async (doc, type, filename) => {
+				const blob = doc.output('blob');
+				const formData = new FormData();
+				formData.append('order_id', orderId.toString()); // Use validated orderId as string
+				formData.append('type', type);
+				formData.append('file', blob, filename);
+
+				const res = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+					method: 'POST',
+					body: formData,
+				});
+
+				if (!res.ok) throw new Error(`Failed to upload ${type} document: ' + (await res.text())`);
+				return await res.json(); // No need to return drive_url since we’re saving locally
+			};
+
+			// Upload PDFs to Google Drive (without storing URLs for download)
+			await Promise.all([
+				uploadDocument(suratJalanDoc, 'Surat Jalan', `SuratJalan_${order.order_id}.pdf`),
+				uploadDocument(bastDoc, 'BAST', `BAST_${order.order_id}.pdf`),
+			]);
+
+			// Update the orders state safely with the current "Ready for Shipment" status
+			setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
+
+			setSelectedOrder(order);
+
+			setSnackbar({ open: true, message: 'Shipment documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
+		} catch (error) {
+			console.error('Error generating shipment documents:', error);
+			setSnackbar({ open: true, message: `Error generating shipment documents: ${error.message}`, severity: 'error' });
+		} finally {
+			setLoading(false);
+			setProcessing(false);
+		}
+	};
+
+	// Handle updating status to "In Transit"
+	const handleInTransit = async (orderId) => {
+		setLoading(true);
+		setProcessing(true);
+		try {
+			// Fetch the current order details with enhanced error handling
+			const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+				headers: { 'Accept': 'application/json' }, // Ensure JSON response
+			});
+			if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
+			const data = await res.json();
+			console.log('Order Fetch Response:', data); // Log the response for debugging
+			if (!data || typeof data !== 'object') {
+				throw new Error('Invalid order data received');
+			}
+			let order = data;
+
+			if (!order.order_id || typeof order.order_id !== 'number') {
+				throw new Error('Invalid order_id fetched: ' + order.order_id);
+			}
+
+			// Update status to "In Transit"
+			const transitUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+				body: JSON.stringify({
+					customer_id: order.customer_id,
+					status: 'In Transit',
+					driver_id: order.driver_id, // Reuse existing driver_id
+					shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
+					driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+					price: order.price?.toString() || '0', // Reuse existing price, converted to string
+					tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+					items: order.items
+				}),
+			});
+
+			if (!transitUpdateRes.ok) throw new Error('Failed to update order status to In Transit: ' + (await transitUpdateRes.text()));
+			const updatedTransitOrder = await transitUpdateRes.json();
+			console.log('Updated Order (In Transit):', updatedTransitOrder); // Log the updated order for debugging
+
+			// Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "In Transit" update
+			order = {
+				...updatedTransitOrder,
+				order_id: updatedTransitOrder.order_id || order.order_id, // Ensure order_id is always present
+				customer_id: updatedTransitOrder.customer_id || order.customer_id,
+				customer_name: updatedTransitOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
+				status: updatedTransitOrder.status || 'In Transit', // Should be "In Transit" now
+				shipping_method: updatedTransitOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
+				items: updatedTransitOrder.items || order.items, // Default to empty array if missing
+				created_at: updatedTransitOrder.created_at || order.created_at || null,
+			};
+
+			if (!order.order_id || typeof order.order_id !== 'number') {
+				throw new Error('Invalid order_id after In Transit update: ' + order.order_id);
+			}
+
+			// Update the orders state safely with the current "In Transit" status
+			setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
+
+			setSelectedOrder(order);
+
+			setSnackbar({ open: true, message: 'Order status updated to In Transit successfully', severity: 'success' });
+		} catch (error) {
+			console.error('Error updating to In Transit:', error);
+			setSnackbar({ open: true, message: `Error updating to In Transit: ${error.message}`, severity: 'error' });
+		} finally {
+			setLoading(false);
+			setProcessing(false);
+		}
+	};
 
   // Handle showing order details in modal
   const handleOpenOrderModal = async (order) => {
@@ -275,7 +477,7 @@ const OrderProcessing = () => {
     }
   };
 
-  // Handle actions dropdown (Process, Reject, or View Details)
+  // Handle actions dropdown (Process, Reject, View Details, Ready for Shipment, In Transit)
   const handleActionsClick = (event, orderId) => {
     setAnchorEl(event.currentTarget);
     setSelectedOrder(orders.find(order => order.order_id === orderId) || null);
@@ -296,6 +498,16 @@ const OrderProcessing = () => {
     if (selectedOrder) handleReject(selectedOrder.order_id);
   };
 
+  const handleReadyForShipmentConfirm = () => {
+    setOpenConfirmReadyForShipment(false);
+    if (selectedOrder) handleReadyForShipment(selectedOrder.order_id);
+  };
+
+  const handleInTransitConfirm = () => {
+    setOpenConfirmInTransit(false);
+    if (selectedOrder) handleInTransit(selectedOrder.order_id);
+  };
+
   const handleProcess = () => {
     if (!selectedOrder) return;
     setOpenConfirmProcess(true);
@@ -308,13 +520,14 @@ const OrderProcessing = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-					customer_id: selectedOrder.customer_id,
+          customer_id: selectedOrder.customer_id,
           status: 'Rejected',
           driver_id: selectedOrder.driver_id, // Reuse existing driver_id
           shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
           driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
           price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+          items: selectedOrder.items
         }),
       });
 
@@ -331,6 +544,17 @@ const OrderProcessing = () => {
       setSnackbar({ open: true, message: `Error rejecting order: ${error.message}`, severity: 'error' });
     }
   };
+
+  // Trigger functions to open confirmation modals (renamed to avoid naming conflict)
+	const openReadyForShipmentConfirm = () => {
+		if (!selectedOrder) return;
+		setOpenConfirmReadyForShipment(true);
+	};
+
+	const openInTransitConfirm = () => {
+		if (!selectedOrder) return;
+		setOpenConfirmInTransit(true);
+	};
 
   // Generate SPK PDF
   const generateSPKPDF = (order) => {
@@ -476,6 +700,195 @@ const OrderProcessing = () => {
     return doc;
   };
 
+  // Generate Surat Jalan PDF
+  const generateSuratJalanPDF = (order) => {
+    if (!order || typeof order !== 'object') {
+      throw new Error('Invalid order object for Surat Jalan PDF generation');
+    }
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [210, 297], // A4 size
+    });
+
+    // Set fonts and sizes
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(12);
+
+    // Header: Left-aligned company details, Right-aligned title on the same line
+    doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
+    doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
+    doc.text('Telp. 085175027797', 20, 30);
+    doc.setFontSize(20); // Larger font for "SURAT JALAN"
+    doc.text('SURAT JALAN', 190, 20, { align: 'right' });
+    doc.setFontSize(10); // Reset font size
+
+    // Divider
+    doc.line(20, 35, 190, 35); // Horizontal line
+
+    // Customer and Document Details: Left-aligned customer, Right-aligned details on the same line
+    doc.setFont('Helvetica', 'normal');
+    doc.text('Kepada Yth.', 20, 45);
+    doc.text(`${order.customerName || 'Unknown Customer'}`, 45, 45);
+    doc.text('Alamat:', 20, 50);
+
+    // Truncate and split address into multiple lines if too long
+    const address = order.customer_address || 'N/A';
+    const maxWidth = 200; // Available width for address (from x: 45 to x: 190)
+    const fontSize = 10; // Current font size
+    const lines = doc.splitTextToSize(address, maxWidth / (fontSize / 2)); // Split text to fit width, approximate scaling
+    lines.forEach((line, index) => {
+      doc.text(line, 45, 50 + (index * 5)); // 5mm line height, starting at y: 50
+    });
+
+    doc.text('Telp:', 20, 50 + (lines.length * 5));
+    doc.text('N/A', 45, 50 + (lines.length * 5)); // Placeholder, replace with order.customer_phone if available
+
+    // Right-aligned document details on the same line as "Kepada Yth."
+    const expedition = order.shippingMethod === 'Self' ? 'Warehouse arranged' : 'Customer arranged';
+    doc.text(`No. Surat Jalan: SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
+    doc.text(`Tanggal: ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
+    doc.text(`Ekspedisi: ${expedition}`, 190, 55, { align: 'right' });
+
+    // Items Table
+    let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
+    if (tableStartY < 65) tableStartY = 65; // Ensure table doesn’t start too early
+
+    doc.autoTable({
+      startY: tableStartY,
+      head: [['Nama Barang', 'Qty', 'Berat Jml (kg)', 'Keterangan']],
+      body: order.items.map((item, index) => [
+        item.product || 'N/A',
+        item.quantity || 0,
+        item.quantity || 0, // Assuming weight equals quantity in kg for simplicity, adjust if needed
+        'Barang Pesanan Pelanggan', // Description
+      ]),
+      styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
+      headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+      margin: { left: 20, right: 20 },
+    });
+
+    // Totals and Notes
+    doc.setFontSize(10);
+    const tableEndY = doc.lastAutoTable.finalY;
+    doc.text(`Total Berat: ${Math.floor(order.items.reduce((sum, item) => sum + (parseFloat(item.quantity || 0) || 0), 0)).toLocaleString('id-ID')} kg`, 20, tableEndY + 10); // Format total as integer with dots for thousands (e.g., 10.000)
+    doc.text('Catatan:', 20, tableEndY + 20);
+    doc.setFontSize(8);
+    doc.text('1. Surat Jalan ini merupakan bukti resmi pengiriman barang.', 20, tableEndY + 25);
+    doc.text('2. Surat Jalan harus dibawa dan ditunjukkan pada saat pengiriman barang.', 20, tableEndY + 30);
+    doc.text('3. Surat Jalan ini akan digunakan sebagai bukti pengiriman barang sesuai invoice.', 20, tableEndY + 35);
+    doc.text('4. Barang sudah diterima dalam keadaan baik dan cukup oleh:', 20, tableEndY + 40);
+  
+    // Signatures (Three lines, distributed horizontally on one line)
+    doc.setFontSize(10);
+    const signatureY = tableEndY + 80;
+    const signatureWidth = 170 / 3; // Divide 170mm (page width minus margins) by 3 for equal spacing
+    const positions = [
+      20 + (signatureWidth / 2), // Center of first third for Penerima/Pembeli
+      20 + signatureWidth + (signatureWidth / 2), // Center of second third for Bagian Pengiriman
+      20 + (2 * signatureWidth) + (signatureWidth / 2), // Center of third third for Petugas Gudang
+    ];
+  
+    doc.line(positions[0] - 20, signatureY, positions[0] + 20, signatureY); // Line for Penerima/Pembeli (75mm wide)
+    doc.text('Penerima/Pembeli', positions[0], signatureY + 5, { align: 'center' });
+    doc.text(`${order.customerName || 'Unknown Customer'}`, positions[0], signatureY + 10, { align: 'center' });
+  
+    doc.line(positions[1] - 20, signatureY, positions[1] + 20, signatureY); // Line for Bagian Pengiriman (75mm wide)
+    doc.text('Pengantar/Supir', positions[1], signatureY + 5, { align: 'center' });
+    doc.text(`${order.driver || 'Pengantar/Supir'}`, positions[1], signatureY + 10, { align: 'center' });
+  
+    doc.line(positions[2] - 20, signatureY, positions[2] + 20, signatureY); // Line for Petugas Gudang (75mm wide)
+    doc.text('Manager', positions[2], signatureY + 5, { align: 'center' });
+    doc.text(`(....................................)`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
+  
+    return doc;
+  };
+
+  // Generate BAST PDF
+  const generateBASTPDF = (order) => {
+    if (!order || typeof order !== 'object') {
+      throw new Error('Invalid order object for BAST PDF generation');
+    }
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [210, 297], // A4 size
+    });
+
+    // Set fonts and sizes
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(12);
+
+    // Header: Company Name and Document Title
+    doc.text('PT. BERKAS TUAIAN MELIMPAH', 105, 24, { align: 'center' });
+    doc.text('BERITA ACARA SERAH TERIMA (BAST)', 105, 30, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Nomor: BAST/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 105, 37, { align: 'center' });
+
+    // Document Information
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Pada hari ini, ${dayjs().locale('id').format('dddd')}, tanggal ${dayjs().locale('id').format('DD MMMM YYYY')}, kami yang bertanda tangan di bawah ini:`, 20, 50);
+
+    // Party 1 (Sender/Company)
+    doc.text('Nama', 20, 60);
+    doc.text(':', 40, 60);
+    doc.text(`PT. Berkas Tuaian Melimpah`, 45, 60); // Match OCR content
+
+    doc.text('Alamat', 20, 65);
+    doc.text(':', 40, 65);
+    doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 45, 65); // Example address, adjust as needed
+
+    doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, 70);
+
+    // Party 2 (Receiver/Customer)
+    doc.text('Nama', 20, 80);
+    doc.text(':', 40, 80);
+    doc.text(`${order.customerName || 'Unknown Customer'}`, 45, 80);
+
+    doc.text('Alamat', 20, 85);
+    doc.text(':', 40, 85);
+    doc.text(`${order.customer_address || 'Unknown Customer'}`, 45, 85);
+
+    doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 90);
+
+    // Statement
+    doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 100);
+
+    // Items Table (Updated to match OCR, removing Merk Barang column)
+    doc.autoTable({
+      startY: 110,
+      head: [['No.', 'Jenis Barang', 'Jumlah', 'Keterangan']],
+      body: order.items.map((item, index) => [
+        (index + 1).toString(),
+        item.product || 'N/A',
+        `${item.quantity || 0} (kg)`, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
+        'Barang Pesanan Pelanggan', // Description, match OCR
+      ]),
+      styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
+      headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+      margin: { left: 20, right: 20 },
+    });
+
+    // Purpose/Usage Statement
+    const tableEndY = doc.lastAutoTable.finalY;
+    doc.text('Untuk diserahkan kepada pelanggan PT. Berkas Tuaian Melimpah sebagai barang pesanan.', 20, tableEndY + 10);
+    doc.text('Demikian Berita Acara Serah Terima Barang ini dibuat untuk dapat dipergunakan sebagaimana mestinya.', 20, tableEndY + 15);
+
+    // Signatures
+    doc.setFont('Helvetica', 'bold');
+    doc.text('PIHAK PERTAMA', 50, tableEndY + 30, { align: 'center' });
+    doc.text('PIHAK KEDUA', 140, tableEndY + 30, { align: 'center' });
+  
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`(....................................)`, 50, tableEndY + 60, { align: 'center' });
+    doc.text(`Manager`, 50, tableEndY + 65, { align: 'center' });
+    doc.text(`${order.customerName || 'Unknown Customer'}`, 140, tableEndY + 60, { align: 'center' });
+
+    return doc;
+  };
+
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -488,82 +901,93 @@ const OrderProcessing = () => {
     setOpenConfirmReject(false);
   };
 
-  const columns = [
-    { field: 'order_id', headerName: 'Order ID', width: 80, sortable: true },
-    { field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
-    { 
-      field: 'status', 
-      headerName: 'Status', 
-      width: 130, 
-      sortable: true,
-      renderCell: (params) => (
-        <Button
-          variant="contained" // Use contained variant for a filled button
-          size="small"
-          sx={{
-            minWidth: 100,
-            padding: '4px 16px',
-            borderRadius: '16px', // Pill shape
-            backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Darker colors for background (orange for Pending, green for Processing, red for Rejected, gray for default)
-            color: '#fff', // White text for contrast against darker backgrounds
-            fontSize: '0.875rem',
-            textTransform: 'none',
-            alignItems: 'center',
-            '&:hover': {
-              backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : '#757575', // Maintain background color on hover
-            },
-          }}
-        >
-          {params.value}
-        </Button>
-      ),
-    },
-    { 
-      field: 'actions', 
-      headerName: 'Actions', 
-      width: 120, 
-      sortable: false, 
-      renderCell: (params) => (
-        <div>
-          <Button
-            variant="contained"
-            size="small"
-            color="primary"
-            aria-controls={`actions-menu-${params.row.order_id}`}
-            aria-haspopup="true"
-            onClick={(event) => handleActionsClick(event, params.row.order_id)}
-            sx={{
-              minWidth: 90,
-              borderRadius: '16px', // Pill shape
-              padding: '4px 16px',
-              fontSize: '0.875rem',
-              textTransform: 'none',
-              alignItems: 'center',
-              '&:hover': {
-                borderColor: theme => theme.palette.primary.main,
-                backgroundColor: 'rgb(47, 107, 210)', // Light blue background on hover
-              },
-              gap: 0, // Space between text and icon
-            }}
-          >
-            Actions
-            <KeyboardArrowDownIcon fontSize="small" />
-          </Button>
-          <Menu
-            id={`actions-menu-${params.row.order_id}`}
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
-            onClose={handleActionsClose}
-          >
-            <MenuItem onClick={handleProcess}>Process Order</MenuItem>
-            <MenuItem onClick={handleReject}>Reject Order</MenuItem>
-            <MenuItem onClick={() => handleOpenOrderModal(params.row)}>View Details</MenuItem>
-          </Menu>
-        </div>
-      ),
-    },
-    { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
-  ];
+  const handleCloseConfirmReadyForShipment = () => {
+    setOpenConfirmReadyForShipment(false);
+  };
+
+  const handleCloseConfirmInTransit = () => {
+    setOpenConfirmInTransit(false);
+  };
+
+  // Update the Actions dropdown in the columns array to use the renamed trigger functions
+	const columns = [
+		{ field: 'order_id', headerName: 'Order ID', width: 80, sortable: true },
+		{ field: 'customer_name', headerName: 'Customer Name', width: 240, sortable: true },
+		{ 
+			field: 'status', 
+			headerName: 'Status', 
+			width: 130, 
+			sortable: true,
+			renderCell: (params) => (
+				<Button
+					variant="contained" // Use contained variant for a filled button
+					size="small"
+					sx={{
+						minWidth: 100,
+						padding: '4px 16px',
+						borderRadius: '16px', // Pill shape
+						backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : params.value === 'Ready for Shipment' ? '#2196f3' : params.value === 'In Transit' ? '#9c27b0' : '#757575', // Darker colors for background (orange for Pending, green for Processing, red for Rejected, blue for Ready for Shipment, purple for In Transit, gray for default)
+						color: '#fff', // White text for contrast against darker backgrounds
+						fontSize: '0.875rem',
+						textTransform: 'none',
+						alignItems: 'center',
+						'&:hover': {
+							backgroundColor: params.value === 'Pending' ? '#f57c00' : params.value === 'Processing' ? '#4caf50' : params.value === 'Rejected' ? '#d32f2f' : params.value === 'Ready for Shipment' ? '#2196f3' : params.value === 'In Transit' ? '#9c27b0' : '#757575', // Maintain background color on hover
+						},
+					}}
+				>
+					{params.value}
+				</Button>
+			),
+		},
+		{ 
+			field: 'actions', 
+			headerName: 'Actions', 
+			width: 200, 
+			sortable: false, 
+			renderCell: (params) => (
+				<div>
+					<Button
+						variant="contained"
+						size="small"
+						color="primary"
+						aria-controls={`actions-menu-${params.row.order_id}`}
+						aria-haspopup="true"
+						onClick={(event) => handleActionsClick(event, params.row.order_id)}
+						sx={{
+							minWidth: 90,
+							borderRadius: '16px', // Pill shape
+							padding: '4px 16px',
+							fontSize: '0.875rem',
+							textTransform: 'none',
+							alignItems: 'center',
+							height: '32px', // Adjusted for pill shape
+							'&:hover': {
+								backgroundColor: theme => theme.palette.primary.dark, // Darker blue on hover
+							},
+							gap: 0, // Space between text and icon
+						}}
+					>
+						Actions
+						<KeyboardArrowDownIcon fontSize="small" />
+					</Button>
+					<Menu
+						id={`actions-menu-${params.row.order_id}`}
+						anchorEl={anchorEl}
+						open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
+						onClose={handleActionsClose}
+					>
+						<MenuItem onClick={handleProcess}>Process Order</MenuItem>
+						<MenuItem onClick={handleReject}>Reject Order</MenuItem>
+						<MenuItem onClick={() => handleOpenOrderModal(params.row)}>View Details</MenuItem>
+						<MenuItem onClick={openReadyForShipmentConfirm}>Ready for Shipment</MenuItem>
+						<MenuItem onClick={openInTransitConfirm}>In Transit</MenuItem>
+					</Menu>
+				</div>
+			),
+		},
+		{ field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
+	];
 
   // Ensure ordersRows handles undefined or null orders safely with additional logging
   const ordersRows = Array.isArray(orders) ? orders.map(order => {
@@ -905,6 +1329,116 @@ const OrderProcessing = () => {
               variant="outlined" 
               color="secondary" 
               onClick={handleCloseConfirmReject}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </Paper>
+      </Modal>
+
+      {/* Ready for Shipment Confirmation Modal */}
+      <Modal
+        open={openConfirmReadyForShipment}
+        onClose={handleCloseConfirmReadyForShipment}
+        aria-labelledby="confirm-ready-for-shipment-modal-title"
+        aria-describedby="confirm-ready-for-shipment-modal-description"
+      >
+        <Paper sx={{ 
+          p: 3, 
+          maxWidth: 400, 
+          mx: 'auto', 
+          mt: '20vh', 
+          borderRadius: 2, 
+        }}>
+          <Typography 
+            variant="h6" 
+            id="confirm-ready-for-shipment-modal-title" 
+            gutterBottom 
+            sx={{ 
+              textAlign: 'center', 
+              fontWeight: 'bold', 
+            }}
+          >
+            Confirm Ready for Shipment
+          </Typography>
+          <Typography 
+            variant="body1" 
+            id="confirm-ready-for-shipment-modal-description" 
+            sx={{ 
+              textAlign: 'center', 
+              mb: 3, 
+            }}
+          >
+            Are you sure you want to mark Order ID {selectedOrder?.order_id || 'N/A'} as Ready for Shipment? This will generate and upload BAST and Surat Jalan documents.
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleReadyForShipmentConfirm} 
+              disabled={loading}
+            >
+              Proceed
+            </Button>
+            <Button 
+              variant="outlined" 
+              color="secondary" 
+              onClick={handleCloseConfirmReadyForShipment}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </Paper>
+      </Modal>
+
+      {/* In Transit Confirmation Modal */}
+      <Modal
+        open={openConfirmInTransit}
+        onClose={handleCloseConfirmInTransit}
+        aria-labelledby="confirm-in-transit-modal-title"
+        aria-describedby="confirm-in-transit-modal-description"
+      >
+        <Paper sx={{ 
+          p: 3, 
+          maxWidth: 400, 
+          mx: 'auto', 
+          mt: '20vh', 
+          borderRadius: 2, 
+        }}>
+          <Typography 
+            variant="h6" 
+            id="confirm-in-transit-modal-title" 
+            gutterBottom 
+            sx={{ 
+              textAlign: 'center', 
+              fontWeight: 'bold', 
+            }}
+          >
+            Confirm In Transit
+          </Typography>
+          <Typography 
+            variant="body1" 
+            id="confirm-in-transit-modal-description" 
+            sx={{ 
+              textAlign: 'center', 
+              mb: 3, 
+            }}
+          >
+            Are you sure you want to mark Order ID {selectedOrder?.order_id || 'N/A'} as In Transit?
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleInTransitConfirm} 
+              disabled={loading}
+            >
+              Proceed
+            </Button>
+            <Button 
+              variant="outlined" 
+              color="secondary" 
+              onClick={handleCloseConfirmInTransit}
             >
               Cancel
             </Button>
