@@ -133,6 +133,7 @@ const OrderProcessing = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
+					customer_id: order.customer_id,
           status: 'Processing',
           driver_id: order.driver_id, // Reuse existing driver_id
           shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
@@ -150,6 +151,7 @@ const OrderProcessing = () => {
       order = {
         ...updatedProcessingOrder,
         order_id: updatedProcessingOrder.order_id || order.order_id, // Ensure order_id is always present
+				customer_id: updatedProcessingOrder.customer_id || order.customer_id,
         customer_name: updatedProcessingOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
         status: updatedProcessingOrder.status || 'Processing', // Should be "Processing" now
         shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
@@ -294,6 +296,7 @@ const OrderProcessing = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
+					customer_id: selectedOrder.customer_id,
           status: 'Rejected',
           driver_id: selectedOrder.driver_id, // Reuse existing driver_id
           shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing

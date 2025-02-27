@@ -611,9 +611,7 @@ const OrderCreation = () => {
             minWidth: '80px', 
             padding: '0 8px', 
             fontSize: '0.75rem', 
-            display: 'flex', 
             alignItems: 'center', 
-            justifyContent: 'center', 
           }}
         >
           View Details
@@ -624,7 +622,7 @@ const OrderCreation = () => {
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
     { field: 'price', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 80, sortable: true, editable: false },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, editable: false },
     { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false },
     { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 100, sortable: true, editable: true },
