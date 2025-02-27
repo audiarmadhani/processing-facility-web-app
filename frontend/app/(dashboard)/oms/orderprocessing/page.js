@@ -916,7 +916,7 @@ const OrderProcessing = () => {
 		{ 
 			field: 'status', 
 			headerName: 'Status', 
-			width: 130, 
+			width: 200, 
 			sortable: true,
 			renderCell: (params) => (
 				<Button
@@ -943,7 +943,7 @@ const OrderProcessing = () => {
 		{ 
 			field: 'actions', 
 			headerName: 'Actions', 
-			width: 200, 
+			width: 130, 
 			sortable: false, 
 			renderCell: (params) => (
 				<div>
@@ -976,12 +976,19 @@ const OrderProcessing = () => {
 						anchorEl={anchorEl}
 						open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
 						onClose={handleActionsClose}
+						sx={{
+							'& .MuiMenu-paper': {
+								borderRadius: '16px', // Match the pill shape of the button
+							},
+						}}
 					>
 						<MenuItem onClick={handleProcess}>Process Order</MenuItem>
 						<MenuItem onClick={handleReject}>Reject Order</MenuItem>
-						<MenuItem onClick={() => handleOpenOrderModal(params.row)}>View Details</MenuItem>
+						<Divider sx={{ my: 0.5 }} /> {/* Divider after status-changing actions */}
 						<MenuItem onClick={openReadyForShipmentConfirm}>Ready for Shipment</MenuItem>
 						<MenuItem onClick={openInTransitConfirm}>In Transit</MenuItem>
+						<Divider sx={{ my: 0.5 }} /> {/* Divider before View Details */}
+						<MenuItem onClick={() => handleOpenOrderModal(params.row)}>View Details</MenuItem>
 					</Menu>
 				</div>
 			),
