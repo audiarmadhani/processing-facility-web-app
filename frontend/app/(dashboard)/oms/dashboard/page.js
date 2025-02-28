@@ -16,6 +16,11 @@ import {
   Menu,
   MenuItem,
   Divider,
+  FormControl,
+  TextField,
+  Select,
+  InputLabel,
+  IconButton,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -27,6 +32,8 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
+import CustomerModal from '../../components/CustomerModal';
+import DriverModal from '../../components/DriverModal';
 
 const getBackgroundColor = (color, theme, coefficient) => ({
   backgroundColor: darken(color, coefficient),
@@ -119,6 +126,8 @@ const Dashboard = () => {
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [refreshCounter, setRefreshCounter] = useState(0); // For refreshing data after edits
+  const [openCustomerModal, setOpenCustomerModal] = useState(false);
+  const [openDriverModal, setOpenDriverModal] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -607,6 +616,44 @@ const Dashboard = () => {
     setOpenOrderModal(false);
     setSelectedOrder(null);
     setEditOrder(null);
+  };
+
+  const handleSaveCustomer = async (newCustomer) => {
+    try {
+      const res = await fetch('https://processing-facility-backend.onrender.com/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCustomer),
+      });
+      if (!res.ok) throw new Error('Failed to add customer');
+      const customer = await res.json();
+      setCustomers(prev => [...prev, customer]);
+      setEditOrder(prev => ({ ...prev, customer_id: customer.customer_id }));
+      setRefreshCounter(prev => prev + 1);
+      setSnackbar({ open: true, message: 'Customer added successfully', severity: 'success' });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    }
+    setOpenCustomerModal(false);
+  };
+  
+  const handleSaveDriver = async (newDriver) => {
+    try {
+      const res = await fetch('https://processing-facility-backend.onrender.com/api/drivers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDriver),
+      });
+      if (!res.ok) throw new Error('Failed to add driver');
+      const driver = await res.json();
+      setDrivers(prev => [...prev, driver]);
+      setEditOrder(prev => ({ ...prev, driver_id: driver.driver_id }));
+      setRefreshCounter(prev => prev + 1);
+      setSnackbar({ open: true, message: 'Driver added successfully', severity: 'success' });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    }
+    setOpenDriverModal(false);
   };
 
   // Regenerate and download PDFs from modal
@@ -1212,7 +1259,7 @@ const Dashboard = () => {
           </Alert>
         </Snackbar>
       )}
-
+  
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {summaryData.map((item, index) => (
@@ -1228,7 +1275,7 @@ const Dashboard = () => {
           </Grid>
         ))}
       </Grid>
-
+  
       {/* Action Buttons */}
       <Box sx={{ mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         {['admin', 'manager'].includes(session.user.role) && (
@@ -1256,7 +1303,7 @@ const Dashboard = () => {
           View Drivers
         </Button>
       </Box>
-
+  
       {/* Orders Table */}
       <Card variant="outlined">
         <CardContent>
@@ -1279,7 +1326,7 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
-
+  
       {/* Order Details/Edit Modal */}
       <Modal
         open={openOrderModal}
@@ -1312,7 +1359,7 @@ const Dashboard = () => {
               >
                 {editOrder ? `Edit Order - Order ID: ${editOrder.order_id || 'N/A'}` : `Order Details - Order ID: ${selectedOrder.order_id || 'N/A'}`}
               </Typography>
-
+  
               {/* Header Information */}
               <Box sx={{ mb: 3 }}>
                 <Typography 
@@ -1345,7 +1392,7 @@ const Dashboard = () => {
                 </Typography>
                 <Divider sx={{ my: 1 }} />
               </Box>
-
+  
               {/* Order View/Edit Form */}
               <Box>
                 {/* Customer Selection */}
@@ -1376,7 +1423,7 @@ const Dashboard = () => {
                     </MenuItem>
                   </Select>
                 </FormControl>
-
+  
                 {showCustomerDetails && selectedCustomer && (
                   <Box sx={{ mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
                     <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
@@ -1437,7 +1484,7 @@ const Dashboard = () => {
                     />
                   </Box>
                 )}
-
+  
                 {/* Shipping Method and Driver Details */}
                 <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Shipping Method</InputLabel>
@@ -1452,7 +1499,7 @@ const Dashboard = () => {
                     <MenuItem value="Self">Self-Arranged</MenuItem>
                   </Select>
                 </FormControl>
-
+  
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="subtitle1" gutterBottom>Driver Details</Typography>
                   {editOrder ? (
@@ -1631,7 +1678,7 @@ const Dashboard = () => {
                   )}
                 </Box>
                 <Divider sx={{ my: 4 }} /> {/* Divider between Order Details and Order Items */}
-
+  
                 {/* Order Items */}
                 <Box sx={{ mb: 3 }}>
                   {(editOrder ? editOrder.items : selectedOrder.items || []).map((item, index) => (
@@ -1675,9 +1722,9 @@ const Dashboard = () => {
                     <Button variant="outlined" onClick={addEditItem} sx={{ mb: 2 }}>Add Another Item</Button>
                   )}
                 </Box>
-
+  
                 <Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
-
+  
                 {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
                 <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
                   <TextField
@@ -1764,7 +1811,7 @@ const Dashboard = () => {
           )}
         </Paper>
       </Modal>
-
+  
       {/* Process Order Confirmation Modal */}
       <Modal
         open={openConfirmProcess}
@@ -1819,7 +1866,7 @@ const Dashboard = () => {
           </Box>
         </Paper>
       </Modal>
-
+  
       {/* Reject Order Confirmation Modal */}
       <Modal
         open={openConfirmReject}
@@ -1874,7 +1921,7 @@ const Dashboard = () => {
           </Box>
         </Paper>
       </Modal>
-
+  
       {/* Ready for Shipment Confirmation Modal */}
       <Modal
         open={openConfirmReadyForShipment}
@@ -1926,10 +1973,10 @@ const Dashboard = () => {
             >
               Cancel
             </Button>
-          </Box>
+            </Box>
         </Paper>
       </Modal>
-
+  
       {/* In Transit Confirmation Modal */}
       <Modal
         open={openConfirmInTransit}
@@ -1984,7 +2031,11 @@ const Dashboard = () => {
           </Box>
         </Paper>
       </Modal>
-
+  
+      {/* Customer and Driver Modals */}
+      <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
+      <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
+  
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
