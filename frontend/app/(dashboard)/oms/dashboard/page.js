@@ -1163,54 +1163,84 @@ const Dashboard = () => {
       headerName: 'Actions', 
       width: 130, 
       sortable: false, 
-      renderCell: (params) => (
-        <div>
-          <Button
-            variant="contained"
-            size="small"
-            color="primary"
-            aria-controls={`actions-menu-${params.row.order_id}`}
-            aria-haspopup="true"
-            onClick={(event) => handleActionsClick(event, params.row.order_id)}
-            sx={{
-              minWidth: 90,
-              borderRadius: '16px', // Pill shape
-              padding: '4px 16px',
-              fontSize: '0.875rem',
-              textTransform: 'none',
-              alignItems: 'center',
-              height: '32px', // Adjusted for pill shape
-              '&:hover': {
-                backgroundColor: theme => theme.palette.primary.dark, // Darker blue on hover
-              },
-              gap: 0, // Space between text and icon
-            }}
-          >
-            Actions
-            <KeyboardArrowDownIcon fontSize="small" />
-          </Button>
-          <Menu
-            id={`actions-menu-${params.row.order_id}`}
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
-            onClose={handleActionsClose}
-            sx={{
-              '& .MuiMenu-paper': {
-                borderRadius: '16px', // Match the pill shape of the button
-              },
-            }}
-          >
-            <MenuItem onClick={handleProcess}>Process Order</MenuItem>
-            <MenuItem onClick={handleReject}>Reject Order</MenuItem>
-            <Divider sx={{ my: 0.5 }} /> {/* Divider after status-changing actions */}
-            <MenuItem onClick={openReadyForShipmentConfirm}>Ready for Shipment</MenuItem>
-            <MenuItem onClick={openInTransitConfirm}>In Transit</MenuItem>
-            <Divider sx={{ my: 0.5 }} /> {/* Divider before non-status-changing actions */}
-            <MenuItem onClick={() => handleOpenOrderModal(params.row, false)}>View Details</MenuItem>
-            <MenuItem onClick={() => handleOpenOrderModal(params.row, true)}>Edit Order</MenuItem>
-          </Menu>
-        </div>
-      ),
+      renderCell: (params) => {
+        const order = orders.find(o => o.order_id === params.row.order_id) || {};
+        const isProcessed = !!order.process_at;
+        const isRejected = !!order.reject_at;
+        const isReady = !!order.ready_at;
+        const isShipped = !!order.ship_at;
+        const isDelivered = !!order.arrive_at;
+        const isPaid = !!order.paid_at;
+    
+        return (
+          <div>
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              aria-controls={`actions-menu-${params.row.order_id}`}
+              aria-haspopup="true"
+              onClick={(event) => handleActionsClick(event, params.row.order_id)}
+              sx={{
+                minWidth: 90,
+                borderRadius: '16px', // Pill shape
+                padding: '4px 16px',
+                fontSize: '0.875rem',
+                textTransform: 'none',
+                alignItems: 'center',
+                height: '32px', // Adjusted for pill shape
+                '&:hover': {
+                  backgroundColor: theme => theme.palette.primary.dark, // Darker blue on hover
+                },
+                gap: 0, // Space between text and icon
+              }}
+            >
+              Actions
+              <KeyboardArrowDownIcon fontSize="small" />
+            </Button>
+            <Menu
+              id={`actions-menu-${params.row.order_id}`}
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl) && selectedOrder?.order_id === params.row.order_id}
+              onClose={handleActionsClose}
+              sx={{
+                '& .MuiMenu-paper': {
+                  borderRadius: '16px', // Match the pill shape of the button
+                },
+              }}
+            >
+              <MenuItem 
+                onClick={handleProcess} 
+                disabled={isProcessed || isRejected || isReady || isShipped || isDelivered || isPaid}
+              >
+                Process Order
+              </MenuItem>
+              <MenuItem 
+                onClick={handleReject} 
+                disabled={isRejected || isDelivered || isPaid}
+              >
+                Reject Order
+              </MenuItem>
+              <Divider sx={{ my: 0.5 }} /> {/* Divider after status-changing actions */}
+              <MenuItem 
+                onClick={openReadyForShipmentConfirm} 
+                disabled={ isRejected || isReady || isShipped || isDelivered || isPaid}
+              >
+                Ready for Shipment
+              </MenuItem>
+              <MenuItem 
+                onClick={openInTransitConfirm} 
+                disabled={ isRejected || isShipped || isDelivered || isPaid}
+              >
+                In Transit
+              </MenuItem>
+              <Divider sx={{ my: 0.5 }} /> {/* Divider before non-status-changing actions */}
+              <MenuItem onClick={() => handleOpenOrderModal(params.row, false)}>View Details</MenuItem>
+              <MenuItem onClick={() => handleOpenOrderModal(params.row, true)}>Edit Order</MenuItem>
+            </Menu>
+          </div>
+        );
+      },
     },
     { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
   ];
@@ -1224,6 +1254,12 @@ const Dashboard = () => {
       customer_name: order?.customer_name || '-',
       status: order?.status || 'Pending',
       created_at: order?.created_at || null, // Removed valueFormatter
+      process_at: order?.process_at || null,
+      reject_at: order?.reject_at || null,
+      ready_at: order?.ready_at || null,
+      ship_at: order?.ship_at || null,
+      arrive_at: order?.arrive_at || null,
+      paid_at: order?.paid_at || null,
     };
   }) : [];
 
@@ -1390,6 +1426,21 @@ const Dashboard = () => {
                 >
                   Time: {dayjs().format('HH:mm:ss')}
                 </Typography>
+                <Divider sx={{ my: 1 }} />
+              </Box>
+
+              {/* Inside the Order View/Edit Form, after the Header Information but before Customer Selection */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>Order Timestamps</Typography>
+                <Box sx={{ pl: 1 }}>
+                  <Typography variant="body2"><strong>Created At:</strong> {dayjs(selectedOrder?.created_at || editOrder?.created_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Processed At:</strong> {dayjs(selectedOrder?.process_at || editOrder?.process_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Rejected At:</strong> {dayjs(selectedOrder?.reject_at || editOrder?.reject_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Ready for Shipment At:</strong> {dayjs(selectedOrder?.ready_at || editOrder?.ready_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Shipped At:</strong> {dayjs(selectedOrder?.ship_at || editOrder?.ship_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Delivered At:</strong> {dayjs(selectedOrder?.arrive_at || editOrder?.arrive_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Paid At:</strong> {dayjs(selectedOrder?.paid_at || editOrder?.paid_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                </Box>
                 <Divider sx={{ my: 1 }} />
               </Box>
   
