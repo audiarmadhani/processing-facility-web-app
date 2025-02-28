@@ -706,10 +706,26 @@ const Dashboard = () => {
     }
   };
 
-  // Handle actions dropdown (Process, Reject, View Details, Ready for Shipment, In Transit)
-  const handleActionsClick = (event, orderId) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedOrder(orders.find(order => order.order_id === orderId) || null);
+  // Replace the handleActionsClick function in Dashboard.js
+  const handleActionsClick = async (event, orderId) => {
+    setLoading(true); // Show loading while fetching
+    try {
+      // Fetch the order to ensure we have all details
+      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
+      if (!orderRes.ok) throw new Error('Failed to fetch order details');
+      const fullOrder = await orderRes.json();
+
+      // Fetch payment history for the order
+      const paymentsRes = await fetch(`https://processing-facility-backend.onrender.com/api/payments/${orderId}`);
+      const payments = paymentsRes.ok ? await paymentsRes.json() : [];
+
+      setAnchorEl(event.currentTarget);
+      setSelectedOrder({ ...fullOrder, payments }); // Include payments in selectedOrder
+    } catch (error) {
+      setSnackbar({ open: true, message: `Error fetching order details: ${error.message}`, severity: 'error' });
+    } finally {
+      setLoading(false); // Hide loading state
+    }
   };
 
   const handleActionsClose = () => {
@@ -2244,7 +2260,7 @@ const Dashboard = () => {
         onClose={handleClosePaymentModal}
         aria-labelledby="payment-modal-title"
         aria-describedby="payment-modal-description"
-        >
+       >
         <Paper sx={{ 
           p: 3, 
           maxWidth: 400, 
@@ -2264,18 +2280,21 @@ const Dashboard = () => {
             Record Payment for Order ID {selectedOrder?.order_id || 'N/A'}
           </Typography>
 
-          {/* Display Due Amount (grand_total) */}
-          <Typography 
-            variant="subtitle1" 
-            sx={{ 
-              textAlign: 'center', 
-              mb: 2, 
-              fontWeight: 'medium', 
-              color: 'text.secondary' 
-            }}
-          >
-            Due Amount: {Number(selectedOrder?.grand_total || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
-          </Typography>
+          {/* Display Grand Total and Due Amount */}
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Typography 
+              variant="subtitle1" 
+              sx={{ fontWeight: 'medium', color: 'text.secondary' }}
+            >
+              Grand Total: {Number(selectedOrder?.grand_total || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+            </Typography>
+            <Typography 
+              variant="subtitle1" 
+              sx={{ fontWeight: 'medium', color: 'text.secondary' }}
+            >
+              Due Amount: {Number((selectedOrder?.grand_total || 0) - (selectedOrder?.payments?.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0) || 0)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+            </Typography>
+          </Box>
 
           <Box sx={{ mt: 2 }}>
             <TextField
