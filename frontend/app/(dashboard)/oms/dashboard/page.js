@@ -588,13 +588,17 @@ const Dashboard = () => {
     }
   };
 
-  // Handle showing order details/edit modal
+  // Replace the handleOpenOrderModal function in Dashboard.js
   const handleOpenOrderModal = async (order, isEdit = false) => {
     setLoading(true); // Show loading state while fetching
     try {
       const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${order.order_id}`);
       if (!orderRes.ok) throw new Error('Failed to fetch order details');
       const fullOrder = await orderRes.json(); // Fetch the full order with items
+
+      // Fetch payment history for the order
+      const paymentsRes = await fetch(`https://processing-facility-backend.onrender.com/api/payments/${fullOrder.order_id}`);
+      const payments = paymentsRes.ok ? await paymentsRes.json() : [];
 
       if (isEdit) {
         setEditOrder({
@@ -608,7 +612,7 @@ const Dashboard = () => {
           tax_percentage: fullOrder.tax_percentage || '0', // Tax percentage as string
         });
       } else {
-        setSelectedOrder(fullOrder); // For view mode
+        setSelectedOrder({ ...fullOrder, payments }); // Include payments in selectedOrder
       }
       setOpenOrderModal(true);
     } catch (error) {
@@ -2240,7 +2244,7 @@ const Dashboard = () => {
         onClose={handleClosePaymentModal}
         aria-labelledby="payment-modal-title"
         aria-describedby="payment-modal-description"
-      >
+        >
         <Paper sx={{ 
           p: 3, 
           maxWidth: 400, 
@@ -2309,8 +2313,8 @@ const Dashboard = () => {
             {/* Payment History List */}
             <Box sx={{ mt: 2, mb: 2, maxHeight: '200px', overflowY: 'auto' }}>
               <Typography variant="subtitle1" gutterBottom>Payment History</Typography>
-              {selectedOrder.payments && selectedOrder.payments.length > 0 ? (
-                selectedOrder.payments.map((payment, index) => (
+              {(selectedOrder?.payments || []).length > 0 ? (
+                (selectedOrder?.payments || []).map((payment, index) => (
                   <Box key={index} sx={{ mb: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
                     <Typography variant="body2">
                       <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
@@ -2339,8 +2343,8 @@ const Dashboard = () => {
               <Button 
                 variant="contained" 
                 color="primary" 
-                onClick={() => handleRecordPayment(selectedOrder.order_id)}
-                disabled={loading}
+                onClick={() => handleRecordPayment(selectedOrder?.order_id)}
+                disabled={loading || !selectedOrder}
               >
                 Record Payment
               </Button>
