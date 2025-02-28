@@ -1433,13 +1433,13 @@ const Dashboard = () => {
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>Order Timestamps</Typography>
                 <Box sx={{ pl: 1 }}>
-                  <Typography variant="body2"><strong>Created At:</strong> {dayjs(selectedOrder?.created_at || editOrder?.created_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Processed At:</strong> {dayjs(selectedOrder?.process_at || editOrder?.process_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Rejected At:</strong> {dayjs(selectedOrder?.reject_at || editOrder?.reject_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Ready for Shipment At:</strong> {dayjs(selectedOrder?.ready_at || editOrder?.ready_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Shipped At:</strong> {dayjs(selectedOrder?.ship_at || editOrder?.ship_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Delivered At:</strong> {dayjs(selectedOrder?.arrive_at || editOrder?.arrive_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Paid At:</strong> {dayjs(selectedOrder?.paid_at || editOrder?.paid_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Created At:</strong> {dayjs(selectedOrder?.created_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Processed At:</strong> {dayjs(selectedOrder?.process_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Rejected At:</strong> {dayjs(selectedOrder?.reject_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Ready for Shipment At:</strong> {dayjs(selectedOrder?.ready_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Shipped At:</strong> {dayjs(selectedOrder?.ship_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Delivered At:</strong> {dayjs(selectedOrder?.arrive_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Paid At:</strong> {dayjs(selectedOrder?.paid_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
               </Box>
@@ -1777,7 +1777,7 @@ const Dashboard = () => {
                 <Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
   
                 {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
-                <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
+                <Box sx={{ maxWidth: '70%', ml: 'auto', mb: 2 }}>
                   <TextField
                     fullWidth
                     label="Subtotal Price (IDR)"
