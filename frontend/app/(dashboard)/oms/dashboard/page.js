@@ -1171,6 +1171,12 @@ const Dashboard = () => {
         const isShipped = !!order.ship_at;
         const isDelivered = !!order.arrive_at;
         const isPaid = !!order.paid_at;
+        console.log('isProcessed: ', order.process_at);
+        console.log('isRejected: ', order.reject_at);
+        console.log('isReady: ', order.ready_at);
+        console.log('isShipped: ', order.ship_at);
+        console.log('isDelivered: ', order.arrive_at);
+        console.log('isPaid: ', order.paid_at);
     
         return (
           <div>
@@ -1433,13 +1439,13 @@ const Dashboard = () => {
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>Order Timestamps</Typography>
                 <Box sx={{ pl: 1 }}>
-                  <Typography variant="body2"><strong>Created At:</strong> {dayjs(selectedOrder.created_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Processed At:</strong> {dayjs(selectedOrder.process_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Rejected At:</strong> {dayjs(selectedOrder.reject_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Ready for Shipment At:</strong> {dayjs(selectedOrder.ready_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Shipped At:</strong> {dayjs(selectedOrder.ship_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Delivered At:</strong> {dayjs(selectedOrder.arrive_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Paid At:</strong> {dayjs(selectedOrder.paid_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Created At:</strong> {dayjs(selectedOrder?.created_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Processed At:</strong> {dayjs(selectedOrder?.process_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Rejected At:</strong> {dayjs(selectedOrder?.reject_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Ready for Shipment At:</strong> {dayjs(selectedOrder?.ready_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Shipped At:</strong> {dayjs(selectedOrder?.ship_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Delivered At:</strong> {dayjs(selectedOrder?.arrive_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Paid At:</strong> {dayjs(selectedOrder?.paid_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
               </Box>
