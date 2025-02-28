@@ -2233,6 +2233,20 @@ const Dashboard = () => {
           >
             Record Payment for Order ID {selectedOrder?.order_id || 'N/A'}
           </Typography>
+
+          {/* Display Due Amount (grand_total) */}
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              textAlign: 'center', 
+              mb: 2, 
+              fontWeight: 'medium', 
+              color: 'text.secondary' 
+            }}
+          >
+            Due Amount: {Number(selectedOrder?.grand_total || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+          </Typography>
+
           <Box sx={{ mt: 2 }}>
             <TextField
               fullWidth
@@ -2265,6 +2279,43 @@ const Dashboard = () => {
               rows={3}
               sx={{ mb: 2 }}
             />
+
+            {/* Payment History List */}
+            <Box sx={{ mt: 2, mb: 2, maxHeight: '200px', overflowY: 'auto' }}>
+              <Typography variant="subtitle1" gutterBottom>Payment History</Typography>
+              {selectedOrder && (
+                <Box>
+                  {loading ? (
+                    <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
+                  ) : (
+                    <Box>
+                      {selectedOrder.payments && selectedOrder.payments.length > 0 ? (
+                        selectedOrder.payments.map((payment, index) => (
+                          <Box key={index} sx={{ mb: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                            <Typography variant="body2">
+                              <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Date: {dayjs(payment.payment_date).format('YYYY-MM-DD HH:mm:ss')}
+                            </Typography>
+                            {payment.notes && (
+                              <Typography variant="caption" color="text.secondary">
+                                Notes: {payment.notes}
+                              </Typography>
+                            )}
+                          </Box>
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                          No payment history available.
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Box>
+
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
               <Button 
                 variant="contained" 
