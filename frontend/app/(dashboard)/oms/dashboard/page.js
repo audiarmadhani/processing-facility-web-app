@@ -816,7 +816,6 @@ const Dashboard = () => {
     }
   };
 
-  // Handle Record Payment (open modal and process payment recording)
   const handleRecordPayment = async (orderId) => {
     setLoading(true);
     try {
@@ -826,25 +825,25 @@ const Dashboard = () => {
         payment_date: paymentData.paymentDate,
         notes: paymentData.notes || null,
       };
-
-      // POST to a new endpoint for payments (e.g., /api/payments)
-      const res = await fetch('https://processing-facility-backend.onrender.com/api/payments', {
+  
+      // POST to create the payment record
+      const paymentRes = await fetch('https://processing-facility-backend.onrender.com/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(paymentDataToSend),
       });
-
-      if (!res.ok) throw new Error('Failed to record payment: ' + (await res.text()));
-      const paymentResponse = await res.json();
-
-      // Update order status to 'Paid' and paid_at timestamp
+  
+      if (!paymentRes.ok) throw new Error('Failed to record payment: ' + (await paymentRes.text()));
+      const paymentResponse = await paymentRes.json();
+  
+      // Update order payment_status to 'Paid' and paid_at timestamp, without changing shipment status
       const orderUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           customer_id: selectedOrder.customer_id,
-          status: 'Paid',
-          payment_status: 'Paid',
+          status: selectedOrder.status, // Preserve the current shipment status
+          payment_status: 'Paid', // Update only payment_status
           driver_id: selectedOrder.driver_id, // Reuse existing driver_id
           shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
           driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
@@ -853,14 +852,14 @@ const Dashboard = () => {
           items: selectedOrder.items
         }),
       });
-
-      if (!orderUpdateRes.ok) throw new Error('Failed to update order status to Paid: ' + (await orderUpdateRes.text()));
+  
+      if (!orderUpdateRes.ok) throw new Error('Failed to update order payment status to Paid: ' + (await orderUpdateRes.text()));
       const updatedOrder = await orderUpdateRes.json();
-      console.log('Updated Order (Paid):', updatedOrder);
-
-      // Update the orders state safely with the "Paid" status and payment_status
+      console.log('Updated Order (Payment Recorded):', updatedOrder);
+  
+      // Update the orders state safely with the updated payment_status and paid_at
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? updatedOrder : o));
-
+  
       setSnackbar({ open: true, message: 'Payment recorded and order marked as paid successfully', severity: 'success' });
       setOpenPaymentModal(false); // Close the modal after successful submission
       setPaymentData({ amount: '', paymentDate: new Date().toISOString().split('T')[0], notes: '' }); // Reset payment data
@@ -1271,6 +1270,33 @@ const Dashboard = () => {
       ),
     },
     { 
+      field: 'payment_status', 
+      headerName: 'Payment Status', 
+      width: 200, 
+      sortable: true,
+      renderCell: (params) => (
+        <Button
+          variant="contained" // Use contained variant for a filled button
+          size="small"
+          sx={{
+            minWidth: 100,
+            padding: '4px 16px',
+            borderRadius: '16px', // Pill shape
+            backgroundColor: params.value === 'Pending' ? '#d32f2f' : params.value === 'Partial Payment' ? '#f57c00' : params.value === 'Full Payment' ? '#4caf50' : '#757575', // Red for Pending, Yellow for Partial, Green for Full
+            color: '#fff', // White text for contrast
+            fontSize: '0.875rem',
+            textTransform: 'none',
+            alignItems: 'center',
+            '&:hover': {
+              backgroundColor: params.value === 'Pending' ? '#d32f2f' : params.value === 'Partial Payment' ? '#f57c00' : params.value === 'Full Payment' ? '#4caf50' : '#757575', // Maintain background color on hover
+            },
+          }}
+        >
+          {params.value}
+        </Button>
+      ),
+    },
+    { 
       field: 'actions', 
       headerName: 'Actions', 
       width: 130, 
@@ -1282,7 +1308,7 @@ const Dashboard = () => {
         const isReady = !!order.ready_at;
         const isShipped = !!order.ship_at;
         const isDelivered = !!order.arrive_at;
-        const isPaid = order.payment_status === 'Paid'; // Check payment_status instead of paid_at
+        const isPaid = order.payment_status === 'Paid'; // Check payment_status instead of status
         
         return (
           <div>
@@ -1354,7 +1380,7 @@ const Dashboard = () => {
               </MenuItem>
               <MenuItem 
                 onClick={() => setOpenPaymentModal(true)} 
-                disabled={ isRejected}
+                disabled={isPaid || isRejected} // Allow payment recording unless Paid or Rejected
               >
                 Record Payment
               </MenuItem>
@@ -2283,36 +2309,29 @@ const Dashboard = () => {
             {/* Payment History List */}
             <Box sx={{ mt: 2, mb: 2, maxHeight: '200px', overflowY: 'auto' }}>
               <Typography variant="subtitle1" gutterBottom>Payment History</Typography>
-              {selectedOrder && (
-                <Box>
-                  {loading ? (
-                    <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
-                  ) : (
-                    <Box>
-                      {selectedOrder.payments && selectedOrder.payments.length > 0 ? (
-                        selectedOrder.payments.map((payment, index) => (
-                          <Box key={index} sx={{ mb: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                            <Typography variant="body2">
-                              <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Date: {dayjs(payment.payment_date).format('YYYY-MM-DD HH:mm:ss')}
-                            </Typography>
-                            {payment.notes && (
-                              <Typography variant="caption" color="text.secondary">
-                                Notes: {payment.notes}
-                              </Typography>
-                            )}
-                          </Box>
-                        ))
-                      ) : (
-                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                          No payment history available.
-                        </Typography>
-                      )}
-                    </Box>
-                  )}
-                </Box>
+              {selectedOrder.payments && selectedOrder.payments.length > 0 ? (
+                selectedOrder.payments.map((payment, index) => (
+                  <Box key={index} sx={{ mb: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                    <Typography variant="body2">
+                      <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Date: {dayjs(payment.payment_date).format('YYYY-MM-DD HH:mm:ss')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Status: {payment.payment_status || 'Completed'} {/* Show payment_status */}
+                    </Typography>
+                    {payment.notes && (
+                      <Typography variant="caption" color="text.secondary">
+                        Notes: {payment.notes}
+                      </Typography>
+                    )}
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  No payment history available.
+                </Typography>
               )}
             </Box>
 
