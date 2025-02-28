@@ -128,6 +128,12 @@ const Dashboard = () => {
   const [refreshCounter, setRefreshCounter] = useState(0); // For refreshing data after edits
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [openDriverModal, setOpenDriverModal] = useState(false);
+  const [openPaymentModal, setOpenPaymentModal] = useState(false); // State for payment modal
+  const [paymentData, setPaymentData] = useState({
+    amount: '', // Amount paid by customer
+    paymentDate: new Date().toISOString().split('T')[0], // Default to today’s date
+    notes: '', // Optional notes for the payment
+  });
 
   // Fetch data
   useEffect(() => {
@@ -775,6 +781,112 @@ const Dashboard = () => {
     setOpenConfirmInTransit(true);
   };
 
+  // Handle Order Arrived (update status to 'Delivered' and record arrive_at timestamp)
+  const handleOrderArrived = async (orderId) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          customer_id: selectedOrder.customer_id,
+          status: 'Delivered',
+          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
+          shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
+          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
+          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
+          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+          items: selectedOrder.items
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to mark order as arrived: ' + (await res.text()));
+      const updatedOrder = await res.json();
+      console.log('Updated Order (Arrived):', updatedOrder);
+
+      // Update the orders state safely with the "Delivered" status
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? updatedOrder : o));
+
+      setSnackbar({ open: true, message: 'Order marked as arrived successfully', severity: 'success' });
+    } catch (error) {
+      console.error('Error marking order as arrived:', error);
+      setSnackbar({ open: true, message: `Error marking order as arrived: ${error.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Record Payment (open modal and process payment recording)
+  const handleRecordPayment = async (orderId) => {
+    setLoading(true);
+    try {
+      const paymentDataToSend = {
+        order_id: orderId,
+        amount: paymentData.amount,
+        payment_date: paymentData.paymentDate,
+        notes: paymentData.notes || null,
+      };
+
+      // POST to a new endpoint for payments (e.g., /api/payments)
+      const res = await fetch('https://processing-facility-backend.onrender.com/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(paymentDataToSend),
+      });
+
+      if (!res.ok) throw new Error('Failed to record payment: ' + (await res.text()));
+      const paymentResponse = await res.json();
+
+      // Update order status to 'Paid' and paid_at timestamp
+      const orderUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          customer_id: selectedOrder.customer_id,
+          status: 'Paid',
+          payment_status: 'Paid',
+          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
+          shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
+          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
+          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
+          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+          items: selectedOrder.items
+        }),
+      });
+
+      if (!orderUpdateRes.ok) throw new Error('Failed to update order status to Paid: ' + (await orderUpdateRes.text()));
+      const updatedOrder = await orderUpdateRes.json();
+      console.log('Updated Order (Paid):', updatedOrder);
+
+      // Update the orders state safely with the "Paid" status and payment_status
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? updatedOrder : o));
+
+      setSnackbar({ open: true, message: 'Payment recorded and order marked as paid successfully', severity: 'success' });
+      setOpenPaymentModal(false); // Close the modal after successful submission
+      setPaymentData({ amount: '', paymentDate: new Date().toISOString().split('T')[0], notes: '' }); // Reset payment data
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      setSnackbar({ open: true, message: `Error recording payment: ${error.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle payment modal input changes
+  const handlePaymentInputChange = (e) => {
+    const { name, value } = e.target;
+    setPaymentData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle closing the payment modal
+  const handleClosePaymentModal = () => {
+    setOpenPaymentModal(false);
+    setPaymentData({ amount: '', paymentDate: new Date().toISOString().split('T')[0], notes: '' }); // Reset payment data
+  };
+
   // Generate SPK PDF
   const generateSPKPDF = (order) => {
     if (!order || typeof order !== 'object') {
@@ -1170,14 +1282,8 @@ const Dashboard = () => {
         const isReady = !!order.ready_at;
         const isShipped = !!order.ship_at;
         const isDelivered = !!order.arrive_at;
-        const isPaid = !!order.paid_at;
-        console.log('isProcessed: ', order.process_at);
-        console.log('isRejected: ', order.reject_at);
-        console.log('isReady: ', order.ready_at);
-        console.log('isShipped: ', order.ship_at);
-        console.log('isDelivered: ', order.arrive_at);
-        console.log('isPaid: ', order.paid_at);
-    
+        const isPaid = order.payment_status === 'Paid'; // Check payment_status instead of paid_at
+        
         return (
           <div>
             <Button
@@ -1230,15 +1336,27 @@ const Dashboard = () => {
               <Divider sx={{ my: 0.5 }} /> {/* Divider after status-changing actions */}
               <MenuItem 
                 onClick={openReadyForShipmentConfirm} 
-                disabled={ isRejected || isReady || isShipped || isDelivered || isPaid}
+                disabled={!isProcessed || isRejected || isReady || isShipped || isDelivered || isPaid}
               >
                 Ready for Shipment
               </MenuItem>
               <MenuItem 
                 onClick={openInTransitConfirm} 
-                disabled={ isRejected || isShipped || isDelivered || isPaid}
+                disabled={!isReady || isRejected || isShipped || isDelivered || isPaid}
               >
                 In Transit
+              </MenuItem>
+              <MenuItem 
+                onClick={() => handleOrderArrived(params.row.order_id)} 
+                disabled={!isShipped || isDelivered || isPaid || isRejected}
+              >
+                Order Arrived
+              </MenuItem>
+              <MenuItem 
+                onClick={() => setOpenPaymentModal(true)} 
+                disabled={ isRejected}
+              >
+                Record Payment
               </MenuItem>
               <Divider sx={{ my: 0.5 }} /> {/* Divider before non-status-changing actions */}
               <MenuItem onClick={() => handleOpenOrderModal(params.row, false)}>View Details</MenuItem>
@@ -1266,6 +1384,7 @@ const Dashboard = () => {
       ship_at: order?.ship_at || null,
       arrive_at: order?.arrive_at || null,
       paid_at: order?.paid_at || null,
+      payment_status: order?.payment_status || 'Pending', // Default to 'Pending' if not set
     };
   }) : [];
 
@@ -2085,6 +2204,84 @@ const Dashboard = () => {
             >
               Cancel
             </Button>
+          </Box>
+        </Paper>
+      </Modal>
+
+      {/* Payment Recording Modal */}
+      <Modal
+        open={openPaymentModal}
+        onClose={handleClosePaymentModal}
+        aria-labelledby="payment-modal-title"
+        aria-describedby="payment-modal-description"
+      >
+        <Paper sx={{ 
+          p: 3, 
+          maxWidth: 400, 
+          mx: 'auto', 
+          mt: '20vh', 
+          borderRadius: 2, 
+        }}>
+          <Typography 
+            variant="h6" 
+            id="payment-modal-title" 
+            gutterBottom 
+            sx={{ 
+              textAlign: 'center', 
+              fontWeight: 'bold', 
+            }}
+          >
+            Record Payment for Order ID {selectedOrder?.order_id || 'N/A'}
+          </Typography>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Amount Paid (IDR)"
+              name="amount"
+              type="number"
+              value={paymentData.amount}
+              onChange={handlePaymentInputChange}
+              sx={{ mb: 2 }}
+              required
+              InputProps={{ inputProps: { min: 0 } }} // Ensure non-negative
+            />
+            <TextField
+              fullWidth
+              label="Payment Date"
+              name="paymentDate"
+              type="date"
+              value={paymentData.paymentDate}
+              onChange={handlePaymentInputChange}
+              sx={{ mb: 2 }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Notes (Optional)"
+              name="notes"
+              value={paymentData.notes}
+              onChange={handlePaymentInputChange}
+              multiline
+              rows={3}
+              sx={{ mb: 2 }}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => handleRecordPayment(selectedOrder.order_id)}
+                disabled={loading}
+              >
+                Record Payment
+              </Button>
+              <Button 
+                variant="outlined" 
+                color="secondary" 
+                onClick={handleClosePaymentModal}
+              >
+                Cancel
+              </Button>
+            </Box>
           </Box>
         </Paper>
       </Modal>

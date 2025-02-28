@@ -162,7 +162,14 @@ router.get('/orders', async (req, res) => {
         d.name AS driver_name, 
         d.vehicle_number AS driver_vehicle_number, 
         d.vehicle_type AS driver_vehicle_type, 
-        d.max_capacity AS driver_max_capacity
+        d.max_capacity AS driver_max_capacity,
+        o.process_at,
+        o.reject_at,
+        o.ready_at,
+        o.ship_at,
+        o.arrive_at,
+        o.paid_at,
+        o.payment_status
       FROM "Orders" o
       LEFT JOIN "Customers" c ON o.customer_id = c.customer_id
       LEFT JOIN "Drivers" d ON o.driver_id = d.driver_id
@@ -217,7 +224,14 @@ router.get('/orders/:order_id', async (req, res) => {
         d.name AS driver_name, 
         d.vehicle_number AS driver_vehicle_number, 
         d.vehicle_type AS driver_vehicle_type, 
-        d.max_capacity AS driver_max_capacity
+        d.max_capacity AS driver_max_capacity,
+        o.process_at,
+        o.reject_at,
+        o.ready_at,
+        o.ship_at,
+        o.arrive_at,
+        o.paid_at,
+        o.payment_status
       FROM "Orders" o
       LEFT JOIN "Customers" c ON o.customer_id = c.customer_id
       LEFT JOIN "Drivers" d ON o.driver_id = d.driver_id
@@ -739,6 +753,59 @@ router.get('/documents/:order_id', async (req, res) => {
     res.json(documents);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch documents', details: error.message });
+  }
+});
+
+// --- Payments Routes ---
+
+// Create a new payment record for an order
+router.post('/payments', async (req, res) => {
+  const { order_id, amount, payment_date, notes } = req.body;
+
+  if (!order_id || !amount) {
+    return res.status(400).json({ error: 'order_id and amount are required' });
+  }
+
+  const parsedAmount = parseFloat(amount);
+  if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ error: 'Invalid amount: must be a positive number' });
+  }
+
+  try {
+    const [payment] = await sequelize.query(`
+      INSERT INTO "Payments" (order_id, amount, payment_date, payment_status, notes, created_at, updated_at)
+      VALUES (:order_id, :amount, :payment_date, :payment_status, :notes, NOW(), NOW())
+      RETURNING *;
+    `, {
+      replacements: { 
+        order_id, 
+        amount: parsedAmount, 
+        payment_date: payment_date || new Date().toISOString(), 
+        payment_status: 'Completed', 
+        notes 
+      },
+      type: sequelize.QueryTypes.INSERT,
+    });
+
+    res.status(201).json(payment);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to record payment', details: error.message });
+  }
+});
+
+// Get all payments for an order
+router.get('/payments/:order_id', async (req, res) => {
+  const { order_id } = req.params;
+  try {
+    const payments = await sequelize.query(`
+      SELECT * FROM "Payments" WHERE order_id = :order_id ORDER BY payment_date DESC
+    `, {
+      replacements: { order_id },
+      type: sequelize.QueryTypes.SELECT,
+    });
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch payments', details: error.message });
   }
 });
 
