@@ -706,26 +706,35 @@ const Dashboard = () => {
     }
   };
 
-  // Replace the handleActionsClick function in Dashboard.js
-  const handleActionsClick = async (event, orderId) => {
-    setLoading(true); // Show loading while fetching
-    try {
-      // Fetch the order to ensure we have all details
-      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
-      if (!orderRes.ok) throw new Error('Failed to fetch order details');
-      const fullOrder = await orderRes.json();
+  // Handle actions dropdown (Process, Reject, View Details, Ready for Shipment, In Transit, Record Payment)
+  const handleActionsClick = (event, orderId) => {
+    // Set anchorEl immediately to open the dropdown
+    setAnchorEl(event.currentTarget);
 
-      // Fetch payment history for the order
-      const paymentsRes = await fetch(`https://processing-facility-backend.onrender.com/api/payments/${orderId}`);
-      const payments = paymentsRes.ok ? await paymentsRes.json() : [];
+    // Fetch order and payment data asynchronously in the background
+    const fetchOrderData = async () => {
+      setLoading(true); // Show loading while fetching
+      try {
+        // Fetch the order to ensure we have all details
+        const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`);
+        if (!orderRes.ok) throw new Error('Failed to fetch order details');
+        const fullOrder = await orderRes.json();
 
-      setAnchorEl(event.currentTarget);
-      setSelectedOrder({ ...fullOrder, payments }); // Include payments in selectedOrder
-    } catch (error) {
-      setSnackbar({ open: true, message: `Error fetching order details: ${error.message}`, severity: 'error' });
-    } finally {
-      setLoading(false); // Hide loading state
-    }
+        // Fetch payment history for the order
+        const paymentsRes = await fetch(`https://processing-facility-backend.onrender.com/api/payments/${orderId}`);
+        const payments = paymentsRes.ok ? await paymentsRes.json() : [];
+
+        // Update selectedOrder with the fetched data
+        setSelectedOrder({ ...fullOrder, payments });
+      } catch (error) {
+        setSnackbar({ open: true, message: `Error fetching order details: ${error.message}`, severity: 'error' });
+      } finally {
+        setLoading(false); // Hide loading state
+      }
+    };
+
+    // Call the fetch function immediately but don’t wait for it to complete (non-blocking)
+    fetchOrderData();
   };
 
   const handleActionsClose = () => {
@@ -2260,7 +2269,7 @@ const Dashboard = () => {
         onClose={handleClosePaymentModal}
         aria-labelledby="payment-modal-title"
         aria-describedby="payment-modal-description"
-       >
+        >
         <Paper sx={{ 
           p: 3, 
           maxWidth: 400, 
