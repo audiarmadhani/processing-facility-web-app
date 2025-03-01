@@ -1559,7 +1559,7 @@ const Dashboard = () => {
               <CardContent sx={{ p: 2 }}>
                 <Typography variant="h6">{item.title}</Typography>
                 <Typography variant="h4">
-                  {/* {loading ? <CircularProgress size={24} /> : item.value} */}
+                  {item.value}
                 </Typography>
               </CardContent>
             </Card>
@@ -1705,23 +1705,23 @@ const Dashboard = () => {
                   [...(selectedOrder?.payments || [])] // Create a copy to avoid mutating the original array
                     .sort((a, b) => new Date(a.payment_date) - new Date(b.payment_date)) // Sort by payment_date (oldest to newest)
                     .map((payment, index) => (
-                      <Box key={index} sx={{ mb: 1, p: 1, borderRadius: 1 }}>
+                      <Box key={index} sx={{ mb: 1, p: 1, border: '2px', borderRadius: 1 }}>
                         <Typography variant="body2">
                           <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="subtitle" color="text.secondary">
                           Date: {dayjs(payment.payment_date).format('YYYY-MM-DD HH:mm:ss')}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="subtitle" color="text.secondary">
                           Status: {payment.payment_status || 'Completed'}
                         </Typography>
                         {payment.notes && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="subtitle" color="text.secondary">
                             Notes: {payment.notes}
                           </Typography>
                         )}
                         {payment.drive_url && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="subtitle" color="text.secondary">
                             Proof: <a href={payment.drive_url} target="_blank" rel="noopener noreferrer">View Proof</a>
                           </Typography>
                         )}
@@ -1740,63 +1740,61 @@ const Dashboard = () => {
                 {/* Customer Details (Always Shown in View Mode) */}
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
-                  <Box sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                    <TextField
-                      label="Name"
-                      value={selectedOrder.customer_name || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      label="Address"
-                      value={selectedOrder.customer_address || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      label="Phone"
-                      value={selectedOrder.customer_phone || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      label="Email"
-                      value={selectedOrder.customer_email || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      label="Country"
-                      value={selectedOrder.customer_country || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      label="State"
-                      value={selectedOrder.customer_state || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      label="City"
-                      value={selectedOrder.customer_city || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      label="Zip Code"
-                      value={selectedOrder.customer_zip_code || '-'}
-                      InputProps={{ readOnly: true }}
-                      fullWidth
-                    />
-                  </Box>
+                  <TextField
+                    label="Name"
+                    value={selectedOrder.customer_name || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Address"
+                    value={selectedOrder.customer_address || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Phone"
+                    value={selectedOrder.customer_phone || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Email"
+                    value={selectedOrder.customer_email || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Country"
+                    value={selectedOrder.customer_country || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="State"
+                    value={selectedOrder.customer_state || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="City"
+                    value={selectedOrder.customer_city || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    label="Zip Code"
+                    value={selectedOrder.customer_zip_code || '-'}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                  />
                 </Box>
 
                 {/* Shipping Method and Driver Details */}
