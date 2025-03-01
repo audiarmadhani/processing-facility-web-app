@@ -1699,30 +1699,30 @@ const Dashboard = () => {
               </Box>
 
               {/* Payment History (Added at the Bottom for View Mode) */}
-              <Box sx={{ mt: 3, mb: 2, maxHeight: '800px', overflowY: 'auto' }}>
+              <Box sx={{ mt: 3, mb: 2, maxHeight: '800px', overflowY: 'auto', border: '2px' }}>
                 <Typography variant="subtitle1" gutterBottom>Payment History</Typography>
                 {(selectedOrder?.payments || []).length > 0 ? (
                   [...(selectedOrder?.payments || [])] // Create a copy to avoid mutating the original array
                     .sort((a, b) => new Date(a.payment_date) - new Date(b.payment_date)) // Sort by payment_date (oldest to newest)
                     .map((payment, index) => (
-                      <Box key={index} sx={{ mb: 1, p: 1, border: '2px', borderRadius: 1 }}>
-                        <Typography variant="body2">
-                          <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                      <Box key={index} sx={{ mb: 2, p: 2, border: '2px solid', borderRadius: 1 }}>
+                        <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
+                          Payment #{index + 1}: {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
                         </Typography>
-                        <Typography variant="subtitle" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                           Date: {dayjs(payment.payment_date).format('YYYY-MM-DD HH:mm:ss')}
                         </Typography>
-                        <Typography variant="subtitle" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                           Status: {payment.payment_status || 'Completed'}
                         </Typography>
                         {payment.notes && (
-                          <Typography variant="subtitle" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                             Notes: {payment.notes}
                           </Typography>
                         )}
                         {payment.drive_url && (
-                          <Typography variant="subtitle" color="text.secondary">
-                            Proof: <a href={payment.drive_url} target="_blank" rel="noopener noreferrer">View Proof</a>
+                          <Typography variant="body2" color="text.secondary">
+                            Proof: <a href={payment.drive_url} target="_blank" rel="noopener noreferrer" style={{ color: '#90caf9' }}>View Proof</a>
                           </Typography>
                         )}
                       </Box>
@@ -2361,8 +2361,7 @@ const Dashboard = () => {
             />
 
             {/* Drag-and-Drop File Uploader for Proof of Payment */}
-            <Box sx={{ mb: 2, p: 2, height: 200, border: '2px dashed #ccc', borderRadius: 2, textAlign: 'center', cursor: 'pointer' }} {...getRootProps()}>
-              <input {...getInputProps()} />
+            <Box sx={{ mb: 2, p: 2, height: 200, border: '2px dashed #ccc', borderRadius: 2, textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} {...getRootProps()}>              <input {...getInputProps()} />
               {isDragActive ? (
                 <Typography>Drop the files here ...</Typography>
               ) : (
@@ -2389,24 +2388,24 @@ const Dashboard = () => {
                 [...(selectedOrder?.payments || [])] // Create a copy to avoid mutating the original array
                   .sort((a, b) => new Date(a.payment_date) - new Date(b.payment_date)) // Sort by payment_date (oldest to newest)
                   .map((payment, index) => (
-                    <Box key={index} sx={{ mb: 1, p: 1, borderRadius: 1 }}>
-                      <Typography variant="body2">
-                        <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                    <Box key={index} sx={{ mb: 2, p: 2, border: '2px solid', borderRadius: 1 }}>
+                      <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
+                        Payment #{index + 1}: {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                         Date: {dayjs(payment.payment_date).format('YYYY-MM-DD HH:mm:ss')}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                         Status: {payment.payment_status || 'Completed'}
                       </Typography>
                       {payment.notes && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                           Notes: {payment.notes}
                         </Typography>
                       )}
                       {payment.drive_url && (
-                        <Typography variant="caption" color="text.secondary">
-                          Proof: <a href={payment.drive_url} target="_blank" rel="noopener noreferrer">View Proof</a>
+                        <Typography variant="body2" color="text.secondary">
+                          Proof: <a href={payment.drive_url} target="_blank" rel="noopener noreferrer" style={{ color: '#90caf9' }}>View Proof</a>
                         </Typography>
                       )}
                     </Box>
