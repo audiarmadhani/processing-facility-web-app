@@ -1537,7 +1537,6 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>OMS Dashboard</Typography>
       {error && (
         <Snackbar
           open={!!error}
@@ -1630,7 +1629,7 @@ const Dashboard = () => {
           maxHeight: '80vh', 
           overflowY: 'auto', 
           mx: 'auto', 
-          mt: '5vh', 
+          mt: '10vh', 
           borderRadius: 2, 
         }}>
           {loading ? (
@@ -2305,8 +2304,10 @@ const Dashboard = () => {
         <Paper sx={{ 
           p: 3, 
           maxWidth: 800, 
+          maxHeight: '80vh', 
+          overflowY: 'auto', 
           mx: 'auto', 
-          mt: '20vh', 
+          mt: '10vh', 
           borderRadius: 2, 
         }}>
           <Typography 
