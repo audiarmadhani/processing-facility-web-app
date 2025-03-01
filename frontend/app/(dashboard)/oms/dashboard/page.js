@@ -1407,7 +1407,7 @@ const Dashboard = () => {
         const isShipped = !!order.ship_at;
         const isDelivered = !!order.arrive_at;
         const hasPayment = order.payment_status !== 'Pending'; // True if any payment has been received (not Pending)
-        const isInTransitOrDelivered = order.status === 'In Transit' || order.status === 'Delivered';
+        const fullPayment = order.payment_status == 'Full Payment'
     
         return (
           <div>
@@ -1448,38 +1448,38 @@ const Dashboard = () => {
             >
               <MenuItem 
                 onClick={handleProcess} 
-                disabled={isProcessed || isRejected || isReady || isShipped || isDelivered || hasPayment}
+                disabled={isProcessed || isRejected || isReady || isShipped || isDelivered }
               >
                 Process Order
               </MenuItem>
               <MenuItem 
                 onClick={handleReject} 
-                disabled={isRejected || isInTransitOrDelivered || hasPayment}
+                disabled={isRejected || isShipped || isDelivered || hasPayment}
               >
                 Reject Order
               </MenuItem>
               <Divider sx={{ my: 0.5 }} /> {/* Divider after status-changing actions */}
               <MenuItem 
                 onClick={openReadyForShipmentConfirm} 
-                disabled={!isProcessed || isRejected || isReady || isShipped || isDelivered || hasPayment}
+                disabled={!isProcessed || isRejected || isReady || isShipped || isDelivered }
               >
                 Ready for Shipment
               </MenuItem>
               <MenuItem 
                 onClick={openInTransitConfirm} 
-                disabled={!isReady || isRejected || isShipped || isDelivered || hasPayment}
+                disabled={!isReady || isRejected || isShipped || isDelivered }
               >
                 In Transit
               </MenuItem>
               <MenuItem 
                 onClick={() => handleOrderArrived(params.row.order_id)} 
-                disabled={!isShipped || isDelivered || hasPayment || isRejected}
+                disabled={!isShipped || isDelivered || isRejected}
               >
                 Order Arrived
               </MenuItem>
               <MenuItem 
                 onClick={() => setOpenPaymentModal(true)} 
-                disabled={hasPayment || isRejected} // Allow payment recording unless any payment is received or Rejected
+                disabled={ isRejected || fullPayment } // Allow payment recording unless any payment is received or Rejected
               >
                 Record Payment
               </MenuItem>
@@ -1487,7 +1487,7 @@ const Dashboard = () => {
               <MenuItem onClick={() => handleOpenOrderModal(params.row, false)}>View Details</MenuItem>
               <MenuItem 
                 onClick={() => handleOpenOrderModal(params.row, true)} 
-                disabled={isInTransitOrDelivered || hasPayment}
+                disabled={ isShipped || isDelivered || hasPayment}
               >
                 Edit Order
               </MenuItem>
@@ -1627,7 +1627,7 @@ const Dashboard = () => {
       >
         <Paper sx={{ 
           p: 3, 
-          maxWidth: 600, 
+          maxWidth: 800, 
           maxHeight: '80vh', 
           overflowY: 'auto', 
           mx: 'auto', 
@@ -2034,7 +2034,7 @@ const Dashboard = () => {
                 </Box>
 
                 {/* Payment History (Added at the Bottom for View Mode) */}
-                <Box sx={{ mt: 3, mb: 2, maxHeight: '200px', overflowY: 'auto' }}>
+                <Box sx={{ mt: 3, mb: 2, maxHeight: '800px', overflowY: 'auto' }}>
                   <Typography variant="subtitle1" gutterBottom>Payment History</Typography>
                   {(selectedOrder?.payments || []).length > 0 ? (
                     (selectedOrder?.payments || []).map((payment, index) => (
