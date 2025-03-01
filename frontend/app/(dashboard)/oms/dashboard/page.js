@@ -34,6 +34,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
 import CustomerModal from '../../components/CustomerModal';
 import DriverModal from '../../components/DriverModal';
+import { useDropzone } from 'react-dropzone'; // Add this import at the top of Dashboard.js
 
 const getBackgroundColor = (color, theme, coefficient) => ({
   backgroundColor: darken(color, coefficient),
@@ -134,6 +135,13 @@ const Dashboard = () => {
     paymentDate: new Date().toISOString().split('T')[0], // Default to today’s date
     notes: '', // Optional notes for the payment
   });
+  const [paymentProof, setPaymentProof] = useState(null);
+
+  const onDrop = (acceptedFiles) => {
+    setPaymentProof(acceptedFiles[0]); // Store the first file dropped
+  };
+  
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
   // Fetch data
   useEffect(() => {
@@ -845,6 +853,7 @@ const Dashboard = () => {
     }
   };
 
+  // Update handleRecordPayment to include uploading the proof of payment
   const handleRecordPayment = async (orderId) => {
     setLoading(true);
     try {
@@ -854,17 +863,44 @@ const Dashboard = () => {
         payment_date: paymentData.paymentDate,
         notes: paymentData.notes || null,
       };
-  
+
       // POST to create the payment record
       const paymentRes = await fetch('https://processing-facility-backend.onrender.com/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(paymentDataToSend),
       });
-  
+
       if (!paymentRes.ok) throw new Error('Failed to record payment: ' + (await paymentRes.text()));
       const paymentResponse = await paymentRes.json();
-  
+
+      // Upload proof of payment to Google Drive if provided
+      if (paymentProof) {
+        const currentDate = new Date();
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // 01-12
+        const folderName = `${month}-${year}`;
+        const parentFolderId = '1fham6qIb7htz8wEtSzQAc901BSbpV1Gt'; // Provided Google Drive folder ID
+
+        // Check if the subfolder exists or create it
+        let subfolderId = await checkOrCreateSubfolder(parentFolderId, folderName);
+        
+        // Upload the file to the subfolder
+        const formData = new FormData();
+        formData.append('order_id', orderId.toString());
+        formData.append('type', 'Payment Proof');
+        formData.append('file', paymentProof, `Proof_${orderId}_${dayjs().format('YYYYMMDD_HHmmss')}.${paymentProof.name.split('.').pop()}`);
+        
+        const uploadRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) throw new Error('Failed to upload payment proof: ' + (await uploadRes.text()));
+        await uploadRes.json();
+        setPaymentProof(null); // Reset after upload
+      }
+
       // Update order payment_status to 'Paid' and paid_at timestamp, without changing shipment status
       const orderUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
@@ -881,15 +917,15 @@ const Dashboard = () => {
           items: selectedOrder.items
         }),
       });
-  
+
       if (!orderUpdateRes.ok) throw new Error('Failed to update order payment status to Paid: ' + (await orderUpdateRes.text()));
       const updatedOrder = await orderUpdateRes.json();
       console.log('Updated Order (Payment Recorded):', updatedOrder);
-  
+
       // Update the orders state safely with the updated payment_status and paid_at
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? updatedOrder : o));
-  
-      setSnackbar({ open: true, message: 'Payment recorded and order marked as paid successfully', severity: 'success' });
+
+      setSnackbar({ open: true, message: 'Payment recorded, proof uploaded, and order marked as paid successfully', severity: 'success' });
       setOpenPaymentModal(false); // Close the modal after successful submission
       setPaymentData({ amount: '', paymentDate: new Date().toISOString().split('T')[0], notes: '' }); // Reset payment data
     } catch (error) {
@@ -897,6 +933,39 @@ const Dashboard = () => {
       setSnackbar({ open: true, message: `Error recording payment: ${error.message}`, severity: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add these helper functions at the top of Dashboard.js with other functions
+  const checkOrCreateSubfolder = async (parentFolderId, folderName) => {
+    const drive = google.drive({ version: 'v3', auth: oauth2Client }); // Ensure oauth2Client is defined as in your backend routes
+
+    try {
+      // Check if the subfolder exists
+      const response = await drive.files.list({
+        q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents`,
+        fields: 'files(id, name)',
+      });
+
+      if (response.data.files.length > 0) {
+        return response.data.files[0].id; // Return existing folder ID
+      }
+
+      // Create the subfolder if it doesn’t exist
+      const folderMetadata = {
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [parentFolderId],
+      };
+
+      const folder = await drive.files.create({
+        resource: folderMetadata,
+        fields: 'id',
+      });
+
+      return folder.data.id; // Return new folder ID
+    } catch (error) {
+      throw new Error('Failed to check/create subfolder: ' + error.message);
     }
   };
 
@@ -1337,8 +1406,9 @@ const Dashboard = () => {
         const isReady = !!order.ready_at;
         const isShipped = !!order.ship_at;
         const isDelivered = !!order.arrive_at;
-        const isPaid = order.payment_status === 'Paid'; // Check payment_status instead of status
-        
+        const hasPayment = order.payment_status !== 'Pending'; // True if any payment has been received (not Pending)
+        const isInTransitOrDelivered = order.status === 'In Transit' || order.status === 'Delivered';
+    
         return (
           <div>
             <Button
@@ -1378,44 +1448,49 @@ const Dashboard = () => {
             >
               <MenuItem 
                 onClick={handleProcess} 
-                disabled={isProcessed || isRejected || isReady || isShipped || isDelivered || isPaid}
+                disabled={isProcessed || isRejected || isReady || isShipped || isDelivered || hasPayment}
               >
                 Process Order
               </MenuItem>
               <MenuItem 
                 onClick={handleReject} 
-                disabled={isRejected || isDelivered || isPaid}
+                disabled={isRejected || isInTransitOrDelivered || hasPayment}
               >
                 Reject Order
               </MenuItem>
               <Divider sx={{ my: 0.5 }} /> {/* Divider after status-changing actions */}
               <MenuItem 
                 onClick={openReadyForShipmentConfirm} 
-                disabled={!isProcessed || isRejected || isReady || isShipped || isDelivered || isPaid}
+                disabled={!isProcessed || isRejected || isReady || isShipped || isDelivered || hasPayment}
               >
                 Ready for Shipment
               </MenuItem>
               <MenuItem 
                 onClick={openInTransitConfirm} 
-                disabled={!isReady || isRejected || isShipped || isDelivered || isPaid}
+                disabled={!isReady || isRejected || isShipped || isDelivered || hasPayment}
               >
                 In Transit
               </MenuItem>
               <MenuItem 
                 onClick={() => handleOrderArrived(params.row.order_id)} 
-                disabled={!isShipped || isDelivered || isPaid || isRejected}
+                disabled={!isShipped || isDelivered || hasPayment || isRejected}
               >
                 Order Arrived
               </MenuItem>
               <MenuItem 
                 onClick={() => setOpenPaymentModal(true)} 
-                disabled={isPaid || isRejected} // Allow payment recording unless Paid or Rejected
+                disabled={hasPayment || isRejected} // Allow payment recording unless any payment is received or Rejected
               >
                 Record Payment
               </MenuItem>
               <Divider sx={{ my: 0.5 }} /> {/* Divider before non-status-changing actions */}
               <MenuItem onClick={() => handleOpenOrderModal(params.row, false)}>View Details</MenuItem>
-              <MenuItem onClick={() => handleOpenOrderModal(params.row, true)}>Edit Order</MenuItem>
+              <MenuItem 
+                onClick={() => handleOpenOrderModal(params.row, true)} 
+                disabled={isInTransitOrDelivered || hasPayment}
+              >
+                Edit Order
+              </MenuItem>
             </Menu>
           </div>
         );
@@ -1484,7 +1559,7 @@ const Dashboard = () => {
               <CardContent sx={{ p: 2 }}>
                 <Typography variant="h6">{item.title}</Typography>
                 <Typography variant="h4">
-                  {loading ? <CircularProgress size={24} /> : item.value}
+                  {/* {loading ? <CircularProgress size={24} /> : item.value} */}
                 </Typography>
               </CardContent>
             </Card>
@@ -1561,7 +1636,7 @@ const Dashboard = () => {
         }}>
           {loading ? (
             <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
-          ) : selectedOrder || editOrder ? (
+            ) : selectedOrder || editOrder ? (
             <Box>
               <Typography 
                 variant="h5" 
@@ -1613,109 +1688,81 @@ const Dashboard = () => {
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>Order Timestamps</Typography>
                 <Box sx={{ pl: 1 }}>
-                  <Typography variant="body2"><strong>Created At:</strong> {dayjs(selectedOrder?.created_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Processed At:</strong> {dayjs(selectedOrder?.process_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Rejected At:</strong> {dayjs(selectedOrder?.reject_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Ready for Shipment At:</strong> {dayjs(selectedOrder?.ready_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Shipped At:</strong> {dayjs(selectedOrder?.ship_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Delivered At:</strong> {dayjs(selectedOrder?.arrive_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Paid At:</strong> {dayjs(selectedOrder?.paid_at ).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Created At:</strong> {dayjs(selectedOrder?.created_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Processed At:</strong> {dayjs(selectedOrder?.process_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Rejected At:</strong> {dayjs(selectedOrder?.reject_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Ready for Shipment At:</strong> {dayjs(selectedOrder?.ready_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Shipped At:</strong> {dayjs(selectedOrder?.ship_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Delivered At:</strong> {dayjs(selectedOrder?.arrive_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
+                  <Typography variant="body2"><strong>Paid At:</strong> {dayjs(selectedOrder?.paid_at).format('YYYY-MM-DD HH:mm:ss') || 'N/A'}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
               </Box>
   
               {/* Order View/Edit Form */}
               <Box>
-                {/* Customer Selection */}
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Customer</InputLabel>
-                  <Select
-                    name="customer_id"
-                    value={editOrder ? editOrder.customer_id : selectedOrder.customer_id}
-                    onChange={editOrder ? handleEditInputChange : undefined}
-                    label="Customer"
-                    disabled={!editOrder}
-                  >
-                    {customers.map(customer => (
-                      <MenuItem key={customer.customer_id} value={customer.customer_id}>
-                        {customer.name}
-                      </MenuItem>
-                    ))}
-                    <MenuItem>
-                      <Button
-                        fullWidth
-                        variant="text"
-                        onClick={() => setOpenCustomerModal(true)}
-                        sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                        disabled={!editOrder}
-                      >
-                        + Add New Customer
-                      </Button>
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-  
-                {showCustomerDetails && selectedCustomer && (
-                  <Box sx={{ mb: 4, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                    <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
+                {/* Customer Details (Always Shown in View Mode) */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="subtitle1" gutterBottom>Customer Details</Typography>
+                  <Box sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
                     <TextField
                       label="Name"
-                      value={selectedCustomer.name || '-'}
+                      value={selectedOrder.customer_name || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       label="Address"
-                      value={selectedCustomer.address || '-'}
+                      value={selectedOrder.customer_address || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       label="Phone"
-                      value={selectedCustomer.phone || '-'}
+                      value={selectedOrder.customer_phone || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       label="Email"
-                      value={selectedCustomer.email || '-'}
+                      value={selectedOrder.customer_email || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       label="Country"
-                      value={selectedCustomer.country || '-'}
+                      value={selectedOrder.customer_country || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       label="State"
-                      value={selectedCustomer.state || '-'}
+                      value={selectedOrder.customer_state || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       label="City"
-                      value={selectedCustomer.city || '-'}
+                      value={selectedOrder.customer_city || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       label="Zip Code"
-                      value={selectedCustomer.zip_code || '-'}
+                      value={selectedOrder.customer_zip_code || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
                     />
                   </Box>
-                )}
-  
+                </Box>
+
                 {/* Shipping Method and Driver Details */}
                 <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Shipping Method</InputLabel>
@@ -1724,13 +1771,13 @@ const Dashboard = () => {
                     value={editOrder ? editOrder.shipping_method : selectedOrder.shipping_method || 'Customer'}
                     onChange={editOrder ? handleEditInputChange : undefined}
                     label="Shipping Method"
-                    disabled={!editOrder}
+                    disabled={true} // Disabled for view mode
                   >
                     <MenuItem value="Customer">Customer-Arranged</MenuItem>
                     <MenuItem value="Self">Self-Arranged</MenuItem>
                   </Select>
                 </FormControl>
-  
+
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="subtitle1" gutterBottom>Driver Details</Typography>
                   {editOrder ? (
@@ -1909,135 +1956,119 @@ const Dashboard = () => {
                   )}
                 </Box>
                 <Divider sx={{ my: 4 }} /> {/* Divider between Order Details and Order Items */}
-  
-                {/* Order Items */}
+
+                {/* Order Items (Visible but Disabled in View Mode) */}
                 <Box sx={{ mb: 3 }}>
-                  {(editOrder ? editOrder.items : selectedOrder.items || []).map((item, index) => (
+                  <Typography variant="subtitle1" gutterBottom>Order Items</Typography>
+                  {(selectedOrder.items || []).map((item, index) => (
                     <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <TextField
                         label="Product"
                         value={item.product}
-                        onChange={(e) => (editOrder ? handleEditItemChange(index, 'product', e.target.value) : undefined)}
+                        InputProps={{ readOnly: true }}
                         sx={{ mr: 2, flex: 1 }}
-                        disabled={!editOrder}
                       />
                       <TextField
                         label="Quantity (kg)"
                         type="number"
                         value={item.quantity}
-                        onChange={(e) => (editOrder ? handleEditItemChange(index, 'quantity', e.target.value) : undefined)}
+                        InputProps={{ readOnly: true }}
                         sx={{ mr: 1, width: '120px' }}
-                        disabled={!editOrder}
                       />
                       <TextField
                         label="Price per Unit (IDR)"
                         type="number"
                         value={item.price}
-                        onChange={(e) => (editOrder ? handleEditItemChange(index, 'price', e.target.value) : undefined)}
+                        InputProps={{ readOnly: true }}
                         sx={{ mr: 1, width: '120px' }}
-                        disabled={!editOrder}
                       />
-                      {editOrder && (
-                        <IconButton
-                          onClick={() => removeEditItem(index)}
-                          size="small"
-                          color="error"
-                          disabled={editOrder.items.length === 1}
-                        >
-                          <CloseIcon />
-                        </IconButton>
-                      )}
                     </Box>
                   ))}
-                  {editOrder && (
-                    <Button variant="outlined" onClick={addEditItem} sx={{ mb: 2 }}>Add Another Item</Button>
-                  )}
                 </Box>
-  
-                <Divider sx={{ mb: 2 }} /> {/* Divider between Subtotal and Tax */}
-  
-                {/* Subtotal, Tax, and Grand Total (Narrow, Right-Aligned) */}
+
+                <Divider sx={{ mb: 2 }} /> {/* Divider between Items and Totals */}
+
+                {/* Subtotal, Tax, and Grand Total (Visible but Disabled in View Mode) */}
                 <Box sx={{ maxWidth: '70%', ml: 'auto', mb: 2 }}>
                   <TextField
                     fullWidth
                     label="Subtotal Price (IDR)"
-                    name="price"
-                    value={(editOrder ? editOrder.price : selectedOrder.price || '0') ? Number(editOrder ? editOrder.price : selectedOrder.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
-                    InputProps={{ readOnly: true }} // Calculated automatically
+                    value={Number(selectedOrder.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                    InputProps={{ readOnly: true }}
                     sx={{ mb: 2 }}
-                    disabled={!editOrder}
                   />
                   <TextField
                     fullWidth
                     label="Tax Percentage (%)"
-                    name="tax_percentage"
-                    value={editOrder ? editOrder.tax_percentage : selectedOrder.tax_percentage || '0'}
-                    onChange={editOrder ? handleEditInputChange : undefined}
-                    type="number"
+                    value={selectedOrder.tax_percentage || '0'}
+                    InputProps={{ readOnly: true }}
                     sx={{ mb: 2 }}
-                    disabled={!editOrder}
                   />
                   <TextField
                     fullWidth
                     label="Grand Total (IDR)"
-                    value={
-                      (editOrder ? editOrder.price : selectedOrder.price) && (editOrder ? editOrder.tax_percentage : selectedOrder.tax_percentage)
-                        ? (Number(editOrder ? editOrder.price : selectedOrder.price || 0) * (1 + Number(editOrder ? editOrder.tax_percentage : selectedOrder.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
-                        : '0 IDR'
-                    }
-                    InputProps={{ readOnly: true }} // Calculated on frontend
+                    value={Number(selectedOrder.grand_total || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                    InputProps={{ readOnly: true }}
                     sx={{ mb: 2 }}
-                    disabled={!editOrder}
                   />
-                  {editOrder ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleSaveEdit}
-                        disabled={loading}
-                        startIcon={loading ? <CircularProgress size={20} /> : null}
-                        sx={{ flex: 1 }}
-                      >
-                        Save Changes
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={handleCloseOrderModal}
-                        sx={{ flex: 1 }}
-                      >
-                        Cancel
-                      </Button>
-                    </Box>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleDownloadDocuments} 
+                    sx={{ 
+                      mt: 2, 
+                      width: '100%', 
+                    }}
+                  >
+                    Download Documents
+                  </Button>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleCloseOrderModal} 
+                    sx={{ 
+                      mt: 2, 
+                      width: '100%', 
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Box>
+
+                {/* Payment History (Added at the Bottom for View Mode) */}
+                <Box sx={{ mt: 3, mb: 2, maxHeight: '200px', overflowY: 'auto' }}>
+                  <Typography variant="subtitle1" gutterBottom>Payment History</Typography>
+                  {(selectedOrder?.payments || []).length > 0 ? (
+                    (selectedOrder?.payments || []).map((payment, index) => (
+                      <Box key={index} sx={{ mb: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                        <Typography variant="body2">
+                          <strong>Payment #{index + 1}:</strong> {Number(payment.amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Date: {dayjs(payment.payment_date).format('YYYY-MM-DD HH:mm:ss')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Status: {payment.payment_status || 'Completed'}
+                        </Typography>
+                        {payment.notes && (
+                          <Typography variant="caption" color="text.secondary">
+                            Notes: {payment.notes}
+                          </Typography>
+                        )}
+                        {payment.drive_url && (
+                          <Typography variant="caption" color="text.secondary">
+                            Proof: <a href={payment.drive_url} target="_blank" rel="noopener noreferrer">View Proof</a>
+                          </Typography>
+                        )}
+                      </Box>
+                    ))
                   ) : (
-                    <>
-                      <Button 
-                        variant="contained" 
-                        onClick={handleDownloadDocuments} 
-                        sx={{ 
-                          mt: 2, 
-                          width: '100%', 
-                        }}
-                      >
-                        Download Documents
-                      </Button>
-                      <Button 
-                        variant="contained" 
-                        onClick={handleCloseOrderModal} 
-                        sx={{ 
-                          mt: 2, 
-                          width: '100%', 
-                        }}
-                      >
-                        Close
-                      </Button>
-                    </>
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                      No payment history available.
+                    </Typography>
                   )}
                 </Box>
               </Box>
             </Box>
-          ) : (
+            ) : (
             <Typography variant="body1" sx={{ textAlign: 'center' }}>No order details available.</Typography>
           )}
         </Paper>
@@ -2269,7 +2300,7 @@ const Dashboard = () => {
         onClose={handleClosePaymentModal}
         aria-labelledby="payment-modal-title"
         aria-describedby="payment-modal-description"
-        >
+      >
         <Paper sx={{ 
           p: 3, 
           maxWidth: 400, 
@@ -2338,6 +2369,17 @@ const Dashboard = () => {
               sx={{ mb: 2 }}
             />
 
+            {/* Drag-and-Drop File Uploader for Proof of Payment */}
+            <Box sx={{ mb: 2, p: 2, border: '2px dashed #ccc', borderRadius: 2, textAlign: 'center', cursor: 'pointer' }} {...getRootProps()}>
+              <input {...getInputProps()} />
+              {isDragActive ? (
+                <Typography>Drop the files here ...</Typography>
+              ) : (
+                <Typography>Drag 'n' drop proof of payment here, or click to select file</Typography>
+              )}
+              {paymentProof && <Typography sx={{ mt: 1, color: 'text.secondary' }}>{paymentProof.name}</Typography>}
+            </Box>
+
             {/* Payment History List */}
             <Box sx={{ mt: 2, mb: 2, maxHeight: '200px', overflowY: 'auto' }}>
               <Typography variant="subtitle1" gutterBottom>Payment History</Typography>
@@ -2356,6 +2398,11 @@ const Dashboard = () => {
                     {payment.notes && (
                       <Typography variant="caption" color="text.secondary">
                         Notes: {payment.notes}
+                      </Typography>
+                    )}
+                    {payment.drive_url && (
+                      <Typography variant="caption" color="text.secondary">
+                        Proof: <a href={payment.drive_url} target="_blank" rel="noopener noreferrer">View Proof</a>
                       </Typography>
                     )}
                   </Box>
