@@ -27,10 +27,10 @@ import {
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
-  const [rfidTag, setRfidTag] = useState('');
+  const [rfid, setRfid] = useState(''); // Store scanned RFID
+  const [rfidTag, setRfidTag] = useState(''); // Store scanned RFID tag
   const [bagsProcessed, setBagsProcessed] = useState(1);
   const [batchNumber, setBatchNumber] = useState('');
   const [bagsAvailable, setBagsAvailable] = useState(0);
@@ -38,39 +38,29 @@ const PreprocessingStation = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-  const [rfidVisible, setRfidVisible] = useState(false);
   const [farmerName, setFarmerName] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
-  const [receivingdatedata, setreceivingdatedata] = useState('');
-  const [receivingDateTrunc, setReceivingDateTrunc] = useState('');
   const [qcDate, setQCDate] = useState('');
-  const [qcdatedata, setqcdatedata] = useState('');
-  const [qcDateTrunc, setQCDateTrunc] = useState('');
   const [weight, setWeight] = useState('');
   const [totalBags, setTotalBags] = useState('');
   const [openHistory, setOpenHistory] = useState(false);
   const [bagsHistory, setBagsHistory] = useState([]);
   const [preprocessingData, setPreprocessingData] = useState([]);
   const [unprocessedBatches, setUnprocessedBatches] = useState([]);
-
   const [producer, setProducer] = useState('');
   const [productLine, setProductLine] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [quality, setQuality] = useState('');
-
 
   const fetchAvailableBags = async (batchNumber, totalBags) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch preprocessing data');
       const preprocessingResponse = await response.json();
-      // Log the preprocessing response
       console.log('Preprocessing Response:', preprocessingResponse);
-      // Check if the preprocessing response has totalBagsProcessed
       if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalBagsProcessed))) {
         const totalProcessedBags = parseFloat(preprocessingResponse.totalBagsProcessed);
         const availableBags = totalBags - totalProcessedBags;
-        // Log total bags, total processed, and available bags
         console.log('Total Bags:', totalBags);
         console.log('Total Processed Bags:', totalProcessedBags);
         console.log('Available Bags:', availableBags);
@@ -80,7 +70,7 @@ const PreprocessingStation = () => {
       }
     } catch (error) {
       console.error('Error fetching available bags:', error);
-      return { availableBags: 0, totalProcessedBags: 0 }; // Return default values on error
+      return { availableBags: 0, totalProcessedBags: 0 };
     }
   };
 
@@ -95,7 +85,6 @@ const PreprocessingStation = () => {
       const data = dataArray[0];
       const { availableBags, totalProcessedBags } = await fetchAvailableBags(batchNumber, data.totalBags);
   
-      // Log the result of fetchAvailableBags
       console.log('fetchAvailableBags result:', { availableBags, totalProcessedBags });
   
       setFarmerName(data.farmerName);
@@ -106,7 +95,6 @@ const PreprocessingStation = () => {
       setBagsAvailable(availableBags);
       setTotalProcessedBags(totalProcessedBags);
   
-      // Log total bags, total processed bags, and available bags to the console
       console.log('Total Bags:', data.totalBags);
       console.log('Total Processed Bags:', totalProcessedBags);
       console.log('Available Bags:', availableBags);
@@ -117,6 +105,66 @@ const PreprocessingStation = () => {
       handleError('Error retrieving batch data. Please try again.', error);
     } finally {
       setOpenSnackbar(true);
+    }
+  };
+
+  const handleRfidScan = async () => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/Warehouse_Exit`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch RFID: ${response.status}`);
+      }
+      const data = await response.json();
+
+      if (data.rfid) {
+        setRfid(data.rfid);
+        setRfidTag(data.rfid);
+        const receivingResponse = await fetch(`https://processing-facility-backend.onrender.com/api/receivingrfid/${data.rfid}`);
+        if (!receivingResponse.ok) {
+          throw new Error(`Failed to fetch receiving data: ${receivingResponse.status}`);
+        }
+        const receivingData = await receivingResponse.json();
+
+        if (receivingData && receivingData.length > 0) {
+          const batchData = receivingData[0];
+          setBatchNumber(batchData.batchNumber);
+          setFarmerName(batchData.farmerName);
+          setReceivingDate(batchData.receivingDateTrunc || '');
+          setQCDate(batchData.qcDateTrunc || '');
+          setWeight(batchData.weight || '');
+          setTotalBags(batchData.totalBags || '');
+          setBagsAvailable(batchData.totalBags || 0);
+          await fetchAvailableBags(batchData.batchNumber, batchData.totalBags);
+
+          setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
+          setSnackbarSeverity('success');
+
+          await clearRfidData("Preprocessing");
+        } else {
+          setSnackbarMessage('No receiving data found for this RFID.');
+          setSnackbarSeverity('warning');
+        }
+      } else {
+        setSnackbarMessage('No RFID tag scanned yet.');
+        setSnackbarSeverity('warning');
+      }
+    } catch (error) {
+      console.error('Error fetching batch number or receiving data:', error);
+      setSnackbarMessage('Error retrieving data. Please try again.');
+      setSnackbarSeverity('error');
+    } finally {
+      setOpenSnackbar(true);
+    }
+  };
+
+  const clearRfidData = async (scannedAt) => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/${scannedAt}`, { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error(`Failed to clear RFID Data: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error clearing RFID Data:", error);
     }
   };
 
@@ -177,47 +225,45 @@ const PreprocessingStation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Trim the batch number and bags processed
     const trimmedBatchNumber = batchNumber.trim();
     const trimmedBagsProcessed = bagsProcessed;
 
     if (trimmedBagsProcessed > bagsAvailable) {
-        setSnackbarMessage(`Cannot process more bags than available. Available: ${bagsAvailable}`);
-        setSnackbarSeverity('warning');
-        setOpenSnackbar(true);
-        return;
+      setSnackbarMessage(`Cannot process more bags than available. Available: ${bagsAvailable}`);
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
     }
 
     const preprocessingData = {
-        bagsProcessed: trimmedBagsProcessed, 
-        batchNumber: trimmedBatchNumber,
-        producer: producer,
-        productLine: productLine,
-        processingType: processingType,
-        quality: quality,
-        createdBy: session.user.name,
+      bagsProcessed: trimmedBagsProcessed, 
+      batchNumber: trimmedBatchNumber,
+      producer: producer,
+      productLine: productLine,
+      processingType: processingType,
+      quality: quality,
+      createdBy: session.user.name,
     };
 
     try {
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(preprocessingData),
-        });
-        if (!response.ok) throw new Error('Failed to start processing');
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preprocessingData),
+      });
+      if (!response.ok) throw new Error('Failed to start processing');
 
-        setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedBagsProcessed} bags!`);
-        setSnackbarSeverity('success');
-        setOpenSnackbar(true); // Show the snackbar here
+      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedBagsProcessed} bags!`);
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
 
-        // Call fetchPreprocessingData after successful submission
-        await fetchPreprocessingData();
+      await fetchPreprocessingData();
 
-        resetForm();
+      resetForm();
     } catch (error) {
-        handleError('Failed to start preprocessing. Please try again.', error);
+      handleError('Failed to start preprocessing. Please try again.', error);
     }
-};
+  };
 
   const handleError = (message, error) => {
     console.error(message, error);
@@ -227,6 +273,7 @@ const PreprocessingStation = () => {
   };
 
   const resetForm = () => {
+    setRfid('');
     setRfidTag('');
     setBagsProcessed(1);
     setBatchNumber('');
@@ -254,7 +301,6 @@ const PreprocessingStation = () => {
       const result = await response.json();
       const pendingPreprocessingData = result.allRows || [];
   
-      // Calculate SLA (days since receiving)
       const today = new Date();
       const formattedData = pendingPreprocessingData.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
@@ -267,16 +313,14 @@ const PreprocessingStation = () => {
   
         return {
           ...batch,
-          sla, // Add SLA to batch data
+          sla,
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A'
         };
       });
   
-      // Filter out batches with available bags
       const unprocessedBatches = formattedData.filter(batch => batch.availableBags > 0);
   
-      // Sort unprocessed batches by type, ripeness, color, foreignMatter, and overallQuality
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
@@ -294,7 +338,6 @@ const PreprocessingStation = () => {
         return 0;
       });
   
-      // Sort all batches by available bags and startProcessingDate
       const sortedData = sortedDataType.sort((a, b) => {
         if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') {return -1;}
         if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') {return 1;}
@@ -309,7 +352,7 @@ const PreprocessingStation = () => {
   };
 
   useEffect(() => {
-    fetchPreprocessingData(); // Fetch preprocessing data only once on mount
+    fetchPreprocessingData();
   }, []);
 
   const ITEM_HEIGHT = 48;
@@ -323,9 +366,8 @@ const PreprocessingStation = () => {
     },
   };
 
-  // Define the dependent options.  This is the *core* of the solution.
   const producerOptions = {
-    "": [" "], //Add blank value, if select is blank
+    "": [" "],
     HQ: ["Regional Lot", "Micro Lot", "Competition Lot"],
     BTM: ["Commercial Lot"],
   };
@@ -348,30 +390,28 @@ const PreprocessingStation = () => {
       "Anaerobic Honey": ["Specialty"],
       "CM Natural": ["Specialty"],
       "CM Washed": ["Specialty"],
-  }
+  };
 
   useEffect(() => {
     if (producer && !producerOptions[producer].includes(productLine)) {
-        setProductLine(''); // Reset productLine if producer changes
+        setProductLine('');
     }
   }, [producer, productLine, producerOptions]);
 
   useEffect(() => {
     if (productLine && !productLineOptions[productLine].includes(processingType)) {
-        setProcessingType(''); // Reset processingType if productLine changes
+        setProcessingType('');
     }
   }, [productLine, processingType, productLineOptions]);
 
   useEffect(() => {
     if (processingType && !processingTypeOptions[processingType].includes(quality)) {
-        setQuality(''); // Reset quality if processingType changes
+        setQuality('');
     }
   }, [processingType, quality, processingTypeOptions]);
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-    // { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
-    // { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
     { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
@@ -399,12 +439,10 @@ const PreprocessingStation = () => {
     { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
   ];
 
-  // Show loading screen while session is loading
   if (status === 'loading') {
     return <p>Loading...</p>;
   }
 
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'preprocessing')) {
     return (
       <Typography variant="h6">
@@ -422,32 +460,16 @@ const PreprocessingStation = () => {
               Preprocessing Station
             </Typography>
             <form onSubmit={handleSubmit}>
-              {/* RFID and Batch Number Lookup */}
               <Grid container spacing={2} alignItems="center">
                 <Grid item>
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => setRfidVisible(true)}
+                    onClick={handleRfidScan}
                     style={{ marginTop: '12px' }}
                   >
-                    Scan RFID Tag
+                    Get RFID Tag
                   </Button>
-                </Grid>
-                <Grid item>
-                  {rfidVisible && (
-                    <TextField
-                      id="rfid-input"
-                      type="text"
-                      value={rfidTag}
-                      onChange={handleRfidScan}
-                      placeholder="Scan RFID tag here"
-                      fullWidth
-                      required
-                      autoFocus={false}
-                      margin="normal"
-                    />
-                  )}
                 </Grid>
                 <Grid item xs>
                   <TextField
@@ -471,7 +493,6 @@ const PreprocessingStation = () => {
                 </Grid>
               </Grid>
   
-              {/* Farmer and Batch Details */}
               <Grid container spacing={2} style={{ marginTop: '16px' }}>
                 <Grid item xs={12}>
                   <TextField
@@ -522,7 +543,6 @@ const PreprocessingStation = () => {
   
               <Divider style={{ margin: '16px 0' }} />
   
-              {/* Display Total Processed and Available Bags */}
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <TextField
@@ -539,7 +559,7 @@ const PreprocessingStation = () => {
                     value={bagsAvailable || 0}
                     InputProps={{
                       readOnly: true,
-                      style: { color: bagsAvailable <= 0 ? 'red' : 'inherit' }, // Change color to red if 0 or below
+                      style: { color: bagsAvailable <= 0 ? 'red' : 'inherit' },
                     }}
                     fullWidth
                     margin="normal"
@@ -547,7 +567,6 @@ const PreprocessingStation = () => {
                 </Grid>
               </Grid>
 
-              {/* Bag Processing Section */}
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={6}>
                   <TextField
@@ -570,96 +589,90 @@ const PreprocessingStation = () => {
                 </Grid>
               </Grid>
 
-              <Divider style={{ margin: '16px 0' }} /> {/* Add a Divider here */}
+              <Divider style={{ margin: '16px 0' }} />
 
               <Grid item xs={12} style={{ marginTop: '12px' }}>
                 <FormControl fullWidth required>
-                    <InputLabel id="pd-label">Producer</InputLabel>
-                    <Select
-                        labelId="pd-label"
-                        id="pd"
-                        value={producer}
-                        onChange={(e) => {
-                          setProducer(e.target.value);
-                          // setProductLine(''); // No longer need to reset here.  useEffect handles.
-                          // setProcessingType('');
-                          // setQuality('');
-                        }}
-                        input={<OutlinedInput label="Producer" />}
-                        MenuProps={MenuProps}
-                    >
-                        <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
-                        <MenuItem value="HQ">HEQA</MenuItem>
-                        <MenuItem value="BTM">BTM</MenuItem>
-                    </Select>
+                  <InputLabel id="pd-label">Producer</InputLabel>
+                  <Select
+                    labelId="pd-label"
+                    id="pd"
+                    value={producer}
+                    onChange={(e) => {
+                      setProducer(e.target.value);
+                    }}
+                    input={<OutlinedInput label="Producer" />}
+                    MenuProps={MenuProps}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    <MenuItem value="HQ">HEQA</MenuItem>
+                    <MenuItem value="BTM">BTM</MenuItem>
+                  </Select>
                 </FormControl>
               </Grid>
 
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} style={{ marginTop: '12px' }}>
                   <FormControl fullWidth required>
-                      <InputLabel id="pl-label">Product Line</InputLabel>
-                      <Select
-                          labelId="pl-label"
-                          id="pl"
-                          value={productLine}
-                          onChange={(e) => {
-                            setProductLine(e.target.value);
-                            // setProcessingType(''); // No longer need to reset here. useEffect handles.
-                            // setQuality('');
-                          }}
-                          input={<OutlinedInput label="Product Line" />}
-                          MenuProps={MenuProps}
-                          disabled={!producer}  // Disable if no producer selected
-                      >
-                          <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
-                          {producerOptions[producer] ? producerOptions[producer].map((option) => (
-                              <MenuItem key={option} value={option}>{option}</MenuItem>
-                          )) : []}
-                      </Select>
+                    <InputLabel id="pl-label">Product Line</InputLabel>
+                    <Select
+                      labelId="pl-label"
+                      id="pl"
+                      value={productLine}
+                      onChange={(e) => {
+                        setProductLine(e.target.value);
+                      }}
+                      input={<OutlinedInput label="Product Line" />}
+                      MenuProps={MenuProps}
+                      disabled={!producer}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {producerOptions[producer] ? producerOptions[producer].map((option) => (
+                        <MenuItem key={option} value={option}>{option}</MenuItem>
+                      )) : []}
+                    </Select>
                   </FormControl>
                 </Grid>
 
                 <Grid item xs={12} style={{ marginTop: '12px' }}>
                   <FormControl fullWidth required>
-                      <InputLabel id="pt-label">Processing Type</InputLabel>
-                      <Select
-                          labelId="pt-label"
-                          id="pt"
-                          value={processingType}
-                          onChange={(e) => {
-                            setProcessingType(e.target.value);
-                            // setQuality(''); // No longer need to reset here. useEffect handles it
-                          }}
-                          input={<OutlinedInput label="Processing Type" />}
-                          MenuProps={MenuProps}
-                          disabled={!productLine}  // Disable if no product line selected
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
-                          {productLineOptions[productLine] ? productLineOptions[productLine].map((option) => (
-                              <MenuItem key={option} value={option}>{option}</MenuItem>
-                          )) : []}
-                      </Select>
+                    <InputLabel id="pt-label">Processing Type</InputLabel>
+                    <Select
+                      labelId="pt-label"
+                      id="pt"
+                      value={processingType}
+                      onChange={(e) => {
+                        setProcessingType(e.target.value);
+                      }}
+                      input={<OutlinedInput label="Processing Type" />}
+                      MenuProps={MenuProps}
+                      disabled={!productLine}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {productLineOptions[productLine] ? productLineOptions[productLine].map((option) => (
+                        <MenuItem key={option} value={option}>{option}</MenuItem>
+                      )) : []}
+                    </Select>
                   </FormControl>
                 </Grid>
 
                 <Grid item xs={12} style={{ marginTop: '12px' }}>
                   <FormControl fullWidth required>
-                      <InputLabel id="ql-label">Quality</InputLabel>
-                      <Select
-                          labelId="ql-label"
-                          id="ql"
-                          value={quality}
-                          onChange={(e) => setQuality(e.target.value)}
-                          input={<OutlinedInput label="Quality" />}
-                          MenuProps={MenuProps}
-                          disabled={!processingType} // Disable if no processing type selected
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem> {/* Add a "None" option */}
-                          {processingTypeOptions[processingType] ? processingTypeOptions[processingType].map((option) => (
-                              <MenuItem key={option} value={option}>{option}</MenuItem>
-                          )) : []}
-                      </Select>
+                    <InputLabel id="ql-label">Quality</InputLabel>
+                    <Select
+                      labelId="ql-label"
+                      id="ql"
+                      value={quality}
+                      onChange={(e) => setQuality(e.target.value)}
+                      input={<OutlinedInput label="Quality" />}
+                      MenuProps={MenuProps}
+                      disabled={!processingType}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {processingTypeOptions[processingType] ? processingTypeOptions[processingType].map((option) => (
+                        <MenuItem key={option} value={option}>{option}</MenuItem>
+                      )) : []}
+                    </Select>
                   </FormControl>
                 </Grid>
 
@@ -668,22 +681,9 @@ const PreprocessingStation = () => {
                     Send to Wet Mill
                   </Button>
                 </Grid>
-
               </Grid>
-
             </form>
-  
-            {/* View Bags History Button
-            <Button
-              variant="contained"
-              color="info"
-              onClick={showBagsHistory}
-              style={{ marginTop: '16px' }}
-            >
-              View Bags History
-            </Button> */}
-  
-            {/* Snackbar Notifications */}
+
             <Snackbar
               open={openSnackbar}
               autoHideDuration={6000}
@@ -693,8 +693,7 @@ const PreprocessingStation = () => {
                 {snackbarMessage}
               </Alert>
             </Snackbar>
-  
-            {/* Bags Processing History Dialog */}
+
             <Dialog open={openHistory} onClose={handleCloseHistory}>
               <DialogTitle>Bags Processing History</DialogTitle>
               <DialogContent>
@@ -735,14 +734,12 @@ const PreprocessingStation = () => {
       </Grid>
 
       <Grid item xs={12} md={8}>
-
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
               Pending Processing
             </Typography>
   
-            {/* Table for Preprocessing Data */}
             <div style={{ height: 600, width: '100%' }}>
               <DataGrid
                 rows={unprocessedBatches}
@@ -751,7 +748,7 @@ const PreprocessingStation = () => {
                 rowsPerPageOptions={[5, 10, 20]}
                 disableSelectionOnClick
                 sortingOrder={['asc', 'desc']}
-                getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
+                getRowId={(row) => row.batchNumber}
                 slots={{ toolbar: GridToolbar }}
                 autosizeOnMount
                 autosizeOptions={{
@@ -765,15 +762,14 @@ const PreprocessingStation = () => {
           </CardContent>
         </Card>
 
-        <Divider style={{ margin: '16px 0' }} /> {/* Add a Divider here */}
-  
+        <Divider style={{ margin: '16px 0' }} />
+
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
               Processing Order Book
             </Typography>
   
-            {/* Table for Preprocessing Data */}
             <div style={{ height: 1000, width: '100%' }}>
               <DataGrid
                 rows={preprocessingData}
@@ -782,7 +778,7 @@ const PreprocessingStation = () => {
                 rowsPerPageOptions={[5, 10, 20]}
                 disableSelectionOnClick
                 sortingOrder={['asc', 'desc']}
-                getRowId={(row) => row.batchNumber} // Assuming `batchNumber` is unique
+                getRowId={(row) => row.batchNumber}
                 slots={{ toolbar: GridToolbar }}
                 autosizeOnMount
                 autosizeOptions={{

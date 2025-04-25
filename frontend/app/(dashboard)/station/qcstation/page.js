@@ -97,7 +97,7 @@ const QCStation = () => {
 
   const handleRfidScan = async () => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/qc`); //  GET request with scanned_at=qc
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/QC`); //  GET request with scanned_at=qc
       if (!response.ok) {
           throw new Error(`Failed to fetch RFID: ${response.status}`);
       }
@@ -147,7 +147,7 @@ const QCStation = () => {
 
   const clearRfidData = async () => {
       try {
-          const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/qc`, { method: 'DELETE' }); // Pass scannedAt
+          const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/QC`, { method: 'DELETE' }); // Pass scannedAt
           if (!response.ok) {
               throw new Error(`Failed to clear RFID Data: ${response.status}`);
           }
