@@ -21,14 +21,15 @@ import {
   Box,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'; // For RFID scanning UI
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 
 const DryMillStation = () => {
   const { data: session, status } = useSession();
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-  const [dryMillData, setDryMillData] = useState([]);
+  const [parentBatches, setParentBatches] = useState([]);
+  const [subBatches, setSubBatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -39,10 +40,10 @@ const DryMillStation = () => {
     { grade: 'G3', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
     { grade: 'G4', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
   ]);
-  const [rfid, setRfid] = useState(''); // State for RFID input
-  const [isScanning, setIsScanning] = useState(false); // State for scanning status
-  const [openCompleteDialog, setOpenCompleteDialog] = useState(false); // For marking batch as processed
-  const [openStorageDialog, setOpenStorageDialog] = useState(false); // For warehouse storage confirmation
+  const [rfid, setRfid] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [openCompleteDialog, setOpenCompleteDialog] = useState(false);
+  const [openStorageDialog, setOpenStorageDialog] = useState(false);
 
   const fetchDryMillData = async () => {
     setIsLoading(true);
@@ -53,6 +54,7 @@ const DryMillStation = () => {
 
       const formattedData = data.map(batch => ({
         batchNumber: batch.batchNumber,
+        referenceNumber: batch.referenceNumber || 'N/A',
         status: batch.status,
         dryMillEntered: batch.dryMillEntered,
         dryMillExited: batch.dryMillExited,
@@ -60,13 +62,22 @@ const DryMillStation = () => {
         producer: batch.producer,
         productLine: batch.productLine,
         processingType: batch.processingType,
-        targetQuality: batch.targetQuality,
+        quality: batch.quality,
+        totalBags: batch.totalBags,
+        notes: batch.notes,
+        type: batch.type,
+        storeddatetrunc: batch.storeddatetrunc,
         isStored: batch.isStored,
         rfid: batch.rfid,
         green_bean_splits: batch.green_bean_splits,
+        parentBatchNumber: batch.parentBatchNumber,
       }));
 
-      setDryMillData(formattedData);
+      const parentBatchesData = formattedData.filter(batch => !batch.parentBatchNumber && !batch.isStored);
+      const subBatchesData = formattedData.filter(batch => batch.parentBatchNumber || batch.isStored);
+
+      setParentBatches(parentBatchesData);
+      setSubBatches(subBatchesData);
     } catch (error) {
       console.error('Error fetching dry mill data:', error);
       setSnackbarMessage(error.message || 'Error fetching data. Please try again.');
@@ -94,12 +105,10 @@ const DryMillStation = () => {
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
 
-      // Fetch updated data after scan
       fetchDryMillData();
 
-      // Check if this is an exit (bagging/storage readiness) scan to confirm storage
       if (data.exited_at) {
-        setOpenStorageDialog(true); // Open dialog to confirm storage
+        setOpenStorageDialog(true);
       }
     } catch (error) {
       console.error('Error scanning RFID:', error);
@@ -125,7 +134,7 @@ const DryMillStation = () => {
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
       setOpenCompleteDialog(false);
-      fetchDryMillData(); // Refresh data after completion
+      fetchDryMillData();
     } catch (error) {
       console.error('Error marking batch as processed:', error);
       setSnackbarMessage(error.message || 'Failed to mark batch as processed');
@@ -149,7 +158,7 @@ const DryMillStation = () => {
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
       setOpenStorageDialog(false);
-      fetchDryMillData(); // Refresh data after storage
+      fetchDryMillData();
     } catch (error) {
       console.error('Error confirming storage:', error);
       setSnackbarMessage(error.message || 'Failed to confirm storage');
@@ -174,8 +183,8 @@ const DryMillStation = () => {
         body: JSON.stringify({ grades: validGrades }),
       });
       if (!response.ok) throw new Error('Failed to save green bean splits');
-      await fetchDryMillData(); // Refresh data
-      setGrades(grades.map(g => ({ ...g, weight: '', bagged_at: new Date().toISOString().split('T')[0] }))); // Reset form
+      await fetchDryMillData();
+      setGrades(grades.map(g => ({ ...g, weight: '', bagged_at: new Date().toISOString().split('T')[0] })));
       setSnackbarMessage('Green bean splits saved successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
@@ -192,7 +201,7 @@ const DryMillStation = () => {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/rfid/reuse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rfid: '', batchNumber }), // Fetch available RFID automatically
+        body: JSON.stringify({ rfid: '', batchNumber }),
       });
 
       if (!response.ok) throw new Error('Failed to reuse RFID tag');
@@ -201,7 +210,7 @@ const DryMillStation = () => {
       setSnackbarMessage(data.message);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      fetchDryMillData(); // Refresh data after reuse
+      fetchDryMillData();
     } catch (error) {
       console.error('Error reusing RFID tag:', error);
       setSnackbarMessage(error.message || 'Failed to reuse RFID tag');
@@ -214,7 +223,7 @@ const DryMillStation = () => {
     fetchDryMillData();
     const intervalId = setInterval(() => {
       fetchDryMillData();
-    }, 300000); // 5 minutes
+    }, 300000);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -231,15 +240,15 @@ const DryMillStation = () => {
     setOpenDialog(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedBatch(null);
-    setGrades(grades.map(g => ({ ...g, weight: '', bagged_at: new Date().toISOString().split('T')[0] }))); // Reset form
-  };
-
   const handleCompleteClick = (batch) => {
     setSelectedBatch(batch);
     setOpenCompleteDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedBatch(null);
+    setGrades(grades.map(g => ({ ...g, weight: '', bagged_at: new Date().toISOString().split('T')[0] })));
   };
 
   const handleCloseCompleteDialog = () => {
@@ -251,8 +260,9 @@ const DryMillStation = () => {
     setOpenStorageDialog(false);
   };
 
-  const columns = [
+  const parentColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160 },
+    { field: 'referenceNumber', headerName: 'Ref Number', width: 180 },
     {
       field: 'status',
       headerName: 'Status',
@@ -295,22 +305,6 @@ const DryMillStation = () => {
       ),
     },
     {
-      field: 'reuseTag',
-      headerName: 'Reuse Tag',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleReuseTag(params.row.batchNumber)}
-          disabled={!params.row.isStored}
-        >
-          Reuse Tag
-        </Button>
-      ),
-    },
-    {
       field: 'complete',
       headerName: 'Complete',
       width: 120,
@@ -347,20 +341,8 @@ const DryMillStation = () => {
     { field: 'producer', headerName: 'Producer', width: 90 },
     { field: 'productLine', headerName: 'Product Line', width: 130 },
     { field: 'processingType', headerName: 'Processing Type', width: 160 },
-    { field: 'targetQuality', headerName: 'Target Quality', width: 130 },
-    {
-      field: 'isStored',
-      headerName: 'Storage Status',
-      width: 120,
-      renderCell: (params) => (
-        <Chip
-          label={params.value ? 'Stored' : 'Not Stored'}
-          color={params.value ? 'success' : 'default'}
-          size="small"
-          sx={{ borderRadius: '16px', fontWeight: 'medium' }}
-        />
-      ),
-    },
+    { field: 'type', headerName: 'Type', width: 100, sortable: true },
+    { field: 'notes', headerName: 'Notes', width: 150, sortable: true },
     {
       field: 'green_bean_splits',
       headerName: 'Green Bean Splits',
@@ -379,9 +361,81 @@ const DryMillStation = () => {
     { field: 'rfid', headerName: 'RFID', width: 120 },
   ];
 
-  const getDryMillData = () => {
-    return dryMillData.sort((a, b) => {
-      // Sort by status: In Dry Mill (0), Processed (1)
+  const subBatchColumns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160 },
+    { field: 'parentBatchNumber', headerName: 'Parent Batch', width: 160 },
+    { field: 'referenceNumber', headerName: 'Ref Number', width: 180 },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 120,
+      renderCell: (params) => {
+        const status = params.value;
+        let color;
+        switch (status) {
+          case 'In Dry Mill':
+            color = 'primary';
+            break;
+          case 'Processed':
+            color = 'success';
+            break;
+          default:
+            color = 'default';
+        }
+        return (
+          <Chip
+            label={status}
+            color={color}
+            size="small"
+            sx={{ borderRadius: '16px', fontWeight: 'medium' }}
+          />
+        );
+      },
+    },
+    {
+      field: 'reuseTag',
+      headerName: 'Reuse Tag',
+      width: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => handleReuseTag(params.row.parentBatchNumber)}
+          disabled={!params.row.isStored}
+        >
+          Reuse Tag
+        </Button>
+      ),
+    },
+    { field: 'dryMillEntered', headerName: 'Dry Mill Entered', width: 150 },
+    { field: 'dryMillExited', headerName: 'Dry Mill Exited', width: 150 },
+    { field: 'storeddatetrunc', headerName: 'Stored Date', width: 150, sortable: true },
+    { field: 'cherry_weight', headerName: 'Weight', width: 120 },
+    { field: 'producer', headerName: 'Producer', width: 90 },
+    { field: 'productLine', headerName: 'Product Line', width: 130 },
+    { field: 'processingType', headerName: 'Processing Type', width: 160 },
+    { field: 'type', headerName: 'Type', width: 100, sortable: true },
+    { field: 'quality', headerName: 'Quality', width: 100, sortable: true },
+    { field: 'totalBags', headerName: 'Bags Qty', width: 100, sortable: true },
+    { field: 'notes', headerName: 'Notes', width: 150, sortable: true },
+    {
+      field: 'isStored',
+      headerName: 'Storage Status',
+      width: 120,
+      renderCell: (params) => (
+        <Chip
+          label={params.value ? 'Stored' : 'Not Stored'}
+          color={params.value ? 'success' : 'default'}
+          size="small"
+          sx={{ borderRadius: '16px', fontWeight: 'medium' }}
+        />
+      ),
+    },
+  ];
+
+  const getParentBatches = () => {
+    return parentBatches.sort((a, b) => {
       const statusOrder = {
         'In Dry Mill': 0,
         'Processed': 1,
@@ -390,23 +444,55 @@ const DryMillStation = () => {
       const statusB = statusOrder[b.status] || 2;
       if (statusA !== statusB) return statusA - statusB;
 
-      // Sort by dryMillEntered (oldest first, ascending)
       if (a.dryMillEntered !== b.dryMillEntered) {
         return (a.dryMillEntered === 'N/A' ? Infinity : new Date(a.dryMillEntered)) - 
                (b.dryMillEntered === 'N/A' ? Infinity : new Date(b.dryMillEntered));
       }
 
-      return 0; // If all criteria are equal, maintain original order
+      return 0;
     });
   };
 
-  const renderDataGrid = () => {
-    const sortedData = getDryMillData();
+  const getSubBatches = () => {
+    return subBatches.sort((a, b) => {
+      if (a.parentBatchNumber !== b.parentBatchNumber) {
+        return a.parentBatchNumber.localeCompare(b.parentBatchNumber);
+      }
+      return a.batchNumber.localeCompare(b.batchNumber);
+    });
+  };
+
+  const renderParentDataGrid = () => {
+    const sortedData = getParentBatches();
     return (
-      <div style={{ height: 1500, width: '100%' }}>
+      <div style={{ height: 400, width: '100%' }}>
         <DataGrid
           rows={sortedData}
-          columns={columns}
+          columns={parentColumns}
+          pageSize={5}
+          rowsPerPageOptions={[5, 10, 20]}
+          disableSelectionOnClick
+          getRowId={(row) => row.batchNumber}
+          slots={{ toolbar: GridToolbar }}
+          autosizeOnMount
+          autosizeOptions={{
+            includeHeaders: true,
+            includeOutliers: true,
+            expand: true,
+          }}
+          rowHeight={35}
+        />
+      </div>
+    );
+  };
+
+  const renderSubBatchDataGrid = () => {
+    const sortedData = getSubBatches();
+    return (
+      <div style={{ height: 600, width: '100%' }}>
+        <DataGrid
+          rows={sortedData}
+          columns={subBatchColumns}
           pageSize={10}
           rowsPerPageOptions={[10, 20, 50]}
           disableSelectionOnClick
@@ -442,7 +528,7 @@ const DryMillStation = () => {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
-              Dry Mill Station
+              Dry Mill Station - Active Batches
             </Typography>
             <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
               <TextField
@@ -474,17 +560,27 @@ const DryMillStation = () => {
             >
               {isLoading ? 'Refreshing...' : 'Refresh Data'}
             </Button>
-            {renderDataGrid()}
+            {renderParentDataGrid()}
           </CardContent>
         </Card>
       </Grid>
 
-      {/* Sort, Weigh, and Bag Dialog (Green Bean Splitting) */}
+      <Grid item xs={12}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Green Bean Sub-Batches
+            </Typography>
+            {renderSubBatchDataGrid()}
+          </CardContent>
+        </Card>
+      </Grid>
+
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Sort, Weigh, and Bag - Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-            Enter the weight and bagging date for each green bean grade after dry milling. Use preprocessing data as a guide: Producer: {selectedBatch?.producer}, Product Line: {selectedBatch?.productLine}, Processing Type: {selectedBatch?.processingType}, Target Quality: {selectedBatch?.targetQuality}. Note: Green bean weight may be less than cherry weight due to processing losses.
+            Enter the weight and bagging date for each green bean grade after dry milling. Use preprocessing data as a guide: Producer: {selectedBatch?.producer}, Product Line: {selectedBatch?.productLine}, Processing Type: {selectedBatch?.processingType}, Type: {selectedBatch?.type}. Note: Green bean weight may be less than cherry weight due to processing losses.
           </Typography>
           <Grid container spacing={2} style={{ marginTop: '16px' }}>
             {grades.map((grade, index) => (
@@ -526,7 +622,6 @@ const DryMillStation = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Mark Batch as Processed Dialog */}
       <Dialog open={openCompleteDialog} onClose={handleCloseCompleteDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Mark Batch as Processed</DialogTitle>
         <DialogContent>
@@ -540,7 +635,6 @@ const DryMillStation = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Storage Confirmation Dialog */}
       <Dialog open={openStorageDialog} onClose={handleCloseStorageDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Confirm Storage</DialogTitle>
         <DialogContent>
