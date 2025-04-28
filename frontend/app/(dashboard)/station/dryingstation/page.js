@@ -239,6 +239,7 @@ const DryingStation = () => {
     "Drying Area 3",
     "Drying Area 4",
     "Drying Area 5",
+    "Drying Room",
   ];
 
   const getAreaData = (area) => {
@@ -422,6 +423,9 @@ const DryingStation = () => {
             <Grid container spacing={3} style={{ marginTop: '16px' }}>
               <Grid item xs={12} md={6}>
                 {renderDataGrid('Drying Area 5')}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                {renderDataGrid('Drying Room')}
               </Grid>
             </Grid>
           </CardContent>
