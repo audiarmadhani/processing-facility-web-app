@@ -94,7 +94,7 @@ const DryMillStation = () => {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/dry-mill/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rfid, scanned_at: 'Dry Mill' }),
+        body: JSON.stringify({ rfid, scanned_at: 'DryMill' }),
       });
 
       if (!response.ok) throw new Error('Failed to scan RFID');
