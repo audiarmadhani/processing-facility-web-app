@@ -159,7 +159,7 @@ function ReceivingStation() {
 
 	const clearRfidData = async() => {
 		try{
-			const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/Receiving}`, {method: 'DELETE'});
+			const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/Receiving`, {method: 'DELETE'});
 			if(!response.ok){
 				throw new Error(`Failed to clear RFID Data: ${response.status}`)
 			}
