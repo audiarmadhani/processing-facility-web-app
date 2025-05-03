@@ -17,11 +17,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  IconButton,
   Box,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 
 const DryMillStation = () => {
   const { data: session, status } = useSession();
@@ -33,13 +31,7 @@ const DryMillStation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
-  const [grades, setGrades] = useState([
-    { grade: 'Specialty Grade', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
-    { grade: 'Grade 1', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
-    { grade: 'Grade 2', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
-    { grade: 'Grade 3', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
-    { grade: 'Grade 4', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
-  ]);
+  const [grades, setGrades] = useState([]);
   const [rfid, setRfid] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [openCompleteDialog, setOpenCompleteDialog] = useState(false);
@@ -54,7 +46,6 @@ const DryMillStation = () => {
 
       const formattedData = data.map(batch => ({
         batchNumber: batch.batchNumber,
-        referenceNumber: batch.referenceNumber || 'N/A',
         status: batch.status,
         dryMillEntered: batch.dryMillEntered,
         dryMillExited: batch.dryMillExited,
@@ -68,9 +59,9 @@ const DryMillStation = () => {
         type: batch.type || 'N/A',
         storeddatetrunc: batch.storeddatetrunc || 'N/A',
         isStored: batch.isStored || false,
-        rfid: batch.rfid || 'N/A',
         green_bean_splits: batch.green_bean_splits || 'N/A',
         parentBatchNumber: batch.parentBatchNumber || null,
+        weight: batch.weight || 'N/A',
       }));
 
       const parentBatchesData = formattedData.filter(batch => !batch.parentBatchNumber && !batch.isStored);
@@ -85,6 +76,31 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchExistingGrades = async (batchNumber) => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`);
+      if (!response.ok) throw new Error('Failed to fetch existing grades');
+      const data = await response.json();
+      return data.map(grade => ({
+        grade: grade.grade,
+        weight: grade.weight || '',
+        bagged_at: grade.bagged_at || new Date().toISOString().split('T')[0],
+      }));
+    } catch (error) {
+      console.error('Error fetching existing grades:', error);
+      setSnackbarMessage('Failed to fetch existing grades.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return [
+        { grade: 'Specialty Grade', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
+        { grade: 'Grade 1', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
+        { grade: 'Grade 2', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
+        { grade: 'Grade 3', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
+        { grade: 'Grade 4', weight: '', bagged_at: new Date().toISOString().split('T')[0] },
+      ];
     }
   };
 
@@ -154,7 +170,7 @@ const DryMillStation = () => {
       setSnackbarMessage(data.message);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      setOpenCompleteDialog(false);
+      setOpenDialog(false);
       fetchDryMillData();
     } catch (error) {
       console.error('Error marking batch as processed:', error);
@@ -196,9 +212,9 @@ const DryMillStation = () => {
   };
 
   const handleSortAndWeigh = async () => {
-    const validGrades = grades.filter(g => g.weight && !isNaN(g.weight) && g.weight > 0 && g.bagged_at);
-    if (validGrades.length === 0) {
-      setSnackbarMessage('Please enter at least one valid weight and bagging date.');
+    const validGrades = grades.filter(g => g.weight === '' || (!isNaN(g.weight) && g.weight > 0) && (g.bagged_at === '' || g.bagged_at));
+    if (validGrades.length !== grades.length) {
+      setSnackbarMessage('Invalid weight or bagging date for some grades.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -209,7 +225,7 @@ const DryMillStation = () => {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/split`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grades: validGrades }),
+        body: JSON.stringify({ grades: grades.map(g => ({ grade: g.grade, weight: g.weight || null, bagged_at: g.bagged_at || null })) }),
       });
       if (!response.ok) throw new Error('Failed to save green bean splits');
       const data = await response.json();
@@ -218,7 +234,6 @@ const DryMillStation = () => {
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
       setOpenDialog(false);
-      setGrades(grades.map(g => ({ ...g, weight: '', bagged_at: new Date().toISOString().split('T')[0] })));
       fetchDryMillData();
     } catch (error) {
       console.error('Error saving green bean splits:', error);
@@ -256,7 +271,7 @@ const DryMillStation = () => {
 
   useEffect(() => {
     fetchDryMillData();
-    fetchLatestRfid(); // Fetch the latest RFID on mount
+    fetchLatestRfid();
     const intervalId = setInterval(() => {
       fetchDryMillData();
       fetchLatestRfid();
@@ -273,20 +288,16 @@ const DryMillStation = () => {
     setOpenSnackbar(false);
   };
 
-  const handleDetailsClick = (batch) => {
+  const handleDetailsClick = async (batch) => {
     setSelectedBatch(batch);
+    const existingGrades = await fetchExistingGrades(batch.batchNumber);
+    setGrades(existingGrades);
     setOpenDialog(true);
-  };
-
-  const handleCompleteClick = (batch) => {
-    setSelectedBatch(batch);
-    setOpenCompleteDialog(true);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedBatch(null);
-    setGrades(grades.map(g => ({ ...g, weight: '', bagged_at: new Date().toISOString().split('T')[0] })));
   };
 
   const handleCloseCompleteDialog = () => {
@@ -301,7 +312,6 @@ const DryMillStation = () => {
 
   const parentColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160 },
-    { field: 'referenceNumber', headerName: 'Ref Number', width: 180 },
     {
       field: 'status',
       headerName: 'Status',
@@ -316,37 +326,7 @@ const DryMillStation = () => {
       ),
     },
     {
-      field: 'rfidScan',
-      headerName: 'RFID Scan',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <IconButton
-          onClick={() => setRfid(params.row.rfid)}
-          disabled={!params.row.rfid || params.row.status === 'Processed'}
-        >
-          <QrCodeScannerIcon />
-        </IconButton>
-      ),
-    },
-    {
       field: 'complete',
-      headerName: 'Complete',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleCompleteClick(params.row)}
-          disabled={params.row.status === 'Processed'}
-        >
-          Mark Complete
-        </Button>
-      ),
-    },
-    {
-      field: 'details',
       headerName: 'Details',
       width: 100,
       sortable: false,
@@ -383,7 +363,6 @@ const DryMillStation = () => {
         </Box>
       ),
     },
-    { field: 'rfid', headerName: 'RFID', width: 140 },
   ];
 
   const subBatchColumns = [
@@ -401,22 +380,6 @@ const DryMillStation = () => {
           size="small"
           sx={{ borderRadius: '16px', fontWeight: 'medium' }}
         />
-      ),
-    },
-    {
-      field: 'reuseTag',
-      headerName: 'Reuse Tag',
-      width: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleReuseTag(params.row.parentBatchNumber || params.row.batchNumber)}
-          disabled={!params.row.isStored}
-        >
-          Reuse Tag
-        </Button>
       ),
     },
     { field: 'dryMillEntered', headerName: 'Dry Mill Entered', width: 150 },
@@ -584,11 +547,14 @@ const DryMillStation = () => {
           <Button variant="contained" color="primary" onClick={handleSortAndWeigh} disabled={!selectedBatch}>
             Save Splits
           </Button>
+          <Button variant="contained" color="secondary" onClick={handleConfirmComplete} disabled={!selectedBatch}>
+            Mark Complete
+          </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={openCompleteDialog} onClose={handleCloseCompleteDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Mark Batch as Processed</DialogTitle>
+        <DialogTitle>Confirm Mark as Processed</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
             Confirm marking Batch {selectedBatch?.batchNumber} as processed. All splits must be weighed and bagged.
