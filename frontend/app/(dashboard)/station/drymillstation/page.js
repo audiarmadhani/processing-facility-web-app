@@ -613,23 +613,33 @@ const DryMillStation = () => {
                   setOpenSnackbar(true);
                   return;
                 }
-                const newGrades = [...grades];
-                newGrades[index].bagWeights.push(parseFloat(weight).toString());
-                setGrades(newGrades);
+                setGrades(prevGrades => {
+                  const newGrades = [...prevGrades];
+                  newGrades[index] = {
+                    ...newGrades[index],
+                    bagWeights: [...newGrades[index].bagWeights, parseFloat(weight).toString()],
+                  };
+                  return newGrades;
+                });
                 setCurrentWeight(""); // Reset input
               };
 
               const handleRemoveBag = (bagIndex) => {
-                const newGrades = [...grades];
-                newGrades[index].bagWeights.splice(bagIndex, 1);
-                setGrades(newGrades);
+                setGrades(prevGrades => {
+                  const newGrades = [...prevGrades];
+                  newGrades[index] = {
+                    ...newGrades[index],
+                    bagWeights: newGrades[index].bagWeights.filter((_, i) => i !== bagIndex),
+                  };
+                  return newGrades;
+                });
               };
 
               const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
               const totalBags = grade.bagWeights.length;
 
               return (
-                <Grid item xs={12} key={grade.grade}>
+                <Grid item xs={12} key={`${grade.grade}-${index}`}>
                   <Box sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
                     <Typography variant="subtitle1">{grade.grade}</Typography>
                     <Box sx={{ display: "flex", gap: 2, mb: 1, alignItems: "center" }}>
@@ -671,9 +681,11 @@ const DryMillStation = () => {
                         type="date"
                         value={grade.bagged_at}
                         onChange={(e) => {
-                          const newGrades = [...grades];
-                          newGrades[index].bagged_at = e.target.value;
-                          setGrades(newGrades);
+                          setGrades(prevGrades => {
+                            const newGrades = [...prevGrades];
+                            newGrades[index] = { ...newGrades[index], bagged_at: e.target.value };
+                            return newGrades;
+                          });
                         }}
                         variant="outlined"
                         sx={{ width: 200 }}
@@ -685,7 +697,7 @@ const DryMillStation = () => {
                         Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg
                       </Typography>
                       {grade.bagWeights.map((weight, bagIndex) => (
-                        <Box key={bagIndex} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                        <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                           <Typography variant="body1" sx={{ mr: 2 }}>
                             Bag {bagIndex + 1}: {weight} kg
                           </Typography>
