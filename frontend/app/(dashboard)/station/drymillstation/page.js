@@ -512,41 +512,12 @@ const DryMillStation = () => {
             <Typography variant="h5" gutterBottom>
               Dry Mill Station - Active Batches
             </Typography>
-            <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-              <TextField
-                label="Scan RFID"
-                value={rfid}
-                onChange={(e) => setRfid(e.target.value.trim().toUpperCase())}
-                variant="outlined"
-                size="small"
-                sx={{ width: 300 }}
-                disabled={isScanning}
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={fetchLatestRfid}
-                disabled={isScanning}
-                sx={{ mr: 1 }}
-              >
-                Fetch Latest RFID
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleScanRfid}
-                disabled={isScanning || !rfid}
-                startIcon={isScanning ? <CircularProgress size={20} /> : <QrCodeScannerIcon />}
-              >
-                {isScanning ? 'Scanning...' : 'Scan RFID'}
-              </Button>
-            </Box>
             <Button
               variant="contained"
               color="secondary"
               onClick={handleRefreshData}
               disabled={isLoading}
-              sx={{ mb: 2, ml: 2 }}
+              sx={{ mb: 2, ml: 0 }}
               startIcon={isLoading ? <CircularProgress size={20} /> : null}
             >
               {isLoading ? 'Refreshing...' : 'Refresh Data'}
