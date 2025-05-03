@@ -35,6 +35,7 @@ const DryMillStation = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [grades, setGrades] = useState([]);
+  const [currentWeights, setCurrentWeights] = useState({});
   const [rfid, setRfid] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [openCompleteDialog, setOpenCompleteDialog] = useState(false);
@@ -98,7 +99,8 @@ const DryMillStation = () => {
       }
       const gradesData = data.map((grade) => ({
         grade: grade.grade,
-        bagWeights: grade.bagWeights || [],
+        weight: grade.weight || '',
+        bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
         bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
       }));
       return gradesData;
@@ -108,11 +110,11 @@ const DryMillStation = () => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
-        { grade: "Specialty Grade", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 1", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 2", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 3", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 4", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
+        { grade: "Specialty Grade", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
+        { grade: "Grade 1", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
+        { grade: "Grade 2", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
+        { grade: "Grade 3", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
+        { grade: "Grade 4", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
       ];
     }
   };
@@ -325,6 +327,8 @@ const DryMillStation = () => {
     setSelectedBatch(batch);
     const existingGrades = await fetchExistingGrades(batch.batchNumber);
     setGrades(existingGrades);
+    // Reset currentWeights to match the new grades
+    setCurrentWeights(existingGrades.reduce((acc, _, idx) => ({ ...acc, [idx]: "" }), {}));
     setOpenDialog(true);
   };
 
@@ -604,8 +608,6 @@ const DryMillStation = () => {
           </Typography>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
-              const [currentWeight, setCurrentWeight] = useState("");
-
               const handleAddBag = (weight) => {
                 if (!weight || isNaN(weight) || parseFloat(weight) <= 0) {
                   setSnackbarMessage("Please enter a valid weight.");
@@ -621,7 +623,7 @@ const DryMillStation = () => {
                   };
                   return newGrades;
                 });
-                setCurrentWeight(""); // Reset input
+                setCurrentWeights(prev => ({ ...prev, [index]: "" })); // Reset current weight
               };
 
               const handleRemoveBag = (bagIndex) => {
@@ -661,8 +663,8 @@ const DryMillStation = () => {
                       </Button>
                       <TextField
                         label="Custom Weight (kg)"
-                        value={currentWeight}
-                        onChange={(e) => setCurrentWeight(e.target.value)}
+                        value={currentWeights[index] || ""}
+                        onChange={(e) => setCurrentWeights(prev => ({ ...prev, [index]: e.target.value }))}
                         type="number"
                         inputProps={{ min: 0, step: 0.1 }}
                         variant="outlined"
@@ -671,8 +673,8 @@ const DryMillStation = () => {
                       <Button
                         variant="contained"
                         color="secondary"
-                        onClick={() => handleAddBag(currentWeight)}
-                        disabled={!currentWeight || isNaN(parseFloat(currentWeight)) || parseFloat(currentWeight) <= 0}
+                        onClick={() => handleAddBag(currentWeights[index])}
+                        disabled={!currentWeights[index] || isNaN(parseFloat(currentWeights[index])) || parseFloat(currentWeights[index]) <= 0}
                       >
                         Add Bag
                       </Button>
@@ -696,30 +698,36 @@ const DryMillStation = () => {
                       <Typography variant="body2">
                         Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg
                       </Typography>
-                      {grade.bagWeights.map((weight, bagIndex) => (
-                        <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                          <Typography variant="body1" sx={{ mr: 2 }}>
-                            Bag {bagIndex + 1}: {weight} kg
-                          </Typography>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={() => handleRemoveBag(bagIndex)}
-                            sx={{ mr: 1 }}
-                          >
-                            Remove
-                          </Button>
-                          <Button
-                            variant="contained"
-                            color="secondary"
-                            size="small"
-                            onClick={() => handlePrintLabel(selectedBatch.batchNumber, grade.grade, bagIndex, weight)}
-                          >
-                            Print Label
-                          </Button>
-                        </Box>
-                      ))}
+                      {grade.bagWeights.length > 0 ? (
+                        grade.bagWeights.map((weight, bagIndex) => (
+                          <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                            <Typography variant="body1" sx={{ mr: 2 }}>
+                              Bag {bagIndex + 1}: {weight} kg
+                            </Typography>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => handleRemoveBag(bagIndex)}
+                              sx={{ mr: 1 }}
+                            >
+                              Remove
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="secondary"
+                              size="small"
+                              onClick={() => handlePrintLabel(selectedBatch.batchNumber, grade.grade, bagIndex, weight)}
+                            >
+                              Print Label
+                            </Button>
+                          </Box>
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No bags added yet.
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
                 </Grid>
