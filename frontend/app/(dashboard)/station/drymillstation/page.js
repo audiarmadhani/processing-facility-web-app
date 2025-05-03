@@ -64,7 +64,9 @@ const DryMillStation = () => {
         weight: batch.weight || 'N/A',
       }));
 
-      const parentBatchesData = formattedData.filter(batch => !batch.parentBatchNumber && !batch.isStored);
+      const parentBatchesData = formattedData.filter(batch => 
+        !batch.parentBatchNumber && !batch.isStored && batch.status !== 'Processed'
+      );
       const subBatchesData = formattedData.filter(batch => batch.parentBatchNumber || batch.isStored);
 
       setParentBatches(parentBatchesData);
@@ -238,32 +240,6 @@ const DryMillStation = () => {
     } catch (error) {
       console.error('Error saving green bean splits:', error);
       setSnackbarMessage(error.message || 'Failed to save green bean splits');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-    }
-  };
-
-  const handleReuseTag = async (batchNumber) => {
-    const parentBatch = parentBatches.find(b => b.batchNumber === batchNumber);
-    if (!parentBatch || !parentBatch.rfid) return;
-
-    try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/rfid/reuse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batchNumber }),
-      });
-
-      if (!response.ok) throw new Error('Failed to reuse RFID tag');
-      const data = await response.json();
-
-      setSnackbarMessage(data.message);
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true);
-      fetchDryMillData();
-    } catch (error) {
-      console.error('Error reusing RFID tag:', error);
-      setSnackbarMessage(error.message || 'Failed to reuse RFID tag');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
