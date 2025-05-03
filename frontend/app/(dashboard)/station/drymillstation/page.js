@@ -54,7 +54,7 @@ const DryMillStation = () => {
         dryMillExited: batch.dryMillExited,
         cherry_weight: batch.cherry_weight || "N/A",
         producer: batch.producer || "N/A",
-        farmerName: batch.farmerName || "N/A", // Include farmerName
+        farmerName: batch.farmerName || "N/A",
         productLine: batch.productLine || "N/A",
         processingType: batch.processingType || "N/A",
         quality: batch.quality || "N/A",
@@ -98,10 +98,7 @@ const DryMillStation = () => {
         throw new Error("Invalid response format: grades data is not an array");
       }
 
-      // Define the desired order of grades
       const gradeOrder = ['Specialty Grade', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'];
-      
-      // Create a map of fetched grades
       const fetchedGradesMap = {};
       data.forEach(grade => {
         fetchedGradesMap[grade.grade] = {
@@ -112,7 +109,6 @@ const DryMillStation = () => {
         };
       });
 
-      // Ensure all grades are present in the correct order
       const gradesData = gradeOrder.map(grade => 
         fetchedGradesMap[grade] || {
           grade,
@@ -249,7 +245,7 @@ const DryMillStation = () => {
           grades: grades.map((g) => ({
             grade: g.grade,
             bagWeights: g.bagWeights,
-            bagged_at: today, // Automatically set to today
+            bagged_at: today,
           })),
         }
       );
@@ -272,10 +268,10 @@ const DryMillStation = () => {
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
-      format: [100, 150], // 10 cm x 15 cm
+      format: [100, 150],
     });
 
-    const farmerName = selectedBatch?.farmerName || "Unknown Farmer"; // Use farmerName from ReceivingData
+    const farmerName = selectedBatch?.farmerName || "Unknown Farmer";
     const companyName = selectedBatch?.producer === "BTM" ? "PT Berkas Tuaian Melimpah" : "HEQA";
     const productionDate = selectedBatch?.dryMillExited && selectedBatch.status === "Processed"
       ? new Date(selectedBatch.dryMillExited).toLocaleDateString()
@@ -283,9 +279,9 @@ const DryMillStation = () => {
 
     // Label content
     const labels = [
-      { label: "Lot Number", value: batchNumber },
-      { label: "Reference Number", value: selectedBatch?.referenceNumber || "N/A" },
-      { label: "Cherry Lot Number", value: selectedBatch?.parentBatchNumber || "N/A" },
+      { label: "Lot Number", value: batchNumber }, // e.g., BTM25CO-W-0001-G1
+      { label: "Reference Number", value: selectedBatch?.referenceNumber || "N/A" }, // e.g., ID-BTM-CO-0002-G1
+      { label: "Cherry Lot Number", value: selectedBatch?.parentBatchNumber || "N/A" }, // e.g., 2025-05-01-0001
       { label: "Farmer", value: farmerName },
       { label: "Type", value: selectedBatch?.type || "N/A" },
       { label: "Processing Type", value: selectedBatch?.processingType || "N/A" },
@@ -301,21 +297,22 @@ const DryMillStation = () => {
     const padding = " ".repeat(maxLabelLength);
 
     // Header Section
-    doc.setFillColor(240, 240, 240); // Light gray background
-    doc.rect(5, 5, 90, 20, "F"); // Header rectangle
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Green Coffee Beans", 10, 15); // Title
+    doc.setFillColor(240, 240, 240);
+    doc.rect(5, 5, 90, 20, "F");
+    doc.text("Green Coffee Beans", 10, 15);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(companyName, 10, 20); // Company name
+    doc.text(companyName, 10, 20);
 
     // Main Info Section
+    doc.setFont("courier", "normal"); // Use monospaced font for alignment
     doc.setFontSize(12);
-    doc.rect(5, 30, 90, 115, "S"); // Main content border
+    doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
-      const paddedLabel = label + " ".repeat(maxLabelLength - label.length);
+      const paddedLabel = label + padding.slice(label.length);
       doc.text(`${paddedLabel} : ${value}`, 10, y);
       y += 7;
     });
@@ -337,19 +334,26 @@ const DryMillStation = () => {
         <head>
           <title>Print Label</title>
           <style>
-            body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-            embed { width: 100%; height: 100%; }
+            body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }
+            .container { display: flex; flex-direction: column; align-items: center; height: 100vh; }
+            embed { width: 100%; height: 80%; }
+            .button-container { margin-top: 10px; }
+            button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
           </style>
         </head>
         <body>
-          <embed type="application/pdf" src="${pdfDataUri}" width="100%" height="100%">
+          <div class="container">
+            <embed type="application/pdf" src="${pdfDataUri}" width="100%" height="100%">
+            <div class="button-container">
+              <button onclick="window.print()">Print</button>
+              <button onclick="window.close()">Close</button>
+            </div>
+          </div>
           <script>
             window.onload = function() {
-              window.print();
-              setTimeout(() => window.close(), 1000); // Close the window after printing (1-second delay)
-            };
-            window.onfocus = function() {
-              setTimeout(() => window.close(), 1000); // Close if the window regains focus (e.g., after canceling print)
+              setTimeout(() => {
+                window.print();
+              }, 2000); // Delay to ensure the PDF loads
             };
           </script>
         </body>
@@ -381,7 +385,6 @@ const DryMillStation = () => {
     setSelectedBatch(batch);
     const existingGrades = await fetchExistingGrades(batch.batchNumber);
     setGrades(existingGrades);
-    // Reset currentWeights to match the new grades
     setCurrentWeights(existingGrades.reduce((acc, _, idx) => ({ ...acc, [idx]: "" }), {}));
     setOpenDialog(true);
   };
@@ -389,7 +392,7 @@ const DryMillStation = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedBatch(null);
-    setGrades([]); // Clear grades when closing the dialog
+    setGrades([]);
   };
 
   const handleCloseCompleteDialog = () => {
@@ -615,7 +618,7 @@ const DryMillStation = () => {
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
             Add the weight of each bag for each green bean grade. Use the preset buttons (50 kg or 60 kg) or enter a custom weight, then print the label for each bag.
-            Preprocessing details: Producer Dry Mill Station - Active BatchesProducer: {selectedBatch?.producer},
+            Preprocessing details: Producer Dry Mill Station - Active BatchesProducer: {selectedBatch?.producer},
             Product Line: {selectedBatch?.productLine}, Processing Type: {selectedBatch?.processingType},
             Type: {selectedBatch?.type}, Cherry Weight: {selectedBatch?.cherry_weight} kg.
             Note: Green bean weight may be less due to processing losses.
@@ -637,7 +640,7 @@ const DryMillStation = () => {
                   };
                   return newGrades;
                 });
-                setCurrentWeights(prev => ({ ...prev, [index]: "" })); // Reset current weight
+                setCurrentWeights(prev => ({ ...prev, [index]: "" }));
               };
 
               const handleRemoveBag = (bagIndex) => {
