@@ -62,7 +62,6 @@ const DryMillStation = () => {
         type: batch.type || "N/A",
         storeddatetrunc: batch.storeddatetrunc || "N/A",
         isStored: batch.isStored || false,
-        green_bean_splits: batch.green_bean_splits || "N/A",
         parentBatchNumber: batch.parentBatchNumber || null,
         weight: batch.weight || "N/A",
         referenceNumber: batch.referenceNumber || "N/A",
@@ -97,12 +96,31 @@ const DryMillStation = () => {
       if (!Array.isArray(data)) {
         throw new Error("Invalid response format: grades data is not an array");
       }
-      const gradesData = data.map((grade) => ({
-        grade: grade.grade,
-        weight: grade.weight || '',
-        bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
-        bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
-      }));
+
+      // Define the desired order of grades
+      const gradeOrder = ['Specialty Grade', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'];
+      
+      // Create a map of fetched grades
+      const fetchedGradesMap = {};
+      data.forEach(grade => {
+        fetchedGradesMap[grade.grade] = {
+          grade: grade.grade,
+          weight: grade.weight || '',
+          bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
+          bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
+        };
+      });
+
+      // Ensure all grades are present in the correct order
+      const gradesData = gradeOrder.map(grade => 
+        fetchedGradesMap[grade] || {
+          grade,
+          weight: '',
+          bagWeights: [],
+          bagged_at: new Date().toISOString().split("T")[0],
+        }
+      );
+
       return gradesData;
     } catch (error) {
       console.error("Error fetching existing grades:", error);
@@ -287,15 +305,6 @@ const DryMillStation = () => {
     doc.save(`Label_${batchNumber}_Bag_${bagIndex + 1}.pdf`);
   };
 
-  const handlePrintLabels = (batch, gradeIndex) => {
-    const grade = grades[gradeIndex];
-    if (!grade || !grade.bagWeights) return;
-
-    grade.bagWeights.forEach((weight, index) => {
-      handlePrintLabel(batch.batchNumber, grade.grade, index, weight);
-    });
-  };
-
   useEffect(() => {
     fetchDryMillData();
     fetchLatestRfid();
@@ -384,26 +393,6 @@ const DryMillStation = () => {
     { field: "type", headerName: "Type", width: 120 },
     { field: "totalBags", headerName: "Total Bags", width: 120 },
     { field: "notes", headerName: "Notes", width: 180 },
-    {
-      field: "green_bean_splits",
-      headerName: "Green Bean Splits",
-      width: 300,
-      renderCell: (params) => (
-        <Box>
-          {params.value !== "N/A"
-            ? params.value.split("; ").map((split, index) => (
-                <Typography
-                  key={index}
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  {split}
-                </Typography>
-              ))
-            : "N/A"}
-        </Box>
-      ),
-    },
   ];
 
   const subBatchColumns = [
@@ -452,27 +441,6 @@ const DryMillStation = () => {
           sx={{ borderRadius: "16px", fontWeight: "medium" }}
         />
       ),
-    },
-    {
-      field: "print",
-      headerName: "Print Labels",
-      width: 120,
-      sortable: false,
-      renderCell: (params) => {
-        const batch = params.row;
-        const gradeIndex = grades.findIndex(g => g.grade === batch.quality);
-        return (
-          <Button
-            variant="contained"
-            color="secondary"
-            size="small"
-            onClick={() => handlePrintLabels(batch, gradeIndex)}
-            disabled={batch.bagWeights.length === 0 || gradeIndex === -1}
-          >
-            Print
-          </Button>
-        );
-      },
     },
   ];
 
