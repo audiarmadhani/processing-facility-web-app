@@ -221,15 +221,6 @@ const DryMillStation = () => {
   };
 
   const handleSortAndWeigh = async () => {
-    const validGrades = grades.filter((g) => g.bagWeights.length > 0);
-
-    if (validGrades.length === 0) {
-      setSnackbarMessage("At least one grade must have bags weighed.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-      return;
-    }
-
     if (!selectedBatch) return;
     try {
       const today = new Date().toISOString().slice(0, 10);
@@ -737,7 +728,7 @@ const DryMillStation = () => {
             variant="contained"
             color="primary"
             onClick={handleSortAndWeigh}
-            disabled={!grades.some(g => g.bagWeights.length > 0)}
+            disabled={!selectedBatch}
           >
             Save Splits
           </Button>
