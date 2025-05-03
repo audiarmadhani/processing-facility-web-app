@@ -90,7 +90,7 @@ const DryMillStation = () => {
 
   const fetchLatestRfid = async () => {
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/rfid/get-rfid');
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/get-rfid');
       if (!response.ok) throw new Error('Failed to fetch latest RFID');
       const data = await response.json();
       setRfid(data.rfid || '');
@@ -111,7 +111,7 @@ const DryMillStation = () => {
     }
     setIsScanning(true);
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/rfid/scan-rfid', {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/scan-rfid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rfid, scanned_at: 'Dry_Mill' }),
