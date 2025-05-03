@@ -232,13 +232,14 @@ const DryMillStation = () => {
 
     if (!selectedBatch) return;
     try {
+      const today = new Date().toISOString().slice(0, 10);
       const response = await axios.post(
         `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/split`,
         {
           grades: grades.map((g) => ({
             grade: g.grade,
             bagWeights: g.bagWeights,
-            bagged_at: g.bagged_at || null,
+            bagged_at: today, // Automatically set to today
           })),
         }
       );
@@ -283,14 +284,14 @@ const DryMillStation = () => {
     doc.rect(5, 30, 90, 115, "S"); // Main content border
     let y = 35;
     const labelWidth = 15; // Fixed width for labels to align colons
-    doc.text(`Lot Number: ${" ".repeat(labelWidth - "Lot Number".length)}${batchNumber}`, 10, y); y += 7;
-    doc.text(`Reference Number: ${" ".repeat(labelWidth - "Reference Number".length)}${selectedBatch?.referenceNumber || "N/A"}`, 10, y); y += 7;
-    doc.text(`Cherry Lot Number: ${" ".repeat(labelWidth - "Cherry Lot Number".length)}${selectedBatch?.parentBatchNumber || "N/A"}`, 10, y); y += 7;
-    doc.text(`Farmer: ${" ".repeat(labelWidth - "Farmer".length)}${farmerName}`, 10, y); y += 7;
-    doc.text(`Grade: ${" ".repeat(labelWidth - "Grade".length)}${grade}`, 10, y); y += 7;
-    doc.text(`Bag Weight: ${" ".repeat(labelWidth - "Bag Weight".length)}${bagWeight} kg`, 10, y); y += 7;
-    doc.text(`Bag Number: ${" ".repeat(labelWidth - "Bag Number".length)}${bagIndex + 1}`, 10, y); y += 7;
-    doc.text(`Production Date: ${" ".repeat(labelWidth - "Production Date".length)}${productionDate}`, 10, y); y += 7;
+    doc.text(`Lot Number: ${" ".repeat(Math.max(0, labelWidth - "Lot Number".length))}${batchNumber}`, 10, y); y += 7;
+    doc.text(`Reference Number: ${" ".repeat(Math.max(0, labelWidth - "Reference Number".length))}${selectedBatch?.referenceNumber || "N/A"}`, 10, y); y += 7;
+    doc.text(`Cherry Lot Number: ${" ".repeat(Math.max(0, labelWidth - "Cherry Lot Number".length))}${selectedBatch?.parentBatchNumber || "N/A"}`, 10, y); y += 7;
+    doc.text(`Farmer: ${" ".repeat(Math.max(0, labelWidth - "Farmer".length))}${farmerName}`, 10, y); y += 7;
+    doc.text(`Grade: ${" ".repeat(Math.max(0, labelWidth - "Grade".length))}${grade}`, 10, y); y += 7;
+    doc.text(`Bag Weight: ${" ".repeat(Math.max(0, labelWidth - "Bag Weight".length))}${bagWeight} kg`, 10, y); y += 7;
+    doc.text(`Bag Number: ${" ".repeat(Math.max(0, labelWidth - "Bag Number".length))}${bagIndex + 1}`, 10, y); y += 7;
+    doc.text(`Production Date: ${" ".repeat(Math.max(0, labelWidth - "Production Date".length))}${productionDate}`, 10, y); y += 7;
 
     doc.save(`Label_${batchNumber}_Bag_${bagIndex + 1}.pdf`);
   };
@@ -678,20 +679,6 @@ const DryMillStation = () => {
                       >
                         Add Bag
                       </Button>
-                      <TextField
-                        label="Bagged On"
-                        type="date"
-                        value={grade.bagged_at}
-                        onChange={(e) => {
-                          setGrades(prevGrades => {
-                            const newGrades = [...prevGrades];
-                            newGrades[index] = { ...newGrades[index], bagged_at: e.target.value };
-                            return newGrades;
-                          });
-                        }}
-                        variant="outlined"
-                        sx={{ width: 200 }}
-                      />
                     </Box>
                     <Divider sx={{ my: 1 }} />
                     <Box>
@@ -700,27 +687,36 @@ const DryMillStation = () => {
                       </Typography>
                       {grade.bagWeights.length > 0 ? (
                         grade.bagWeights.map((weight, bagIndex) => (
-                          <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                            <Typography variant="body1" sx={{ mr: 2 }}>
+                          <Box
+                            key={`${grade.grade}-bag-${bagIndex}`}
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              mb: 1,
+                            }}
+                          >
+                            <Typography variant="body1">
                               Bag {bagIndex + 1}: {weight} kg
                             </Typography>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              onClick={() => handleRemoveBag(bagIndex)}
-                              sx={{ mr: 1 }}
-                            >
-                              Remove
-                            </Button>
-                            <Button
-                              variant="contained"
-                              color="secondary"
-                              size="small"
-                              onClick={() => handlePrintLabel(selectedBatch.batchNumber, grade.grade, bagIndex, weight)}
-                            >
-                              Print Label
-                            </Button>
+                            <Box sx={{ display: "flex", gap: 1 }}>
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                onClick={() => handleRemoveBag(bagIndex)}
+                              >
+                                Remove
+                              </Button>
+                              <Button
+                                variant="contained"
+                                color="secondary"
+                                size="small"
+                                onClick={() => handlePrintLabel(selectedBatch.batchNumber, grade.grade, bagIndex, weight)}
+                              >
+                                Print Label
+                              </Button>
+                            </Box>
                           </Box>
                         ))
                       ) : (
