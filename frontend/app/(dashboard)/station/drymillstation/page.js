@@ -54,6 +54,7 @@ const DryMillStation = () => {
         dryMillExited: batch.dryMillExited,
         cherry_weight: batch.cherry_weight || "N/A",
         producer: batch.producer || "N/A",
+        farmerName: batch.farmerName || "N/A", // Include farmerName
         productLine: batch.productLine || "N/A",
         processingType: batch.processingType || "N/A",
         quality: batch.quality || "N/A",
@@ -274,9 +275,30 @@ const DryMillStation = () => {
       format: [100, 150], // 10 cm x 15 cm
     });
 
-    const farmerName = selectedBatch?.producer || "Unknown Farmer";
+    const farmerName = selectedBatch?.farmerName || "Unknown Farmer"; // Use farmerName from ReceivingData
     const companyName = selectedBatch?.producer === "BTM" ? "PT Berkas Tuaian Melimpah" : "HEQA";
-    const productionDate = new Date().toLocaleDateString();
+    const productionDate = selectedBatch?.dryMillExited && selectedBatch.status === "Processed"
+      ? new Date(selectedBatch.dryMillExited).toLocaleDateString()
+      : new Date().toLocaleDateString();
+
+    // Label content
+    const labels = [
+      { label: "Lot Number", value: batchNumber },
+      { label: "Reference Number", value: selectedBatch?.referenceNumber || "N/A" },
+      { label: "Cherry Lot Number", value: selectedBatch?.parentBatchNumber || "N/A" },
+      { label: "Farmer", value: farmerName },
+      { label: "Type", value: selectedBatch?.type || "N/A" },
+      { label: "Processing Type", value: selectedBatch?.processingType || "N/A" },
+      { label: "Product Line", value: selectedBatch?.productLine || "N/A" },
+      { label: "Grade", value: grade },
+      { label: "Bag Weight", value: `${bagWeight} kg` },
+      { label: "Bag Number", value: `${bagIndex + 1}` },
+      { label: "Production Date", value: productionDate },
+    ];
+
+    // Find the longest label for alignment
+    const maxLabelLength = Math.max(...labels.map(l => l.label.length));
+    const padding = " ".repeat(maxLabelLength);
 
     // Header Section
     doc.setFillColor(240, 240, 240); // Light gray background
@@ -292,17 +314,48 @@ const DryMillStation = () => {
     doc.setFontSize(12);
     doc.rect(5, 30, 90, 115, "S"); // Main content border
     let y = 35;
-    const labelWidth = 15; // Fixed width for labels to align colons
-    doc.text(`Lot Number: ${" ".repeat(Math.max(0, labelWidth - "Lot Number".length))}${batchNumber}`, 10, y); y += 7;
-    doc.text(`Reference Number: ${" ".repeat(Math.max(0, labelWidth - "Reference Number".length))}${selectedBatch?.referenceNumber || "N/A"}`, 10, y); y += 7;
-    doc.text(`Cherry Lot Number: ${" ".repeat(Math.max(0, labelWidth - "Cherry Lot Number".length))}${selectedBatch?.parentBatchNumber || "N/A"}`, 10, y); y += 7;
-    doc.text(`Farmer: ${" ".repeat(Math.max(0, labelWidth - "Farmer".length))}${farmerName}`, 10, y); y += 7;
-    doc.text(`Grade: ${" ".repeat(Math.max(0, labelWidth - "Grade".length))}${grade}`, 10, y); y += 7;
-    doc.text(`Bag Weight: ${" ".repeat(Math.max(0, labelWidth - "Bag Weight".length))}${bagWeight} kg`, 10, y); y += 7;
-    doc.text(`Bag Number: ${" ".repeat(Math.max(0, labelWidth - "Bag Number".length))}${bagIndex + 1}`, 10, y); y += 7;
-    doc.text(`Production Date: ${" ".repeat(Math.max(0, labelWidth - "Production Date".length))}${productionDate}`, 10, y); y += 7;
+    labels.forEach(({ label, value }) => {
+      const paddedLabel = label + " ".repeat(maxLabelLength - label.length);
+      doc.text(`${paddedLabel} : ${value}`, 10, y);
+      y += 7;
+    });
 
-    doc.save(`Label_${batchNumber}_Bag_${bagIndex + 1}.pdf`);
+    // Convert the PDF to a data URL
+    const pdfDataUri = doc.output('datauristring');
+
+    // Open a new window and embed the PDF for printing
+    const printWindow = window.open('', '_blank', 'width=600,height=400');
+    if (!printWindow) {
+      setSnackbarMessage("Failed to open print window. Please allow popups for this site.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Label</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+            embed { width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <embed type="application/pdf" src="${pdfDataUri}" width="100%" height="100%">
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(() => window.close(), 1000); // Close the window after printing (1-second delay)
+            };
+            window.onfocus = function() {
+              setTimeout(() => window.close(), 1000); // Close if the window regains focus (e.g., after canceling print)
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   useEffect(() => {
