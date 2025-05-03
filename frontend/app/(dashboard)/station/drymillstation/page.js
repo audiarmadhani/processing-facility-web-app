@@ -62,6 +62,7 @@ const DryMillStation = () => {
         green_bean_splits: batch.green_bean_splits || 'N/A',
         parentBatchNumber: batch.parentBatchNumber || null,
         weight: batch.weight || 'N/A',
+        referenceNumber: batch.referenceNumber || 'N/A', // Added referenceNumber field
       }));
 
       const parentBatchesData = formattedData.filter(batch => 
