@@ -371,7 +371,7 @@ router.post('/scan-rfid', async (req, res) => {
           entered_at: result[0].entered_at,
         });
       }
-    } else if (scanned_at === 'Dry_Mill') {
+    } else if (scanned_at === 'DryMill') {
       // Check if batch has exited drying area
       const [dryingEntry] = await sequelize.query(`
         SELECT "exited_at"
@@ -441,13 +441,13 @@ router.post('/scan-rfid', async (req, res) => {
           type: sequelize.QueryTypes.INSERT,
         });
 
-        await sequelize.query(`
-          DELETE FROM "RfidScanned"
-          WHERE "scanned_at" = :scanned_at;
-        `, {
-          replacements: { scanned_at },
-          type: sequelize.QueryTypes.DELETE,
-        });
+        // await sequelize.query(`
+        //   DELETE FROM "RfidScanned"
+        //   WHERE "scanned_at" = :scanned_at;
+        // `, {
+        //   replacements: { scanned_at },
+        //   type: sequelize.QueryTypes.DELETE,
+        // });
 
         res.status(201).json({
           message: 'RFID tag scanned at dry mill entrance, scanner logs cleared',
