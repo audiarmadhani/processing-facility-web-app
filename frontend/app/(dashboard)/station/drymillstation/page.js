@@ -336,6 +336,7 @@ const DryMillStation = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedBatch(null);
+    setGrades([]); // Clear grades when closing the dialog
   };
 
   const handleCloseCompleteDialog = () => {
@@ -561,7 +562,7 @@ const DryMillStation = () => {
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
             Add the weight of each bag for each green bean grade. Use the preset buttons (50 kg or 60 kg) or enter a custom weight, then print the label for each bag.
-            Preprocessing details: Producer: {selectedBatch?.producer},
+            Preprocessing details: Producer Dry Mill Station - Active BatchesProducer: {selectedBatch?.producer},
             Product Line: {selectedBatch?.productLine}, Processing Type: {selectedBatch?.processingType},
             Type: {selectedBatch?.type}, Cherry Weight: {selectedBatch?.cherry_weight} kg.
             Note: Green bean weight may be less due to processing losses.
