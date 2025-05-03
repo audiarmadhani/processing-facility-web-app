@@ -88,19 +88,33 @@ const DryMillStation = () => {
     }
   };
 
+  const fetchLatestRfid = async () => {
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/rfid/get-rfid');
+      if (!response.ok) throw new Error('Failed to fetch latest RFID');
+      const data = await response.json();
+      setRfid(data.rfid || '');
+    } catch (error) {
+      console.error('Error fetching latest RFID:', error);
+      setSnackbarMessage('Failed to fetch latest RFID.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  };
+
   const handleScanRfid = async () => {
     if (!rfid) {
-      setSnackbarMessage('Please enter an RFID value.');
+      setSnackbarMessage('Please enter or fetch an RFID value.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
     setIsScanning(true);
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/dry-mill/scan', {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/rfid/scan-rfid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rfid, scanned_at: 'DryMill' }),
+        body: JSON.stringify({ rfid, scanned_at: 'Dry_Mill' }),
       });
 
       if (!response.ok) throw new Error('Failed to scan RFID');
@@ -242,12 +256,17 @@ const DryMillStation = () => {
 
   useEffect(() => {
     fetchDryMillData();
-    const intervalId = setInterval(fetchDryMillData, 300000);
+    fetchLatestRfid(); // Fetch the latest RFID on mount
+    const intervalId = setInterval(() => {
+      fetchDryMillData();
+      fetchLatestRfid();
+    }, 300000);
     return () => clearInterval(intervalId);
   }, []);
 
   const handleRefreshData = () => {
     fetchDryMillData();
+    fetchLatestRfid();
   };
 
   const handleCloseSnackbar = () => {
@@ -347,7 +366,7 @@ const DryMillStation = () => {
     { field: 'producer', headerName: 'Producer', width: 120 },
     { field: 'productLine', headerName: 'Product Line', width: 160 },
     { field: 'processingType', headerName: 'Processing Type', width: 180 },
-    { field: 'type', headerName: 'Type', width: 120, sortable: true },
+    { field: 'type', headerName: 'Type', width: 120 },
     { field: 'totalBags', headerName: 'Total Bags', width: 120 },
     { field: 'notes', headerName: 'Notes', width: 180 },
     {
@@ -503,6 +522,15 @@ const DryMillStation = () => {
                 sx={{ width: 300 }}
                 disabled={isScanning}
               />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={fetchLatestRfid}
+                disabled={isScanning}
+                sx={{ mr: 1 }}
+              >
+                Fetch Latest RFID
+              </Button>
               <Button
                 variant="contained"
                 color="primary"
