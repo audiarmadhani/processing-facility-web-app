@@ -79,7 +79,7 @@ const DryMillStation = () => {
       setSubBatches(subBatchesData);
     } catch (error) {
       console.error("Error fetching dry mill data:", error);
-      setSnackbarMessage(error.message || "Error fetching data. Please try again.");
+      setSnackbarMessage(error.response?.data?.error || "Error fetching data. Please try again.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     } finally {
@@ -92,26 +92,19 @@ const DryMillStation = () => {
       const response = await axios.get(
         `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`
       );
-      const data = await response.data;
+      const data = response.data;
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid response format: grades data is not an array");
+      }
       const gradesData = data.map((grade) => ({
         grade: grade.grade,
         bagWeights: grade.bagWeights || [],
         bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
       }));
-
-      if (gradesData.length === 0) {
-        return [
-          { grade: "Specialty Grade", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-          { grade: "Grade 1", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-          { grade: "Grade 2", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-          { grade: "Grade 3", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-          { grade: "Grade 4", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        ];
-      }
       return gradesData;
     } catch (error) {
       console.error("Error fetching existing grades:", error);
-      setSnackbarMessage("Failed to fetch existing grades.");
+      setSnackbarMessage(error.response?.data?.error || "Failed to fetch existing grades.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
@@ -131,7 +124,7 @@ const DryMillStation = () => {
       setRfid(data.rfid || "");
     } catch (error) {
       console.error("Error fetching latest RFID:", error);
-      setSnackbarMessage("Failed to fetch latest RFID.");
+      setSnackbarMessage(error.response?.data?.error || "Failed to fetch latest RFID.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
@@ -165,7 +158,7 @@ const DryMillStation = () => {
       }
     } catch (error) {
       console.error("Error scanning RFID:", error);
-      setSnackbarMessage(error.message || "Failed to scan RFID");
+      setSnackbarMessage(error.response?.data?.error || "Failed to scan RFID");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     } finally {
@@ -190,7 +183,7 @@ const DryMillStation = () => {
       fetchDryMillData();
     } catch (error) {
       console.error("Error marking batch as processed:", error);
-      setSnackbarMessage(error.message || "Failed to mark batch as processed");
+      setSnackbarMessage(error.response?.data?.error || "Failed to mark batch as processed");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
@@ -219,7 +212,7 @@ const DryMillStation = () => {
       fetchDryMillData();
     } catch (error) {
       console.error("Error confirming storage:", error);
-      setSnackbarMessage(error.message || "Failed to confirm storage");
+      setSnackbarMessage(error.response?.data?.error || "Failed to confirm storage");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
@@ -256,7 +249,7 @@ const DryMillStation = () => {
       fetchDryMillData();
     } catch (error) {
       console.error("Error saving green bean splits:", error);
-      setSnackbarMessage(error.message || "Failed to save green bean splits");
+      setSnackbarMessage(error.response?.data?.error || "Failed to save green bean splits");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
