@@ -301,7 +301,7 @@ const DryMillStation = () => {
     }
   };
 
-  const handlePrintLabel = async (batchNumber, grade, bagIndex, bagWeight) => {
+  const handlePrintLabel = (batchNumber, grade, bagIndex, bagWeight) => {
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -314,52 +314,26 @@ const DryMillStation = () => {
       ? new Date(selectedBatch.dryMillExited).toLocaleDateString()
       : new Date().toLocaleDateString();
 
-    // Determine producer abbreviation
     const producerAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HQ";
     const producerReferenceAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HEQA";
-
-    // Get year
     const currentYear = new Date().getFullYear().toString().slice(-2);
-
-    // Get product line abbreviation
     const productLineEntry = ProductLines.find(pl => pl.productLine === selectedBatch.productLine);
     const productLineAbbreviation = productLineEntry ? productLineEntry.abbreviation : "Unknown";
     const productLineReferenceAbbreviation = productLineAbbreviation === "R" ? "RE" :
                                             productLineAbbreviation === "M" ? "MI" :
                                             productLineAbbreviation === "C" ? "CO" :
                                             productLineAbbreviation;
-
-    // Get processing type abbreviation
     const processingTypeEntry = ProcessingTypes.find(pt => pt.processingType === selectedBatch.processingType);
     const processingTypeAbbreviation = processingTypeEntry ? processingTypeEntry.abbreviation : "Unknown";
-
-    // Quality abbreviation
     const qualityAbbreviation = grade === 'Specialty Grade' ? 'S' :
                                 grade === 'Grade 1' ? 'G1' :
                                 grade === 'Grade 2' ? 'G2' :
                                 grade === 'Grade 3' ? 'G3' : 'G4';
 
-    // Fetch Lot Number Sequence from backend
-    let formattedSequence = "0001"; // Default fallback
-    try {
-      const sequenceResponse = await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
-        producer: producerAbbreviation,
-        productLine: selectedBatch.productLine,
-        processingType: selectedBatch.processingType,
-        year: currentYear,
-      });
-      formattedSequence = sequenceResponse.data.sequence;
-    } catch (error) {
-      console.error("Error fetching lot number sequence:", error);
-      setSnackbarMessage(error.response?.data?.error || "Failed to fetch lot number sequence. Using default sequence.");
-      setSnackbarSeverity("warning");
-      setOpenSnackbar(true);
-    }
+    // Use a temporary sequence from grades state (set during handleDetailsClick or handleAddBag)
+    const tempSequence = grades.find(g => g.grade === grade)?.tempSequence || "0001";
 
-    // Lot Number (e.g., HQ25M-AW-0001-G1)
-    const lotNumber = `${producerAbbreviation}${currentYear}${productLineAbbreviation}-${processingTypeAbbreviation}-${formattedSequence}-${qualityAbbreviation}`;
-
-    // Reference Number (e.g., ID-HEQA-MI-004-G1)
+    const lotNumber = `${producerAbbreviation}${currentYear}${productLineAbbreviation}-${processingTypeAbbreviation}-${tempSequence}-${qualityAbbreviation}`;
     const referenceMatch = ReferenceMappings.find(rm =>
       rm.producer === selectedBatch.producer &&
       rm.productLine === selectedBatch.productLine &&
@@ -368,11 +342,8 @@ const DryMillStation = () => {
     );
     const referenceSequence = referenceMatch ? referenceMatch.referenceNumber.split('-')[3] : "000";
     const referenceNumber = `ID-${producerReferenceAbbreviation}-${productLineReferenceAbbreviation}-${referenceSequence}-${qualityAbbreviation}`;
-
-    // Use selectedBatch.batchNumber as Cherry Lot Number
     const cherryLotNumber = selectedBatch.batchNumber;
 
-    // Label content
     const labels = [
       { label: "Lot Number", value: lotNumber },
       { label: "Reference Number", value: referenceNumber },
@@ -387,11 +358,9 @@ const DryMillStation = () => {
       { label: "Production Date", value: productionDate },
     ];
 
-    // Find the longest label for alignment
     const maxLabelLength = Math.max(...labels.map(l => l.label.length));
     const padding = " ".repeat(maxLabelLength);
 
-    // Header Section
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setFillColor(240, 240, 240);
@@ -401,9 +370,8 @@ const DryMillStation = () => {
     doc.setFontSize(10);
     doc.text(companyName, 10, 20);
 
-    // Main Info Section
     doc.setFont("courier", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
@@ -412,10 +380,7 @@ const DryMillStation = () => {
       y += 7;
     });
 
-    // Convert the PDF to a data URL
     const pdfDataUri = doc.output('datauristring');
-
-    // Open a new window and embed the PDF for printing
     const printWindow = window.open('', '_blank', 'width=600,height=400');
     if (!printWindow) {
       setSnackbarMessage("Failed to open print window. Please allow popups for this site.");
@@ -457,6 +422,40 @@ const DryMillStation = () => {
     printWindow.document.close();
   };
 
+  const handleAddBag = (index, weight) => {
+    if (!weight || isNaN(weight) || parseFloat(weight) <= 0) {
+      setSnackbarMessage("Please enter a valid weight.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    setGrades(prevGrades => {
+      const newGrades = [...prevGrades];
+      const grade = newGrades[index];
+      if (!grade.tempSequence) {
+        // Assign a temporary sequence if not already set
+        grade.tempSequence = String(prevGrades.reduce((max, g) => Math.max(max, g.tempSequence ? parseInt(g.tempSequence) : 0), 0) + 1).padStart(4, '0');
+      }
+      newGrades[index] = {
+        ...grade,
+        bagWeights: [...grade.bagWeights, parseFloat(weight).toString()],
+      };
+      return newGrades;
+    });
+    setCurrentWeights(prev => ({ ...prev, [index]: "" }));
+  };
+
+  const handleRemoveBag = (gradeIndex, bagIndex) => {
+    setGrades(prevGrades => {
+      const newGrades = [...prevGrades];
+      newGrades[gradeIndex] = {
+        ...newGrades[gradeIndex],
+        bagWeights: newGrades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex),
+      };
+      return newGrades;
+    });
+  };
+
   useEffect(() => {
     fetchDryMillData();
     fetchLatestRfid();
@@ -480,7 +479,6 @@ const DryMillStation = () => {
     setSelectedBatch(batch);
     const existingGrades = await fetchExistingGrades(batch.batchNumber);
     setGrades(existingGrades);
-    // Initialize currentWeights with empty strings for each grade index
     const initialWeights = {};
     existingGrades.forEach((_, idx) => {
       initialWeights[idx] = "";
@@ -725,34 +723,9 @@ const DryMillStation = () => {
           </Typography>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
-              const handleAddBag = (weight) => {
-                if (!weight || isNaN(weight) || parseFloat(weight) <= 0) {
-                  setSnackbarMessage("Please enter a valid weight.");
-                  setSnackbarSeverity("error");
-                  setOpenSnackbar(true);
-                  return;
-                }
-                setGrades(prevGrades => {
-                  const newGrades = [...prevGrades];
-                  newGrades[index] = {
-                    ...newGrades[index],
-                    bagWeights: [...newGrades[index].bagWeights, parseFloat(weight).toString()],
-                  };
-                  return newGrades;
-                });
-                setCurrentWeights(prev => ({ ...prev, [index]: "" }));
-              };
+              const handleAddBag = (weight) => handleAddBag(index, weight);
 
-              const handleRemoveBag = (bagIndex) => {
-                setGrades(prevGrades => {
-                  const newGrades = [...prevGrades];
-                  newGrades[index] = {
-                    ...newGrades[index],
-                    bagWeights: newGrades[index].bagWeights.filter((_, i) => i !== bagIndex),
-                  };
-                  return newGrades;
-                });
-              };
+              const handleRemoveBag = (bagIndex) => handleRemoveBag(index, bagIndex);
 
               const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
               const totalBags = grade.bagWeights.length;
