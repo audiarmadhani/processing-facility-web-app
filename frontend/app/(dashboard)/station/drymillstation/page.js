@@ -371,7 +371,7 @@ const DryMillStation = () => {
     doc.text(companyName, 10, 20);
 
     doc.setFont("courier", "normal");
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
@@ -723,10 +723,6 @@ const DryMillStation = () => {
           </Typography>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
-              const handleAddBag = (weight) => handleAddBag(index, weight);
-
-              const handleRemoveBag = (bagIndex) => handleRemoveBag(index, bagIndex);
-
               const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
               const totalBags = grade.bagWeights.length;
 
@@ -738,7 +734,7 @@ const DryMillStation = () => {
                       <Button
                         variant="contained"
                         color="primary"
-                        onClick={() => handleAddBag(50)}
+                        onClick={() => handleAddBag(index, 50)}
                         sx={{ mr: 1 }}
                       >
                         50 kg
@@ -746,7 +742,7 @@ const DryMillStation = () => {
                       <Button
                         variant="contained"
                         color="primary"
-                        onClick={() => handleAddBag(60)}
+                        onClick={() => handleAddBag(index, 60)}
                         sx={{ mr: 1 }}
                       >
                         60 kg
@@ -763,7 +759,7 @@ const DryMillStation = () => {
                       <Button
                         variant="contained"
                         color="secondary"
-                        onClick={() => handleAddBag(currentWeights[index])}
+                        onClick={() => handleAddBag(index, currentWeights[index])}
                         disabled={!currentWeights[index] || isNaN(parseFloat(currentWeights[index])) || parseFloat(currentWeights[index]) <= 0}
                       >
                         Add Bag
@@ -793,7 +789,7 @@ const DryMillStation = () => {
                                 variant="contained"
                                 color="error"
                                 size="small"
-                                onClick={() => handleRemoveBag(bagIndex)}
+                                onClick={() => handleRemoveBag(index, bagIndex)}
                               >
                                 Remove
                               </Button>
