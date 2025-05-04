@@ -40,43 +40,10 @@ const DryMillStation = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [openCompleteDialog, setOpenCompleteDialog] = useState(false);
   const [openStorageDialog, setOpenStorageDialog] = useState(false);
-
-  // Reference data (hardcoded for frontend simulation)
-  const ProcessingTypes = [
-    { id: 1, processingType: "Pulped Natural", abbreviation: "PN" },
-    { id: 2, processingType: "Washed", abbreviation: "W" },
-    { id: 3, processingType: "Natural", abbreviation: "N" },
-    { id: 4, processingType: "Anaerobic Natural", abbreviation: "AN" },
-    { id: 5, processingType: "Anaerobic Washed", abbreviation: "AW" },
-    { id: 6, processingType: "Anaerobic Honey", abbreviation: "AH" },
-    { id: 7, processingType: "CM Natural", abbreviation: "CMN" },
-    { id: 8, processingType: "CM Washed", abbreviation: "CMW" },
-  ];
-
-  const ProductLines = [
-    { id: 1, productLine: "Regional Lot", abbreviation: "R" },
-    { id: 2, productLine: "Micro Lot", abbreviation: "M" },
-    { id: 3, productLine: "Competition Lot", abbreviation: "C" },
-    { id: 4, productLine: "Commercial Lot", abbreviation: "CO" },
-  ];
-
-  const ReferenceMappings = [
-    { id: 1, referenceNumber: "ID-HEQA-RE-001", productLine: "Regional Lot", processingType: "Pulped Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 2, referenceNumber: "ID-HEQA-RE-002", productLine: "Regional Lot", processingType: "Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 3, referenceNumber: "ID-HEQA-MI-001", productLine: "Micro Lot", processingType: "Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 4, referenceNumber: "ID-HEQA-MI-002", productLine: "Micro Lot", processingType: "Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 5, referenceNumber: "ID-HEQA-MI-003", productLine: "Micro Lot", processingType: "Anaerobic Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 6, referenceNumber: "ID-HEQA-MI-004", productLine: "Micro Lot", processingType: "Anaerobic Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 8, referenceNumber: "ID-HEQA-MI-005", productLine: "Micro Lot", processingType: "Anaerobic Honey", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 10, referenceNumber: "ID-HEQA-MI-006", productLine: "Micro Lot", processingType: "CM Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 12, referenceNumber: "ID-HEQA-MI-007", productLine: "Micro Lot", processingType: "CM Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 13, referenceNumber: "ID-HEQA-CO-001", productLine: "Competition Lot", processingType: "CM Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 15, referenceNumber: "ID-HEQA-CO-002", productLine: "Competition Lot", processingType: "CM Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
-    { id: 17, referenceNumber: "ID-BTM-RE-001", productLine: "Regional Lot", processingType: "Natural", producer: "BTM", quality: "Specialty", type: "Arabica" },
-    { id: 18, referenceNumber: "ID-BTM-RE-002", productLine: "Regional Lot", processingType: "Washed", producer: "BTM", quality: "Specialty", type: "Arabica" },
-    { id: 19, referenceNumber: "ID-BTM-CO-0001", productLine: "Commercial Lot", processingType: "Natural", producer: "BTM", quality: "Grade 1", type: "Robusta" },
-    { id: 20, referenceNumber: "ID-BTM-CO-0002", productLine: "Commercial Lot", processingType: "Washed", producer: "BTM", quality: "Grade 1", type: "Robusta" },
-  ];
+  const [processingTypes, setProcessingTypes] = useState([]);
+  const [productLines, setProductLines] = useState([]);
+  const [referenceMappings, setReferenceMappings] = useState([]);
+  const [sequenceAdjustments, setSequenceAdjustments] = useState([]);
 
   const fetchDryMillData = async () => {
     setIsLoading(true);
@@ -125,6 +92,42 @@ const DryMillStation = () => {
     }
   };
 
+  const fetchProcessingTypes = async () => {
+    try {
+      const response = await axios.get("https://processing-facility-backend.onrender.com/api/processing-types");
+      setProcessingTypes(response.data);
+    } catch (error) {
+      console.error("Error fetching ProcessingTypes:", error);
+      setSnackbarMessage("Failed to fetch ProcessingTypes.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
+
+  const fetchProductLines = async () => {
+    try {
+      const response = await axios.get("https://processing-facility-backend.onrender.com/api/product-lines");
+      setProductLines(response.data);
+    } catch (error) {
+      console.error("Error fetching ProductLines:", error);
+      setSnackbarMessage("Failed to fetch ProductLines.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
+
+  const fetchReferenceMappings = async () => {
+    try {
+      const response = await axios.get("https://processing-facility-backend.onrender.com/api/reference-mappings");
+      setReferenceMappings(response.data);
+    } catch (error) {
+      console.error("Error fetching ReferenceMappings:", error);
+      setSnackbarMessage("Failed to fetch ReferenceMappings.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
+
   const fetchExistingGrades = async (batchNumber) => {
     try {
       const response = await axios.get(
@@ -143,6 +146,7 @@ const DryMillStation = () => {
           weight: grade.weight || '',
           bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
           bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
+          tempSequence: '0001', // Default sequence
         };
       });
 
@@ -152,6 +156,7 @@ const DryMillStation = () => {
           weight: '',
           bagWeights: [],
           bagged_at: new Date().toISOString().split("T")[0],
+          tempSequence: '0001',
         }
       );
 
@@ -162,11 +167,11 @@ const DryMillStation = () => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
-        { grade: "Specialty Grade", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 1", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 2", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 3", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
-        { grade: "Grade 4", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0] },
+        { grade: "Specialty Grade", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
+        { grade: "Grade 1", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
+        { grade: "Grade 2", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
+        { grade: "Grade 3", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
+        { grade: "Grade 4", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
       ];
     }
   };
@@ -301,6 +306,49 @@ const DryMillStation = () => {
     }
   };
 
+  const fetchSequenceNumber = async (index) => {
+    if (!selectedBatch) return '0001';
+    try {
+      const response = await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
+        producer: selectedBatch.producer,
+        productLine: selectedBatch.productLine,
+        processingType: selectedBatch.processingType,
+        year: new Date().getFullYear().toString().slice(-2),
+        action: 'increment',
+      });
+      const sequence = response.data.sequence;
+      setSequenceAdjustments(prev => [...prev, { index, sequence, action: 'increment' }]);
+      return sequence;
+    } catch (error) {
+      console.error("Error fetching sequence number:", error);
+      setSnackbarMessage("Failed to fetch sequence number.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return '0001';
+    }
+  };
+
+  const revertSequenceNumber = async () => {
+    if (!selectedBatch || sequenceAdjustments.length === 0) return;
+    try {
+      for (const adjustment of sequenceAdjustments) {
+        await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
+          producer: selectedBatch.producer,
+          productLine: selectedBatch.productLine,
+          processingType: selectedBatch.processingType,
+          year: new Date().getFullYear().toString().slice(-2),
+          action: 'decrement',
+        });
+      }
+      setSequenceAdjustments([]);
+    } catch (error) {
+      console.error("Error reverting sequence number:", error);
+      setSnackbarMessage("Failed to revert sequence number.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
+
   const handlePrintLabel = (batchNumber, grade, bagIndex, bagWeight) => {
     const doc = new jsPDF({
       orientation: "portrait",
@@ -317,30 +365,30 @@ const DryMillStation = () => {
     const producerAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HQ";
     const producerReferenceAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HEQA";
     const currentYear = new Date().getFullYear().toString().slice(-2);
-    const productLineEntry = ProductLines.find(pl => pl.productLine === selectedBatch.productLine);
-    const productLineAbbreviation = productLineEntry ? productLineEntry.abbreviation : "Unknown";
+
+    const productLineEntry = productLines.find(pl => pl.productLine === selectedBatch.productLine) || {};
+    const productLineAbbreviation = productLineEntry.abbreviation || "Unknown";
     const productLineReferenceAbbreviation = productLineAbbreviation === "R" ? "RE" :
                                             productLineAbbreviation === "M" ? "MI" :
                                             productLineAbbreviation === "C" ? "CO" :
                                             productLineAbbreviation;
-    const processingTypeEntry = ProcessingTypes.find(pt => pt.processingType === selectedBatch.processingType);
-    const processingTypeAbbreviation = processingTypeEntry ? processingTypeEntry.abbreviation : "Unknown";
+    const processingTypeEntry = processingTypes.find(pt => pt.processingType === selectedBatch.processingType) || {};
+    const processingTypeAbbreviation = processingTypeEntry.abbreviation || "Unknown";
     const qualityAbbreviation = grade === 'Specialty Grade' ? 'S' :
                                 grade === 'Grade 1' ? 'G1' :
                                 grade === 'Grade 2' ? 'G2' :
                                 grade === 'Grade 3' ? 'G3' : 'G4';
 
-    // Use a temporary sequence from grades state (set during handleDetailsClick or handleAddBag)
     const tempSequence = grades.find(g => g.grade === grade)?.tempSequence || "0001";
 
     const lotNumber = `${producerAbbreviation}${currentYear}${productLineAbbreviation}-${processingTypeAbbreviation}-${tempSequence}-${qualityAbbreviation}`;
-    const referenceMatch = ReferenceMappings.find(rm =>
+    const referenceMatch = referenceMappings.find(rm =>
       rm.producer === selectedBatch.producer &&
       rm.productLine === selectedBatch.productLine &&
       rm.processingType === selectedBatch.processingType &&
       rm.type === selectedBatch.type
-    );
-    const referenceSequence = referenceMatch ? referenceMatch.referenceNumber.split('-')[3] : "000";
+    ) || {};
+    const referenceSequence = referenceMatch.referenceNumber ? referenceMatch.referenceNumber.split('-')[3] : "000";
     const referenceNumber = `ID-${producerReferenceAbbreviation}-${productLineReferenceAbbreviation}-${referenceSequence}-${qualityAbbreviation}`;
     const cherryLotNumber = selectedBatch.batchNumber;
 
@@ -371,7 +419,7 @@ const DryMillStation = () => {
     doc.text(companyName, 10, 20);
 
     doc.setFont("courier", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
@@ -422,43 +470,59 @@ const DryMillStation = () => {
     printWindow.document.close();
   };
 
-  const handleAddBag = (index, weight) => {
+  const handleAddBag = async (index, weight) => {
     if (!weight || isNaN(weight) || parseFloat(weight) <= 0) {
       setSnackbarMessage("Please enter a valid weight.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return;
     }
+    const sequence = await fetchSequenceNumber(index);
     setGrades(prevGrades => {
       const newGrades = [...prevGrades];
-      const grade = newGrades[index];
-      if (!grade.tempSequence) {
-        // Assign a temporary sequence if not already set
-        grade.tempSequence = String(prevGrades.reduce((max, g) => Math.max(max, g.tempSequence ? parseInt(g.tempSequence) : 0), 0) + 1).padStart(4, '0');
-      }
       newGrades[index] = {
-        ...grade,
-        bagWeights: [...grade.bagWeights, parseFloat(weight).toString()],
+        ...newGrades[index],
+        bagWeights: [...newGrades[index].bagWeights, parseFloat(weight).toString()],
+        tempSequence: sequence,
       };
       return newGrades;
     });
     setCurrentWeights(prev => ({ ...prev, [index]: "" }));
   };
 
-  const handleRemoveBag = (gradeIndex, bagIndex) => {
-    setGrades(prevGrades => {
-      const newGrades = [...prevGrades];
-      newGrades[gradeIndex] = {
-        ...newGrades[gradeIndex],
-        bagWeights: newGrades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex),
-      };
-      return newGrades;
-    });
+  const handleRemoveBag = async (gradeIndex, bagIndex) => {
+    if (!selectedBatch) return;
+    try {
+      await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
+        producer: selectedBatch.producer,
+        productLine: selectedBatch.productLine,
+        processingType: selectedBatch.processingType,
+        year: new Date().getFullYear().toString().slice(-2),
+        action: 'decrement',
+      });
+      setGrades(prevGrades => {
+        const newGrades = [...prevGrades];
+        newGrades[gradeIndex] = {
+          ...newGrades[gradeIndex],
+          bagWeights: newGrades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex),
+        };
+        return newGrades;
+      });
+      setSequenceAdjustments(prev => prev.filter(adj => adj.index !== gradeIndex));
+    } catch (error) {
+      console.error("Error removing bag and reverting sequence:", error);
+      setSnackbarMessage("Failed to remove bag and revert sequence.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
   };
 
   useEffect(() => {
     fetchDryMillData();
     fetchLatestRfid();
+    fetchProcessingTypes();
+    fetchProductLines();
+    fetchReferenceMappings();
     const intervalId = setInterval(() => {
       fetchDryMillData();
       fetchLatestRfid();
@@ -487,10 +551,12 @@ const DryMillStation = () => {
     setOpenDialog(true);
   };
 
-  const handleCloseDialog = () => {
+  const handleCloseDialog = async () => {
+    await revertSequenceNumber();
     setOpenDialog(false);
     setSelectedBatch(null);
     setGrades([]);
+    setSequenceAdjustments([]);
   };
 
   const handleCloseCompleteDialog = () => {
