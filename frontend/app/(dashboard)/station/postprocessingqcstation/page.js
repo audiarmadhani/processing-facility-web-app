@@ -342,6 +342,7 @@ const PostProcessingQCPage = () => {
     { field: "quality", headerName: "Quality", width: 130 },
     { field: "weight", headerName: "Total Weight (kg)", width: 150 },
     { field: "totalBags", headerName: "Total Bags", width: 130 },
+    { field: "status", headerName: "Status", width: 150 }, // Added Status column
     { field: "notes", headerName: "Notes", width: 180 },
     {
       field: "action",
