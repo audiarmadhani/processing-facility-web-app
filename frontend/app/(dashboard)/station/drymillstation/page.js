@@ -643,6 +643,19 @@ const DryMillStation = () => {
         />
       ),
     },
+    {
+      field: "details",
+      headerName: "Details",
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        params.row.isStored ? null : (
+          <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
+            Details
+          </Button>
+        )
+      ),
+    },
     { field: "dryMillEntered", headerName: "Dry Mill Entered", width: 150 },
     { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
     { field: "storeddatetrunc", headerName: "Stored Date", width: 150 },
@@ -665,19 +678,6 @@ const DryMillStation = () => {
           size="small"
           sx={{ borderRadius: "16px", fontWeight: "medium" }}
         />
-      ),
-    },
-    {
-      field: "details",
-      headerName: "Details",
-      width: 100,
-      sortable: false,
-      renderCell: (params) => (
-        params.row.isStored ? null : (
-          <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
-            Details
-          </Button>
-        )
       ),
     },
   ];
