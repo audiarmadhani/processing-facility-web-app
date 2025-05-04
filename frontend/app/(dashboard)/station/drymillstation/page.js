@@ -616,7 +616,7 @@ const DryMillStation = () => {
     },
     { field: "dryMillEntered", headerName: "Dry Mill Entered", width: 150 },
     { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
-    { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 140 },
+    { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 160 },
     { field: "producer", headerName: "Producer", width: 120 },
     { field: "productLine", headerName: "Product Line", width: 160 },
     { field: "processingType", headerName: "Processing Type", width: 180 },
@@ -626,7 +626,7 @@ const DryMillStation = () => {
   ];
 
   const subBatchColumns = [
-    { field: "batchNumber", headerName: "Batch Number", width: 160 },
+    { field: "batchNumber", headerName: "Batch Number", width: 180 },
     { field: "parentBatchNumber", headerName: "Parent Batch", width: 160 },
     { field: "referenceNumber", headerName: "Ref Number", width: 180 },
     {
