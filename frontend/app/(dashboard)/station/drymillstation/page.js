@@ -43,13 +43,13 @@ const DryMillStation = () => {
   const [processingTypes, setProcessingTypes] = useState([]);
   const [productLines, setProductLines] = useState([]);
   const [referenceMappings, setReferenceMappings] = useState([]);
-  const [sequenceAdjustments, setSequenceAdjustments] = useState([]); // Track sequence adjustments per grade
+  const [sequenceAdjustments, setSequenceAdjustments] = useState([]);
 
   const fetchDryMillData = async () => {
     setIsLoading(true);
     try {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
-      const data = await response.data;
+      const data = response.data;
 
       const formattedData = data.map((batch) => ({
         batchNumber: batch.batchNumber,
@@ -66,7 +66,7 @@ const DryMillStation = () => {
         notes: batch.notes || "N/A",
         type: batch.type || "N/A",
         storeddatetrunc: batch.storeddatetrunc || "N/A",
-        isStored: batch.isStored || false,
+        isStored: batch.isStored,
         parentBatchNumber: batch.parentBatchNumber || null,
         weight: batch.weight || "N/A",
         referenceNumber: batch.referenceNumber || "N/A",
@@ -138,25 +138,25 @@ const DryMillStation = () => {
         throw new Error("Invalid response format: grades data is not an array");
       }
 
-      const gradeOrder = ['Specialty Grade', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'];
+      const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
       const fetchedGradesMap = {};
-      data.forEach(grade => {
+      data.forEach((grade) => {
         fetchedGradesMap[grade.grade] = {
           grade: grade.grade,
-          weight: grade.weight || '',
+          weight: grade.weight || "",
           bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
           bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
-          tempSequence: '0001', // Default sequence
+          tempSequence: "0001",
         };
       });
 
-      const gradesData = gradeOrder.map(grade => 
+      const gradesData = gradeOrder.map((grade) =>
         fetchedGradesMap[grade] || {
           grade,
-          weight: '',
+          weight: "",
           bagWeights: [],
           bagged_at: new Date().toISOString().split("T")[0],
-          tempSequence: '0001',
+          tempSequence: "0001",
         }
       );
 
@@ -167,11 +167,11 @@ const DryMillStation = () => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
-        { grade: "Specialty Grade", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
-        { grade: "Grade 1", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
-        { grade: "Grade 2", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
-        { grade: "Grade 3", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
-        { grade: "Grade 4", weight: '', bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: '0001' },
+        { grade: "Specialty Grade", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
+        { grade: "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
+        { grade: "Grade 2", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
+        { grade: "Grade 3", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
+        { grade: "Grade 4", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
       ];
     }
   };
@@ -179,7 +179,7 @@ const DryMillStation = () => {
   const fetchLatestRfid = async () => {
     try {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/get-rfid");
-      const data = await response.data;
+      const data = response.data;
       setRfid(data.rfid || "");
     } catch (error) {
       console.error("Error fetching latest RFID:", error);
@@ -202,19 +202,13 @@ const DryMillStation = () => {
         rfid,
         scanned_at: "Dry_Mill",
       });
-
-      const data = await response.data;
-
+      const data = response.data;
       setRfid("");
       setSnackbarMessage(data.message);
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
-
       fetchDryMillData();
-
-      if (data.exited_at) {
-        setOpenStorageDialog(true);
-      }
+      if (data.exited_at) setOpenStorageDialog(true);
     } catch (error) {
       console.error("Error scanning RFID:", error);
       setSnackbarMessage(error.response?.data?.error || "Failed to scan RFID");
@@ -228,13 +222,8 @@ const DryMillStation = () => {
   const handleConfirmComplete = async () => {
     if (!selectedBatch) return;
     try {
-      const response = await axios.post(
-        `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/complete`,
-        {}
-      );
-
-      const data = await response.data;
-
+      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/complete`, {});
+      const data = response.data;
       setSnackbarMessage(data.message);
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
@@ -260,9 +249,7 @@ const DryMillStation = () => {
         rfid,
         scanned_at: "Warehouse",
       });
-
-      const data = await response.data;
-
+      const data = response.data;
       setRfid("");
       setSnackbarMessage(data.message);
       setSnackbarSeverity("success");
@@ -281,54 +268,49 @@ const DryMillStation = () => {
     if (!selectedBatch) return;
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const response = await axios.post(
-        `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/split`,
-        {
-          grades: grades.map((g) => ({
-            grade: g.grade,
-            bagWeights: g.bagWeights,
-            bagged_at: today,
-          })),
-        }
-      );
-      const data = await response.data;
-
+      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/split`, {
+        grades: grades.map((g) => ({
+          grade: g.grade,
+          bagWeights: g.bagWeights,
+          bagged_at: today,
+        })),
+      });
+      const data = response.data;
       setSnackbarMessage(data.message);
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
       setOpenDialog(false);
       fetchDryMillData();
-      setSequenceAdjustments([]); // Clear adjustments after successful save
+      setSequenceAdjustments([]);
     } catch (error) {
       console.error("Error saving green bean splits:", error);
       setSnackbarMessage(error.response?.data?.error || "Failed to save green bean splits");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
-      // Revert sequence numbers on failure
       await revertSequenceNumber();
     }
   };
 
   const fetchSequenceNumber = async (grade) => {
-    if (!selectedBatch) return '0001';
+    if (!selectedBatch) return "0001";
     try {
-      const response = await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
+      const response = await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
         producer: selectedBatch.producer,
         productLine: selectedBatch.productLine,
         processingType: selectedBatch.processingType,
         year: new Date().getFullYear().toString().slice(-2),
         grade,
-        action: 'increment',
+        action: "increment",
       });
       const sequence = response.data.sequence;
-      setSequenceAdjustments(prev => [...prev, { grade, sequence, action: 'increment' }]);
+      setSequenceAdjustments((prev) => [...prev, { grade, sequence, action: "increment" }]);
       return sequence;
     } catch (error) {
       console.error("Error fetching sequence number:", error);
       setSnackbarMessage("Failed to fetch sequence number.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
-      return '0001';
+      return "0001";
     }
   };
 
@@ -336,14 +318,14 @@ const DryMillStation = () => {
     if (!selectedBatch || sequenceAdjustments.length === 0) return;
     try {
       for (const adjustment of sequenceAdjustments) {
-        if (adjustment.action === 'increment') {
-          await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
+        if (adjustment.action === "increment") {
+          await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
             producer: selectedBatch.producer,
             productLine: selectedBatch.productLine,
             processingType: selectedBatch.processingType,
             year: new Date().getFullYear().toString().slice(-2),
             grade: adjustment.grade,
-            action: 'decrement',
+            action: "decrement",
           });
         }
       }
@@ -357,48 +339,27 @@ const DryMillStation = () => {
   };
 
   const handlePrintLabel = (batchNumber, grade, bagIndex, bagWeight) => {
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: [100, 150],
-    });
-
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [100, 150] });
     const farmerName = selectedBatch?.farmerName || "Unknown Farmer";
     const companyName = selectedBatch?.producer === "BTM" ? "PT Berkas Tuaian Melimpah" : "HEQA";
     const productionDate = selectedBatch?.dryMillExited && selectedBatch.status === "Processed"
       ? new Date(selectedBatch.dryMillExited).toLocaleDateString()
       : new Date().toLocaleDateString();
-
     const producerAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HQ";
     const producerReferenceAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HEQA";
     const currentYear = new Date().getFullYear().toString().slice(-2);
-
-    const productLineEntry = productLines.find(pl => pl.productLine === selectedBatch.productLine) || {};
+    const productLineEntry = productLines.find((pl) => pl.productLine === selectedBatch.productLine) || {};
     const productLineAbbreviation = productLineEntry.abbreviation || "Unknown";
-    const productLineReferenceAbbreviation = productLineAbbreviation === "R" ? "RE" :
-                                            productLineAbbreviation === "M" ? "MI" :
-                                            productLineAbbreviation === "C" ? "CO" :
-                                            productLineAbbreviation;
-    const processingTypeEntry = processingTypes.find(pt => pt.processingType === selectedBatch.processingType) || {};
+    const productLineReferenceAbbreviation = productLineAbbreviation === "R" ? "RE" : productLineAbbreviation === "M" ? "MI" : productLineAbbreviation === "C" ? "CO" : productLineAbbreviation;
+    const processingTypeEntry = processingTypes.find((pt) => pt.processingType === selectedBatch.processingType) || {};
     const processingTypeAbbreviation = processingTypeEntry.abbreviation || "Unknown";
-    const qualityAbbreviation = grade === 'Specialty Grade' ? 'S' :
-                                grade === 'Grade 1' ? 'G1' :
-                                grade === 'Grade 2' ? 'G2' :
-                                grade === 'Grade 3' ? 'G3' : 'G4';
-
-    const tempSequence = grades.find(g => g.grade === grade)?.tempSequence || "0001";
-
+    const qualityAbbreviation = grade === "Specialty Grade" ? "S" : grade === "Grade 1" ? "G1" : grade === "Grade 2" ? "G2" : grade === "Grade 3" ? "G3" : "G4";
+    const tempSequence = grades.find((g) => g.grade === grade)?.tempSequence || "0001";
     const lotNumber = `${producerAbbreviation}${currentYear}${productLineAbbreviation}-${processingTypeAbbreviation}-${tempSequence}-${qualityAbbreviation}`;
-    const referenceMatch = referenceMappings.find(rm =>
-      rm.producer === selectedBatch.producer &&
-      rm.productLine === selectedBatch.productLine &&
-      rm.processingType === selectedBatch.processingType &&
-      rm.type === selectedBatch.type
-    ) || {};
-    const referenceSequence = referenceMatch.referenceNumber ? referenceMatch.referenceNumber.split('-')[3] : "000";
+    const referenceMatch = referenceMappings.find((rm) => rm.producer === selectedBatch.producer && rm.productLine === selectedBatch.productLine && rm.processingType === selectedBatch.processingType && rm.type === selectedBatch.type) || {};
+    const referenceSequence = referenceMatch.referenceNumber ? referenceMatch.referenceNumber.split("-")[3] : "000";
     const referenceNumber = `ID-${producerReferenceAbbreviation}-${productLineReferenceAbbreviation}-${referenceSequence}-${qualityAbbreviation}`;
     const cherryLotNumber = selectedBatch.batchNumber;
-
     const labels = [
       { label: "Lot Number", value: lotNumber },
       { label: "Reference Number", value: referenceNumber },
@@ -412,8 +373,7 @@ const DryMillStation = () => {
       { label: "Bag Number", value: `${bagIndex + 1}` },
       { label: "Production Date", value: productionDate },
     ];
-
-    const maxLabelLength = Math.max(...labels.map(l => l.label.length));
+    const maxLabelLength = Math.max(...labels.map((l) => l.label.length));
     const padding = " ".repeat(maxLabelLength);
 
     doc.setFont("helvetica", "bold");
@@ -435,8 +395,8 @@ const DryMillStation = () => {
       y += 7;
     });
 
-    const pdfDataUri = doc.output('datauristring');
-    const printWindow = window.open('', '_blank', 'width=600,height=400');
+    const pdfDataUri = doc.output("datauristring");
+    const printWindow = window.open("", "_blank", "width=600,height=400");
     if (!printWindow) {
       setSnackbarMessage("Failed to open print window. Please allow popups for this site.");
       setSnackbarSeverity("error");
@@ -466,9 +426,7 @@ const DryMillStation = () => {
           </div>
           <script>
             window.onload = function() {
-              setTimeout(() => {
-                window.print();
-              }, 2000);
+              setTimeout(() => window.print(), 2000);
             };
           </script>
         </body>
@@ -486,7 +444,7 @@ const DryMillStation = () => {
     }
     const grade = grades[index].grade;
     const sequence = await fetchSequenceNumber(grade);
-    setGrades(prevGrades => {
+    setGrades((prevGrades) => {
       const newGrades = [...prevGrades];
       newGrades[index] = {
         ...newGrades[index],
@@ -495,7 +453,7 @@ const DryMillStation = () => {
       };
       return newGrades;
     });
-    setCurrentWeights(prev => ({ ...prev, [index]: "" }));
+    setCurrentWeights((prev) => ({ ...prev, [index]: "" }));
   };
 
   const handleRemoveBag = async (gradeIndex, bagIndex) => {
@@ -506,7 +464,7 @@ const DryMillStation = () => {
         grade,
         bagIndex,
       });
-      setGrades(prevGrades => {
+      setGrades((prevGrades) => {
         const newGrades = [...prevGrades];
         newGrades[gradeIndex] = {
           ...newGrades[gradeIndex],
@@ -514,7 +472,7 @@ const DryMillStation = () => {
         };
         return newGrades;
       });
-      setSequenceAdjustments(prev => prev.filter(adj => adj.grade !== grade));
+      setSequenceAdjustments((prev) => prev.filter((adj) => adj.grade !== grade));
       setSnackbarMessage(response.data.message);
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
@@ -544,18 +502,14 @@ const DryMillStation = () => {
     fetchLatestRfid();
   };
 
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-  };
+  const handleCloseSnackbar = () => setOpenSnackbar(false);
 
   const handleDetailsClick = async (batch) => {
     setSelectedBatch(batch);
     const existingGrades = await fetchExistingGrades(batch.batchNumber);
     setGrades(existingGrades);
     const initialWeights = {};
-    existingGrades.forEach((_, idx) => {
-      initialWeights[idx] = "";
-    });
+    existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
     setCurrentWeights(initialWeights);
     setOpenDialog(true);
   };
@@ -587,29 +541,19 @@ const DryMillStation = () => {
       renderCell: (params) => (
         <Chip
           label={params.value}
-          color={
-            params.value === "In Dry Mill"
-              ? "primary"
-              : params.value === "Processed"
-              ? "success"
-              : "default"
-          }
+          color={params.value === "In Dry Mill" ? "primary" : params.value === "Processed" ? "success" : "default"}
           size="small"
           sx={{ borderRadius: "16px", fontWeight: "medium" }}
         />
       ),
     },
     {
-      field: "complete",
+      field: "details",
       headerName: "Details",
       width: 100,
       sortable: false,
       renderCell: (params) => (
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleDetailsClick(params.row)}
-        >
+        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
           Details
         </Button>
       ),
@@ -627,8 +571,8 @@ const DryMillStation = () => {
 
   const subBatchColumns = [
     { field: "batchNumber", headerName: "Batch Number", width: 180 },
-    { field: "parentBatchNumber", headerName: "Parent Batch", width: 160 },
     { field: "referenceNumber", headerName: "Ref Number", width: 180 },
+    { field: "parentBatchNumber", headerName: "Parent Batch", width: 160 },
     {
       field: "status",
       headerName: "Status",
@@ -636,13 +580,7 @@ const DryMillStation = () => {
       renderCell: (params) => (
         <Chip
           label={params.value}
-          color={
-            params.value === "In Dry Mill"
-              ? "primary"
-              : params.value === "Processed"
-              ? "success"
-              : "default"
-          }
+          color={params.value === "In Dry Mill" ? "primary" : params.value === "Processed" ? "success" : "default"}
           size="small"
           sx={{ borderRadius: "16px", fontWeight: "medium" }}
         />
@@ -672,30 +610,33 @@ const DryMillStation = () => {
         />
       ),
     },
+    {
+      field: "details",
+      headerName: "Details",
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
+          Details
+        </Button>
+      ),
+    },
   ];
 
-  const getParentBatches = () => {
-    return [...parentBatches].sort((a, b) => {
+  const getParentBatches = () =>
+    [...parentBatches].sort((a, b) => {
       const statusOrder = { "In Dry Mill": 0, "Processed": 1, "Not Started": 2 };
       return (
-        (statusOrder[a.status] || 2) -
-        (statusOrder[b.status] || 2) ||
-        (a.dryMillEntered === "N/A"
-          ? Infinity
-          : new Date(a.dryMillEntered)) -
-          (b.dryMillEntered === "N/A"
-            ? Infinity
-            : new Date(b.dryMillEntered))
+        (statusOrder[a.status] || 2) - (statusOrder[b.status] || 2) ||
+        (a.dryMillEntered === "N/A" ? Infinity : new Date(a.dryMillEntered)) -
+        (b.dryMillEntered === "N/A" ? Infinity : new Date(b.dryMillEntered))
       );
     });
-  };
 
-  const getSubBatches = () => {
-    return [...subBatches].sort((a, b) =>
-      a.parentBatchNumber?.localeCompare(b.parentBatchNumber) ||
-      a.batchNumber.localeCompare(b.batchNumber)
+  const getSubBatches = () =>
+    [...subBatches].sort((a, b) =>
+      a.parentBatchNumber?.localeCompare(b.parentBatchNumber) || a.batchNumber.localeCompare(b.batchNumber)
     );
-  };
 
   const renderParentDataGrid = () => {
     const sortedData = getParentBatches();
@@ -737,27 +678,15 @@ const DryMillStation = () => {
 
   if (status === "loading") return <Typography>Loading...</Typography>;
 
-  if (
-    !session?.user ||
-    !["admin", "manager", "drymill", "postprocessing"].includes(
-      session.user.role
-    )
-  ) {
-    return (
-      <Typography variant="h6">
-        Access Denied. You do not have permission to view this page.
-      </Typography>
-    );
-  }
+  if (!session?.user || !["admin", "manager", "drymill", "postprocessing"].includes(session.user.role))
+    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
 
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Dry Mill Station - Active Batches
-            </Typography>
+            <Typography variant="h5" gutterBottom>Dry Mill Station - Active Batches</Typography>
             <Button
               variant="contained"
               color="secondary"
@@ -776,56 +705,40 @@ const DryMillStation = () => {
       <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Green Bean Sub-Batches
-            </Typography>
+            <Typography variant="h5" gutterBottom>Green Bean Sub-Batches</Typography>
             {renderSubBatchDataGrid()}
           </CardContent>
         </Card>
       </Grid>
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          Sort, Weigh, and Bag - Batch {selectedBatch?.batchNumber}
-        </DialogTitle>
+        <DialogTitle>Sort, Weigh, and Bag - Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-            Add the weight of each bag for each green bean grade. Use the preset buttons (50 kg or 60 kg) or enter a custom weight, then print the label for each bag.
-            Preprocessing details: Producer: {selectedBatch?.producer},
-            Product Line: {selectedBatch?.productLine}, Processing Type: {selectedBatch?.processingType},
-            Type: {selectedBatch?.type}, Cherry Weight: {selectedBatch?.cherry_weight} kg.
-            Note: Green bean weight may be less due to processing losses.
+            Add the weight of each bag for each green bean grade. Use preset buttons (50 kg or 60 kg) or enter a custom weight, then print the label for each bag.
+            Preprocessing details: Producer: {selectedBatch?.producer}, Product Line: {selectedBatch?.productLine},
+            Processing Type: {selectedBatch?.processingType}, Type: {selectedBatch?.type},
+            Cherry Weight: {selectedBatch?.cherry_weight} kg. Note: Green bean weight may be less due to processing losses.
           </Typography>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
-              const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
+              const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w || 0), 0);
               const totalBags = grade.bagWeights.length;
-
               return (
                 <Grid item xs={12} key={`${grade.grade}-${index}`}>
                   <Box sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
                     <Typography variant="subtitle1">{grade.grade}</Typography>
                     <Box sx={{ display: "flex", gap: 2, mb: 1, alignItems: "center" }}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleAddBag(index, 50)}
-                        sx={{ mr: 1 }}
-                      >
+                      <Button variant="contained" color="primary" onClick={() => handleAddBag(index, 50)} sx={{ mr: 1 }}>
                         50 kg
                       </Button>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleAddBag(index, 60)}
-                        sx={{ mr: 1 }}
-                      >
+                      <Button variant="contained" color="primary" onClick={() => handleAddBag(index, 60)} sx={{ mr: 1 }}>
                         60 kg
                       </Button>
                       <TextField
                         label="Custom Weight (kg)"
                         value={currentWeights[index] || ""}
-                        onChange={(e) => setCurrentWeights(prev => ({ ...prev, [index]: e.target.value }))}
+                        onChange={(e) => setCurrentWeights((prev) => ({ ...prev, [index]: e.target.value }))}
                         type="number"
                         inputProps={{ min: 0, step: 0.1 }}
                         variant="outlined"
@@ -842,30 +755,13 @@ const DryMillStation = () => {
                     </Box>
                     <Divider sx={{ my: 1 }} />
                     <Box>
-                      <Typography variant="body2">
-                        Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg
-                      </Typography>
+                      <Typography variant="body2">Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg</Typography>
                       {grade.bagWeights.length > 0 ? (
                         grade.bagWeights.map((weight, bagIndex) => (
-                          <Box
-                            key={`${grade.grade}-bag-${bagIndex}`}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              mb: 1,
-                            }}
-                          >
-                            <Typography variant="body1">
-                              Bag {bagIndex + 1}: {weight} kg
-                            </Typography>
+                          <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                            <Typography variant="body1">Bag {bagIndex + 1}: {weight} kg</Typography>
                             <Box sx={{ display: "flex", gap: 1 }}>
-                              <Button
-                                variant="contained"
-                                color="error"
-                                size="small"
-                                onClick={() => handleRemoveBag(index, bagIndex)}
-                              >
+                              <Button variant="contained" color="error" size="small" onClick={() => handleRemoveBag(index, bagIndex)}>
                                 Remove
                               </Button>
                               <Button
@@ -880,9 +776,7 @@ const DryMillStation = () => {
                           </Box>
                         ))
                       ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          No bags added yet.
-                        </Typography>
+                        <Typography variant="body2" color="text.secondary">No bags added yet.</Typography>
                       )}
                     </Box>
                   </Box>
@@ -893,31 +787,21 @@ const DryMillStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSortAndWeigh}
-            disabled={!selectedBatch}
-          >
+          <Button variant="contained" color="primary" onClick={handleSortAndWeigh} disabled={!selectedBatch}>
             Save Splits
           </Button>
           <Button
             variant="contained"
             color="secondary"
             onClick={handleConfirmComplete}
-            disabled={!selectedBatch || !grades.some(g => g.bagWeights.length > 0)}
+            disabled={!selectedBatch || !grades.some((g) => g.bagWeights.length > 0)}
           >
             Mark Complete
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={openCompleteDialog}
-        onClose={handleCloseCompleteDialog}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={openCompleteDialog} onClose={handleCloseCompleteDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Confirm Mark as Processed</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
@@ -926,57 +810,30 @@ const DryMillStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseCompleteDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleConfirmComplete}
-          >
+          <Button variant="contained" color="primary" onClick={handleConfirmComplete}>
             Confirm
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={openStorageDialog}
-        onClose={handleCloseStorageDialog}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={openStorageDialog} onClose={handleCloseStorageDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Confirm Storage in Warehouse</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
             Enter the RFID tag to confirm storage in the warehouse.
           </Typography>
-          <TextField
-            label="RFID Tag"
-            value={rfid}
-            onChange={(e) => setRfid(e.target.value)}
-            fullWidth
-            variant="outlined"
-          />
+          <TextField label="RFID Tag" value={rfid} onChange={(e) => setRfid(e.target.value)} fullWidth variant="outlined" />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseStorageDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleConfirmStorage}
-          >
+          <Button variant="contained" color="primary" onClick={handleConfirmStorage}>
             Confirm Storage
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbarSeverity}
-          sx={{ width: "100%" }}
-        >
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: "100%" }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
