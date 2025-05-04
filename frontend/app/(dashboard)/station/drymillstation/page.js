@@ -147,7 +147,7 @@ const DryMillStation = () => {
           weight: grade.weight || "",
           bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
           bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
-          tempSequence: "0001",
+          tempSequence: grade.tempSequence || "0001", // Use tempSequence if available from backend
         };
       });
 
@@ -163,7 +163,7 @@ const DryMillStation = () => {
 
       // Update sequenceMap based on fetched grades
       gradesData.forEach((grade) => {
-        if (grade.bagWeights.length > 0) {
+        if (grade.bagWeights.length > 0 && grade.tempSequence) {
           const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade.grade}`;
           setSequenceMap((prev) => ({
             ...prev,
@@ -285,6 +285,7 @@ const DryMillStation = () => {
           grade: g.grade,
           bagWeights: g.bagWeights,
           bagged_at: today,
+          tempSequence: g.tempSequence, // Include tempSequence in the data sent to backend
         })),
       });
       const data = response.data;
@@ -305,13 +306,21 @@ const DryMillStation = () => {
 
   const fetchSequenceNumber = async (grade) => {
     if (!selectedBatch) return "0001";
+
+    // Check if there are already bags for this grade in the current grades state
+    const currentGrade = grades.find((g) => g.grade === grade);
+    if (currentGrade && currentGrade.bagWeights.length > 0 && currentGrade.tempSequence) {
+      return currentGrade.tempSequence; // Reuse the existing sequence number
+    }
+
     const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade}`;
     
-    // Check if a sequence number already exists for this combination
+    // Check if a sequence number already exists in sequenceMap
     if (sequenceMap[key]) {
       return sequenceMap[key];
     }
 
+    // If no existing sequence number, fetch a new one
     try {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
         producer: selectedBatch.producer,
@@ -469,7 +478,7 @@ const DryMillStation = () => {
       newGrades[index] = {
         ...newGrades[index],
         bagWeights: [...newGrades[index].bagWeights, parseFloat(weight).toString()],
-        tempSequence: sequence,
+        tempSequence: sequence, // Use the fetched or reused sequence
       };
       return newGrades;
     });
