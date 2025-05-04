@@ -347,7 +347,7 @@ router.post('/dry-mill/:batchNumber/remove-bag', async (req, res) => {
 
     if (!bag) {
       await t.rollback();
-      return res.status(404).json({ error: 'Bag not found.' });
+      return res.status(404).json({ error: 'Bag not stored.' });
     }
 
     // Fetch batch metadata to get producer, productLine, processingType
@@ -466,17 +466,24 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
       return res.status(400).json({ error: 'Batch is not in dry mill or already processed.' });
     }
 
+    // Fetch splits data with debugging
     const [splits] = await sequelize.query(`
       SELECT COUNT(*) AS total, SUM(CASE WHEN weight IS NOT NULL AND bagged_at IS NOT NULL THEN 1 ELSE 0 END) AS completed
       FROM "DryMillGrades" 
       WHERE "batchNumber" = :batchNumber;
     `, { replacements: { batchNumber }, transaction: t, type: sequelize.QueryTypes.SELECT });
 
-    if (splits[0].completed !== splits[0].total) {
+    console.log('Query result for splits:', splits); // Debug log
+
+    // Handle case where no rows are returned
+    const splitData = splits.length > 0 ? splits[0] : { total: 0, completed: 0 };
+
+    if (splitData.completed !== splitData.total) {
       await t.rollback();
       return res.status(400).json({ error: 'All splits must have weights and bagging dates before marking as processed.' });
     }
 
+    // Update DryMillData to mark batch as exited
     const [result] = await sequelize.query(`
       UPDATE "DryMillData" 
       SET exited_at = NOW() 
@@ -486,10 +493,32 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
       RETURNING *;
     `, { replacements: { batchNumber }, transaction: t, type: sequelize.QueryTypes.UPDATE });
 
+    // Update ReceivingData to free the RFID tag
     await sequelize.query(`
       UPDATE "ReceivingData"
       SET "currentAssign" = 0
       WHERE "batchNumber" = :batchNumber;
+    `, { replacements: { batchNumber }, transaction: t, type: sequelize.QueryTypes.UPDATE });
+
+    // Update DryMillGrades to mark as stored
+    await sequelize.query(`
+      UPDATE "DryMillGrades"
+      SET "is_stored" = TRUE
+      WHERE "batchNumber" = :batchNumber;
+    `, { replacements: { batchNumber }, transaction: t, type: sequelize.QueryTypes.UPDATE });
+
+    // Update BagDetails to mark all bags as stored
+    await sequelize.query(`
+      UPDATE "BagDetails"
+      SET is_stored = TRUE
+      WHERE grade_id IN (SELECT "subBatchId" FROM "DryMillGrades" WHERE "batchNumber" = :batchNumber);
+    `, { replacements: { batchNumber }, transaction: t, type: sequelize.QueryTypes.UPDATE });
+
+    // Update PostprocessingData to set storedDate for sub-batches
+    await sequelize.query(`
+      UPDATE "PostprocessingData"
+      SET "storedDate" = NOW()
+      WHERE "parentBatchNumber" = :batchNumber;
     `, { replacements: { batchNumber }, transaction: t, type: sequelize.QueryTypes.UPDATE });
 
     await t.commit();
@@ -591,22 +620,19 @@ router.get('/dry-mill-data', async (req, res) => {
       const latestEntry = batchDryMillData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
       const status = latestEntry?.exited_at ? 'Processed' : (latestEntry?.entered_at ? 'In Dry Mill' : 'Not Started');
 
-      const grades = dryMillGradesArray.filter(grade => grade.batchNumber === relevantBatchNumber) || [];
-      const bags = bagDetailsArray.filter(bag => grades.some(g => g.subBatchId === bag.grade_id)) || [];
-      const receiving = receivingDataArray.find(r => r.batchNumber === (batch.parentBatchNumber || batch.batchNumber)) || {};
-      const hasSplits = grades.length > 0;
-      const allSplitsStored = hasSplits ? grades.every(g => g.is_stored && bags.every(b => b.is_stored)) : false;
-      const isStored = receiving.currentAssign === 0 && (!hasSplits || allSplitsStored);
+      // Check if any grade for the relevant batch has is_stored = true
+      const storedGrades = dryMillGradesArray.filter(grade => grade.batchNumber === relevantBatchNumber && grade.is_stored);
+      const isStored = storedGrades.length > 0;
 
       return {
         ...batch,
         status,
         dryMillEntered: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
         dryMillExited: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-        rfid: receiving.rfid || 'N/A',
-        bagWeights: bags.map(b => b.weight),
-        green_bean_splits: grades.length > 0 ? 
-          grades.map(g => 
+        rfid: receivingDataArray.find(r => r.batchNumber === (batch.parentBatchNumber || batch.batchNumber))?.rfid || 'N/A',
+        bagWeights: bagDetailsArray.filter(bag => dryMillGradesArray.some(g => g.subBatchId === bag.grade_id && g.batchNumber === relevantBatchNumber)).map(b => b.weight),
+        green_bean_splits: dryMillGradesArray.filter(g => g.batchNumber === relevantBatchNumber).length > 0 ? 
+          dryMillGradesArray.filter(g => g.batchNumber === relevantBatchNumber).map(g => 
             `Grade: ${g.grade}, Weight: ${g.weight ? g.weight + ' kg' : 'N/A'}, Split: ${new Date(g.split_at).toISOString().slice(0, 19).replace('T', ' ')}, Bagged: ${g.bagged_at ? new Date(g.bagged_at).toISOString().slice(0, 10) : 'N/A'}, Stored: ${g.is_stored ? 'Yes' : 'No'}`
           ).join('; ') : null,
         isStored,
@@ -952,3 +978,23 @@ router.post('/lot-number-sequence', async (req, res) => {
 });
 
 module.exports = router;
+
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
+// yay 1000 lines
