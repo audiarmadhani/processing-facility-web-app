@@ -403,7 +403,7 @@ const DryMillStation = () => {
 
     // Main Info Section
     doc.setFont("courier", "normal");
-    doc.setFontSize(11);
+    doc.setFontSize(12);
     doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
@@ -480,7 +480,12 @@ const DryMillStation = () => {
     setSelectedBatch(batch);
     const existingGrades = await fetchExistingGrades(batch.batchNumber);
     setGrades(existingGrades);
-    setCurrentWeights(existingGrades.reduce((acc, _, idx) => ({ ...acc, [index]: "" }), {}));
+    // Initialize currentWeights with empty strings for each grade index
+    const initialWeights = {};
+    existingGrades.forEach((_, idx) => {
+      initialWeights[idx] = "";
+    });
+    setCurrentWeights(initialWeights);
     setOpenDialog(true);
   };
 
