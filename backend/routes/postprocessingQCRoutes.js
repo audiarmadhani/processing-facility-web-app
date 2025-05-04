@@ -3,7 +3,7 @@ const router = express.Router();
 const sequelize = require('../config/database');
 
 // Route for fetching batch details
-router.get('/postprocessing/:batchNumber', async (req, res) => {
+router.get('/postprocessingqcdata/:batchNumber', async (req, res) => {
   try {
     const { batchNumber } = req.params;
 
@@ -210,13 +210,14 @@ router.get('/postprocessing/not-qced', async (req, res) => {
         p."processingType",
         p."productLine",
         p."producer",
-        p."type",
+        COALESCE(p."type",rd.type) type,
         p."quality",
         p."weight",
         p."totalBags",
         p."notes"
       FROM "PostprocessingData" p
       LEFT JOIN "PostprocessingQCData" q ON p."batchNumber" = q."batchNumber"
+      LEFT JOIN "ReceivingData" rd on p."parentBatchNumber" = rd."batchNumber"
       WHERE q."batchNumber" IS NULL OR q."isCompleted" = false
       ORDER BY p."storedDate" DESC;
     `);

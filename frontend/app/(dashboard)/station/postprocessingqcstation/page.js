@@ -165,11 +165,20 @@ const PostProcessingQCPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    const numericValue = value === "" ? 0 : parseFloat(value);
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: numericValue,
-    }));
+    // Handle boolean fields (dropdowns) separately
+    if (name === "seranggaHidup" || name === "bijiBauBusuk") {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value === "true", // Convert string "true"/"false" to boolean
+      }));
+    } else {
+      // Handle numeric fields
+      const numericValue = value === "" ? 0 : parseFloat(value);
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: numericValue,
+      }));
+    }
   };
 
   const isFormComplete = () => {
@@ -455,6 +464,15 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
+                sx={{
+                  "& .MuiInputBase-root.Mui-disabled": {
+                    backgroundColor: "#f5f5f5",
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                  "& .MuiInputLabel-root.Mui-disabled": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -464,6 +482,15 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
+                sx={{
+                  "& .MuiInputBase-root.Mui-disabled": {
+                    backgroundColor: "#f5f5f5",
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                  "& .MuiInputLabel-root.Mui-disabled": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -473,6 +500,15 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
+                sx={{
+                  "& .MuiInputBase-root.Mui-disabled": {
+                    backgroundColor: "#f5f5f5",
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                  "& .MuiInputLabel-root.Mui-disabled": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -482,6 +518,15 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
+                sx={{
+                  "& .MuiInputBase-root.Mui-disabled": {
+                    backgroundColor: "#f5f5f5",
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                  "& .MuiInputLabel-root.Mui-disabled": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -491,6 +536,15 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
+                sx={{
+                  "& .MuiInputBase-root.Mui-disabled": {
+                    backgroundColor: "#f5f5f5",
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                  "& .MuiInputLabel-root.Mui-disabled": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -500,6 +554,15 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
+                sx={{
+                  "& .MuiInputBase-root.Mui-disabled": {
+                    backgroundColor: "#f5f5f5",
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                  "& .MuiInputLabel-root.Mui-disabled": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -509,44 +572,33 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
+                sx={{
+                  "& .MuiInputBase-root.Mui-disabled": {
+                    backgroundColor: "#f5f5f5",
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                  "& .MuiInputLabel-root.Mui-disabled": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
             </Grid>
           </Grid>
 
-          <Accordion defaultExpanded>
+          <Accordion
+            defaultExpanded
+            sx={{
+              "&:first-of-type": {
+                borderTopLeftRadius: "8px",
+                borderTopRightRadius: "8px",
+              },
+            }}
+          >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>Moisture & General</Typography>
+              <Typography>Moisture</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <FormControl fullWidth>
-                    <InputLabel>Serangga Hidup</InputLabel>
-                    <Select
-                      name="seranggaHidup"
-                      value={formData.seranggaHidup}
-                      onChange={handleFormChange}
-                      input={<OutlinedInput label="Serangga Hidup" />}
-                    >
-                      <MenuItem value={false}>No</MenuItem>
-                      <MenuItem value={true}>Yes</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth>
-                    <InputLabel>Biji Berbau Busuk</InputLabel>
-                    <Select
-                      name="bijiBauBusuk"
-                      value={formData.bijiBauBusuk}
-                      onChange={handleFormChange}
-                      input={<OutlinedInput label="Biji Berbau Busuk" />}
-                    >
-                      <MenuItem value={false}>No</MenuItem>
-                      <MenuItem value={true}>Yes</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
                 <Grid item xs={4}>
                   <TextField
                     name="kelembapan"
@@ -568,6 +620,20 @@ const PostProcessingQCPage = () => {
             </AccordionSummary>
             <AccordionDetails>
               <Grid container spacing={2}>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>Biji Berbau Busuk</InputLabel>
+                    <Select
+                      name="bijiBauBusuk"
+                      value={formData.bijiBauBusuk.toString()} // Convert boolean to string for Select
+                      onChange={handleFormChange}
+                      input={<OutlinedInput label="Biji Berbau Busuk" />}
+                    >
+                      <MenuItem value="false">No</MenuItem>
+                      <MenuItem value="true">Yes</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
                 {[
                   { name: "bijiHitam", label: "Biji Hitam" },
                   { name: "bijiHitamSebagian", label: "Biji Hitam Sebagian" },
@@ -597,12 +663,34 @@ const PostProcessingQCPage = () => {
             </AccordionDetails>
           </Accordion>
 
-          <Accordion defaultExpanded>
+          <Accordion
+            defaultExpanded
+            sx={{
+              "&:last-of-type": {
+                borderBottomLeftRadius: "8px",
+                borderBottomRightRadius: "8px",
+              },
+            }}
+          >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography>Foreign Matter</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Grid container spacing={2}>
+                <Grid item xs={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>Serangga Hidup</InputLabel>
+                    <Select
+                      name="seranggaHidup"
+                      value={formData.seranggaHidup.toString()} // Convert boolean to string for Select
+                      onChange={handleFormChange}
+                      input={<OutlinedInput label="Serangga Hidup" />}
+                    >
+                      <MenuItem value="false">No</MenuItem>
+                      <MenuItem value="true">Yes</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
                 {[
                   { name: "kulitKopiBesar", label: "Kulit Kopi Besar" },
                   { name: "kulitKopiSedang", label: "Kulit Kopi Sedang" },
