@@ -77,7 +77,7 @@ const DryMillStation = () => {
         (batch) => !batch.parentBatchNumber && !batch.isStored && batch.status !== "Processed"
       );
       const subBatchesData = formattedData.filter(
-        (batch) => batch.parentBatchNumber || batch.isStored
+        (batch) => batch.parentBatchNumber && !batch.isStored // Only sub-batches that are not stored
       );
 
       setParentBatches(parentBatchesData);
@@ -506,7 +506,8 @@ const DryMillStation = () => {
 
   const handleDetailsClick = async (batch) => {
     setSelectedBatch(batch);
-    const existingGrades = await fetchExistingGrades(batch.batchNumber);
+    const batchNumberToFetch = batch.parentBatchNumber || batch.batchNumber; // Use parentBatchNumber for parent batches, batchNumber for sub-batches
+    const existingGrades = await fetchExistingGrades(batchNumberToFetch);
     setGrades(existingGrades);
     const initialWeights = {};
     existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
@@ -616,9 +617,11 @@ const DryMillStation = () => {
       width: 100,
       sortable: false,
       renderCell: (params) => (
-        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
-          Details
-        </Button>
+        params.row.isStored ? null : (
+          <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
+            Details
+          </Button>
+        )
       ),
     },
   ];
