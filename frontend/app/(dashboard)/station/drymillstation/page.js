@@ -45,13 +45,14 @@ const DryMillStation = () => {
   const [referenceMappings, setReferenceMappings] = useState([]);
   const [sequenceAdjustments, setSequenceAdjustments] = useState([]);
   const [sequenceMap, setSequenceMap] = useState({});
-  const [batchNumberToFetch, setBatchNumberToFetch] = useState(null); // New state to trigger grade fetching
+  const [batchNumberToFetch, setBatchNumberToFetch] = useState(null);
 
   const fetchDryMillData = async () => {
     setIsLoading(true);
     try {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
+      console.log("Fetched Dry Mill Data:", data); // Debug log
 
       const formattedData = data.map((batch) => ({
         batchNumber: batch.batchNumber,
@@ -79,8 +80,11 @@ const DryMillStation = () => {
         (batch) => !batch.parentBatchNumber && !batch.isStored && batch.status !== "Processed"
       );
       const subBatchesData = formattedData.filter(
-        (batch) => batch.parentBatchNumber && !batch.isStored
+        (batch) => batch.parentBatchNumber // Remove !batch.isStored to show all sub-batches
       );
+
+      console.log("Parent Batches:", parentBatchesData); // Debug log
+      console.log("Sub-Batches:", subBatchesData); // Debug log
 
       setParentBatches(parentBatchesData);
       setSubBatches(subBatchesData);
@@ -132,7 +136,6 @@ const DryMillStation = () => {
 
   const fetchExistingGrades = async (batchNumber) => {
     try {
-      // Safeguard: Ensure selectedBatch is not null
       if (!selectedBatch) {
         throw new Error("Selected batch is not set.");
       }
@@ -159,7 +162,6 @@ const DryMillStation = () => {
         };
       });
 
-      // For parent batches, show all grades; for sub-batches, show only the matching quality grade
       const gradesData = selectedBatch.parentBatchNumber
         ? gradeOrder
             .filter((grade) => grade === selectedBatch.quality)
@@ -182,7 +184,6 @@ const DryMillStation = () => {
             }
           );
 
-      // Update sequenceMap based on fetched grades
       gradesData.forEach((grade) => {
         if (grade.bagWeights.length > 0 && grade.tempSequence) {
           const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade.grade}`;
@@ -542,7 +543,6 @@ const DryMillStation = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  // UseEffect to fetch grades when selectedBatch and batchNumberToFetch are set
   useEffect(() => {
     if (selectedBatch && batchNumberToFetch) {
       console.log("Fetching grades for batchNumber:", batchNumberToFetch);
@@ -566,14 +566,14 @@ const DryMillStation = () => {
   const handleDetailsClick = (batch) => {
     console.log("Selected batch:", batch);
     setSelectedBatch(batch);
-    setBatchNumberToFetch(batch.batchNumber); // Trigger the useEffect
+    setBatchNumberToFetch(batch.batchNumber);
   };
 
   const handleCloseDialog = async () => {
     await revertSequenceNumber();
     setOpenDialog(false);
     setSelectedBatch(null);
-    setBatchNumberToFetch(null); // Reset to prevent re-fetching
+    setBatchNumberToFetch(null);
     setGrades([]);
     setSequenceAdjustments([]);
   };
@@ -581,7 +581,7 @@ const DryMillStation = () => {
   const handleCloseCompleteDialog = () => {
     setOpenCompleteDialog(false);
     setSelectedBatch(null);
-    setBatchNumberToFetch(null); // Reset to prevent re-fetching
+    setBatchNumberToFetch(null);
   };
 
   const handleCloseStorageDialog = () => {
