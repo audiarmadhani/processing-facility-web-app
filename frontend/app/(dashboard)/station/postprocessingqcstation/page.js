@@ -464,15 +464,6 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
-                sx={{
-                  "& .MuiInputBase-root.Mui-disabled": {
-                    backgroundColor: "#f5f5f5",
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                  "& .MuiInputLabel-root.Mui-disabled": {
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -482,15 +473,6 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
-                sx={{
-                  "& .MuiInputBase-root.Mui-disabled": {
-                    backgroundColor: "#f5f5f5",
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                  "& .MuiInputLabel-root.Mui-disabled": {
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -500,15 +482,6 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
-                sx={{
-                  "& .MuiInputBase-root.Mui-disabled": {
-                    backgroundColor: "#f5f5f5",
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                  "& .MuiInputLabel-root.Mui-disabled": {
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -518,15 +491,6 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
-                sx={{
-                  "& .MuiInputBase-root.Mui-disabled": {
-                    backgroundColor: "#f5f5f5",
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                  "& .MuiInputLabel-root.Mui-disabled": {
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -536,15 +500,6 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
-                sx={{
-                  "& .MuiInputBase-root.Mui-disabled": {
-                    backgroundColor: "#f5f5f5",
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                  "& .MuiInputLabel-root.Mui-disabled": {
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -554,15 +509,6 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
-                sx={{
-                  "& .MuiInputBase-root.Mui-disabled": {
-                    backgroundColor: "#f5f5f5",
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                  "& .MuiInputLabel-root.Mui-disabled": {
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                }}
               />
             </Grid>
             <Grid item xs={6}>
@@ -572,28 +518,11 @@ const PostProcessingQCPage = () => {
                 InputProps={{ readOnly: true }}
                 fullWidth
                 disabled
-                sx={{
-                  "& .MuiInputBase-root.Mui-disabled": {
-                    backgroundColor: "#f5f5f5",
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                  "& .MuiInputLabel-root.Mui-disabled": {
-                    color: "rgba(0, 0, 0, 0.6)",
-                  },
-                }}
               />
             </Grid>
           </Grid>
 
-          <Accordion
-            defaultExpanded
-            sx={{
-              "&:first-of-type": {
-                borderTopLeftRadius: "8px",
-                borderTopRightRadius: "8px",
-              },
-            }}
-          >
+          <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography>Moisture</Typography>
             </AccordionSummary>
@@ -663,15 +592,7 @@ const PostProcessingQCPage = () => {
             </AccordionDetails>
           </Accordion>
 
-          <Accordion
-            defaultExpanded
-            sx={{
-              "&:last-of-type": {
-                borderBottomLeftRadius: "8px",
-                borderBottomRightRadius: "8px",
-              },
-            }}
-          >
+          <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography>Foreign Matter</Typography>
             </AccordionSummary>
