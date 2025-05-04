@@ -544,12 +544,18 @@ const DryMillStation = () => {
   const handleDetailsClick = async (batch) => {
     setSelectedBatch(batch);
     const batchNumberToFetch = batch.batchNumber; // Use the batchNumber directly
-    const existingGrades = await fetchExistingGrades(batchNumberToFetch);
-    setGrades(existingGrades);
-    const initialWeights = {};
-    existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
-    setCurrentWeights(initialWeights);
-    setOpenDialog(true);
+    console.log("Selected batch:", batch);
+    console.log("Fetching grades for batchNumber:", batchNumberToFetch);
+
+    // Add a 500ms delay to allow state to stabilize
+    setTimeout(async () => {
+      const existingGrades = await fetchExistingGrades(batchNumberToFetch);
+      setGrades(existingGrades);
+      const initialWeights = {};
+      existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
+      setCurrentWeights(initialWeights);
+      setOpenDialog(true);
+    }, 500);
   };
 
   const handleCloseDialog = async () => {
