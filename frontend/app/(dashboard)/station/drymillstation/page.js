@@ -43,7 +43,7 @@ const DryMillStation = () => {
   const [processingTypes, setProcessingTypes] = useState([]);
   const [productLines, setProductLines] = useState([]);
   const [referenceMappings, setReferenceMappings] = useState([]);
-  const [sequenceAdjustments, setSequenceAdjustments] = useState([]);
+  const [sequenceAdjustments, setSequenceAdjustments] = useState([]); // Track sequence adjustments per grade
 
   const fetchDryMillData = async () => {
     setIsLoading(true);
@@ -298,15 +298,18 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       setOpenDialog(false);
       fetchDryMillData();
+      setSequenceAdjustments([]); // Clear adjustments after successful save
     } catch (error) {
       console.error("Error saving green bean splits:", error);
       setSnackbarMessage(error.response?.data?.error || "Failed to save green bean splits");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
+      // Revert sequence numbers on failure
+      await revertSequenceNumber();
     }
   };
 
-  const fetchSequenceNumber = async (index) => {
+  const fetchSequenceNumber = async (grade) => {
     if (!selectedBatch) return '0001';
     try {
       const response = await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
@@ -314,10 +317,11 @@ const DryMillStation = () => {
         productLine: selectedBatch.productLine,
         processingType: selectedBatch.processingType,
         year: new Date().getFullYear().toString().slice(-2),
+        grade,
         action: 'increment',
       });
       const sequence = response.data.sequence;
-      setSequenceAdjustments(prev => [...prev, { index, sequence, action: 'increment' }]);
+      setSequenceAdjustments(prev => [...prev, { grade, sequence, action: 'increment' }]);
       return sequence;
     } catch (error) {
       console.error("Error fetching sequence number:", error);
@@ -332,13 +336,16 @@ const DryMillStation = () => {
     if (!selectedBatch || sequenceAdjustments.length === 0) return;
     try {
       for (const adjustment of sequenceAdjustments) {
-        await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
-          producer: selectedBatch.producer,
-          productLine: selectedBatch.productLine,
-          processingType: selectedBatch.processingType,
-          year: new Date().getFullYear().toString().slice(-2),
-          action: 'decrement',
-        });
+        if (adjustment.action === 'increment') {
+          await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
+            producer: selectedBatch.producer,
+            productLine: selectedBatch.productLine,
+            processingType: selectedBatch.processingType,
+            year: new Date().getFullYear().toString().slice(-2),
+            grade: adjustment.grade,
+            action: 'decrement',
+          });
+        }
       }
       setSequenceAdjustments([]);
     } catch (error) {
@@ -419,7 +426,7 @@ const DryMillStation = () => {
     doc.text(companyName, 10, 20);
 
     doc.setFont("courier", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
@@ -477,7 +484,8 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
-    const sequence = await fetchSequenceNumber(index);
+    const grade = grades[index].grade;
+    const sequence = await fetchSequenceNumber(grade);
     setGrades(prevGrades => {
       const newGrades = [...prevGrades];
       newGrades[index] = {
@@ -492,13 +500,11 @@ const DryMillStation = () => {
 
   const handleRemoveBag = async (gradeIndex, bagIndex) => {
     if (!selectedBatch) return;
+    const grade = grades[gradeIndex].grade;
     try {
-      await axios.post('https://processing-facility-backend.onrender.com/api/lot-number-sequence', {
-        producer: selectedBatch.producer,
-        productLine: selectedBatch.productLine,
-        processingType: selectedBatch.processingType,
-        year: new Date().getFullYear().toString().slice(-2),
-        action: 'decrement',
+      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/remove-bag`, {
+        grade,
+        bagIndex,
       });
       setGrades(prevGrades => {
         const newGrades = [...prevGrades];
@@ -508,10 +514,13 @@ const DryMillStation = () => {
         };
         return newGrades;
       });
-      setSequenceAdjustments(prev => prev.filter(adj => adj.index !== gradeIndex));
+      setSequenceAdjustments(prev => prev.filter(adj => adj.grade !== grade));
+      setSnackbarMessage(response.data.message);
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
     } catch (error) {
-      console.error("Error removing bag and reverting sequence:", error);
-      setSnackbarMessage("Failed to remove bag and revert sequence.");
+      console.error("Error removing bag:", error);
+      setSnackbarMessage(error.response?.data?.error || "Failed to remove bag.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
@@ -782,7 +791,7 @@ const DryMillStation = () => {
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
             Add the weight of each bag for each green bean grade. Use the preset buttons (50 kg or 60 kg) or enter a custom weight, then print the label for each bag.
-            Preprocessing details: Producer Dry Mill Station - Active BatchesProducer: {selectedBatch?.producer},
+            Preprocessing details: Producer: {selectedBatch?.producer},
             Product Line: {selectedBatch?.productLine}, Processing Type: {selectedBatch?.processingType},
             Type: {selectedBatch?.type}, Cherry Weight: {selectedBatch?.cherry_weight} kg.
             Note: Green bean weight may be less due to processing losses.
@@ -921,9 +930,8 @@ const DryMillStation = () => {
             variant="contained"
             color="primary"
             onClick={handleConfirmComplete}
-            disabled={!selectedBatch}
           >
-            Mark Processed
+            Confirm
           </Button>
         </DialogActions>
       </Dialog>
@@ -934,20 +942,17 @@ const DryMillStation = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Confirm Storage</DialogTitle>
+        <DialogTitle>Confirm Storage in Warehouse</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Confirm storage for Batch {selectedBatch?.batchNumber} green beans. Enter RFID to proceed.
+            Enter the RFID tag to confirm storage in the warehouse.
           </Typography>
           <TextField
-            label="RFID"
+            label="RFID Tag"
             value={rfid}
-            onChange={(e) => setRfid(e.target.value.trim().toUpperCase())}
-            variant="outlined"
-            size="small"
+            onChange={(e) => setRfid(e.target.value)}
             fullWidth
-            sx={{ mb: 2 }}
-            disabled={isScanning}
+            variant="outlined"
           />
         </DialogContent>
         <DialogActions>
@@ -956,7 +961,6 @@ const DryMillStation = () => {
             variant="contained"
             color="primary"
             onClick={handleConfirmStorage}
-            disabled={isScanning || !rfid}
           >
             Confirm Storage
           </Button>
@@ -967,9 +971,12 @@ const DryMillStation = () => {
         open={openSnackbar}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: "100%" }}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
           {snackbarMessage}
         </Alert>
       </Snackbar>
