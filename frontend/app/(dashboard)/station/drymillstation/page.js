@@ -781,14 +781,8 @@ const DryMillStation = () => {
       </Grid>
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Sort, Weigh, and Bag - Batch {selectedBatch?.batchNumber}</DialogTitle>
+        <DialogTitle>Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-            Add the weight of each bag for each green bean grade. Use preset buttons (50 kg or 60 kg) or enter a custom weight, then print the label for each bag.
-            Preprocessing details: Producer: {selectedBatch?.producer}, Product Line: {selectedBatch?.productLine},
-            Processing Type: {selectedBatch?.processingType}, Type: {selectedBatch?.type},
-            Cherry Weight: {selectedBatch?.cherry_weight} kg. Note: Green bean weight may be less due to processing losses.
-          </Typography>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
               const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w || 0), 0);
