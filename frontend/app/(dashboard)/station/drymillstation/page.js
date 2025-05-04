@@ -44,7 +44,7 @@ const DryMillStation = () => {
   const [productLines, setProductLines] = useState([]);
   const [referenceMappings, setReferenceMappings] = useState([]);
   const [sequenceAdjustments, setSequenceAdjustments] = useState([]);
-  const [sequenceMap, setSequenceMap] = useState({}); // Map to store sequence numbers by criteria
+  const [sequenceMap, setSequenceMap] = useState({});
 
   const fetchDryMillData = async () => {
     setIsLoading(true);
@@ -142,24 +142,40 @@ const DryMillStation = () => {
       const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
       const fetchedGradesMap = {};
       data.forEach((grade) => {
-        fetchedGradesMap[grade.grade] = {
-          grade: grade.grade,
-          weight: grade.weight || "",
-          bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
-          bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
-          tempSequence: grade.tempSequence || "0001", // Use tempSequence if available from backend
-        };
+        // Only include grades that match the selected batch's quality (for sub-batches)
+        if (!selectedBatch.parentBatchNumber || grade.grade === selectedBatch.quality) {
+          fetchedGradesMap[grade.grade] = {
+            grade: grade.grade,
+            weight: grade.weight || "",
+            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
+            bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
+            tempSequence: grade.tempSequence || "0001",
+          };
+        }
       });
 
-      const gradesData = gradeOrder.map((grade) =>
-        fetchedGradesMap[grade] || {
-          grade,
-          weight: "",
-          bagWeights: [],
-          bagged_at: new Date().toISOString().split("T")[0],
-          tempSequence: "0001",
-        }
-      );
+      // For parent batches, show all grades; for sub-batches, only show the matching grade
+      const gradesData = selectedBatch.parentBatchNumber
+        ? gradeOrder
+            .filter((grade) => grade === selectedBatch.quality)
+            .map((grade) =>
+              fetchedGradesMap[grade] || {
+                grade,
+                weight: "",
+                bagWeights: [],
+                bagged_at: new Date().toISOString().split("T")[0],
+                tempSequence: "0001",
+              }
+            )
+        : gradeOrder.map((grade) =>
+            fetchedGradesMap[grade] || {
+              grade,
+              weight: "",
+              bagWeights: [],
+              bagged_at: new Date().toISOString().split("T")[0],
+              tempSequence: "0001",
+            }
+          );
 
       // Update sequenceMap based on fetched grades
       gradesData.forEach((grade) => {
@@ -184,7 +200,7 @@ const DryMillStation = () => {
         { grade: "Grade 2", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
         { grade: "Grade 3", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
         { grade: "Grade 4", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
-      ];
+      ].filter((grade) => !selectedBatch.parentBatchNumber || grade.grade === selectedBatch.quality);
     }
   };
 
@@ -285,7 +301,7 @@ const DryMillStation = () => {
           grade: g.grade,
           bagWeights: g.bagWeights,
           bagged_at: today,
-          tempSequence: g.tempSequence, // Include tempSequence in the data sent to backend
+          tempSequence: g.tempSequence,
         })),
       });
       const data = response.data;
@@ -307,20 +323,17 @@ const DryMillStation = () => {
   const fetchSequenceNumber = async (grade) => {
     if (!selectedBatch) return "0001";
 
-    // Check if there are already bags for this grade in the current grades state
     const currentGrade = grades.find((g) => g.grade === grade);
     if (currentGrade && currentGrade.bagWeights.length > 0 && currentGrade.tempSequence) {
-      return currentGrade.tempSequence; // Reuse the existing sequence number
+      return currentGrade.tempSequence;
     }
 
     const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade}`;
     
-    // Check if a sequence number already exists in sequenceMap
     if (sequenceMap[key]) {
       return sequenceMap[key];
     }
 
-    // If no existing sequence number, fetch a new one
     try {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
         producer: selectedBatch.producer,
@@ -439,7 +452,7 @@ const DryMillStation = () => {
           <title>Print Label</title>
           <style>
             body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }
-            .container { display: flex; flex-direction: column; align-items: center; height: 100vh; }
+            .container { display: flex; flex-direction: column; align-items: "center"; height: 100vh; }
             embed { width: 100%; height: 80%; }
             .button-container { margin-top: 10px; }
             button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
@@ -478,7 +491,7 @@ const DryMillStation = () => {
       newGrades[index] = {
         ...newGrades[index],
         bagWeights: [...newGrades[index].bagWeights, parseFloat(weight).toString()],
-        tempSequence: sequence, // Use the fetched or reused sequence
+        tempSequence: sequence,
       };
       return newGrades;
     });
@@ -535,7 +548,7 @@ const DryMillStation = () => {
 
   const handleDetailsClick = async (batch) => {
     setSelectedBatch(batch);
-    const batchNumberToFetch = batch.parentBatchNumber || batch.batchNumber;
+    const batchNumberToFetch = batch.batchNumber; // Always use the batchNumber of the selected batch
     const existingGrades = await fetchExistingGrades(batchNumberToFetch);
     setGrades(existingGrades);
     const initialWeights = {};
