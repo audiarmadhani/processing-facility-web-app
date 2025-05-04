@@ -52,7 +52,7 @@ const DryMillStation = () => {
     try {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
-      console.log("Fetched Dry Mill Data:", data); // Debug log
+      console.log("Fetched Dry Mill Data:", data);
 
       const formattedData = data.map((batch) => ({
         batchNumber: batch.batchNumber,
@@ -80,11 +80,11 @@ const DryMillStation = () => {
         (batch) => !batch.parentBatchNumber && !batch.isStored && batch.status !== "Processed"
       );
       const subBatchesData = formattedData.filter(
-        (batch) => batch.parentBatchNumber // Remove !batch.isStored to show all sub-batches
+        (batch) => batch.parentBatchNumber
       );
 
-      console.log("Parent Batches:", parentBatchesData); // Debug log
-      console.log("Sub-Batches:", subBatchesData); // Debug log
+      console.log("Parent Batches:", parentBatchesData);
+      console.log("Sub-Batches:", subBatchesData);
 
       setParentBatches(parentBatchesData);
       setSubBatches(subBatchesData);
@@ -488,6 +488,12 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
+    if (selectedBatch?.isStored) {
+      setSnackbarMessage("Cannot add bags to a stored batch.");
+      setSnackbarSeverity("warning");
+      setOpenSnackbar(true);
+      return;
+    }
     const grade = grades[index].grade;
     const sequence = await fetchSequenceNumber(grade);
     setGrades((prevGrades) => {
@@ -504,6 +510,12 @@ const DryMillStation = () => {
 
   const handleRemoveBag = async (gradeIndex, bagIndex) => {
     if (!selectedBatch) return;
+    if (selectedBatch.isStored) {
+      setSnackbarMessage("Cannot remove bags from a stored batch.");
+      setSnackbarSeverity("warning");
+      setOpenSnackbar(true);
+      return;
+    }
     const grade = grades[gradeIndex].grade;
     try {
       const response = await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/remove-bag`, {
@@ -649,11 +661,9 @@ const DryMillStation = () => {
       width: 100,
       sortable: false,
       renderCell: (params) => (
-        params.row.isStored ? null : (
-          <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
-            Details
-          </Button>
-        )
+        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
+          Details
+        </Button>
       ),
     },
     { field: "dryMillEntered", headerName: "Dry Mill Entered", width: 150 },
@@ -788,10 +798,22 @@ const DryMillStation = () => {
                   <Box sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
                     <Typography variant="subtitle1">{grade.grade}</Typography>
                     <Box sx={{ display: "flex", gap: 2, mb: 1, alignItems: "center" }}>
-                      <Button variant="contained" color="primary" onClick={() => handleAddBag(index, 50)} sx={{ mr: 1 }}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleAddBag(index, 50)}
+                        disabled={selectedBatch?.isStored}
+                        sx={{ mr: 1 }}
+                      >
                         50 kg
                       </Button>
-                      <Button variant="contained" color="primary" onClick={() => handleAddBag(index, 60)} sx={{ mr: 1 }}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleAddBag(index, 60)}
+                        disabled={selectedBatch?.isStored}
+                        sx={{ mr: 1 }}
+                      >
                         60 kg
                       </Button>
                       <TextField
@@ -802,12 +824,13 @@ const DryMillStation = () => {
                         inputProps={{ min: 0, step: 0.1 }}
                         variant="outlined"
                         sx={{ width: 150, mr: 1 }}
+                        disabled={selectedBatch?.isStored}
                       />
                       <Button
                         variant="contained"
                         color="secondary"
                         onClick={() => handleAddBag(index, currentWeights[index])}
-                        disabled={!currentWeights[index] || isNaN(parseFloat(currentWeights[index])) || parseFloat(currentWeights[index]) <= 0}
+                        disabled={selectedBatch?.isStored || !currentWeights[index] || isNaN(parseFloat(currentWeights[index])) || parseFloat(currentWeights[index]) <= 0}
                       >
                         Add Bag
                       </Button>
@@ -820,9 +843,11 @@ const DryMillStation = () => {
                           <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
                             <Typography variant="body1">Bag {bagIndex + 1}: {weight} kg</Typography>
                             <Box sx={{ display: "flex", gap: 1 }}>
-                              <Button variant="contained" color="error" size="small" onClick={() => handleRemoveBag(index, bagIndex)}>
-                                Remove
-                              </Button>
+                              {selectedBatch?.isStored ? null : (
+                                <Button variant="contained" color="error" size="small" onClick={() => handleRemoveBag(index, bagIndex)}>
+                                  Remove
+                                </Button>
+                              )}
                               <Button
                                 variant="contained"
                                 color="secondary"
@@ -846,14 +871,19 @@ const DryMillStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button variant="contained" color="primary" onClick={handleSortAndWeigh} disabled={!selectedBatch}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSortAndWeigh}
+            disabled={!selectedBatch || selectedBatch?.isStored}
+          >
             Save Splits
           </Button>
           <Button
             variant="contained"
             color="secondary"
             onClick={handleConfirmComplete}
-            disabled={!selectedBatch || !grades.some((g) => g.bagWeights.length > 0)}
+            disabled={!selectedBatch || selectedBatch?.isStored || !grades.some((g) => g.bagWeights.length > 0)}
           >
             Mark Complete
           </Button>
@@ -901,100 +931,3 @@ const DryMillStation = () => {
 };
 
 export default DryMillStation;
-
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
-// yay 1000 lines
