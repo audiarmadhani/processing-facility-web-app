@@ -403,7 +403,7 @@ const DryMillStation = () => {
 
     // Main Info Section
     doc.setFont("courier", "normal");
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
