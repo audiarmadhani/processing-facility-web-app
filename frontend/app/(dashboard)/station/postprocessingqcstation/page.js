@@ -39,30 +39,30 @@ const PostProcessingQCPage = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [formData, setFormData] = useState({
-    seranggaHidup: false,
-    bijiBauBusuk: false,
-    kelembapan: 0,
-    bijiHitam: 0,
-    bijiHitamSebagian: 0,
-    bijiHitamPecah: 0,
-    kopiGelondong: 0,
-    bijiCoklat: 0,
-    kulitKopiBesar: 0,
-    kulitKopiSedang: 0,
-    kulitKopiKecil: 0,
-    bijiBerKulitTanduk: 0,
-    kulitTandukBesar: 0,
-    kulitTandukSedang: 0,
-    kulitTandukKecil: 0,
-    bijiPecah: 0,
-    bijiMuda: 0,
-    bijiBerlubangSatu: 0,
-    bijiBerlubangLebihSatu: 0,
-    bijiBertutul: 0,
-    rantingBesar: 0,
-    rantingSedang: 0,
-    rantingKecil: 0,
-    totalBobotKotoran: 0,
+    seranggaHidup: null,
+    bijiBauBusuk: null,
+    kelembapan: "",
+    bijiHitam: "",
+    bijiHitamSebagian: "",
+    bijiHitamPecah: "",
+    kopiGelondong: "",
+    bijiCoklat: "",
+    kulitKopiBesar: "",
+    kulitKopiSedang: "",
+    kulitKopiKecil: "",
+    bijiBerKulitTanduk: "",
+    kulitTandukBesar: "",
+    kulitTandukSedang: "",
+    kulitTandukKecil: "",
+    bijiPecah: "",
+    bijiMuda: "",
+    bijiBerlubangSatu: "",
+    bijiBerlubangLebihSatu: "",
+    bijiBertutul: "",
+    rantingBesar: "",
+    rantingSedang: "",
+    rantingKecil: "",
+    totalBobotKotoran: "",
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -99,30 +99,30 @@ const PostProcessingQCPage = () => {
         setFormData(res.data);
       } else {
         setFormData({
-          seranggaHidup: false,
-          bijiBauBusuk: false,
-          kelembapan: 0,
-          bijiHitam: 0,
-          bijiHitamSebagian: 0,
-          bijiHitamPecah: 0,
-          kopiGelondong: 0,
-          bijiCoklat: 0,
-          kulitKopiBesar: 0,
-          kulitKopiSedang: 0,
-          kulitKopiKecil: 0,
-          bijiBerKulitTanduk: 0,
-          kulitTandukBesar: 0,
-          kulitTandukSedang: 0,
-          kulitTandukKecil: 0,
-          bijiPecah: 0,
-          bijiMuda: 0,
-          bijiBerlubangSatu: 0,
-          bijiBerlubangLebihSatu: 0,
-          bijiBertutul: 0,
-          rantingBesar: 0,
-          rantingSedang: 0,
-          rantingKecil: 0,
-          totalBobotKotoran: 0,
+          seranggaHidup: null,
+          bijiBauBusuk: null,
+          kelembapan: "",
+          bijiHitam: "",
+          bijiHitamSebagian: "",
+          bijiHitamPecah: "",
+          kopiGelondong: "",
+          bijiCoklat: "",
+          kulitKopiBesar: "",
+          kulitKopiSedang: "",
+          kulitKopiKecil: "",
+          bijiBerKulitTanduk: "",
+          kulitTandukBesar: "",
+          kulitTandukSedang: "",
+          kulitTandukKecil: "",
+          bijiPecah: "",
+          bijiMuda: "",
+          bijiBerlubangSatu: "",
+          bijiBerlubangLebihSatu: "",
+          bijiBertutul: "",
+          rantingBesar: "",
+          rantingSedang: "",
+          rantingKecil: "",
+          totalBobotKotoran: "",
         });
       }
       setOpenDialog(true);
@@ -136,30 +136,30 @@ const PostProcessingQCPage = () => {
     setOpenDialog(false);
     setSelectedBatch(null);
     setFormData({
-      seranggaHidup: false,
-      bijiBauBusuk: false,
-      kelembapan: 0,
-      bijiHitam: 0,
-      bijiHitamSebagian: 0,
-      bijiHitamPecah: 0,
-      kopiGelondong: 0,
-      bijiCoklat: 0,
-      kulitKopiBesar: 0,
-      kulitKopiSedang: 0,
-      kulitKopiKecil: 0,
-      bijiBerKulitTanduk: 0,
-      kulitTandukBesar: 0,
-      kulitTandukSedang: 0,
-      kulitTandukKecil: 0,
-      bijiPecah: 0,
-      bijiMuda: 0,
-      bijiBerlubangSatu: 0,
-      bijiBerlubangLebihSatu: 0,
-      bijiBertutul: 0,
-      rantingBesar: 0,
-      rantingSedang: 0,
-      rantingKecil: 0,
-      totalBobotKotoran: 0,
+      seranggaHidup: null,
+      bijiBauBusuk: null,
+      kelembapan: "",
+      bijiHitam: "",
+      bijiHitamSebagian: "",
+      bijiHitamPecah: "",
+      kopiGelondong: "",
+      bijiCoklat: "",
+      kulitKopiBesar: "",
+      kulitKopiSedang: "",
+      kulitKopiKecil: "",
+      bijiBerKulitTanduk: "",
+      kulitTandukBesar: "",
+      kulitTandukSedang: "",
+      kulitTandukKecil: "",
+      bijiPecah: "",
+      bijiMuda: "",
+      bijiBerlubangSatu: "",
+      bijiBerlubangLebihSatu: "",
+      bijiBertutul: "",
+      rantingBesar: "",
+      rantingSedang: "",
+      rantingKecil: "",
+      totalBobotKotoran: "",
     });
   };
 
@@ -169,50 +169,78 @@ const PostProcessingQCPage = () => {
     if (name === "seranggaHidup" || name === "bijiBauBusuk") {
       setFormData((prevData) => ({
         ...prevData,
-        [name]: value === "true", // Convert string "true"/"false" to boolean
+        [name]: value === "" ? null : value === "true", // Handle placeholder selection
       }));
     } else {
       // Handle numeric fields
-      const numericValue = value === "" ? 0 : parseFloat(value);
       setFormData((prevData) => ({
         ...prevData,
-        [name]: numericValue,
+        [name]: value, // Keep as string, let backend handle conversion
       }));
     }
   };
 
   const isFormComplete = () => {
     return (
-      formData.kelembapan !== 0 &&
-      formData.bijiHitam !== 0 &&
-      formData.bijiHitamSebagian !== 0 &&
-      formData.bijiHitamPecah !== 0 &&
-      formData.kopiGelondong !== 0 &&
-      formData.bijiCoklat !== 0 &&
-      formData.kulitKopiBesar !== 0 &&
-      formData.kulitKopiSedang !== 0 &&
-      formData.kulitKopiKecil !== 0 &&
-      formData.bijiBerKulitTanduk !== 0 &&
-      formData.kulitTandukBesar !== 0 &&
-      formData.kulitTandukSedang !== 0 &&
-      formData.kulitTandukKecil !== 0 &&
-      formData.bijiPecah !== 0 &&
-      formData.bijiMuda !== 0 &&
-      formData.bijiBerlubangSatu !== 0 &&
-      formData.bijiBerlubangLebihSatu !== 0 &&
-      formData.bijiBertutul !== 0 &&
-      formData.rantingBesar !== 0 &&
-      formData.rantingSedang !== 0 &&
-      formData.rantingKecil !== 0 &&
-      formData.totalBobotKotoran !== 0
+      formData.kelembapan !== "" &&
+      formData.bijiHitam !== "" &&
+      formData.bijiHitamSebagian !== "" &&
+      formData.bijiHitamPecah !== "" &&
+      formData.kopiGelondong !== "" &&
+      formData.bijiCoklat !== "" &&
+      formData.kulitKopiBesar !== "" &&
+      formData.kulitKopiSedang !== "" &&
+      formData.kulitKopiKecil !== "" &&
+      formData.bijiBerKulitTanduk !== "" &&
+      formData.kulitTandukBesar !== "" &&
+      formData.kulitTandukSedang !== "" &&
+      formData.kulitTandukKecil !== "" &&
+      formData.bijiPecah !== "" &&
+      formData.bijiMuda !== "" &&
+      formData.bijiBerlubangSatu !== "" &&
+      formData.bijiBerlubangLebihSatu !== "" &&
+      formData.bijiBertutul !== "" &&
+      formData.rantingBesar !== "" &&
+      formData.rantingSedang !== "" &&
+      formData.rantingKecil !== "" &&
+      formData.totalBobotKotoran !== "" &&
+      formData.seranggaHidup !== null &&
+      formData.bijiBauBusuk !== null
     );
   };
 
   const handleSaveQC = async (isCompleted) => {
     try {
+      // Convert empty strings to 0 for numeric fields before sending to backend
+      const submissionData = {
+        ...formData,
+        kelembapan: formData.kelembapan === "" ? 0 : parseFloat(formData.kelembapan),
+        bijiHitam: formData.bijiHitam === "" ? 0 : parseFloat(formData.bijiHitam),
+        bijiHitamSebagian: formData.bijiHitamSebagian === "" ? 0 : parseFloat(formData.bijiHitamSebagian),
+        bijiHitamPecah: formData.bijiHitamPecah === "" ? 0 : parseFloat(formData.bijiHitamPecah),
+        kopiGelondong: formData.kopiGelondong === "" ? 0 : parseFloat(formData.kopiGelondong),
+        bijiCoklat: formData.bijiCoklat === "" ? 0 : parseFloat(formData.bijiCoklat),
+        kulitKopiBesar: formData.kulitKopiBesar === "" ? 0 : parseFloat(formData.kulitKopiBesar),
+        kulitKopiSedang: formData.kulitKopiSedang === "" ? 0 : parseFloat(formData.kulitKopiSedang),
+        kulitKopiKecil: formData.kulitKopiKecil === "" ? 0 : parseFloat(formData.kulitKopiKecil),
+        bijiBerKulitTanduk: formData.bijiBerKulitTanduk === "" ? 0 : parseFloat(formData.bijiBerKulitTanduk),
+        kulitTandukBesar: formData.kulitTandukBesar === "" ? 0 : parseFloat(formData.kulitTandukBesar),
+        kulitTandukSedang: formData.kulitTandukSedang === "" ? 0 : parseFloat(formData.kulitTandukSedang),
+        kulitTandukKecil: formData.kulitTandukKecil === "" ? 0 : parseFloat(formData.kulitTandukKecil),
+        bijiPecah: formData.bijiPecah === "" ? 0 : parseFloat(formData.bijiPecah),
+        bijiMuda: formData.bijiMuda === "" ? 0 : parseFloat(formData.bijiMuda),
+        bijiBerlubangSatu: formData.bijiBerlubangSatu === "" ? 0 : parseFloat(formData.bijiBerlubangSatu),
+        bijiBerlubangLebihSatu: formData.bijiBerlubangLebihSatu === "" ? 0 : parseFloat(formData.bijiBerlubangLebihSatu),
+        bijiBertutul: formData.bijiBertutul === "" ? 0 : parseFloat(formData.bijiBertutul),
+        rantingBesar: formData.rantingBesar === "" ? 0 : parseFloat(formData.rantingBesar),
+        rantingSedang: formData.rantingSedang === "" ? 0 : parseFloat(formData.rantingSedang),
+        rantingKecil: formData.rantingKecil === "" ? 0 : parseFloat(formData.rantingKecil),
+        totalBobotKotoran: formData.totalBobotKotoran === "" ? 0 : parseFloat(formData.totalBobotKotoran),
+      };
+
       await axios.post("https://processing-facility-backend.onrender.com/api/postproqc", {
         batchNumber: selectedBatch.batchNumber,
-        ...formData,
+        ...submissionData,
         isCompleted,
       });
       setSnackbar({
@@ -537,6 +565,9 @@ const PostProcessingQCPage = () => {
                     onChange={handleFormChange}
                     fullWidth
                     inputProps={{ min: 0, step: 0.1 }}
+                    InputProps={{
+                      placeholder: "Enter moisture percentage",
+                    }}
                   />
                 </Grid>
               </Grid>
@@ -554,27 +585,30 @@ const PostProcessingQCPage = () => {
                     <InputLabel>Biji Berbau Busuk</InputLabel>
                     <Select
                       name="bijiBauBusuk"
-                      value={formData.bijiBauBusuk.toString()} // Convert boolean to string for Select
+                      value={formData.bijiBauBusuk === null ? "" : formData.bijiBauBusuk.toString()}
                       onChange={handleFormChange}
                       input={<OutlinedInput label="Biji Berbau Busuk" />}
                     >
+                      <MenuItem value="" disabled>
+                        Select Yes/No
+                      </MenuItem>
                       <MenuItem value="false">No</MenuItem>
                       <MenuItem value="true">Yes</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 {[
-                  { name: "bijiHitam", label: "Biji Hitam" },
-                  { name: "bijiHitamSebagian", label: "Biji Hitam Sebagian" },
-                  { name: "bijiHitamPecah", label: "Biji Hitam Pecah" },
-                  { name: "kopiGelondong", label: "Kopi Gelondong" },
-                  { name: "bijiCoklat", label: "Biji Coklat" },
-                  { name: "bijiBerKulitTanduk", label: "Biji Berkulit Tanduk" },
-                  { name: "bijiPecah", label: "Biji Pecah" },
-                  { name: "bijiMuda", label: "Biji Muda" },
-                  { name: "bijiBerlubangSatu", label: "Biji Berlubang Satu" },
-                  { name: "bijiBerlubangLebihSatu", label: "Biji Berlubang Lebih dari Satu" },
-                  { name: "bijiBertutul", label: "Biji Bertutul" },
+                  { name: "bijiHitam", label: "Biji Hitam", placeholder: "Enter count of black beans" },
+                  { name: "bijiHitamSebagian", label: "Biji Hitam Sebagian", placeholder: "Enter count of partially black beans" },
+                  { name: "bijiHitamPecah", label: "Biji Hitam Pecah", placeholder: "Enter count of broken black beans" },
+                  { name: "kopiGelondong", label: "Kopi Gelondong", placeholder: "Enter count of unprocessed beans" },
+                  { name: "bijiCoklat", label: "Biji Coklat", placeholder: "Enter count of brown beans" },
+                  { name: "bijiBerKulitTanduk", label: "Biji Berkulit Tanduk", placeholder: "Enter count of horn-skinned beans" },
+                  { name: "bijiPecah", label: "Biji Pecah", placeholder: "Enter count of broken beans" },
+                  { name: "bijiMuda", label: "Biji Muda", placeholder: "Enter count of immature beans" },
+                  { name: "bijiBerlubangSatu", label: "Biji Berlubang Satu", placeholder: "Enter count of beans with one hole" },
+                  { name: "bijiBerlubangLebihSatu", label: "Biji Berlubang Lebih dari Satu", placeholder: "Enter count of beans with multiple holes" },
+                  { name: "bijiBertutul", label: "Biji Bertutul", placeholder: "Enter count of spotted beans" },
                 ].map((field) => (
                   <Grid item xs={4} key={field.name}>
                     <TextField
@@ -585,6 +619,9 @@ const PostProcessingQCPage = () => {
                       onChange={handleFormChange}
                       fullWidth
                       inputProps={{ min: 0 }}
+                      InputProps={{
+                        placeholder: field.placeholder,
+                      }}
                     />
                   </Grid>
                 ))}
@@ -603,26 +640,29 @@ const PostProcessingQCPage = () => {
                     <InputLabel>Serangga Hidup</InputLabel>
                     <Select
                       name="seranggaHidup"
-                      value={formData.seranggaHidup.toString()} // Convert boolean to string for Select
+                      value={formData.seranggaHidup === null ? "" : formData.seranggaHidup.toString()}
                       onChange={handleFormChange}
                       input={<OutlinedInput label="Serangga Hidup" />}
                     >
+                      <MenuItem value="" disabled>
+                        Select Yes/No
+                      </MenuItem>
                       <MenuItem value="false">No</MenuItem>
                       <MenuItem value="true">Yes</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 {[
-                  { name: "kulitKopiBesar", label: "Kulit Kopi Besar" },
-                  { name: "kulitKopiSedang", label: "Kulit Kopi Sedang" },
-                  { name: "kulitKopiKecil", label: "Kulit Kopi Kecil" },
-                  { name: "kulitTandukBesar", label: "Kulit Tanduk Besar" },
-                  { name: "kulitTandukSedang", label: "Kulit Tanduk Sedang" },
-                  { name: "kulitTandukKecil", label: "Kulit Tanduk Kecil" },
-                  { name: "rantingBesar", label: "Ranting Besar" },
-                  { name: "rantingSedang", label: "Ranting Sedang" },
-                  { name: "rantingKecil", label: "Ranting Kecil" },
-                  { name: "totalBobotKotoran", label: "Total Bobot Kotoran (g)" },
+                  { name: "kulitKopiBesar", label: "Kulit Kopi Besar", placeholder: "Enter count of large coffee husks" },
+                  { name: "kulitKopiSedang", label: "Kulit Kopi Sedang", placeholder: "Enter count of medium coffee husks" },
+                  { name: "kulitKopiKecil", label: "Kulit Kopi Kecil", placeholder: "Enter count of small coffee husks" },
+                  { name: "kulitTandukBesar", label: "Kulit Tanduk Besar", placeholder: "Enter count of large horn husks" },
+                  { name: "kulitTandukSedang", label: "Kulit Tanduk Sedang", placeholder: "Enter count of medium horn husks" },
+                  { name: "kulitTandukKecil", label: "Kulit Tanduk Kecil", placeholder: "Enter count of small horn husks" },
+                  { name: "rantingBesar", label: "Ranting Besar", placeholder: "Enter count of large twigs" },
+                  { name: "rantingSedang", label: "Ranting Sedang", placeholder: "Enter count of medium twigs" },
+                  { name: "rantingKecil", label: "Ranting Kecil", placeholder: "Enter count of small twigs" },
+                  { name: "totalBobotKotoran", label: "Total Bobot Kotoran (g)", placeholder: "Enter total weight of debris in grams" },
                 ].map((field) => (
                   <Grid item xs={4} key={field.name}>
                     <TextField
@@ -633,6 +673,9 @@ const PostProcessingQCPage = () => {
                       onChange={handleFormChange}
                       fullWidth
                       inputProps={{ min: 0 }}
+                      InputProps={{
+                        placeholder: field.placeholder,
+                      }}
                     />
                   </Grid>
                 ))}
