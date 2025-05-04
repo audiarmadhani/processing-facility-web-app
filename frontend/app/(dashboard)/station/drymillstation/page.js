@@ -44,6 +44,7 @@ const DryMillStation = () => {
   const [productLines, setProductLines] = useState([]);
   const [referenceMappings, setReferenceMappings] = useState([]);
   const [sequenceAdjustments, setSequenceAdjustments] = useState([]);
+  const [sequenceMap, setSequenceMap] = useState({}); // Map to store sequence numbers by criteria
 
   const fetchDryMillData = async () => {
     setIsLoading(true);
@@ -77,7 +78,7 @@ const DryMillStation = () => {
         (batch) => !batch.parentBatchNumber && !batch.isStored && batch.status !== "Processed"
       );
       const subBatchesData = formattedData.filter(
-        (batch) => batch.parentBatchNumber && !batch.isStored // Only sub-batches that are not stored
+        (batch) => batch.parentBatchNumber && !batch.isStored
       );
 
       setParentBatches(parentBatchesData);
@@ -159,6 +160,17 @@ const DryMillStation = () => {
           tempSequence: "0001",
         }
       );
+
+      // Update sequenceMap based on fetched grades
+      gradesData.forEach((grade) => {
+        if (grade.bagWeights.length > 0) {
+          const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade.grade}`;
+          setSequenceMap((prev) => ({
+            ...prev,
+            [key]: grade.tempSequence,
+          }));
+        }
+      });
 
       return gradesData;
     } catch (error) {
@@ -293,6 +305,13 @@ const DryMillStation = () => {
 
   const fetchSequenceNumber = async (grade) => {
     if (!selectedBatch) return "0001";
+    const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade}`;
+    
+    // Check if a sequence number already exists for this combination
+    if (sequenceMap[key]) {
+      return sequenceMap[key];
+    }
+
     try {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
         producer: selectedBatch.producer,
@@ -304,6 +323,7 @@ const DryMillStation = () => {
       });
       const sequence = response.data.sequence;
       setSequenceAdjustments((prev) => [...prev, { grade, sequence, action: "increment" }]);
+      setSequenceMap((prev) => ({ ...prev, [key]: sequence }));
       return sequence;
     } catch (error) {
       console.error("Error fetching sequence number:", error);
@@ -506,7 +526,7 @@ const DryMillStation = () => {
 
   const handleDetailsClick = async (batch) => {
     setSelectedBatch(batch);
-    const batchNumberToFetch = batch.parentBatchNumber || batch.batchNumber; // Use parentBatchNumber for parent batches, batchNumber for sub-batches
+    const batchNumberToFetch = batch.parentBatchNumber || batch.batchNumber;
     const existingGrades = await fetchExistingGrades(batchNumberToFetch);
     setGrades(existingGrades);
     const initialWeights = {};
