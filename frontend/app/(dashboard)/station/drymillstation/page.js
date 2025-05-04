@@ -142,19 +142,16 @@ const DryMillStation = () => {
       const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
       const fetchedGradesMap = {};
       data.forEach((grade) => {
-        // Only include grades that match the selected batch's quality (for sub-batches)
-        if (!selectedBatch.parentBatchNumber || grade.grade === selectedBatch.quality) {
-          fetchedGradesMap[grade.grade] = {
-            grade: grade.grade,
-            weight: grade.weight || "",
-            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
-            bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
-            tempSequence: grade.tempSequence || "0001",
-          };
-        }
+        fetchedGradesMap[grade.grade] = {
+          grade: grade.grade,
+          weight: grade.weight || "",
+          bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
+          bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
+          tempSequence: grade.tempSequence || "0001",
+        };
       });
 
-      // For parent batches, show all grades; for sub-batches, only show the matching grade
+      // For parent batches, show all grades; for sub-batches, show only the matching quality grade
       const gradesData = selectedBatch.parentBatchNumber
         ? gradeOrder
             .filter((grade) => grade === selectedBatch.quality)
@@ -188,19 +185,17 @@ const DryMillStation = () => {
         }
       });
 
-      return gradesData;
+      return gradesData.length > 0 ? gradesData : [
+        { grade: selectedBatch.quality || "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" }
+      ];
     } catch (error) {
       console.error("Error fetching existing grades:", error);
       setSnackbarMessage(error.response?.data?.error || "Failed to fetch existing grades.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
-        { grade: "Specialty Grade", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
-        { grade: "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
-        { grade: "Grade 2", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
-        { grade: "Grade 3", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
-        { grade: "Grade 4", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" },
-      ].filter((grade) => !selectedBatch.parentBatchNumber || grade.grade === selectedBatch.quality);
+        { grade: selectedBatch.quality || "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" }
+      ];
     }
   };
 
@@ -452,7 +447,7 @@ const DryMillStation = () => {
           <title>Print Label</title>
           <style>
             body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }
-            .container { display: flex; flex-direction: column; align-items: "center"; height: 100vh; }
+            .container { display: flex; flex-direction: column; align-items: center; height: 100vh; }
             embed { width: 100%; height: 80%; }
             .button-container { margin-top: 10px; }
             button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
@@ -548,7 +543,7 @@ const DryMillStation = () => {
 
   const handleDetailsClick = async (batch) => {
     setSelectedBatch(batch);
-    const batchNumberToFetch = batch.batchNumber; // Always use the batchNumber of the selected batch
+    const batchNumberToFetch = batch.batchNumber; // Use the batchNumber directly
     const existingGrades = await fetchExistingGrades(batchNumberToFetch);
     setGrades(existingGrades);
     const initialWeights = {};
