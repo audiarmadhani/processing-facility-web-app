@@ -41,6 +41,43 @@ const DryMillStation = () => {
   const [openCompleteDialog, setOpenCompleteDialog] = useState(false);
   const [openStorageDialog, setOpenStorageDialog] = useState(false);
 
+  // Reference data (hardcoded for frontend simulation)
+  const ProcessingTypes = [
+    { id: 1, processingType: "Pulped Natural", abbreviation: "PN" },
+    { id: 2, processingType: "Washed", abbreviation: "W" },
+    { id: 3, processingType: "Natural", abbreviation: "N" },
+    { id: 4, processingType: "Anaerobic Natural", abbreviation: "AN" },
+    { id: 5, processingType: "Anaerobic Washed", abbreviation: "AW" },
+    { id: 6, processingType: "Anaerobic Honey", abbreviation: "AH" },
+    { id: 7, processingType: "CM Natural", abbreviation: "CMN" },
+    { id: 8, processingType: "CM Washed", abbreviation: "CMW" },
+  ];
+
+  const ProductLines = [
+    { id: 1, productLine: "Regional Lot", abbreviation: "R" },
+    { id: 2, productLine: "Micro Lot", abbreviation: "M" },
+    { id: 3, productLine: "Competition Lot", abbreviation: "C" },
+    { id: 4, productLine: "Commercial Lot", abbreviation: "CO" },
+  ];
+
+  const ReferenceMappings = [
+    { id: 1, referenceNumber: "ID-HEQA-RE-001", productLine: "Regional Lot", processingType: "Pulped Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 2, referenceNumber: "ID-HEQA-RE-002", productLine: "Regional Lot", processingType: "Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 3, referenceNumber: "ID-HEQA-MI-001", productLine: "Micro Lot", processingType: "Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 4, referenceNumber: "ID-HEQA-MI-002", productLine: "Micro Lot", processingType: "Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 5, referenceNumber: "ID-HEQA-MI-003", productLine: "Micro Lot", processingType: "Anaerobic Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 6, referenceNumber: "ID-HEQA-MI-004", productLine: "Micro Lot", processingType: "Anaerobic Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 8, referenceNumber: "ID-HEQA-MI-005", productLine: "Micro Lot", processingType: "Anaerobic Honey", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 10, referenceNumber: "ID-HEQA-MI-006", productLine: "Micro Lot", processingType: "CM Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 12, referenceNumber: "ID-HEQA-MI-007", productLine: "Micro Lot", processingType: "CM Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 13, referenceNumber: "ID-HEQA-CO-001", productLine: "Competition Lot", processingType: "CM Natural", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 15, referenceNumber: "ID-HEQA-CO-002", productLine: "Competition Lot", processingType: "CM Washed", producer: "HQ", quality: "Specialty", type: "Arabica" },
+    { id: 17, referenceNumber: "ID-BTM-RE-001", productLine: "Regional Lot", processingType: "Natural", producer: "BTM", quality: "Specialty", type: "Arabica" },
+    { id: 18, referenceNumber: "ID-BTM-RE-002", productLine: "Regional Lot", processingType: "Washed", producer: "BTM", quality: "Specialty", type: "Arabica" },
+    { id: 19, referenceNumber: "ID-BTM-CO-0001", productLine: "Commercial Lot", processingType: "Natural", producer: "BTM", quality: "Grade 1", type: "Robusta" },
+    { id: 20, referenceNumber: "ID-BTM-CO-0002", productLine: "Commercial Lot", processingType: "Washed", producer: "BTM", quality: "Grade 1", type: "Robusta" },
+  ];
+
   const fetchDryMillData = async () => {
     setIsLoading(true);
     try {
@@ -264,7 +301,7 @@ const DryMillStation = () => {
     }
   };
 
-  const handlePrintLabel = (batchNumber, grade, bagIndex, bagWeight) => {
+  const handlePrintLabel = async (batchNumber, grade, bagIndex, bagWeight) => {
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -277,11 +314,69 @@ const DryMillStation = () => {
       ? new Date(selectedBatch.dryMillExited).toLocaleDateString()
       : new Date().toLocaleDateString();
 
+    // Determine producer abbreviation
+    const producerAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HQ";
+    const producerReferenceAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HEQA";
+
+    // Get year
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+
+    // Get product line abbreviation
+    const productLineEntry = ProductLines.find(pl => pl.productLine === selectedBatch.productLine);
+    const productLineAbbreviation = productLineEntry ? productLineEntry.abbreviation : "Unknown";
+    const productLineReferenceAbbreviation = productLineAbbreviation === "R" ? "RE" :
+                                            productLineAbbreviation === "M" ? "MI" :
+                                            productLineAbbreviation === "C" ? "CO" :
+                                            productLineAbbreviation;
+
+    // Get processing type abbreviation
+    const processingTypeEntry = ProcessingTypes.find(pt => pt.processingType === selectedBatch.processingType);
+    const processingTypeAbbreviation = processingTypeEntry ? processingTypeEntry.abbreviation : "Unknown";
+
+    // Quality abbreviation
+    const qualityAbbreviation = grade === 'Specialty Grade' ? 'S' :
+                                grade === 'Grade 1' ? 'G1' :
+                                grade === 'Grade 2' ? 'G2' :
+                                grade === 'Grade 3' ? 'G3' : 'G4';
+
+    // Fetch Lot Number Sequence from backend
+    let formattedSequence = "0001"; // Default fallback
+    try {
+      const sequenceResponse = await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
+        producer: producerAbbreviation,
+        productLine: selectedBatch.productLine,
+        processingType: selectedBatch.processingType,
+        year: currentYear,
+      });
+      formattedSequence = sequenceResponse.data.sequence;
+    } catch (error) {
+      console.error("Error fetching lot number sequence:", error);
+      setSnackbarMessage(error.response?.data?.error || "Failed to fetch lot number sequence. Using default sequence.");
+      setSnackbarSeverity("warning");
+      setOpenSnackbar(true);
+    }
+
+    // Lot Number (e.g., HQ25M-AW-0001-G1)
+    const lotNumber = `${producerAbbreviation}${currentYear}${productLineAbbreviation}-${processingTypeAbbreviation}-${formattedSequence}-${qualityAbbreviation}`;
+
+    // Reference Number (e.g., ID-HEQA-MI-004-G1)
+    const referenceMatch = ReferenceMappings.find(rm =>
+      rm.producer === selectedBatch.producer &&
+      rm.productLine === selectedBatch.productLine &&
+      rm.processingType === selectedBatch.processingType &&
+      rm.type === selectedBatch.type
+    );
+    const referenceSequence = referenceMatch ? referenceMatch.referenceNumber.split('-')[3] : "000";
+    const referenceNumber = `ID-${producerReferenceAbbreviation}-${productLineReferenceAbbreviation}-${referenceSequence}-${qualityAbbreviation}`;
+
+    // Use selectedBatch.batchNumber as Cherry Lot Number
+    const cherryLotNumber = selectedBatch.batchNumber;
+
     // Label content
     const labels = [
-      { label: "Lot Number", value: batchNumber }, // e.g., BTM25CO-W-0001-G1
-      { label: "Reference Number", value: selectedBatch?.referenceNumber || "N/A" }, // e.g., ID-BTM-CO-0002-G1
-      { label: "Cherry Lot Number", value: selectedBatch?.parentBatchNumber || "N/A" }, // e.g., 2025-05-01-0001
+      { label: "Lot Number", value: lotNumber },
+      { label: "Reference Number", value: referenceNumber },
+      { label: "Cherry Lot Number", value: cherryLotNumber },
       { label: "Farmer", value: farmerName },
       { label: "Type", value: selectedBatch?.type || "N/A" },
       { label: "Processing Type", value: selectedBatch?.processingType || "N/A" },
@@ -307,8 +402,8 @@ const DryMillStation = () => {
     doc.text(companyName, 10, 20);
 
     // Main Info Section
-    doc.setFont("courier", "normal"); // Use monospaced font for alignment
-    doc.setFontSize(12);
+    doc.setFont("courier", "normal");
+    doc.setFontSize(11);
     doc.rect(5, 30, 90, 115, "S");
     let y = 35;
     labels.forEach(({ label, value }) => {
@@ -353,7 +448,7 @@ const DryMillStation = () => {
             window.onload = function() {
               setTimeout(() => {
                 window.print();
-              }, 2000); // Delay to ensure the PDF loads
+              }, 2000);
             };
           </script>
         </body>
@@ -385,7 +480,7 @@ const DryMillStation = () => {
     setSelectedBatch(batch);
     const existingGrades = await fetchExistingGrades(batch.batchNumber);
     setGrades(existingGrades);
-    setCurrentWeights(existingGrades.reduce((acc, _, idx) => ({ ...acc, [idx]: "" }), {}));
+    setCurrentWeights(existingGrades.reduce((acc, _, idx) => ({ ...acc, [index]: "" }), {}));
     setOpenDialog(true);
   };
 
