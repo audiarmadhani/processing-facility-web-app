@@ -23,6 +23,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Chip,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
@@ -335,7 +336,29 @@ const PostProcessingQCPage = () => {
     { field: "batchNumber", headerName: "Lot Number", width: 150 },
     { field: "referenceNumber", headerName: "Reference Number", width: 150 },
     { field: "storedDate", headerName: "Stored Date", width: 150 },
-    { field: "status", headerName: "Status", width: 150 }, // Added Status column
+    { 
+      field: "status", 
+      headerName: "Status", 
+      width: 150,
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          sx={{
+            borderRadius: '16px', // Pill shape
+            fontWeight: 'bold',
+            ...(params.value === "QC Started" && {
+              backgroundColor: '#4caf50', // Green for started
+              color: '#fff',
+            }),
+            ...(params.value === "QC Not Started" && {
+              backgroundColor: '#e0e0e0', // Gray for not started
+              color: '#000',
+            }),
+          }}
+        />
+      ),
+    },
     {
       field: "action",
       headerName: "Action",
