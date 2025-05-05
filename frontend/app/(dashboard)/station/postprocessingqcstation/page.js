@@ -339,7 +339,7 @@ const PostProcessingQCPage = () => {
     {
       field: "status",
       headerName: "Status",
-      width: 100,
+      width: 110,
       renderCell: (params) => (
         <Chip
           label={params.value}
@@ -394,7 +394,7 @@ const PostProcessingQCPage = () => {
         </button>
       ),
     },
-    { field: "batchNumber", headerName: "Lot Number", width: 170 },
+    { field: "batchNumber", headerName: "Lot Number", width: 180 },
     { field: "referenceNumber", headerName: "Reference Number", width: 170 },
     { field: "storedDate", headerName: "Stored Date", width: 150 },
     { field: "qcDate", headerName: "QC Date", width: 150 },
