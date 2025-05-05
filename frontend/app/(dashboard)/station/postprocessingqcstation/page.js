@@ -333,13 +333,13 @@ const PostProcessingQCPage = () => {
   };
 
   const notQcedColumns = [
-    { field: "batchNumber", headerName: "Lot Number", width: 150 },
-    { field: "referenceNumber", headerName: "Reference Number", width: 150 },
+    { field: "batchNumber", headerName: "Lot Number", width: 170 },
+    { field: "referenceNumber", headerName: "Reference Number", width: 170 },
     { field: "storedDate", headerName: "Stored Date", width: 150 },
     {
       field: "status",
       headerName: "Status",
-      width: 150,
+      width: 100,
       renderCell: (params) => (
         <Chip
           label={params.value}
@@ -355,8 +355,7 @@ const PostProcessingQCPage = () => {
       width: 130,
       renderCell: (params) => (
         <Button
-          variant="contained"
-          color="primary"
+          variant="outlined"
           size="small"
           onClick={() => handleStartQC(params.row)}
         >
@@ -395,8 +394,8 @@ const PostProcessingQCPage = () => {
         </button>
       ),
     },
-    { field: "batchNumber", headerName: "Lot Number", width: 150 },
-    { field: "referenceNumber", headerName: "Reference Number", width: 150 },
+    { field: "batchNumber", headerName: "Lot Number", width: 170 },
+    { field: "referenceNumber", headerName: "Reference Number", width: 170 },
     { field: "storedDate", headerName: "Stored Date", width: 150 },
     { field: "qcDate", headerName: "QC Date", width: 150 },
     { field: "generalQuality", headerName: "General Quality", width: 180 },
