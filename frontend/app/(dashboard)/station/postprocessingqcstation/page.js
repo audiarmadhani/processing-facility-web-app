@@ -336,26 +336,16 @@ const PostProcessingQCPage = () => {
     { field: "batchNumber", headerName: "Lot Number", width: 150 },
     { field: "referenceNumber", headerName: "Reference Number", width: 150 },
     { field: "storedDate", headerName: "Stored Date", width: 150 },
-    { 
-      field: "status", 
-      headerName: "Status", 
+    {
+      field: "status",
+      headerName: "Status",
       width: 150,
       renderCell: (params) => (
         <Chip
           label={params.value}
+          color={params.value === "QC Not Started" ? "primary" : params.value === "QC Started" ? "success" : "default"}
           size="small"
-          sx={{
-            borderRadius: '16px', // Pill shape
-            fontWeight: 'bold',
-            ...(params.value === "QC Started" && {
-              backgroundColor: '#4caf50', // Green for started
-              color: '#fff',
-            }),
-            ...(params.value === "QC Not Started" && {
-              backgroundColor: '#e0e0e0', // Gray for not started
-              color: '#000',
-            }),
-          }}
+          sx={{ borderRadius: "16px", fontWeight: "medium" }}
         />
       ),
     },
