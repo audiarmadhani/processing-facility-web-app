@@ -335,15 +335,7 @@ const PostProcessingQCPage = () => {
     { field: "batchNumber", headerName: "Lot Number", width: 150 },
     { field: "referenceNumber", headerName: "Reference Number", width: 150 },
     { field: "storedDate", headerName: "Stored Date", width: 150 },
-    { field: "processingType", headerName: "Processing Type", width: 180 },
-    { field: "productLine", headerName: "Product Line", width: 150 },
-    { field: "producer", headerName: "Producer", width: 130 },
-    { field: "type", headerName: "Type", width: 130 },
-    { field: "quality", headerName: "Quality", width: 130 },
-    { field: "weight", headerName: "Total Weight (kg)", width: 150 },
-    { field: "totalBags", headerName: "Total Bags", width: 130 },
     { field: "status", headerName: "Status", width: 150 }, // Added Status column
-    { field: "notes", headerName: "Notes", width: 180 },
     {
       field: "action",
       headerName: "Action",
@@ -359,6 +351,14 @@ const PostProcessingQCPage = () => {
         </Button>
       ),
     },
+    { field: "processingType", headerName: "Processing Type", width: 180 },
+    { field: "productLine", headerName: "Product Line", width: 150 },
+    { field: "producer", headerName: "Producer", width: 130 },
+    { field: "type", headerName: "Type", width: 130 },
+    { field: "quality", headerName: "Quality", width: 130 },
+    { field: "weight", headerName: "Total Weight (kg)", width: 150 },
+    { field: "totalBags", headerName: "Total Bags", width: 130 },
+    { field: "notes", headerName: "Notes", width: 180 },
   ];
 
   const completedQCColumns = [
