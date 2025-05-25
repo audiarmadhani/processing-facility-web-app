@@ -81,6 +81,17 @@ const NAVIGATION: Navigation = [
   },
 
   { kind: "divider" },
+
+  {
+    segment: "ims",
+    title: "Inventory Management System",
+    icon: <WarehouseIcon />,
+    children: [
+      { segment: "dashboard", title: "IMS Dashboard", icon: <WarehouseIcon /> },
+    ],
+  },
+
+  { kind: "divider" },
   
   {
     segment: "finance",

@@ -439,14 +439,14 @@ function ReceivingStation() {
                     Submit
                   </Button>
 
-                  <Button //Removed onClick
+                  {/* <Button //Removed onClick
                       variant="contained"
                       color="secondary"
                       disabled={!lastCreatedBatchNumber} // Only enabled after a submit
                                        
                   >
                     Assign Card
-                  </Button>
+                  </Button> */}
 
                 </Grid>
               </Grid>
