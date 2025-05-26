@@ -752,7 +752,7 @@ const OrderCreation = () => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={4}>
+      <Grid item xs={12} md={6}>
         <Card variant="outlined">
           <CardContent>
             <Box>
@@ -1063,7 +1063,7 @@ const OrderCreation = () => {
       </Grid>
 
       {['admin', 'manager', 'preprocessing'].includes(session?.user?.role) && (
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={6}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h5" gutterBottom>
