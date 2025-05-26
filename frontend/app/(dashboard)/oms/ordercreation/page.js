@@ -779,6 +779,14 @@ const OrderCreation = () => {
     qty: item.quantity || '-',
   }));
 
+  const driversListColumns = [
+    { field: 'name', headerName: 'Name', width: 120, sortable: true },
+    { field: 'vehicle_number', headerName: 'Vehicle No.', width: 120, sortable: true },
+    { field: 'vehicle_type', headerName: 'Vehicle Type', width: 120, sortable: true },
+    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 150, sortable: true },
+    { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
+  ];
+
   const driversListRows = (Array.isArray(drivers) ? drivers : []).map(driver => ({
     id: driver?.id || '-',
     name: driver.name || '-',
