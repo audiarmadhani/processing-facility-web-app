@@ -103,14 +103,19 @@ const OrderCreation = () => {
     fetchInitialData();
   }, [refreshCounter]);
 
-  // Calculate remaining weight for each batch
-  const getRemainingWeight = (batchNumber, items) => {
+  // Calculate remaining weight for a batch
+  const getRemainingWeight = (batchNumber, items, currentIndex = -1) => {
     const batch = stock.find(s => s.batchNumber === batchNumber);
     if (!batch) return 0;
     const usedWeight = items
-      .filter(item => item.batch_number === batchNumber)
-      .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
-    return batch.weight - usedWeight;
+      .reduce((sum, item, index) => {
+        if (index !== currentIndex && item.batch_number === batchNumber) {
+          return sum + (parseFloat(item.quantity) || 0);
+        }
+        return sum;
+      }, 0);
+    const remaining = batch.weight - usedWeight;
+    return Math.max(remaining, 0);
   };
 
   const handleInputChange = (e) => {
@@ -149,11 +154,11 @@ const OrderCreation = () => {
     newItems[index][field] = value;
     
     if (field === 'quantity' && newItems[index].batch_number) {
-      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems);
+      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
       if (parseFloat(value) > remainingWeight) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity exceeds available stock (${remainingWeight} kg)`, 
+          message: `Quantity exceeds available stock (${remainingWeight.toFixed(2)} kg for ${newItems[index].batch_number})`, 
           severity: 'error' 
         });
         newItems[index].quantity = '';
@@ -240,18 +245,19 @@ const OrderCreation = () => {
       return;
     }
 
-    for (const item of formData.items) {
+    for (let i = 0; i < formData.items.length; i++) {
+      const item = formData.items[i];
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const remainingWeight = getRemainingWeight(item.batch_number, formData.items.filter((_, i) => i !== formData.items.indexOf(item)));
-      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity < 0) {
+      const remainingWeight = getRemainingWeight(item.batch_number, formData.items, i);
+      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
-      if (itemQuantity > remainingWeight + parseFloat(item.quantity || 0)) {
+      if (itemQuantity > remainingWeight) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight} kg)`, 
+          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight.toFixed(2)} kg)`, 
           severity: 'error' 
         });
         return;
@@ -554,11 +560,11 @@ const OrderCreation = () => {
     newItems[index][field] = value;
 
     if (field === 'quantity' && newItems[index].batch_number) {
-      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems);
+      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
       if (parseFloat(value) > remainingWeight) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity exceeds available stock (${remainingWeight} kg)`, 
+          message: `Quantity exceeds available stock (${remainingWeight.toFixed(2)} kg for ${newItems[index].batch_number})`, 
           severity: 'error' 
         });
         newItems[index].quantity = '';
@@ -607,18 +613,19 @@ const OrderCreation = () => {
       return;
     }
 
-    for (const item of editOrder.items) {
+    for (let i = 0; i < editOrder.items.length; i++) {
+      const item = editOrder.items[i];
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const remainingWeight = getRemainingWeight(item.batch_number, editOrder.items.filter((_, i) => i !== editOrder.items.indexOf(item)));
-      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity < 0) {
+      const remainingWeight = getRemainingWeight(item.batch_number, editOrder.items, i);
+      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
-      if (itemQuantity > remainingWeight + parseFloat(item.quantity || 0)) {
+      if (itemQuantity > remainingWeight) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight} kg)`, 
+          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight.toFixed(2)} kg)`, 
           severity: 'error' 
         });
         return;
@@ -836,30 +843,6 @@ const OrderCreation = () => {
                 </Box>
               )}
 
-              {/* <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Batch Number</InputLabel>
-                <Select
-                  name="batch_number"
-                  value={formData.batch_number}
-                  onChange={handleInputChange}
-                  label="Batch Number"
-                  disabled={stockLoading}
-                >
-                  <MenuItem value="">Select Batch</MenuItem>
-                  {stockLoading ? (
-                    <MenuItem disabled>Loading...</MenuItem>
-                  ) : Array.isArray(stock) && stock.length > 0 ? (
-                    stock.map(batch => (
-                      <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                        {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                      </MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem disabled>No stock available</MenuItem>
-                  )}
-                </Select>
-              </FormControl> */}
-
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Shipping Method</InputLabel>
                 <Select
@@ -978,7 +961,7 @@ const OrderCreation = () => {
             </Box>
 
             <Box>
-            <Box sx={{ mb: 3 }}>
+              <Box sx={{ mb: 3 }}>
                 {formData.items.map((item, index) => (
                   <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <FormControl sx={{ mr: 2, flex: 1 }}>
@@ -994,10 +977,10 @@ const OrderCreation = () => {
                           <MenuItem disabled>Loading...</MenuItem>
                         ) : Array.isArray(stock) && stock.length > 0 ? (
                           stock.map(batch => {
-                            const remainingWeight = getRemainingWeight(batch.batchNumber, formData.items);
+                            const remainingWeight = getRemainingWeight(batch.batchNumber, formData.items, index);
                             return (
                               <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight} kg)
+                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight.toFixed(2)} kg)
                               </MenuItem>
                             );
                           })
@@ -1069,10 +1052,9 @@ const OrderCreation = () => {
                   color="primary"
                   onClick={handleSubmit}
                   disabled={loading}
-                  startIcon={loading ? <CircularProgress size={20} /> : null}
                   fullWidth
                 >
-                  Create Order
+                  {loading ? <CircularProgress size={20} /> : 'Create Order'}
                 </Button>
               </Box>
             </Box>
@@ -1408,10 +1390,10 @@ const OrderCreation = () => {
                             <MenuItem disabled>Loading...</MenuItem>
                           ) : Array.isArray(stock) && stock.length > 0 ? (
                             stock.map(batch => {
-                              const remainingWeight = getRemainingWeight(batch.batchNumber, editOrder.items);
+                              const remainingWeight = getRemainingWeight(batch.batchNumber, editOrder.items, index);
                               return (
                                 <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                  {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight} kg)
+                                  {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight.toFixed(2)} kg)
                                 </MenuItem>
                               );
                             })
