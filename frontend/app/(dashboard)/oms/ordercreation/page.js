@@ -36,11 +36,11 @@ const OrderCreation = () => {
   const [customers, setCustomers] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [stock, setStock] = useState([]); // New state for green beans stock
+  const [stock, setStock] = useState([]);
   const [formData, setFormData] = useState({
     customer_id: '',
     driver_id: '',
-    items: [{ batch_number: '', quantity: '', price: '' }], // Changed product to batch_number
+    items: [{ batch_number: '', quantity: '', price: '' }],
     shipping_method: 'Customer',
     driver_details: {
       name: '',
@@ -50,9 +50,10 @@ const OrderCreation = () => {
     },
     price: '',
     tax_percentage: '',
-    batch_number: '' // New field for order-level batch_number
+    batch_number: ''
   });
   const [loading, setLoading] = useState(false);
+  const [stockLoading, setStockLoading] = useState(true); // New state for stock loading
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -63,34 +64,41 @@ const OrderCreation = () => {
   const [openOrderModal, setOpenOrderModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
 
-  // Fetch initial data (customers, drivers, orders, and stock)
+  // Fetch initial data
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
+      setStockLoading(true);
       try {
         const [customersRes, driversRes, ordersRes, stockRes] = await Promise.all([
           fetch('https://processing-facility-backend.onrender.com/api/customers'),
           fetch('https://processing-facility-backend.onrender.com/api/drivers'),
           fetch('https://processing-facility-backend.onrender.com/api/orders'),
-          fetch('https://processing-facility-backend.onrender.com/api/postprocessing') // New endpoint for stock
+          fetch('https://processing-facility-backend.onrender.com/api/postprocessing')
         ]);
 
         if (!customersRes.ok || !driversRes.ok || !ordersRes.ok || !stockRes.ok) 
           throw new Error('Failed to fetch initial data');
-        
+
         const customersData = await customersRes.json();
         const driversData = await driversRes.json();
         const ordersData = await ordersRes.json();
         const stockData = await stockRes.json();
 
-        setCustomers(customersData || []);
-        setDrivers(driversData || []);
-        setOrders(ordersData || []);
-        setStock(stockData || []);
+        console.log('Stock API Response:', stockData); // Debug log
+
+        // Ensure arrays
+        setCustomers(Array.isArray(customersData) ? customersData : []);
+        setDrivers(Array.isArray(driversData) ? driversData : []);
+        setOrders(Array.isArray(ordersData) ? ordersData : []);
+        setStock(Array.isArray(stockData) ? stockData : []);
       } catch (error) {
+        console.error('Fetch Error:', error);
         setSnackbar({ open: true, message: error.message, severity: 'error' });
+        setStock([]); // Fallback to empty array
       } finally {
         setLoading(false);
+        setStockLoading(false);
       }
     };
     fetchInitialData();
@@ -131,7 +139,6 @@ const OrderCreation = () => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
     
-    // Validate quantity against stock if batch_number is selected
     if (field === 'quantity' && newItems[index].batch_number) {
       const selectedBatch = stock.find(s => s.batchNumber === newItems[index].batch_number);
       if (selectedBatch && parseFloat(value) > selectedBatch.weight) {
@@ -145,7 +152,6 @@ const OrderCreation = () => {
     }
     
     setFormData(prev => ({ ...prev, items: newItems }));
-    // Recalculate subtotal
     const subtotal = newItems.reduce((sum, item) => 
       sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
     setFormData(prev => ({ ...prev, price: subtotal.toString() }));
@@ -213,7 +219,6 @@ const OrderCreation = () => {
       return;
     }
 
-    // Validate numeric fields
     const subtotal = parseFloat(formData.price) || 0;
     const taxPercentage = parseFloat(formData.tax_percentage) || 0;
 
@@ -226,7 +231,6 @@ const OrderCreation = () => {
       return;
     }
 
-    // Validate items and stock
     for (const item of formData.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
@@ -256,7 +260,7 @@ const OrderCreation = () => {
       orderData.append('price', formData.price || '0');
       orderData.append('tax_percentage', formData.tax_percentage || '0');
       orderData.append('items', JSON.stringify(formData.items));
-      orderData.append('batch_number', formData.batch_number); // New field
+      orderData.append('batch_number', formData.batch_number);
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
         method: 'POST',
@@ -283,7 +287,7 @@ const OrderCreation = () => {
         driver_details: formData.driver_details || null,
         price: formData.price || null,
         tax_percentage: formData.tax_percentage || null,
-        batch_number: formData.batch_number // New field
+        batch_number: formData.batch_number
       }));
       orderListFormData.append('file', orderListBlob, `OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
@@ -344,7 +348,7 @@ const OrderCreation = () => {
     addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
     doc.line(14, 28, doc.internal.pageSize.getWidth() - 14, 28);
     addText(`Order ID: ${String(orderId).padStart(4, '0')}`, 14, 35, { bold: true });
-    addText(`Batch Number: ${formData.batch_number || '-'}`, 14, 43, { bold: true }); // New field
+    addText(`Batch Number: ${formData.batch_number || '-'}`, 14, 43, { bold: true });
 
     let yOffset = 51;
     const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2;
@@ -467,7 +471,7 @@ const OrderCreation = () => {
           driver_details: newRow.driver_details ? JSON.parse(newRow.driver_details) : null,
           price: newRow.price.toString(),
           tax_percentage: newRow.tax_percentage.toString(),
-          batch_number: newRow.batch_number // New field
+          batch_number: newRow.batch_number
         }),
       });
 
@@ -497,7 +501,7 @@ const OrderCreation = () => {
         driver_details: fullOrder.driver_details ? JSON.parse(fullOrder.driver_details) : { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
         price: fullOrder.price || '0',
         tax_percentage: fullOrder.tax_percentage || '0',
-        batch_number: fullOrder.batch_number || '' // New field
+        batch_number: fullOrder.batch_number || ''
       });
       setOpenOrderModal(true);
     } catch (error) {
@@ -547,7 +551,6 @@ const OrderCreation = () => {
     const newItems = [...editOrder.items];
     newItems[index][field] = value;
 
-    // Validate quantity against stock
     if (field === 'quantity' && newItems[index].batch_number) {
       const selectedBatch = stock.find(s => s.batchNumber === newItems[index].batch_number);
       if (selectedBatch && parseFloat(value) > selectedBatch.weight) {
@@ -631,7 +634,7 @@ const OrderCreation = () => {
       orderData.append('price', editOrder.price || '0');
       orderData.append('tax_percentage', editOrder.tax_percentage || '0');
       orderData.append('items', JSON.stringify(editOrder.items));
-      orderData.append('batch_number', editOrder.batch_number); // New field
+      orderData.append('batch_number', editOrder.batch_number);
 
       const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${editOrder.order_id}`, {
         method: 'PUT',
@@ -671,7 +674,7 @@ const OrderCreation = () => {
       )
     },
     { field: 'customer_name', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
-    { field: 'batch_number', headerName: 'Batch Number', width: 180, sortable: true, editable: true }, // New column
+    { field: 'batch_number', headerName: 'Batch Number', width: 180, sortable: true, editable: true },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
     { field: 'price', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
@@ -682,11 +685,11 @@ const OrderCreation = () => {
     { field: 'address', headerName: 'Customer Address', width: 200, editable: false },
   ];
 
-  const ordersRows = (orders || []).map(order => ({
+  const ordersRows = (Array.isArray(orders) ? orders : []).map(order => ({
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
     customer_name: order?.customer_name || '-',
-    batch_number: order?.batch_number || '-', // New field
+    batch_number: order?.batch_number || '-',
     shipping_method: order?.shipping_method || '-',
     price: order?.price || '0',
     tax_percentage: order?.tax_percentage || '0',
@@ -696,7 +699,7 @@ const OrderCreation = () => {
     status: order?.status || 'Pending',
     address: order?.customer_address || '-',
     document_url: order?.documents?.find(doc => doc.type === 'Order List')?.drive_url || null,
-  })) || [];
+  }));
 
   const customerListColumns = [
     { field: 'name', headerName: 'Name', width: 220, sortable: true },
@@ -708,7 +711,7 @@ const OrderCreation = () => {
     { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
   ];
 
-  const customerListRows = (customers || []).map(customer => ({
+  const customerListRows = (Array.isArray(customers) ? customers : []).map(customer => ({
     id: customer?.customer_id || '-',
     name: customer?.name || '-',
     email: customer?.email || '-',
@@ -717,7 +720,7 @@ const OrderCreation = () => {
     state: customer?.state || '-',
     city: customer?.city || '-',
     zip_code: customer?.zip_code || '-',
-  })) || [];
+  }));
 
   const driversColumns = [
     { field: 'name', headerName: 'Name', width: 120, sortable: true },
@@ -727,14 +730,14 @@ const OrderCreation = () => {
     { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
   ];
 
-  const driversRows = (drivers || []).map(driver => ({
+  const driversRows = (Array.isArray(drivers) ? drivers : []).map(driver => ({
     id: driver?.driver_id || '-',
     name: driver?.name || '-',
     vehicle_number: driver?.vehicle_number || '-',
     vehicle_type: driver?.vehicle_type || '-',
     max_capacity: driver?.max_capacity || '-',
     availability_status: driver?.availability_status || 'Available',
-  })) || [];
+  }));
 
   if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
 
@@ -756,7 +759,7 @@ const OrderCreation = () => {
                   onChange={handleInputChange}
                   label="Customer"
                 >
-                  {customers.map(customer => (
+                  {(Array.isArray(customers) ? customers : []).map(customer => (
                     <MenuItem key={customer.customer_id} value={customer.customer_id}>
                       {customer.name}
                     </MenuItem>
@@ -842,13 +845,20 @@ const OrderCreation = () => {
                   value={formData.batch_number}
                   onChange={handleInputChange}
                   label="Batch Number"
+                  disabled={stockLoading}
                 >
                   <MenuItem value="">Select Batch</MenuItem>
-                  {stock.map(batch => (
-                    <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                      {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                    </MenuItem>
-                  ))}
+                  {stockLoading ? (
+                    <MenuItem disabled>Loading...</MenuItem>
+                  ) : Array.isArray(stock) && stock.length > 0 ? (
+                    stock.map(batch => (
+                      <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                        {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No stock available</MenuItem>
+                  )}
                 </Select>
               </FormControl>
 
@@ -877,11 +887,13 @@ const OrderCreation = () => {
                       label="Driver"
                     >
                       <MenuItem value="">None</MenuItem>
-                      {drivers.filter(d => d.availability_status === 'Available').map(driver => (
-                        <MenuItem key={driver.driver_id} value={driver.driver_id}>
-                          {driver.name} ({driver.vehicle_number})
-                        </MenuItem>
-                      ))}
+                      {(Array.isArray(drivers) ? drivers : [])
+                        .filter(d => d.availability_status === 'Available')
+                        .map(driver => (
+                          <MenuItem key={driver.driver_id} value={driver.driver_id}>
+                            {driver.name} ({driver.vehicle_number})
+                          </MenuItem>
+                        ))}
                       <MenuItem>
                         <Button
                           fullWidth
@@ -977,13 +989,20 @@ const OrderCreation = () => {
                         value={item.batch_number}
                         onChange={(e) => handleItemChange(index, 'batch_number', e.target.value)}
                         label="Batch Number"
+                        disabled={stockLoading}
                       >
                         <MenuItem value="">Select Batch</MenuItem>
-                        {stock.map(batch => (
-                          <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                            {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                          </MenuItem>
-                        ))}
+                        {stockLoading ? (
+                          <MenuItem disabled>Loading...</MenuItem>
+                        ) : Array.isArray(stock) && stock.length > 0 ? (
+                          stock.map(batch => (
+                            <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                              {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>No stock available</MenuItem>
+                        )}
                       </Select>
                     </FormControl>
                     <TextField
@@ -1177,7 +1196,7 @@ const OrderCreation = () => {
                     onChange={handleEditInputChange}
                     label="Customer"
                   >
-                    {customers.map(customer => (
+                    {(Array.isArray(customers) ? customers : []).map(customer => (
                       <MenuItem key={customer.customer_id} value={customer.customer_id}>
                         {customer.name}
                       </MenuItem>
@@ -1263,13 +1282,20 @@ const OrderCreation = () => {
                     value={editOrder.batch_number}
                     onChange={handleEditInputChange}
                     label="Batch Number"
+                    disabled={stockLoading}
                   >
                     <MenuItem value="">Select Batch</MenuItem>
-                    {stock.map(batch => (
-                      <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                        {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                      </MenuItem>
-                    ))}
+                    {stockLoading ? (
+                      <MenuItem disabled>Loading...</MenuItem>
+                    ) : Array.isArray(stock) && stock.length > 0 ? (
+                      stock.map(batch => (
+                        <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                          {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>No stock available</MenuItem>
+                    )}
                   </Select>
                 </FormControl>
 
@@ -1298,11 +1324,13 @@ const OrderCreation = () => {
                         label="Driver"
                       >
                         <MenuItem value="">None</MenuItem>
-                        {drivers.filter(d => d.availability_status === 'Available').map(driver => (
-                          <MenuItem key={driver.driver_id} value={driver.driver_id}>
-                            {driver.name} ({driver.vehicle_number})
-                          </MenuItem>
-                        ))}
+                        {(Array.isArray(drivers) ? drivers : [])
+                          .filter(d => d.availability_status === 'Available')
+                          .map(driver => (
+                            <MenuItem key={driver.driver_id} value={driver.driver_id}>
+                              {driver.name} ({driver.vehicle_number})
+                            </MenuItem>
+                          ))}
                         <MenuItem>
                           <Button
                             fullWidth
@@ -1396,13 +1424,20 @@ const OrderCreation = () => {
                           value={item.batch_number}
                           onChange={(e) => handleEditItemChange(index, 'batch_number', e.target.value)}
                           label="Batch Number"
+                          disabled={stockLoading}
                         >
                           <MenuItem value="">Select Batch</MenuItem>
-                          {stock.map(batch => (
-                            <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                              {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                            </MenuItem>
-                          ))}
+                          {stockLoading ? (
+                            <MenuItem disabled>Loading...</MenuItem>
+                          ) : Array.isArray(stock) && stock.length > 0 ? (
+                            stock.map(batch => (
+                              <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
+                              </MenuItem>
+                            ))
+                          ) : (
+                            <MenuItem disabled>No stock available</MenuItem>
+                          )}
                         </Select>
                       </FormControl>
                       <TextField
@@ -1505,5 +1540,4 @@ const OrderCreation = () => {
     </Grid>
   );
 };
-
 export default OrderCreation;
