@@ -49,8 +49,7 @@ const OrderCreation = () => {
       max_capacity: ''
     },
     price: '',
-    tax_percentage: '',
-    batch_number: ''
+    tax_percentage: ''
   });
   const [loading, setLoading] = useState(false);
   const [stockLoading, setStockLoading] = useState(true);
@@ -104,6 +103,16 @@ const OrderCreation = () => {
     fetchInitialData();
   }, [refreshCounter]);
 
+  // Calculate remaining weight for each batch
+  const getRemainingWeight = (batchNumber, items) => {
+    const batch = stock.find(s => s.batchNumber === batchNumber);
+    if (!batch) return 0;
+    const usedWeight = items
+      .filter(item => item.batch_number === batchNumber)
+      .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+    return batch.weight - usedWeight;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'shipping_method') {
@@ -140,11 +149,11 @@ const OrderCreation = () => {
     newItems[index][field] = value;
     
     if (field === 'quantity' && newItems[index].batch_number) {
-      const selectedBatch = stock.find(s => s.batchNumber === newItems[index].batch_number);
-      if (selectedBatch && parseFloat(value) > selectedBatch.weight) {
+      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems);
+      if (parseFloat(value) > remainingWeight) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity exceeds available stock (${selectedBatch.weight} kg)`, 
+          message: `Quantity exceeds available stock (${remainingWeight} kg)`, 
           severity: 'error' 
         });
         newItems[index].quantity = '';
@@ -212,7 +221,7 @@ const OrderCreation = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.customer_id || !formData.batch_number || 
+    if (!formData.customer_id || 
         !formData.items.every(item => item.batch_number && item.quantity && item.price) || 
         !formData.shipping_method) {
       setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
@@ -234,16 +243,15 @@ const OrderCreation = () => {
     for (const item of formData.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const selectedBatch = stock.find(s => s.batchNumber === item.batch_number);
-
+      const remainingWeight = getRemainingWeight(item.batch_number, formData.items.filter((_, i) => i !== formData.items.indexOf(item)));
       if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity < 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
-      if (selectedBatch && itemQuantity > selectedBatch.weight) {
+      if (itemQuantity > remainingWeight + parseFloat(item.quantity || 0)) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity for ${item.batch_number} exceeds stock (${selectedBatch.weight} kg)`, 
+          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight} kg)`, 
           severity: 'error' 
         });
         return;
@@ -260,7 +268,6 @@ const OrderCreation = () => {
       orderData.append('price', formData.price || '0');
       orderData.append('tax_percentage', formData.tax_percentage || '0');
       orderData.append('items', JSON.stringify(formData.items));
-      orderData.append('batch_number', formData.batch_number);
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
         method: 'POST',
@@ -286,8 +293,7 @@ const OrderCreation = () => {
         driver_id: formData.driver_id || null,
         driver_details: formData.driver_details || null,
         price: formData.price || null,
-        tax_percentage: formData.tax_percentage || null,
-        batch_number: formData.batch_number
+        tax_percentage: formData.tax_percentage || null
       }));
       orderListFormData.append('file', orderListBlob, `OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
@@ -308,8 +314,7 @@ const OrderCreation = () => {
         shipping_method: 'Customer', 
         driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' }, 
         price: '', 
-        tax_percentage: '',
-        batch_number: ''
+        tax_percentage: ''
       });
       setShowCustomerDetails(false);
       setSelectedCustomer(null);
@@ -348,9 +353,8 @@ const OrderCreation = () => {
     addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
     doc.line(14, 28, doc.internal.pageSize.getWidth() - 14, 28);
     addText(`Order ID: ${String(orderId).padStart(4, '0')}`, 14, 35, { bold: true });
-    addText(`Batch Number: ${formData.batch_number || '-'}`, 14, 43, { bold: true });
 
-    let yOffset = 51;
+    let yOffset = 43;
     const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2;
 
     addText("Customer Information:", 14, yOffset, { bold: true });
@@ -371,7 +375,7 @@ const OrderCreation = () => {
     yOffset += 6;
     addText(`Zip Code: ${customer ? customer.zip_code || '-' : '-'}`, 14, yOffset);
 
-    let shippingOffset = 51;
+    let shippingOffset = 43;
     addText("Shipping Information:", 14 + columnWidth + 10, shippingOffset, { bold: true });
     shippingOffset += 8;
     addText(`Method: ${formData.shipping_method}`, 14 + columnWidth + 10, shippingOffset);
@@ -470,8 +474,7 @@ const OrderCreation = () => {
           shipping_method: newRow.shipping_method,
           driver_details: newRow.driver_details ? JSON.parse(newRow.driver_details) : null,
           price: newRow.price.toString(),
-          tax_percentage: newRow.tax_percentage.toString(),
-          batch_number: newRow.batch_number
+          tax_percentage: newRow.tax_percentage.toString()
         }),
       });
 
@@ -500,8 +503,7 @@ const OrderCreation = () => {
         shipping_method: fullOrder.shipping_method || 'Customer',
         driver_details: fullOrder.driver_details ? JSON.parse(fullOrder.driver_details) : { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
         price: fullOrder.price || '0',
-        tax_percentage: fullOrder.tax_percentage || '0',
-        batch_number: fullOrder.batch_number || ''
+        tax_percentage: fullOrder.tax_percentage || '0'
       });
       setOpenOrderModal(true);
     } catch (error) {
@@ -552,11 +554,11 @@ const OrderCreation = () => {
     newItems[index][field] = value;
 
     if (field === 'quantity' && newItems[index].batch_number) {
-      const selectedBatch = stock.find(s => s.batchNumber === newItems[index].batch_number);
-      if (selectedBatch && parseFloat(value) > selectedBatch.weight) {
+      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems);
+      if (parseFloat(value) > remainingWeight) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity exceeds available stock (${selectedBatch.weight} kg)`, 
+          message: `Quantity exceeds available stock (${remainingWeight} kg)`, 
           severity: 'error' 
         });
         newItems[index].quantity = '';
@@ -586,7 +588,7 @@ const OrderCreation = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (!editOrder.customer_id || !editOrder.batch_number || 
+    if (!editOrder.customer_id || 
         !editOrder.items.every(item => item.batch_number && item.quantity && item.price) || 
         !editOrder.shipping_method) {
       setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
@@ -608,16 +610,15 @@ const OrderCreation = () => {
     for (const item of editOrder.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const selectedBatch = stock.find(s => s.batchNumber === item.batch_number);
-
+      const remainingWeight = getRemainingWeight(item.batch_number, editOrder.items.filter((_, i) => i !== editOrder.items.indexOf(item)));
       if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity < 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
-      if (selectedBatch && itemQuantity > selectedBatch.weight) {
+      if (itemQuantity > remainingWeight + parseFloat(item.quantity || 0)) {
         setSnackbar({ 
           open: true, 
-          message: `Quantity for ${item.batch_number} exceeds stock (${selectedBatch.weight} kg)`, 
+          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight} kg)`, 
           severity: 'error' 
         });
         return;
@@ -634,7 +635,6 @@ const OrderCreation = () => {
       orderData.append('price', editOrder.price || '0');
       orderData.append('tax_percentage', editOrder.tax_percentage || '0');
       orderData.append('items', JSON.stringify(editOrder.items));
-      orderData.append('batch_number', editOrder.batch_number);
 
       const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${editOrder.order_id}`, {
         method: 'PUT',
@@ -674,7 +674,6 @@ const OrderCreation = () => {
       )
     },
     { field: 'customer_name', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
-    { field: 'batch_number', headerName: 'Batch Number', width: 180, sortable: true, editable: true },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
     { field: 'price', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
     { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
@@ -689,7 +688,6 @@ const OrderCreation = () => {
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
     customer_name: order?.customer_name || '-',
-    batch_number: order?.batch_number || '-',
     shipping_method: order?.shipping_method || '-',
     price: order?.price || '0',
     tax_percentage: order?.tax_percentage || '0',
@@ -838,7 +836,7 @@ const OrderCreation = () => {
                 </Box>
               )}
 
-              <FormControl fullWidth sx={{ mb: 2 }}>
+              {/* <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Batch Number</InputLabel>
                 <Select
                   name="batch_number"
@@ -860,7 +858,7 @@ const OrderCreation = () => {
                     <MenuItem disabled>No stock available</MenuItem>
                   )}
                 </Select>
-              </FormControl>
+              </FormControl> */}
 
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Shipping Method</InputLabel>
@@ -980,7 +978,7 @@ const OrderCreation = () => {
             </Box>
 
             <Box>
-              <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3 }}>
                 {formData.items.map((item, index) => (
                   <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <FormControl sx={{ mr: 2, flex: 1 }}>
@@ -995,11 +993,14 @@ const OrderCreation = () => {
                         {stockLoading ? (
                           <MenuItem disabled>Loading...</MenuItem>
                         ) : Array.isArray(stock) && stock.length > 0 ? (
-                          stock.map(batch => (
-                            <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                              {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                            </MenuItem>
-                          ))
+                          stock.map(batch => {
+                            const remainingWeight = getRemainingWeight(batch.batchNumber, formData.items);
+                            return (
+                              <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight} kg)
+                              </MenuItem>
+                            );
+                          })
                         ) : (
                           <MenuItem disabled>No stock available</MenuItem>
                         )}
@@ -1149,7 +1150,7 @@ const OrderCreation = () => {
         </Grid>
       )}
 
-      <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
+<CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
       <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
       <Modal
@@ -1274,30 +1275,6 @@ const OrderCreation = () => {
                     />
                   </Box>
                 )}
-
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Batch Number</InputLabel>
-                  <Select
-                    name="batch_number"
-                    value={editOrder.batch_number}
-                    onChange={handleEditInputChange}
-                    label="Batch Number"
-                    disabled={stockLoading}
-                  >
-                    <MenuItem value="">Select Batch</MenuItem>
-                    {stockLoading ? (
-                      <MenuItem disabled>Loading...</MenuItem>
-                    ) : Array.isArray(stock) && stock.length > 0 ? (
-                      stock.map(batch => (
-                        <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                          {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                        </MenuItem>
-                      ))
-                    ) : (
-                      <MenuItem disabled>No stock available</MenuItem>
-                    )}
-                  </Select>
-                </FormControl>
 
                 <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Shipping Method</InputLabel>
@@ -1430,11 +1407,14 @@ const OrderCreation = () => {
                           {stockLoading ? (
                             <MenuItem disabled>Loading...</MenuItem>
                           ) : Array.isArray(stock) && stock.length > 0 ? (
-                            stock.map(batch => (
-                              <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {batch.weight} kg)
-                              </MenuItem>
-                            ))
+                            stock.map(batch => {
+                              const remainingWeight = getRemainingWeight(batch.batchNumber, editOrder.items);
+                              return (
+                                <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                                  {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight} kg)
+                                </MenuItem>
+                              );
+                            })
                           ) : (
                             <MenuItem disabled>No stock available</MenuItem>
                           )}
