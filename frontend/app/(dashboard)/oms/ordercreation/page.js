@@ -758,6 +758,15 @@ const OrderCreation = () => {
     document_url: order?.documents?.find(doc => doc.type === 'Order List')?.order_id || '-',
   }));
 
+  const customerListColumns = [
+    { field: 'name', headerName: 'Name', width: 220, sortable: true },
+    { field: 'email', headerName: 'Email', width: 200, sortable: true },
+    { field: 'phone', headerName: 'Phone', width: 150, sortable: true },
+    { field: 'country', headerName: 'Country', width: 120, sortable: true },
+    { field: 'state', headerName: 'State', width: 120, sortable: true },
+    { field: 'city', headerName: 'City', width: 150, sortable: true },
+    { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
+  ];
 
   const customerListRows = (Array.isArray(customers) ? customers : []).map(item => ({
     id: item.customer_id || '-',
@@ -769,7 +778,6 @@ const OrderCreation = () => {
     city: item.city || '-',
     qty: item.quantity || '-',
   }));
-
 
   const driversListRows = (Array.isArray(drivers) ? drivers : []).map(driver => ({
     id: driver?.id || '-',
@@ -1103,66 +1111,56 @@ const OrderCreation = () => {
         <Grid item xs={12} md={7}>
           <Card variant="outlined">
             <CardContent>
-              <Typography variant="h5" gutterBottom>
-                Order Data
+              <Typography variant="h6" gutterBottom>
+                Orders
               </Typography>
-              <Box sx={{ mb: 4 }}>
-                <div style={{ height: 600, width: "100%" }}>
-                  <DataGrid
-                    rows={ordersRows}
-                    columns={ordersColumns}
-                    editMode="row"
-                    rowModesModel={rowModesModel}
-                    onRowEditStart={handleRowEditStart}
-                    onRowEditStop={handleRowEditStop}
-                    onEditRowsModelChange={handleEditRowsModelChange}
-                    processRowUpdate={processRowUpdate}
-                    onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                    slots={{ toolbar: GridToolbar }}
-                    slotProps={{
-                      toolbar: { showQuickFilter: true },
-                    }}
-                    rowHeight={30}
-                  />
-                </div>
+              <Box sx={{ mb: 4, height: 400 }}>
+                <DataGrid
+                  rows={ordersRows}
+                  columns={ordersColumns}
+                  editMode="row"
+                  rowModesModel={rowModesModel}
+                  onRowEditStart={handleRowEditStart}
+                  onRowEditStop={handleRowEditStop}
+                  onEditRowsModelChange={handleEditRowsModelChange}
+                  processRowUpdate={processRowUpdate}
+                  onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
+                  pageSizeOptions={[5, 10, 25]}
+                  initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+                  sx={{ height: '100%' }}
+                  slots={{ toolbar: GridToolbar }}
+                  slotProps={{ toolbar: { showQuickFilter: true } }}
+                />
               </Box>
-              <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
-                Customer Data
+
+              <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
+                Customers
               </Typography>
-              <Box sx={{ mb: 4 }}>
-                <div style={{ height: 600, width: "100%" }}>
-                  <DataGrid
-                    rows={customerListRows}
-                    columns={customerListColumns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                    slots={{ toolbar: GridToolbar }}
-                    slotProps={{
-                      toolbar: { showQuickFilter: true },
-                    }}
-                    rowHeight={27}
-                  />
-                </div>
+              <Box sx={{ mb: 4, height: 400 }}>
+                <DataGrid
+                  rows={customerListRows}
+                  columns={customerListColumns}
+                  pageSizeOptions={[5, 10, 25]}
+                  initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+                  sx={{ height: '100%' }}
+                  slots={{ toolbar: GridToolbar }}
+                  slotProps={{ toolbar: { showQuickFilter: true } }}
+                />
               </Box>
-              <Typography variant="h5" gutterBottom>
-                Driver Data
+
+              <Typography variant="h6" gutterBottom>
+                Drivers
               </Typography>
-              <Box>
-                <div style={{ height: 600, width: "100%" }}>
-                  <DataGrid
-                    rows={driversRows}
-                    columns={driversColumns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                    slots={{ toolbar: GridToolbar }}
-                    slotProps={{
-                      toolbar: { showQuickFilter: true },
-                    }}
-                    rowHeight={27}
-                  />
-                </div>
+              <Box sx={{ height: 400 }}>
+                <DataGrid
+                  rows={driversListRows}
+                  columns={driversListColumns}
+                  pageSizeOptions={[5, 10, 25]}
+                  initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+                  sx={{ height: '100%' }}
+                  slots={{ toolbar: GridToolbar }}
+                  slotProps={{ toolbar: { showQuickFilter: true } }}
+                />
               </Box>
             </CardContent>
           </Card>
