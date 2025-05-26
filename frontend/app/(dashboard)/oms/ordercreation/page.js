@@ -997,7 +997,7 @@ const OrderCreation = () => {
                       sx={{ mr: 1, width: '120px' }}
                     />
                     <TextField
-                      label="Price per Unit (IDR)"
+                      label="IDR/kg"
                       type="number"
                       value={item.price}
                       onChange={(e) => handleItemChange(index, 'price', e.target.value)}
