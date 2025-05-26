@@ -980,7 +980,7 @@ const OrderCreation = () => {
                             const remainingWeight = getRemainingWeight(batch.batchNumber, formData.items, index);
                             return (
                               <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight.toFixed(2)} kg)
+                                {batch.batchNumber} ({remainingWeight.toFixed(1)} kg)
                               </MenuItem>
                             );
                           })
