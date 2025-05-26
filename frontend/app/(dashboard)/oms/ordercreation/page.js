@@ -226,17 +226,28 @@ const OrderCreation = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.customer_id || 
-        !formData.items.every(item => item.batch_number && item.quantity && item.price) || 
-        !formData.shipping_method) {
-      setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
+    // Validate required fields
+    if (!formData.customer_id) {
+      setSnackbar({ open: true, message: 'Customer is required', severity: 'warning' });
+      return;
+    }
+    if (!formData.shipping_method) {
+      setSnackbar({ open: true, message: 'Shipping method is required', severity: 'warning' });
+      return;
+    }
+    if (formData.shipping_method === 'Self' && !formData.driver_id) {
+      setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
+      return;
+    }
+    if (!formData.items.every(item => item.batch_number && item.quantity && item.price)) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, and price', severity: 'warning' });
       return;
     }
 
     const subtotal = parseFloat(formData.price) || 0;
     const taxPercentage = parseFloat(formData.tax_percentage) || 0;
 
-    if (isNaN(subtotal) || subtotal < 0) {
+    if (isNaN(subtotal) || subtotal <= 0) {
       setSnackbar({ open: true, message: 'Invalid subtotal', severity: 'error' });
       return;
     }
@@ -250,7 +261,7 @@ const OrderCreation = () => {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
       const remainingWeight = getRemainingWeight(item.batch_number, formData.items, i);
-      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
+      if (isNaN(itemPrice) || itemPrice <= 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
@@ -266,24 +277,35 @@ const OrderCreation = () => {
 
     setLoading(true);
     try {
-      const orderData = new FormData();
-      orderData.append('customer_id', formData.customer_id);
-      orderData.append('driver_id', formData.shipping_method === 'Self' ? formData.driver_id : '');
-      orderData.append('shipping_method', formData.shipping_method);
-      orderData.append('driver_details', JSON.stringify(formData.driver_details));
-      orderData.append('price', formData.price || '0');
-      orderData.append('tax_percentage', formData.tax_percentage || '0');
-      orderData.append('items', JSON.stringify(formData.items));
+      // Construct JSON payload instead of FormData
+      const orderData = {
+        customer_id: formData.customer_id,
+        driver_id: formData.shipping_method === 'Self' ? formData.driver_id : null,
+        shipping_method: formData.shipping_method,
+        driver_details: formData.shipping_method === 'Customer' ? formData.driver_details : null,
+        price: formData.price || '0',
+        tax_percentage: formData.tax_percentage || '0',
+        items: formData.items.map(item => ({
+          batch_number: item.batch_number,
+          quantity: parseFloat(item.quantity),
+          price: parseFloat(item.price)
+        }))
+      };
+
+      console.log('Order Payload:', orderData); // Debug payload
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
         method: 'POST',
-        body: orderData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
       });
 
-      if (!orderRes.ok) throw new Error('Failed to create order');
       const orderResult = await orderRes.json();
-      const orderId = orderResult.order_id;
+      if (!orderRes.ok) {
+        throw new Error(orderResult.error || 'Failed to create order');
+      }
 
+      const orderId = orderResult.order_id;
       if (!orderId) throw new Error('Order ID not found in response');
 
       const orderListDoc = generateOrderListPDF(orderId);
@@ -308,7 +330,10 @@ const OrderCreation = () => {
         body: orderListFormData,
       });
 
-      if (!docRes.ok) throw new Error('Failed to upload Order List');
+      if (!docRes.ok) {
+        const docError = await docRes.json();
+        throw new Error(docError.error || 'Failed to upload Order List');
+      }
 
       orderListDoc.save(`OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
@@ -326,6 +351,7 @@ const OrderCreation = () => {
       setSelectedCustomer(null);
       setRefreshCounter(prev => prev + 1);
     } catch (error) {
+      console.error('Submit Error:', error);
       setSnackbar({ open: true, message: error.message, severity: 'error' });
     } finally {
       setLoading(false);
@@ -594,17 +620,27 @@ const OrderCreation = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (!editOrder.customer_id || 
-        !editOrder.items.every(item => item.batch_number && item.quantity && item.price) || 
-        !editOrder.shipping_method) {
-      setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'warning' });
+    if (!editOrder.customer_id) {
+      setSnackbar({ open: true, message: 'Customer is required', severity: 'warning' });
+      return;
+    }
+    if (!editOrder.shipping_method) {
+      setSnackbar({ open: true, message: 'Shipping method is required', severity: 'warning' });
+      return;
+    }
+    if (editOrder.shipping_method === 'Self' && !editOrder.driver_id) {
+      setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
+      return;
+    }
+    if (!editOrder.items.every(item => item.batch_number && item.quantity && item.price)) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, and price', severity: 'warning' });
       return;
     }
 
     const subtotal = parseFloat(editOrder.price) || 0;
     const taxPercentage = parseFloat(editOrder.tax_percentage) || 0;
 
-    if (isNaN(subtotal) || subtotal < 0) {
+    if (isNaN(subtotal) || subtotal <= 0) {
       setSnackbar({ open: true, message: 'Invalid subtotal', severity: 'error' });
       return;
     }
@@ -618,7 +654,7 @@ const OrderCreation = () => {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
       const remainingWeight = getRemainingWeight(item.batch_number, editOrder.items, i);
-      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
+      if (isNaN(itemPrice) || itemPrice <= 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
@@ -634,22 +670,30 @@ const OrderCreation = () => {
 
     setLoading(true);
     try {
-      const orderData = new FormData();
-      orderData.append('customer_id', editOrder.customer_id);
-      orderData.append('driver_id', editOrder.shipping_method === 'Self' ? editOrder.driver_id : '');
-      orderData.append('shipping_method', editOrder.shipping_method);
-      orderData.append('driver_details', JSON.stringify(editOrder.driver_details));
-      orderData.append('price', editOrder.price || '0');
-      orderData.append('tax_percentage', editOrder.tax_percentage || '0');
-      orderData.append('items', JSON.stringify(editOrder.items));
+      const orderData = {
+        customer_id: editOrder.customer_id,
+        driver_id: editOrder.shipping_method === 'Self' ? editOrder.driver_id : null,
+        shipping_method: editOrder.shipping_method,
+        driver_details: editOrder.shipping_method === 'Customer' ? editOrder.driver_details : null,
+        price: editOrder.price || '0',
+        tax_percentage: editOrder.tax_percentage || '0',
+        items: editOrder.items.map(item => ({
+          batch_number: item.batch_number,
+          quantity: parseFloat(item.quantity),
+          price: parseFloat(item.price)
+        }))
+      };
 
       const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${editOrder.order_id}`, {
         method: 'PUT',
-        body: orderData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
       });
 
-      if (!orderRes.ok) throw new Error('Failed to update order');
       const updatedOrder = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(updatedOrder.error || 'Failed to update order');
+      }
 
       setOrders(orders.map(order => order.order_id === editOrder.order_id ? updatedOrder : order));
       setSnackbar({ open: true, message: 'Order updated successfully', severity: 'success' });
@@ -980,7 +1024,7 @@ const OrderCreation = () => {
                             const remainingWeight = getRemainingWeight(batch.batchNumber, formData.items, index);
                             return (
                               <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                {batch.batchNumber} ({remainingWeight.toFixed(1)} kg)
+                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight.toFixed(2)} kg)
                               </MenuItem>
                             );
                           })
@@ -997,7 +1041,7 @@ const OrderCreation = () => {
                       sx={{ mr: 1, width: '120px' }}
                     />
                     <TextField
-                      label="IDR/kg"
+                      label="Price per Unit (IDR)"
                       type="number"
                       value={item.price}
                       onChange={(e) => handleItemChange(index, 'price', e.target.value)}
@@ -1132,7 +1176,7 @@ const OrderCreation = () => {
         </Grid>
       )}
 
-<CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
+      <CustomerModal open={openCustomerModal} onClose={() => setOpenCustomerModal(false)} onSave={handleSaveCustomer} />
       <DriverModal open={openDriverModal} onClose={() => setOpenDriverModal(false)} onSave={handleSaveDriver} />
 
       <Modal
