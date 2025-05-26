@@ -53,7 +53,7 @@ const OrderCreation = () => {
     batch_number: ''
   });
   const [loading, setLoading] = useState(false);
-  const [stockLoading, setStockLoading] = useState(true); // New state for stock loading
+  const [stockLoading, setStockLoading] = useState(true);
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -85,17 +85,17 @@ const OrderCreation = () => {
         const ordersData = await ordersRes.json();
         const stockData = await stockRes.json();
 
-        console.log('Stock API Response:', stockData); // Debug log
+        console.log('Stock API Response:', stockData);
 
         // Ensure arrays
         setCustomers(Array.isArray(customersData) ? customersData : []);
         setDrivers(Array.isArray(driversData) ? driversData : []);
         setOrders(Array.isArray(ordersData) ? ordersData : []);
-        setStock(Array.isArray(stockData) ? stockData : []);
+        setStock(Array.isArray(stockData.allRows) ? stockData.allRows : []);
       } catch (error) {
         console.error('Fetch Error:', error);
         setSnackbar({ open: true, message: error.message, severity: 'error' });
-        setStock([]); // Fallback to empty array
+        setStock([]);
       } finally {
         setLoading(false);
         setStockLoading(false);
