@@ -40,7 +40,7 @@ const OrderCreation = () => {
   const [formData, setFormData] = useState({
     customer_id: '',
     driver_id: '',
-    items: [{ batch_number: '', quantity: '', price: '' }],
+    items: [{ batch_number: '', quantity: '', price: '', product: '' }],
     shipping_method: 'Customer',
     driver_details: {
       name: '',
@@ -153,6 +153,13 @@ const OrderCreation = () => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
     
+    if (field === 'batch_number') {
+      const batch = stock.find(s => s.batchNumber === value);
+      newItems[index].product = batch 
+        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}` 
+        : '';
+    }
+    
     if (field === 'quantity' && newItems[index].batch_number) {
       const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
       if (parseFloat(value) > remainingWeight) {
@@ -172,7 +179,7 @@ const OrderCreation = () => {
   };
 
   const addItem = () => {
-    setFormData(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '' }] }));
+    setFormData(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }] }));
   };
 
   const removeItem = (index) => {
@@ -239,8 +246,8 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!formData.items.every(item => item.batch_number && item.quantity && item.price)) {
-      setSnackbar({ open: true, message: 'All items must have batch number, quantity, and price', severity: 'warning' });
+    if (!formData.items.every(item => item.batch_number && item.quantity && item.price && item.product)) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
       return;
     }
 
@@ -277,7 +284,7 @@ const OrderCreation = () => {
 
     setLoading(true);
     try {
-      // Construct JSON payload instead of FormData
+      // Construct JSON payload
       const orderData = {
         customer_id: formData.customer_id,
         driver_id: formData.shipping_method === 'Self' ? formData.driver_id : null,
@@ -288,7 +295,8 @@ const OrderCreation = () => {
         items: formData.items.map(item => ({
           batch_number: item.batch_number,
           quantity: parseFloat(item.quantity),
-          price: parseFloat(item.price)
+          price: parseFloat(item.price),
+          product: item.product
         }))
       };
 
@@ -321,7 +329,7 @@ const OrderCreation = () => {
         driver_id: formData.driver_id || null,
         driver_details: formData.driver_details || null,
         price: formData.price || null,
-        tax_percentage: formData.tax_percentage || null
+        tax_percentage: formData.tax_percentage || null,
       }));
       orderListFormData.append('file', orderListBlob, `OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
@@ -341,7 +349,7 @@ const OrderCreation = () => {
       setFormData({ 
         customer_id: '', 
         driver_id: '', 
-        items: [{ batch_number: '', quantity: '', price: '' }], 
+        items: [{ batch_number: '', quantity: '', price: '', product: '' }], 
         shipping_method: 'Customer', 
         driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' }, 
         price: '', 
@@ -422,20 +430,12 @@ const OrderCreation = () => {
       addText(`Max Capacity: ${driver.max_capacity ? driver.max_capacity + ' kg' : '-'}`, 14 + columnWidth + 10, shippingOffset);
     }
 
-    let items = formData.items.map(item => {
-      const batch = stock.find(s => s.batchNumber === item.batch_number);
-      return {
-        ...item,
-        product: batch ? `Green Beans - ${batch.quality} - ${batch.processingType}` : 'Unknown'
-      };
-    });
-
     let tableOffset = Math.max(yOffset, driver ? shippingOffset + 6 : shippingOffset) + 10;
     addText("Items:", 14, tableOffset, { bold: true });
     doc.autoTable({
       startY: tableOffset + 8,
       head: [['Batch Number', 'Product', 'Quantity (kg)', 'Price (IDR)', 'Subtotal (IDR)']],
-      body: items.map(item => [
+      body: formData.items.map(item => [
         item.batch_number,
         item.product,
         item.quantity,
@@ -531,7 +531,7 @@ const OrderCreation = () => {
         order_id: fullOrder.order_id,
         customer_id: fullOrder.customer_id,
         driver_id: fullOrder.driver_id || '',
-        items: fullOrder.items || [{ batch_number: '', quantity: '', price: '' }],
+        items: fullOrder.items || [{ batch_number: '', quantity: '', price: '', product: '' }],
         shipping_method: fullOrder.shipping_method || 'Customer',
         driver_details: fullOrder.driver_details ? JSON.parse(fullOrder.driver_details) : { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
         price: fullOrder.price || '0',
@@ -585,6 +585,13 @@ const OrderCreation = () => {
     const newItems = [...editOrder.items];
     newItems[index][field] = value;
 
+    if (field === 'batch_number') {
+      const batch = stock.find(s => s.batchNumber === value);
+      newItems[index].product = batch 
+        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}` 
+        : '';
+    }
+
     if (field === 'quantity' && newItems[index].batch_number) {
       const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
       if (parseFloat(value) > remainingWeight) {
@@ -604,7 +611,7 @@ const OrderCreation = () => {
   };
 
   const addEditItem = () => {
-    setEditOrder(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '' }] }));
+    setEditOrder(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }] }));
   };
 
   const removeEditItem = (index) => {
@@ -632,8 +639,8 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!editOrder.items.every(item => item.batch_number && item.quantity && item.price)) {
-      setSnackbar({ open: true, message: 'All items must have batch number, quantity, and price', severity: 'warning' });
+    if (!editOrder.items.every(item => item.batch_number && item.quantity && item.price && item.product)) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
       return;
     }
 
@@ -680,11 +687,12 @@ const OrderCreation = () => {
         items: editOrder.items.map(item => ({
           batch_number: item.batch_number,
           quantity: parseFloat(item.quantity),
-          price: parseFloat(item.price)
+          price: parseFloat(item.price),
+          product: item.product
         }))
       };
 
-      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${editOrder.order_id}`, {
+      const orderRes = await fetch(`https://processing-facility-backend.com/api/orders/${editOrder.order_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
@@ -695,7 +703,7 @@ const OrderCreation = () => {
         throw new Error(updatedOrder.error || 'Failed to update order');
       }
 
-      setOrders(orders.map(order => order.order_id === editOrder.order_id ? updatedOrder : order));
+      setOrders(orders.map(order => order.order_id === updatedOrder.order_id ? updatedOrder : order));
       setSnackbar({ open: true, message: 'Order updated successfully', severity: 'success' });
       handleCloseOrderModal();
       setRefreshCounter(prev => prev + 1);
@@ -724,21 +732,21 @@ const OrderCreation = () => {
         </Button>
       )
     },
-    { field: 'customer_name', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
+    { field: 'customer_id', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
-    { field: 'price', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
-    { field: 'tax_percentage', headerName: 'Tax (%)', width: 80, sortable: true, editable: true },
-    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, editable: false },
-    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false },
-    { field: 'created_at', headerName: 'Date', width: 120, sortable: true, editable: false },
-    { field: 'status', headerName: 'Status', width: 100, sortable: true, editable: true },
-    { field: 'address', headerName: 'Customer Address', width: 200, editable: false },
+    { field: 'price', headerName: 'Price', width: 180, sortable: true, editable: true },
+    { field: 'tax_percentage', headerName: 'Tax %', width: 100, sortable: true, editable: true },
+    { field: 'Tax', headerName: 'Tax', width: 120, sortable: true, editable: true },
+    { field: 'grand_total', headerName: 'Grand Total', width: 180, sortable: true, editable: false },
+    { field: 'created_at', headerName: 'Date', width: 150, sortable: true, editable: false },
+    { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
+    { field: 'customer_id', headerName: 'Customer Address', width: 200, sortable: true, editable: false },
   ];
 
   const ordersRows = (Array.isArray(orders) ? orders : []).map(order => ({
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
-    customer_name: order?.customer_name || '-',
+    customer_id: order?.customer_id || '-',
     shipping_method: order?.shipping_method || '-',
     price: order?.price || '0',
     tax_percentage: order?.tax_percentage || '0',
@@ -746,52 +754,38 @@ const OrderCreation = () => {
     grand_total: order?.grand_total || '0',
     created_at: order?.created_at || new Date().toISOString().split('T')[0],
     status: order?.status || 'Pending',
-    address: order?.customer_address || '-',
-    document_url: order?.documents?.find(doc => doc.type === 'Order List')?.drive_url || null,
+    customer_details: order?.customer_details || '-',
+    document_url: order?.documents?.find(doc => doc.type === 'Order List')?.order_id || '-',
   }));
 
-  const customerListColumns = [
-    { field: 'name', headerName: 'Name', width: 220, sortable: true },
-    { field: 'email', headerName: 'Email', width: 200, sortable: true },
-    { field: 'phone', headerName: 'Phone', width: 150, sortable: true },
-    { field: 'country', headerName: 'Country', width: 120, sortable: true },
-    { field: 'state', headerName: 'State', width: 120, sortable: true },
-    { field: 'city', headerName: 'City', width: 150, sortable: true },
-    { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
-  ];
 
-  const customerListRows = (Array.isArray(customers) ? customers : []).map(customer => ({
-    id: customer?.customer_id || '-',
-    name: customer?.name || '-',
-    email: customer?.email || '-',
-    phone: customer?.phone || '-',
-    country: customer?.country || '-',
-    state: customer?.state || '-',
-    city: customer?.city || '-',
-    zip_code: customer?.zip_code || '-',
+  const customerListRows = (Array.isArray(customers) ? customers : []).map(item => ({
+    id: item.customer_id || '-',
+    name: item.name || '-',
+    type: item.type || '-',
+    quantity: item.quantity || '-',
+    country: item.country || '-',
+    state: item.state || '-',
+    city: item.city || '-',
+    qty: item.quantity || '-',
   }));
 
-  const driversColumns = [
-    { field: 'name', headerName: 'Name', width: 120, sortable: true },
-    { field: 'vehicle_number', headerName: 'Vehicle No.', width: 120, sortable: true },
-    { field: 'vehicle_type', headerName: 'Vehicle Type', width: 120, sortable: true },
-    { field: 'max_capacity', headerName: 'Max Capacity (kg)', width: 150, sortable: true },
-    { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
-  ];
 
-  const driversRows = (Array.isArray(drivers) ? drivers : []).map(driver => ({
-    id: driver?.driver_id || '-',
-    name: driver?.name || '-',
-    vehicle_number: driver?.vehicle_number || '-',
-    vehicle_type: driver?.vehicle_type || '-',
-    max_capacity: driver?.max_capacity || '-',
-    availability_status: driver?.availability_status || 'Available',
+  const driversListRows = (Array.isArray(drivers) ? drivers : []).map(driver => ({
+    id: driver?.id || '-',
+    name: driver.name || '-',
+    driver_id: driver?.id || '-',
+    type: driver?.type || '-',
+    capacity: driver?.capacity || '-',
+    max: driver?.max || '-',
+    availability_status: driver?.status || 'Available',
   }));
 
-  if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 4 }} />;
 
-  if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
-    return <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Access Denied</Typography>;
+  if (status === 'loading') return <CircularProgress sx={{ size: 'large', display: 'inline-block', margin: 'auto', marginTop: 5 }} />;
+
+  if (!session?.user || !['admin', 'manager', 'preprocessing']?.includes(session.user.role)) {
+    return <Typography variant="h6" sx={{ textAlign: 'center', marginTop: 5 }}>Access Denied</Typography>;
   }
 
   return (
@@ -813,7 +807,7 @@ const OrderCreation = () => {
                       {customer.name}
                     </MenuItem>
                   ))}
-                  <MenuItem>
+                  <MenuItem >
                     <Button
                       fullWidth
                       variant="text"
@@ -1024,7 +1018,7 @@ const OrderCreation = () => {
                             const remainingWeight = getRemainingWeight(batch.batchNumber, formData.items, index);
                             return (
                               <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight.toFixed(2)} kg)
+                                {batch.batchNumber} ({remainingWeight.toFixed(2)} kg)
                               </MenuItem>
                             );
                           })
@@ -1038,14 +1032,14 @@ const OrderCreation = () => {
                       type="number"
                       value={item.quantity}
                       onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                      sx={{ mr: 1, width: '120px' }}
+                      sx={{ mr: 2, width: 100 }}
                     />
                     <TextField
-                      label="Price per Unit (IDR)"
+                      label="Price (IDR)"
                       type="number"
                       value={item.price}
                       onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                      sx={{ mr: 1, width: '120px' }}
+                      sx={{ mr: 2, width: 150 }}
                     />
                     <IconButton
                       onClick={() => removeItem(index)}
@@ -1057,23 +1051,23 @@ const OrderCreation = () => {
                     </IconButton>
                   </Box>
                 ))}
-                <Button variant="outlined" onClick={addItem} sx={{ mb: 2 }}>Add Another Item</Button>
+                <Button variant="outlined" onClick={addItem} fullWidth sx={{ mb: 2 }}>Add Another Item</Button>
               </Box>
 
               <Divider sx={{ mb: 2 }} />
 
-              <Box sx={{ maxWidth: '40%', ml: 'auto', mb: 2 }}>
+              <Box sx={{ maxWidth: 300, ml: 'auto', mb: 2 }}>
                 <TextField
                   fullWidth
-                  label="Subtotal Price (IDR)"
+                  label="Subtotal (IDR)"
                   name="price"
-                  value={formData.price ? Number(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
+                  value={formData.price ? Number(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : ''}
                   InputProps={{ readOnly: true }}
                   sx={{ mb: 2 }}
                 />
                 <TextField
                   fullWidth
-                  label="Tax Percentage (%)"
+                  label="Tax (%)"
                   name="tax_percentage"
                   value={formData.tax_percentage}
                   onChange={handleInputChange}
@@ -1086,19 +1080,18 @@ const OrderCreation = () => {
                   value={
                     formData.price && formData.tax_percentage
                       ? (Number(formData.price || 0) * (1 + Number(formData.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
-                      : '0 IDR'
+                      : ''
                   }
                   InputProps={{ readOnly: true }}
                   sx={{ mb: 2 }}
                 />
                 <Button
                   variant="contained"
-                  color="primary"
+                  fullWidth
                   onClick={handleSubmit}
                   disabled={loading}
-                  fullWidth
                 >
-                  {loading ? <CircularProgress size={20} /> : 'Create Order'}
+                  {loading ? <CircularProgress size={24} /> : 'Create Order'}
                 </Button>
               </Box>
             </Box>
