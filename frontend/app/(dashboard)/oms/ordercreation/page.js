@@ -736,7 +736,7 @@ const OrderCreation = () => {
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
     { field: 'price', headerName: 'Price', width: 180, sortable: true, editable: true },
     { field: 'tax_percentage', headerName: 'Tax %', width: 100, sortable: true, editable: true },
-    // { field: 'Tax', headerName: 'Tax', width: 120, sortable: true, editable: true },
+    { field: 'Tax', headerName: 'Tax', width: 120, sortable: true, editable: true },
     { field: 'grand_total', headerName: 'Grand Total', width: 180, sortable: true, editable: false },
     { field: 'created_at', headerName: 'Date', width: 150, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
@@ -751,7 +751,7 @@ const OrderCreation = () => {
     shipping_method: order?.shipping_method || '-',
     price: order?.price || '0',
     tax_percentage: order?.tax_percentage || '0',
-    // tax: order?.tax || '0',
+    tax: order?.tax || '0',
     grand_total: order?.grand_total || '0',
     created_at: order?.created_at || new Date().toISOString().split('T')[0],
     status: order?.status || 'Pending',
@@ -1128,12 +1128,12 @@ const OrderCreation = () => {
                   rows={ordersRows}
                   columns={ordersColumns}
                   editMode="row"
-                  // rowModesModel={rowModesModel}
-                  // onRowEditStart={handleRowEditStart}
-                  // onRowEditStop={handleRowEditStop}
-                  // onEditRowsModelChange={handleEditRowsModelChange}
-                  // processRowUpdate={processRowUpdate}
-                  // onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
+                  rowModesModel={rowModesModel}
+                  onRowEditStart={handleRowEditStart}
+                  onRowEditStop={handleRowEditStop}
+                  onEditRowsModelChange={handleEditRowsModelChange}
+                  processRowUpdate={processRowUpdate}
+                  onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
                   pageSizeOptions={[5, 10, 25]}
                   initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
                   sx={{ height: '100%' }}
