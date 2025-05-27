@@ -46,6 +46,7 @@ function FarmerInputStation() {
   const [kecamatan, setKecamatan] = useState('');
   const [kabupaten, setKabupaten] = useState('');
   const [locationData, setLocationData] = useState([]);
+  const [isContract, setIsContract] = useState('');
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -166,6 +167,7 @@ function FarmerInputStation() {
         setFarmType('');
         setNotes('');
         setFarmVarieties([]);
+        setIsContract('');
 
         await fetchFarmerData();
 
@@ -211,6 +213,7 @@ function FarmerInputStation() {
     { field: "kecamatan", headerName: "Kecamatan", sortable: true },
     { field: "kabupaten", headerName: "Kabupaten", sortable: true },
     { field: "farmerAddress", headerName: "Address", sortable: true },
+    { field: "isContract", headerName: "Contract", sortable: true },
     { field: "bankAccount", headerName: "Bank Account", sortable: true },
     { field: "bankName", headerName: "Bank Name", sortable: true },
     { field: "farmerLandArea", headerName: "Land Area", sortable: true },
@@ -324,6 +327,24 @@ function FarmerInputStation() {
                     required
                     input={<OutlinedInput label="Farmer Land Area" />}
                   />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel id="contract-label">Land Contract</InputLabel>
+                    <Select
+                      labelId="contract-label"
+                      id="contract"
+                      multiple
+                      value={isContract}
+                      onChange={(e) => setIsContract(e.target.value)}
+                      input={<OutlinedInput label="Land Contract" />}
+                      MenuProps={MenuProps}
+                    >
+                      <MenuItem value="Yes">Yes</MenuItem>
+                      <MenuItem value="No">No</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
 
                 <Grid item xs={12}>
