@@ -331,16 +331,14 @@ function FarmerInputStation() {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth required>
                     <InputLabel id="contract-label">Land Contract</InputLabel>
                     <Select
                       labelId="contract-label"
                       id="contract"
-                      multiple
                       value={isContract}
                       onChange={(e) => setIsContract(e.target.value)}
                       input={<OutlinedInput label="Land Contract" />}
-                      MenuProps={MenuProps}
                     >
                       <MenuItem value="Yes">Yes</MenuItem>
                       <MenuItem value="No">No</MenuItem>
