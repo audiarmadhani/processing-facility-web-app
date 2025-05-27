@@ -9,8 +9,8 @@ import {
 } from '@mui/material';
 
 // Chart imports
-import TotalWeightBags from './charts/TotalBarChart';
-import TotalCost from './charts/TotalCostChart';
+// import TotalWeightBags from './charts/TotalBarChart';
+// import TotalCost from './charts/TotalCostChart';
 import { 
   ArabicaWeightMoM, RobustaWeightMoM, 
   ArabicaCostMoM, RobustaCostMoM,
@@ -18,7 +18,7 @@ import {
   ArabicaProcessedMoM,RobustaProcessedMoM,
   ArabicaProductionMoM, RobustaProductionMoM, 
   ArabicaCategoryChart, RobustaCategoryChart, 
-  ArabicaCherryQualitybyDate, RobustaCherryQualitybyDate,
+  ArabicaCherryQualityChart, RobustaCherryQualityChart,
   ArabicaFarmersContribution, RobustaFarmersContribution, 
   ArabicaSankeyChart, RobustaSankeyChart, 
   ArabicaAchievement, RobustaAchievement 
@@ -148,7 +148,7 @@ function Dashboard() {
         { title: 'Daily Production', component: <ArabicaCategoryChart timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Target Achievement', component: <ArabicaAchievement timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Farmers Contribution', component: <ArabicaFarmersContribution timeframe={timeframe} />, xs: 12, md: 6 },
-        { title: 'Cherry Quality', component: <ArabicaCherryQualitybyDate timeframe={timeframe} />, xs: 12, md: 6 },
+        { title: 'Cherry Quality', component: <ArabicaCherryQualityChart timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Coverage Map', component: <ArabicaMap />, xs: 12, md: 12 },
         { title: 'Sankey Chart', component: <ArabicaSankeyChart height="100%" />, xs: 12, md: 12, sx: { height: { xs: '300px', sm: '400px', md: '500px', lg: '600px', xl: '700px' } } },
       ],
@@ -173,7 +173,7 @@ function Dashboard() {
         { title: 'Daily Production', component: <RobustaCategoryChart timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Target Achievement', component: <RobustaAchievement timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Farmers Contribution', component: <RobustaFarmersContribution timeframe={timeframe} />, xs: 12, md: 6 },
-        { title: 'Cherry Quality', component: <RobustaCherryQualitybyDate timeframe={timeframe} />, xs: 12, md: 6 },
+        { title: 'Cherry Quality', component: <RobustaCherryQualityChart timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Coverage Map', component: <RobustaMap />, xs: 12, md: 12 },
         { title: 'Sankey Chart', component: <RobustaSankeyChart height="100%" />, xs: 12, md: 12, sx: { height: { xs: '300px', sm: '400px', md: '500px', lg: '600px', xl: '700px' } } },
       ],
