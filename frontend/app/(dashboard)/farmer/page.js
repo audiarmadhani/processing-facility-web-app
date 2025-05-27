@@ -208,24 +208,24 @@ function FarmerInputStation() {
 
 
   const columns = [
-    { field: "farmerID", headerName: "ID", sortable: true },
-    { field: "farmerName", headerName: "Name", sortable: true },
-    { field: "desa", headerName: "Desa", sortable: true },
-    { field: "kecamatan", headerName: "Kecamatan", sortable: true },
-    { field: "kabupaten", headerName: "Kabupaten", sortable: true },
-    { field: "farmerAddress", headerName: "Address", sortable: true },
-    { field: "isContract", headerName: "Contract", sortable: true },
-    { field: "bankAccount", headerName: "Bank Account", sortable: true },
-    { field: "bankName", headerName: "Bank Name", sortable: true },
-    { field: "farmerLandArea", headerName: "Land Area", sortable: true },
-    { field: "farmerContact", headerName: "Contact", sortable: true },
+    { field: "farmerID", headerName: "ID", sortable: true, width: 40 },
+    { field: "farmerName", headerName: "Name", sortable: true, width: 150 },
+    { field: "desa", headerName: "Desa", sortable: true, width: 120 },
+    { field: "kecamatan", headerName: "Kecamatan", sortable: true, width: 120 },
+    { field: "kabupaten", headerName: "Kabupaten", sortable: true, width: 120 },
+    { field: "farmerAddress", headerName: "Address", sortable: true, width: 200 },
+    { field: "isContract", headerName: "Contract", sortable: true, width: 80 },
+    { field: "bankAccount", headerName: "Bank Account", sortable: true, width: 80 },
+    { field: "bankName", headerName: "Bank Name", sortable: true, width: 80 },
+    { field: "farmerLandArea", headerName: "Land Area", sortable: true, width: 80 },
+    { field: "farmerContact", headerName: "Contact", sortable: true, width: 150 },
     // { field: "latitude", headerName: "Latitude", sortable: true },
     // { field: "longitude", headerName: "Longitude", sortable: true },
-    { field: "farmType", headerName: "Type", sortable: true },
-    { field: "farmVarieties", headerName: "Coffee Varieties", sortable: true },
-    { field: "registrationDate", headerName: "Registration Date", sortable: true },
+    { field: "farmType", headerName: "Type", sortable: true, width: 90 },
+    { field: "farmVarieties", headerName: "Coffee Varieties", sortable: true, width: 150 },
+    { field: "registrationDate", headerName: "Registration Date", sortable: true, width: 150 },
     // { field: "isActive", headerName: "Active", sortable: true },
-    { field: "notes", headerName: "Notes", sortable: true },
+    { field: "notes", headerName: "Notes", sortable: true, width: 150 },
   ];
 
   // Show loading screen while session is loading
@@ -245,7 +245,7 @@ function FarmerInputStation() {
   return (
     <Grid container spacing={3}>
       {/* Farmer Form */}
-      <Grid item xs={12} md={3}>
+      <Grid item xs={12} md={5}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
@@ -436,7 +436,7 @@ function FarmerInputStation() {
 
       {/* Data Grid for Farmer Data */}
       {["admin", "manager", "receiving"].includes(session?.user?.role) && (
-        <Grid item xs={12} md={9}>
+        <Grid item xs={12} md={7}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h5" gutterBottom>

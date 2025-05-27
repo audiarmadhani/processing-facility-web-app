@@ -649,13 +649,13 @@ const ScheduleCalendar = () => {
     <Box sx={{ p: 2, width: '100%', height: '100%' }}>
 
 			<Toolbar sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-				<Button variant="contained" color="primary" onClick={handleOpenAddTargetDialog} sx={{ mr: 2 }}>
+				<Button variant="contained" color="secondary" onClick={handleOpenAddTargetDialog} sx={{ mr: 2 }}>
 						Add Target
 				</Button>
-				<Button variant="contained" color="primary" onClick={handleOpenAddEventDialog}>
+				<Button variant="contained" color="secondary" onClick={handleOpenAddEventDialog} sx={{ mr: 2 }}>
 						Add Event
 				</Button>
-				<Button variant="contained" color="primary" onClick={handleOpenAddPriceDialog}>
+				<Button variant="contained" color="primary" onClick={handleOpenAddPriceDialog} sx={{ mr: 2 }}>
 						Add Price
 				</Button>
 			</Toolbar>
