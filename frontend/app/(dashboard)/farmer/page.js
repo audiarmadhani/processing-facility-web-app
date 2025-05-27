@@ -61,16 +61,16 @@ function FarmerInputStation() {
 
   const bankOptions = [
     'Bank Mandiri',
-    'Bank Rakyat Indonesia (BRI)',
-    'Bank Central Asia (BCA)',
-    'Bank Negara Indonesia (BNI)',
-    'Bank Tabungan Negara (BTN)',
-    'Bank Syariah Indonesia (BSI)',
-    'Bank CIMB Niaga',
-    'Bank OCBC NISP',
+    'BRI',
+    'BCA',
+    'BNI',
+    'BTN',
+    'BSI',
+    'CIMB Niaga',
+    'OCBC NISP',
     'Permata Bank',
-    'Bank Danamon',
-    'Bank BPD Bali',
+    'Danamon',
+    'BPD Bali',
     // Add more banks as needed
   ];
 
@@ -267,6 +267,18 @@ function FarmerInputStation() {
 
                 <Grid item xs={12}>
                   <TextField
+                    label="Farmer Contact"
+                    type="text"
+                    value={farmerContact}
+                    onChange={(e) => setFarmerContact(e.target.value)}
+                    fullWidth
+                    required
+                    input={<OutlinedInput label="Farmer Contact" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
                     label="Farmer Address"
                     type="text"
                     value={farmerAddress}
@@ -315,18 +327,6 @@ function FarmerInputStation() {
                     fullWidth
                     required
                     input={<OutlinedInput label="Farmer Land Area" />}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Contact"
-                    type="text"
-                    value={farmerContact}
-                    onChange={(e) => setFarmerContact(e.target.value)}
-                    fullWidth
-                    required
-                    input={<OutlinedInput label="Farmer Contact" />}
                   />
                 </Grid>
 
@@ -401,13 +401,13 @@ function FarmerInputStation() {
 
                 <Grid item xs={8}>
                   <TextField
-                    label="Bank Account"
+                    label="Bank Account Number"
                     type="text"
                     value={bankAccount}
                     onChange={(e) => setBankAccount(e.target.value)}
                     fullWidth
                     required
-                    input={<OutlinedInput label="Bank Account" />}
+                    input={<OutlinedInput label="Bank Account Number" />}
                   />
                 </Grid>
 

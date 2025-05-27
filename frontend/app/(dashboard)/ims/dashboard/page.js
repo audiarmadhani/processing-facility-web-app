@@ -134,7 +134,7 @@ function InventoryManagement() {
   ];
 
   const greenBeanColumns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 190, sortable: true },
     { field: 'parentBatchNumber', headerName: 'Cherry Batch', width: 160, sortable: true },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 100, sortable: true },
@@ -192,7 +192,7 @@ function InventoryManagement() {
             <Typography variant="h5" gutterBottom>
               Cherry Inventory
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            {/* <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <FormControl sx={{ minWidth: 120 }}>
                 <InputLabel>Type</InputLabel>
                 <Select
@@ -219,8 +219,8 @@ function InventoryManagement() {
                   <MenuItem value="Processed">Processed</MenuItem>
                 </Select>
               </FormControl>
-            </Box>
-            <div style={{ height: 800, width: '100%' }}>
+            </Box> */}
+            <div style={{ height: 600, width: '100%' }}>
               <DataGrid
                 rows={filteredCherryData}
                 columns={cherryColumns}
@@ -249,7 +249,7 @@ function InventoryManagement() {
             <Typography variant="h5" gutterBottom>
               Green Bean Inventory
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            {/* <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <FormControl sx={{ minWidth: 120 }}>
                 <InputLabel>Type</InputLabel>
                 <Select
@@ -262,8 +262,8 @@ function InventoryManagement() {
                   <MenuItem value="Robusta">Robusta</MenuItem>
                 </Select>
               </FormControl>
-            </Box>
-            <div style={{ height: 800, width: '100%' }}>
+            </Box> */}
+            <div style={{ height: 600, width: '100%' }}>
               <DataGrid
                 rows={filteredGreenBeanData}
                 columns={greenBeanColumns}
