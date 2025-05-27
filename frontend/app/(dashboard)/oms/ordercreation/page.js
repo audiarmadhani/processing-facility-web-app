@@ -20,6 +20,8 @@ import {
   CardContent,
   Modal,
   Paper,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -49,7 +51,9 @@ const OrderCreation = () => {
       max_capacity: ''
     },
     price: '',
-    tax_percentage: ''
+    tax_percentage: '',
+    shipping_address: '',
+    billing_address: '',
   });
   const [loading, setLoading] = useState(false);
   const [stockLoading, setStockLoading] = useState(true);
@@ -62,6 +66,7 @@ const OrderCreation = () => {
   const [rowModesModel, setRowModesModel] = useState({});
   const [openOrderModal, setOpenOrderModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
+  const [sameBillingAddress, setSameBillingAddress] = useState(true);
 
   // Fetch initial data
   useEffect(() => {
@@ -84,9 +89,6 @@ const OrderCreation = () => {
         const ordersData = await ordersRes.json();
         const stockData = await stockRes.json();
 
-        console.log('Stock API Response:', stockData);
-
-        // Ensure arrays
         setCustomers(Array.isArray(customersData) ? customersData : []);
         setDrivers(Array.isArray(driversData) ? driversData : []);
         setOrders(Array.isArray(ordersData) ? ordersData : []);
@@ -135,6 +137,12 @@ const OrderCreation = () => {
         ...prev,
         driver_details: { ...prev.driver_details, [field]: value }
       }));
+    } else if (name === 'shipping_address' && sameBillingAddress) {
+      setFormData(prev => ({
+        ...prev,
+        shipping_address: value,
+        billing_address: value,
+      }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -143,9 +151,30 @@ const OrderCreation = () => {
       const customer = customers.find(c => c.customer_id === value);
       setSelectedCustomer(customer);
       setShowCustomerDetails(true);
+      setFormData(prev => ({
+        ...prev,
+        shipping_address: customer?.address || '',
+        billing_address: sameBillingAddress ? customer?.address || '' : prev.billing_address,
+      }));
     } else if (name === 'customer_id' && !value) {
       setShowCustomerDetails(false);
       setSelectedCustomer(null);
+      setFormData(prev => ({
+        ...prev,
+        shipping_address: '',
+        billing_address: sameBillingAddress ? '' : prev.billing_address,
+      }));
+    }
+  };
+
+  const handleSameBillingChange = (e) => {
+    const checked = e.target.checked;
+    setSameBillingAddress(checked);
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        billing_address: prev.shipping_address,
+      }));
     }
   };
 
@@ -204,7 +233,14 @@ const OrderCreation = () => {
       if (!res.ok) throw new Error('Failed to add customer');
       const customer = await res.json();
       setCustomers(prev => [...prev, customer]);
-      setFormData(prev => ({ ...prev, customer_id: customer.customer_id }));
+      setFormData(prev => ({
+        ...prev,
+        customer_id: customer.customer_id,
+        shipping_address: customer.address || '',
+        billing_address: sameBillingAddress ? customer.address || '' : prev.billing_address,
+      }));
+      setSelectedCustomer(customer);
+      setShowCustomerDetails(true);
       setRefreshCounter(prev => prev + 1);
       setSnackbar({ open: true, message: 'Customer added successfully', severity: 'success' });
     } catch (error) {
@@ -250,6 +286,14 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
       return;
     }
+    if (!formData.shipping_address) {
+      setSnackbar({ open: true, message: 'Shipping address is required', severity: 'warning' });
+      return;
+    }
+    if (!formData.billing_address) {
+      setSnackbar({ open: true, message: 'Billing address is required', severity: 'warning' });
+      return;
+    }
 
     const subtotal = parseFloat(formData.price) || 0;
     const taxPercentage = parseFloat(formData.tax_percentage) || 0;
@@ -292,6 +336,8 @@ const OrderCreation = () => {
         driver_details: formData.shipping_method === 'Customer' ? formData.driver_details : null,
         price: formData.price || '0',
         tax_percentage: formData.tax_percentage || '0',
+        shipping_address: formData.shipping_address,
+        billing_address: formData.billing_address,
         items: formData.items.map(item => ({
           batch_number: item.batch_number,
           quantity: parseFloat(item.quantity),
@@ -299,8 +345,6 @@ const OrderCreation = () => {
           product: item.product
         }))
       };
-
-      console.log('Order Payload:', orderData); // Debug payload
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
         method: 'POST',
@@ -330,6 +374,8 @@ const OrderCreation = () => {
         driver_details: formData.driver_details || null,
         price: formData.price || null,
         tax_percentage: formData.tax_percentage || null,
+        shipping_address: formData.shipping_address,
+        billing_address: formData.billing_address,
       }));
       orderListFormData.append('file', orderListBlob, `OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
@@ -353,10 +399,13 @@ const OrderCreation = () => {
         shipping_method: 'Customer', 
         driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' }, 
         price: '', 
-        tax_percentage: ''
+        tax_percentage: '',
+        shipping_address: '',
+        billing_address: '',
       });
       setShowCustomerDetails(false);
       setSelectedCustomer(null);
+      setSameBillingAddress(true);
       setRefreshCounter(prev => prev + 1);
     } catch (error) {
       console.error('Submit Error:', error);
@@ -401,7 +450,11 @@ const OrderCreation = () => {
     yOffset += 8;
     addText(`Name: ${customer ? customer.name : '-'}`, 14, yOffset);
     yOffset += 6;
-    addText(`Address: ${customer ? customer.address : '-'}`, 14, yOffset);
+    addText(`Default Address: ${customer ? customer.address : '-'}`, 14, yOffset);
+    yOffset += 6;
+    addText(`Shipping Address: ${formData.shipping_address || '-'}`, 14, yOffset);
+    yOffset += 6;
+    addText(`Billing Address: ${formData.billing_address || '-'}`, 14, yOffset);
     yOffset += 6;
     addText(`Phone: ${customer ? customer.phone : '-'}`, 14, yOffset);
     yOffset += 6;
@@ -506,7 +559,9 @@ const OrderCreation = () => {
           shipping_method: newRow.shipping_method,
           driver_details: newRow.driver_details ? JSON.parse(newRow.driver_details) : null,
           price: newRow.price.toString(),
-          tax_percentage: newRow.tax_percentage.toString()
+          tax_percentage: newRow.tax_percentage.toString(),
+          shipping_address: newRow.shipping_address,
+          billing_address: newRow.billing_address,
         }),
       });
 
@@ -535,8 +590,11 @@ const OrderCreation = () => {
         shipping_method: fullOrder.shipping_method || 'Customer',
         driver_details: fullOrder.driver_details ? JSON.parse(fullOrder.driver_details) : { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
         price: fullOrder.price || '0',
-        tax_percentage: fullOrder.tax_percentage || '0'
+        tax_percentage: fullOrder.tax_percentage || '0',
+        shipping_address: fullOrder.shipping_address || '',
+        billing_address: fullOrder.billing_address || '',
       });
+      setSameBillingAddress(fullOrder.shipping_address === fullOrder.billing_address);
       setOpenOrderModal(true);
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -548,6 +606,7 @@ const OrderCreation = () => {
   const handleCloseOrderModal = () => {
     setOpenOrderModal(false);
     setEditOrder(null);
+    setSameBillingAddress(true);
   };
 
   const handleEditInputChange = (e) => {
@@ -567,6 +626,12 @@ const OrderCreation = () => {
         ...prev,
         driver_details: { ...prev.driver_details, [field]: value }
       }));
+    } else if (name === 'shipping_address' && sameBillingAddress) {
+      setEditOrder(prev => ({
+        ...prev,
+        shipping_address: value,
+        billing_address: value,
+      }));
     } else {
       setEditOrder(prev => ({ ...prev, [name]: value }));
     }
@@ -575,9 +640,30 @@ const OrderCreation = () => {
       const customer = customers.find(c => c.customer_id === value);
       setSelectedCustomer(customer);
       setShowCustomerDetails(true);
+      setEditOrder(prev => ({
+        ...prev,
+        shipping_address: customer?.address || '',
+        billing_address: sameBillingAddress ? customer?.address || '' : prev.billing_address,
+      }));
     } else if (name === 'customer_id' && !value) {
       setShowCustomerDetails(false);
       setSelectedCustomer(null);
+      setEditOrder(prev => ({
+        ...prev,
+        shipping_address: '',
+        billing_address: sameBillingAddress ? '' : prev.billing_address,
+      }));
+    }
+  };
+
+  const handleEditSameBillingChange = (e) => {
+    const checked = e.target.checked;
+    setSameBillingAddress(checked);
+    if (checked) {
+      setEditOrder(prev => ({
+        ...prev,
+        billing_address: prev.shipping_address,
+      }));
     }
   };
 
@@ -643,6 +729,14 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
       return;
     }
+    if (!editOrder.shipping_address) {
+      setSnackbar({ open: true, message: 'Shipping address is required', severity: 'warning' });
+      return;
+    }
+    if (!editOrder.billing_address) {
+      setSnackbar({ open: true, message: 'Billing address is required', severity: 'warning' });
+      return;
+    }
 
     const subtotal = parseFloat(editOrder.price) || 0;
     const taxPercentage = parseFloat(editOrder.tax_percentage) || 0;
@@ -684,6 +778,8 @@ const OrderCreation = () => {
         driver_details: editOrder.shipping_method === 'Customer' ? editOrder.driver_details : null,
         price: editOrder.price || '0',
         tax_percentage: editOrder.tax_percentage || '0',
+        shipping_address: editOrder.shipping_address,
+        billing_address: editOrder.billing_address,
         items: editOrder.items.map(item => ({
           batch_number: item.batch_number,
           quantity: parseFloat(item.quantity),
@@ -692,7 +788,7 @@ const OrderCreation = () => {
         }))
       };
 
-      const orderRes = await fetch(`https://processing-facility-backend.com/api/orders/${editOrder.order_id}`, {
+      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${editOrder.order_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
@@ -732,22 +828,23 @@ const OrderCreation = () => {
         </Button>
       )
     },
-    { field: 'customer_id', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
+    { field: 'customer_name', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
-    { field: 'price', headerName: 'Price', width: 180, sortable: true, editable: true },
-    { field: 'tax_percentage', headerName: 'Tax %', width: 100, sortable: true, editable: true },
-    { field: 'Tax', headerName: 'Tax', width: 120, sortable: true, editable: true },
-    { field: 'grand_total', headerName: 'Grand Total', width: 180, sortable: true, editable: false },
+    { field: 'price', headerName: 'Subtotal (IDR)', width: 180, sortable: true, editable: true },
+    { field: 'tax_percentage', headerName: 'Tax (%)', width: 100, sortable: true, editable: true },
+    { field: 'tax', headerName: 'Tax (IDR)', width: 120, sortable: true, editable: false },
+    { field: 'grand_total', headerName: 'Grand Total (IDR)', width: 180, sortable: true, editable: false },
     { field: 'created_at', headerName: 'Date', width: 150, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
-    { field: 'document_url', headerName: 'Document', width: 120, sortable: true, editable: true },
-    // { field: 'customer_id', headerName: 'Customer Address', width: 200, sortable: true, editable: false },
+    { field: 'shipping_address', headerName: 'Shipping Address', width: 200, sortable: true, editable: true },
+    { field: 'billing_address', headerName: 'Billing Address', width: 200, sortable: true, editable: true },
+    { field: 'document_url', headerName: 'Document', width: 120, sortable: true, editable: false },
   ];
 
   const ordersRows = (Array.isArray(orders) ? orders : []).map(order => ({
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
-    customer_id: order?.customer_id || '-',
+    customer_name: customers.find(c => c.customer_id === order.customer_id)?.name || '-',
     shipping_method: order?.shipping_method || '-',
     price: order?.price || '0',
     tax_percentage: order?.tax_percentage || '0',
@@ -755,8 +852,9 @@ const OrderCreation = () => {
     grand_total: order?.grand_total || '0',
     created_at: order?.created_at || new Date().toISOString().split('T')[0],
     status: order?.status || 'Pending',
-    // customer_details: order?.customer_details || '-',
-    document_url: order?.documents?.find(doc => doc.type === 'Order List')?.order_id || '-',
+    shipping_address: order?.shipping_address || '-',
+    billing_address: order?.billing_address || '-',
+    document_url: order?.documents?.find(doc => doc.type === 'Order List')?.drive_url || '-',
   }));
 
   const customerListColumns = [
@@ -769,15 +867,15 @@ const OrderCreation = () => {
     { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
   ];
 
-  const customerListRows = (Array.isArray(customers) ? customers : []).map(item => ({
-    id: item.customer_id || '-',
-    name: item.name || '-',
-    type: item.type || '-',
-    quantity: item.quantity || '-',
-    country: item.country || '-',
-    state: item.state || '-',
-    city: item.city || '-',
-    qty: item.quantity || '-',
+  const customerListRows = (Array.isArray(customers) ? customers : []).map(customer => ({
+    id: customer?.customer_id || '-',
+    name: customer?.name || '-',
+    email: customer?.email || '-',
+    phone: customer?.phone || '-',
+    country: customer?.country || '-',
+    state: customer?.state || '-',
+    city: customer?.city || '-',
+    zip_code: customer?.zip_code || '-',
   }));
 
   const driversListColumns = [
@@ -789,20 +887,18 @@ const OrderCreation = () => {
   ];
 
   const driversListRows = (Array.isArray(drivers) ? drivers : []).map(driver => ({
-    id: driver?.id || '-',
-    name: driver.name || '-',
-    driver_id: driver?.id || '-',
-    type: driver?.type || '-',
-    capacity: driver?.capacity || '-',
-    max: driver?.max || '-',
-    availability_status: driver?.status || 'Available',
+    id: driver?.driver_id || '-',
+    name: driver?.name || '-',
+    vehicle_number: driver?.vehicle_number || '-',
+    vehicle_type: driver?.vehicle_type || '-',
+    max_capacity: driver?.max_capacity || '-',
+    availability_status: driver?.availability_status || 'Available',
   }));
 
+  if (status === 'loading') return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 5 }} />;
 
-  if (status === 'loading') return <CircularProgress sx={{ size: 'large', display: 'inline-block', margin: 'auto', marginTop: 5 }} />;
-
-  if (!session?.user || !['admin', 'manager', 'preprocessing']?.includes(session.user.role)) {
-    return <Typography variant="h6" sx={{ textAlign: 'center', marginTop: 5 }}>Access Denied</Typography>;
+  if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
+    return <Typography variant="h6" sx={{ textAlign: 'center', mt: 5 }}>Access Denied</Typography>;
   }
 
   return (
@@ -824,7 +920,7 @@ const OrderCreation = () => {
                       {customer.name}
                     </MenuItem>
                   ))}
-                  <MenuItem >
+                  <MenuItem>
                     <Button
                       fullWidth
                       variant="text"
@@ -848,7 +944,7 @@ const OrderCreation = () => {
                     sx={{ mb: 2 }}
                   />
                   <TextField
-                    label="Address"
+                    label="Default Address"
                     value={selectedCustomer.address || '-'}
                     InputProps={{ readOnly: true }}
                     fullWidth
@@ -897,6 +993,34 @@ const OrderCreation = () => {
                   />
                 </Box>
               )}
+
+              <TextField
+                fullWidth
+                label="Shipping Address"
+                name="shipping_address"
+                value={formData.shipping_address}
+                onChange={handleInputChange}
+                sx={{ mb: 2 }}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={sameBillingAddress}
+                    onChange={handleSameBillingChange}
+                  />
+                }
+                label="Billing address same as shipping address"
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Billing Address"
+                name="billing_address"
+                value={formData.billing_address}
+                onChange={handleInputChange}
+                disabled={sameBillingAddress}
+                sx={{ mb: 2 }}
+              />
 
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Shipping Method</InputLabel>
@@ -1252,7 +1376,7 @@ const OrderCreation = () => {
                       sx={{ mb: 2 }}
                     />
                     <TextField
-                      label="Address"
+                      label="Default Address"
                       value={selectedCustomer.address || '-'}
                       InputProps={{ readOnly: true }}
                       fullWidth
@@ -1301,6 +1425,34 @@ const OrderCreation = () => {
                     />
                   </Box>
                 )}
+
+                <TextField
+                  fullWidth
+                  label="Shipping Address"
+                  name="shipping_address"
+                  value={editOrder.shipping_address}
+                  onChange={handleEditInputChange}
+                  sx={{ mb: 2 }}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={sameBillingAddress}
+                      onChange={handleEditSameBillingChange}
+                    />
+                  }
+                  label="Billing address same as shipping address"
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Billing Address"
+                  name="billing_address"
+                  value={editOrder.billing_address}
+                  onChange={handleEditInputChange}
+                  disabled={sameBillingAddress}
+                  sx={{ mb: 2 }}
+                />
 
                 <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Shipping Method</InputLabel>
