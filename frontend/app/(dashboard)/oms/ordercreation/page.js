@@ -745,7 +745,7 @@ const OrderCreation = () => {
   ];
 
   const ordersRows = (Array.isArray(orders) ? orders : []).map(order => ({
-    // id: order?.order_id || '-',
+    id: order?.order_id || '-',
     order_id: order?.order_id || '-',
     customer_id: order?.customer_id || '-',
     shipping_method: order?.shipping_method || '-',
