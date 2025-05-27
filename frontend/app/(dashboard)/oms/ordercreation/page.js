@@ -740,11 +740,12 @@ const OrderCreation = () => {
     { field: 'grand_total', headerName: 'Grand Total', width: 180, sortable: true, editable: false },
     { field: 'created_at', headerName: 'Date', width: 150, sortable: true, editable: false },
     { field: 'status', headerName: 'Status', width: 120, sortable: true, editable: true },
-    { field: 'customer_id', headerName: 'Customer Address', width: 200, sortable: true, editable: false },
+    { field: 'document_url', headerName: 'Document', width: 120, sortable: true, editable: true },
+    // { field: 'customer_id', headerName: 'Customer Address', width: 200, sortable: true, editable: false },
   ];
 
   const ordersRows = (Array.isArray(orders) ? orders : []).map(order => ({
-    id: order?.order_id || '-',
+    // id: order?.order_id || '-',
     order_id: order?.order_id || '-',
     customer_id: order?.customer_id || '-',
     shipping_method: order?.shipping_method || '-',
@@ -754,7 +755,7 @@ const OrderCreation = () => {
     grand_total: order?.grand_total || '0',
     created_at: order?.created_at || new Date().toISOString().split('T')[0],
     status: order?.status || 'Pending',
-    customer_details: order?.customer_details || '-',
+    // customer_details: order?.customer_details || '-',
     document_url: order?.documents?.find(doc => doc.type === 'Order List')?.order_id || '-',
   }));
 
