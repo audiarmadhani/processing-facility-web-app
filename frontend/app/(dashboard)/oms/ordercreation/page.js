@@ -38,7 +38,7 @@ const OrderCreation = () => {
   const [customers, setCustomers] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [stock, setStock] = useState([]);
+  const [stock, setStock] = useState([]); // Now stores /batches data
   const [formData, setFormData] = useState({
     customer_id: '',
     driver_id: '',
@@ -48,7 +48,7 @@ const OrderCreation = () => {
       name: '',
       vehicle_number_plate: '',
       vehicle_type: '',
-      max_capacity: ''
+      max_capacity: '',
     },
     price: '',
     tax_percentage: '',
@@ -74,25 +74,26 @@ const OrderCreation = () => {
       setLoading(true);
       setStockLoading(true);
       try {
-        const [customersRes, driversRes, ordersRes, stockRes] = await Promise.all([
+        const [customersRes, driversRes, ordersRes, batchesRes] = await Promise.all([
           fetch('https://processing-facility-backend.onrender.com/api/customers'),
           fetch('https://processing-facility-backend.onrender.com/api/drivers'),
           fetch('https://processing-facility-backend.onrender.com/api/orders'),
-          fetch('https://processing-facility-backend.onrender.com/api/postprocessing')
+          fetch('https://processing-facility-backend.onrender.com/api/batches'), // Changed to /batches
         ]);
 
-        if (!customersRes.ok || !driversRes.ok || !ordersRes.ok || !stockRes.ok) 
+        if (!customersRes.ok || !driversRes.ok || !ordersRes.ok || !batchesRes.ok) {
           throw new Error('Failed to fetch initial data');
+        }
 
         const customersData = await customersRes.json();
         const driversData = await driversRes.json();
         const ordersData = await ordersRes.json();
-        const stockData = await stockRes.json();
+        const batchesData = await batchesRes.json();
 
         setCustomers(Array.isArray(customersData) ? customersData : []);
         setDrivers(Array.isArray(driversData) ? driversData : []);
         setOrders(Array.isArray(ordersData) ? ordersData : []);
-        setStock(Array.isArray(stockData.allRows) ? stockData.allRows : []);
+        setStock(Array.isArray(batchesData) ? batchesData : []); // Store batches data
       } catch (error) {
         console.error('Fetch Error:', error);
         setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -105,53 +106,39 @@ const OrderCreation = () => {
     fetchInitialData();
   }, [refreshCounter]);
 
-  // Calculate remaining weight for a batch
-  const getRemainingWeight = (batchNumber, items, currentIndex = -1) => {
-    const batch = stock.find(s => s.batchNumber === batchNumber);
-    if (!batch) return 0;
-    const usedWeight = items
-      .reduce((sum, item, index) => {
-        if (index !== currentIndex && item.batch_number === batchNumber) {
-          return sum + (parseFloat(item.quantity) || 0);
-        }
-        return sum;
-      }, 0);
-    const remaining = batch.weight - usedWeight;
-    return Math.max(remaining, 0);
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'shipping_method') {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         shipping_method: value,
         driver_id: value === 'Self' ? '' : prev.driver_id,
-        driver_details: value === 'Self' 
-          ? { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' } 
-          : prev.driver_details
+        driver_details:
+          value === 'Self'
+            ? { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' }
+            : prev.driver_details,
       }));
     } else if (name.startsWith('driver_details.')) {
       const field = name.split('.')[1];
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        driver_details: { ...prev.driver_details, [field]: value }
+        driver_details: { ...prev.driver_details, [field]: value },
       }));
     } else if (name === 'shipping_address' && sameBillingAddress) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         shipping_address: value,
         billing_address: value,
       }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
     if (name === 'customer_id' && value) {
-      const customer = customers.find(c => c.customer_id === value);
+      const customer = customers.find((c) => c.customer_id === value);
       setSelectedCustomer(customer);
       setShowCustomerDetails(true);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         shipping_address: customer?.address || '',
         billing_address: sameBillingAddress ? customer?.address || '' : prev.billing_address,
@@ -159,7 +146,7 @@ const OrderCreation = () => {
     } else if (name === 'customer_id' && !value) {
       setShowCustomerDetails(false);
       setSelectedCustomer(null);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         shipping_address: '',
         billing_address: sameBillingAddress ? '' : prev.billing_address,
@@ -171,7 +158,7 @@ const OrderCreation = () => {
     const checked = e.target.checked;
     setSameBillingAddress(checked);
     if (checked) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         billing_address: prev.shipping_address,
       }));
@@ -181,34 +168,47 @@ const OrderCreation = () => {
   const handleItemChange = (index, field, value) => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
-    
+
     if (field === 'batch_number') {
-      const batch = stock.find(s => s.batchNumber === value);
-      newItems[index].product = batch 
-        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}` 
+      const batch = stock.find((s) => s.batchNumber === value);
+      newItems[index].product = batch
+        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}`
         : '';
     }
-    
+
     if (field === 'quantity' && newItems[index].batch_number) {
-      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
-      if (parseFloat(value) > remainingWeight) {
-        setSnackbar({ 
-          open: true, 
-          message: `Quantity exceeds available stock (${remainingWeight.toFixed(2)} kg for ${newItems[index].batch_number})`, 
-          severity: 'error' 
+      const batch = stock.find((s) => s.batchNumber === newItems[index].batch_number);
+      const remainingQuantity = batch ? parseFloat(batch.remaining_quantity) || 0 : 0;
+      const totalUsedInForm = newItems.reduce((sum, item, i) => {
+        if (i !== index && item.batch_number === newItems[index].batch_number) {
+          return sum + (parseFloat(item.quantity) || 0);
+        }
+        return sum;
+      }, 0);
+      const availableAfterForm = remainingQuantity - totalUsedInForm;
+      if (parseFloat(value) > availableAfterForm) {
+        setSnackbar({
+          open: true,
+          message: `Quantity exceeds available stock (${availableAfterForm.toFixed(2)} kg for ${newItems[index].batch_number})`,
+          severity: 'error',
         });
         newItems[index].quantity = '';
       }
     }
-    
-    setFormData(prev => ({ ...prev, items: newItems }));
-    const subtotal = newItems.reduce((sum, item) => 
-      sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setFormData(prev => ({ ...prev, price: subtotal.toString() }));
+
+    setFormData((prev) => ({ ...prev, items: newItems }));
+    const subtotal = newItems.reduce(
+      (sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)),
+      0
+    );
+    setFormData((prev) => ({ ...prev, price: subtotal.toFixed(2) }));
   };
 
   const addItem = () => {
-    setFormData(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }] }));
+    setFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }],
+    }));
   };
 
   const removeItem = (index) => {
@@ -217,10 +217,72 @@ const OrderCreation = () => {
       return;
     }
     const newItems = formData.items.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, items: newItems }));
-    const subtotal = newItems.reduce((sum, item) => 
-      sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setFormData(prev => ({ ...prev, price: subtotal.toString() }));
+    setFormData((prev) => ({ ...prev, items: newItems }));
+    const subtotal = newItems.reduce(
+      (sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)),
+      0
+    );
+    setFormData((prev) => ({ ...prev, price: subtotal.toFixed(2) }));
+  };
+
+  const handleEditItemChange = (index, field, value) => {
+    const newItems = [...editOrder.items];
+    newItems[index][field] = value;
+
+    if (field === 'batch_number') {
+      const batch = stock.find((s) => s.batchNumber === value);
+      newItems[index].product = batch
+        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}`
+        : '';
+    }
+
+    if (field === 'quantity' && newItems[index].batch_number) {
+      const batch = stock.find((s) => s.batchNumber === newItems[index].batch_number);
+      const remainingQuantity = batch ? parseFloat(batch.remaining_quantity) || 0 : 0;
+      const totalUsedInForm = newItems.reduce((sum, item, i) => {
+        if (i !== index && item.batch_number === newItems[index].batch_number) {
+          return sum + (parseFloat(item.quantity) || 0);
+        }
+        return sum;
+      }, 0);
+      const availableAfterForm = remainingQuantity - totalUsedInForm;
+      if (parseFloat(value) > availableAfterForm) {
+        setSnackbar({
+          open: true,
+          message: `Quantity exceeds available stock (${availableAfterForm.toFixed(2)} kg for ${newItems[index].batch_number})`,
+          severity: 'error',
+        });
+        newItems[index].quantity = '';
+      }
+    }
+
+    setEditOrder((prev) => ({ ...prev, items: newItems }));
+    const subtotal = newItems.reduce(
+      (sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)),
+      0
+    );
+    setEditOrder((prev) => ({ ...prev, price: subtotal.toFixed(2) }));
+  };
+
+  const addEditItem = () => {
+    setEditOrder((prev) => ({
+      ...prev,
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }],
+    }));
+  };
+
+  const removeEditItem = (index) => {
+    if (editOrder.items.length === 1) {
+      setSnackbar({ open: true, message: 'At least one item is required', severity: 'warning' });
+      return;
+    }
+    const newItems = editOrder.items.filter((_, i) => i !== index);
+    setEditOrder((prev) => ({ ...prev, items: newItems }));
+    const subtotal = newItems.reduce(
+      (sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)),
+      0
+    );
+    setEditOrder((prev) => ({ ...prev, price: subtotal.toFixed(2) }));
   };
 
   const handleSaveCustomer = async (newCustomer) => {
@@ -667,50 +729,50 @@ const OrderCreation = () => {
     }
   };
 
-  const handleEditItemChange = (index, field, value) => {
-    const newItems = [...editOrder.items];
-    newItems[index][field] = value;
+  // const handleEditItemChange = (index, field, value) => {
+  //   const newItems = [...editOrder.items];
+  //   newItems[index][field] = value;
 
-    if (field === 'batch_number') {
-      const batch = stock.find(s => s.batchNumber === value);
-      newItems[index].product = batch 
-        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}` 
-        : '';
-    }
+  //   if (field === 'batch_number') {
+  //     const batch = stock.find(s => s.batchNumber === value);
+  //     newItems[index].product = batch 
+  //       ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}` 
+  //       : '';
+  //   }
 
-    if (field === 'quantity' && newItems[index].batch_number) {
-      const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
-      if (parseFloat(value) > remainingWeight) {
-        setSnackbar({ 
-          open: true, 
-          message: `Quantity exceeds available stock (${remainingWeight.toFixed(2)} kg for ${newItems[index].batch_number})`, 
-          severity: 'error' 
-        });
-        newItems[index].quantity = '';
-      }
-    }
+  //   if (field === 'quantity' && newItems[index].batch_number) {
+  //     const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
+  //     if (parseFloat(value) > remainingWeight) {
+  //       setSnackbar({ 
+  //         open: true, 
+  //         message: `Quantity exceeds available stock (${remainingWeight.toFixed(2)} kg for ${newItems[index].batch_number})`, 
+  //         severity: 'error' 
+  //       });
+  //       newItems[index].quantity = '';
+  //     }
+  //   }
 
-    setEditOrder(prev => ({ ...prev, items: newItems }));
-    const subtotal = newItems.reduce((sum, item) => 
-      sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setEditOrder(prev => ({ ...prev, price: subtotal.toString() }));
-  };
+  //   setEditOrder(prev => ({ ...prev, items: newItems }));
+  //   const subtotal = newItems.reduce((sum, item) => 
+  //     sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+  //   setEditOrder(prev => ({ ...prev, price: subtotal.toString() }));
+  // };
 
-  const addEditItem = () => {
-    setEditOrder(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }] }));
-  };
+  // const addEditItem = () => {
+  //   setEditOrder(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }] }));
+  // };
 
-  const removeEditItem = (index) => {
-    if (editOrder.items.length === 1) {
-      setSnackbar({ open: true, message: 'At least one item is required', severity: 'warning' });
-      return;
-    }
-    const newItems = editOrder.items.filter((_, i) => i !== index);
-    setEditOrder(prev => ({ ...prev, items: newItems }));
-    const subtotal = newItems.reduce((sum, item) => 
-      sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-    setEditOrder(prev => ({ ...prev, price: subtotal.toString() }));
-  };
+  // const removeEditItem = (index) => {
+  //   if (editOrder.items.length === 1) {
+  //     setSnackbar({ open: true, message: 'At least one item is required', severity: 'warning' });
+  //     return;
+  //   }
+  //   const newItems = editOrder.items.filter((_, i) => i !== index);
+  //   setEditOrder(prev => ({ ...prev, items: newItems }));
+  //   const subtotal = newItems.reduce((sum, item) => 
+  //     sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+  //   setEditOrder(prev => ({ ...prev, price: subtotal.toString() }));
+  // };
 
   const handleSaveEdit = async () => {
     if (!editOrder.customer_id) {
