@@ -277,7 +277,7 @@ function FarmerInputStation() {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid item xs={6}>
                   <Autocomplete
                     options={kabupatenList}
                     value={kabupaten}
@@ -286,7 +286,7 @@ function FarmerInputStation() {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid item xs={6}>
                   <Autocomplete
                     options={kecamatanList}
                     value={kecamatan}
@@ -296,13 +296,25 @@ function FarmerInputStation() {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid item xs={6}>
                   <Autocomplete
                     options={desaList}
                     value={desa}
                     onChange={handleDesaChange}
                     disabled={!kecamatan}
                     renderInput={(params) => <TextField {...params} label="Desa" />}
+                  />
+                </Grid>
+
+                <Grid item xs={6}>
+                  <TextField
+                    label="Farmer Land Area"
+                    type="text"
+                    value={farmerLandArea}
+                    onChange={(e) => setFarmerLandArea(e.target.value)}
+                    fullWidth
+                    required
+                    input={<OutlinedInput label="Farmer Land Area" />}
                   />
                 </Grid>
 
@@ -318,19 +330,7 @@ function FarmerInputStation() {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Land Area"
-                    type="text"
-                    value={farmerLandArea}
-                    onChange={(e) => setFarmerLandArea(e.target.value)}
-                    fullWidth
-                    required
-                    input={<OutlinedInput label="Farmer Land Area" />}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
+                <Grid item xs={6}>
                   <FormControl fullWidth required>
                     <InputLabel id="contract-label">Land Contract</InputLabel>
                     <Select
@@ -346,7 +346,7 @@ function FarmerInputStation() {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12}>
+                <Grid item xs={6}>
                   <FormControl fullWidth required>
                     <InputLabel id="type-label">Farm Type</InputLabel>
                     <Select
@@ -381,19 +381,7 @@ function FarmerInputStation() {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12}>
-                  <TextField
-                    label="Bank Account"
-                    type="text"
-                    value={bankAccount}
-                    onChange={(e) => setBankAccount(e.target.value)}
-                    fullWidth
-                    required
-                    input={<OutlinedInput label="Bank Account" />}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
+                <Grid item xs={4}>
                   <Autocomplete
                     freeSolo
                     options={bankOptions}
@@ -408,6 +396,18 @@ function FarmerInputStation() {
                         required
                       />
                     )}
+                  />
+                </Grid>
+
+                <Grid item xs={8}>
+                  <TextField
+                    label="Bank Account"
+                    type="text"
+                    value={bankAccount}
+                    onChange={(e) => setBankAccount(e.target.value)}
+                    fullWidth
+                    required
+                    input={<OutlinedInput label="Bank Account" />}
                   />
                 </Grid>
 
