@@ -9,22 +9,34 @@ import {
 } from '@mui/material';
 
 // Chart imports
-// import TotalWeightBags from './charts/TotalBarChart';
-// import TotalCost from './charts/TotalCostChart';
-import { 
-  ArabicaWeightMoM, RobustaWeightMoM, 
-  ArabicaCostMoM, RobustaCostMoM,
-  ArabicaAvgCostMoM, RobustaAvgCostMoM, 
-  ArabicaProcessedMoM,RobustaProcessedMoM,
-  ArabicaProductionMoM, RobustaProductionMoM, 
-  ArabicaCategoryChart, RobustaCategoryChart, 
-  ArabicaCherryQualityChart, RobustaCherryQualityChart,
-  ArabicaFarmersContribution, RobustaFarmersContribution, 
-  ArabicaSankeyChart, RobustaSankeyChart, 
-  ArabicaAchievement, RobustaAchievement 
-} from './charts';
-const ArabicaMap = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
-const RobustaMap = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
+import TotalBatchesChart from './charts/TotalBatchesChart'; // Adjust the path as necessary
+import TotalCostChart from './charts/TotalCostChart'; // Adjust the path as necessary
+import ArabicaWeightMoM from './charts/ArabicaWeightMoM'; // Adjust the path as necessary
+import RobustaWeightMoM from './charts/RobustaWeightMoM'; // Adjust the path as necessary
+import ArabicaCostMoM from './charts/ArabicaCostMoM'; // Adjust the path as necessary
+import RobustaCostMoM from './charts/RobustaCostMoM'; // Adjust the path as necessary
+import ArabicaAvgCostMoM from './charts/ArabicaAvgCostMoM'; // Adjust the path as necessary
+import RobustaAvgCostMoM from './charts/RobustaAvgCostMoM'; // Adjust the path as necessary
+import ArabicaProcessedMoM from './charts/ArabicaProcessedMoM'; // Adjust the path as necessary
+import RobustaProcessedMoM from './charts/RobustaProcessedMoM'; // Adjust the path as necessary
+import ArabicaProductionMoM from './charts/ArabicaProductionMoM'; // Adjust the path as necessary
+import RobustaProductionMoM from './charts/RobustaProductionMoM'; // Adjust the path as necessary
+import ArabicaCategoryChart from './charts/ArabicaCategoryChart'; // Adjust the path as necessary
+import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the path as necessary
+// import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
+// import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
+import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
+import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
+import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
+import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
+import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
+import RobustaSankeyChart from './charts/RobustaSankeyChart';
+import ArabicaAchievementChart from './charts/ArabicaAchievement';
+import RobustaAchievementChart from './charts/RobustaAchievement';
+
+
+const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
+const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
 const timeframes = [
   { value: 'this_week', label: 'This Week' },
@@ -148,7 +160,7 @@ function Dashboard() {
         { title: 'Daily Production', component: <ArabicaCategoryChart timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Target Achievement', component: <ArabicaAchievement timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Farmers Contribution', component: <ArabicaFarmersContribution timeframe={timeframe} />, xs: 12, md: 6 },
-        { title: 'Cherry Quality', component: <ArabicaCherryQualityChart timeframe={timeframe} />, xs: 12, md: 6 },
+        { title: 'Cherry Quality', component: <ArabicaCherryQualitybyDate timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Coverage Map', component: <ArabicaMap />, xs: 12, md: 12 },
         { title: 'Sankey Chart', component: <ArabicaSankeyChart height="100%" />, xs: 12, md: 12, sx: { height: { xs: '300px', sm: '400px', md: '500px', lg: '600px', xl: '700px' } } },
       ],
@@ -173,7 +185,7 @@ function Dashboard() {
         { title: 'Daily Production', component: <RobustaCategoryChart timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Target Achievement', component: <RobustaAchievement timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Farmers Contribution', component: <RobustaFarmersContribution timeframe={timeframe} />, xs: 12, md: 6 },
-        { title: 'Cherry Quality', component: <RobustaCherryQualityChart timeframe={timeframe} />, xs: 12, md: 6 },
+        { title: 'Cherry Quality', component: <RobustaCherryQualitybyDate timeframe={timeframe} />, xs: 12, md: 6 },
         { title: 'Coverage Map', component: <RobustaMap />, xs: 12, md: 12 },
         { title: 'Sankey Chart', component: <RobustaSankeyChart height="100%" />, xs: 12, md: 12, sx: { height: { xs: '300px', sm: '400px', md: '500px', lg: '600px', xl: '700px' } } },
       ],
