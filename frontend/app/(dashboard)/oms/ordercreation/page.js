@@ -1217,14 +1217,11 @@ const OrderCreation = () => {
                         {stockLoading ? (
                           <MenuItem disabled>Loading...</MenuItem>
                         ) : Array.isArray(stock) && stock.length > 0 ? (
-                          stock.map(batch => {
-                            const remainingWeight = getRemainingWeight(batch.batchNumber, formData.items, index);
-                            return (
-                              <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                {batch.batchNumber} ({remainingWeight.toFixed(2)} kg)
-                              </MenuItem>
-                            );
-                          })
+                          stock.map((batch) => (
+                            <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                              {`${batch.batchNumber} (${batch.quality || 'Standard'}, ${batch.processingType || 'Unknown'}, ${batch.remaining_quantity.toFixed(2)} kg)`}
+                            </MenuItem>
+                          ))
                         ) : (
                           <MenuItem disabled>No stock available</MenuItem>
                         )}
@@ -1236,6 +1233,7 @@ const OrderCreation = () => {
                       value={item.quantity}
                       onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                       sx={{ mr: 2, width: 100 }}
+                      inputProps={{ min: 0, step: 0.01 }}
                     />
                     <TextField
                       label="Price (IDR)"
@@ -1243,6 +1241,7 @@ const OrderCreation = () => {
                       value={item.price}
                       onChange={(e) => handleItemChange(index, 'price', e.target.value)}
                       sx={{ mr: 2, width: 150 }}
+                      inputProps={{ min: 0, step: 0.01 }}
                     />
                     <IconButton
                       onClick={() => removeItem(index)}
@@ -1254,7 +1253,9 @@ const OrderCreation = () => {
                     </IconButton>
                   </Box>
                 ))}
-                <Button variant="outlined" onClick={addItem} fullWidth sx={{ mb: 2 }}>Add Another Item</Button>
+                <Button variant="outlined" onClick={addItem} fullWidth sx={{ mb: 2 }}>
+                  Add Another Item
+                </Button>
               </Box>
 
               <Divider sx={{ mb: 2 }} />
@@ -1264,7 +1265,11 @@ const OrderCreation = () => {
                   fullWidth
                   label="Subtotal (IDR)"
                   name="price"
-                  value={formData.price ? Number(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : ''}
+                  value={
+                    formData.price
+                      ? Number(formData.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                      : ''
+                  }
                   InputProps={{ readOnly: true }}
                   sx={{ mb: 2 }}
                 />
@@ -1276,13 +1281,17 @@ const OrderCreation = () => {
                   onChange={handleInputChange}
                   type="number"
                   sx={{ mb: 2 }}
+                  inputProps={{ min: 0, max: 100, step: 0.1 }}
                 />
                 <TextField
                   fullWidth
                   label="Grand Total (IDR)"
                   value={
                     formData.price && formData.tax_percentage
-                      ? (Number(formData.price || 0) * (1 + Number(formData.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                      ? (Number(formData.price || 0) * (1 + Number(formData.tax_percentage || 0) / 100)).toLocaleString(
+                          'id-ID',
+                          { style: 'currency', currency: 'IDR' }
+                        )
                       : ''
                   }
                   InputProps={{ readOnly: true }}
