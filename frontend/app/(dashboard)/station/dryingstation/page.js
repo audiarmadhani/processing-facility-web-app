@@ -3,46 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import {
-  Button,
-  Typography,
-  Snackbar,
-  Alert,
-  Grid,
-  Card,
-  CardContent,
-  CircularProgress,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
+  Button, Typography, Snackbar, Alert, Grid, Card, CardContent, CircularProgress, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ScatterController,
-} from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ScatterController
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const DryingStation = () => {
   const { data: session, status } = useSession();
@@ -55,33 +23,46 @@ const DryingStation = () => {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [dryingMeasurements, setDryingMeasurements] = useState([]);
   const [newMoisture, setNewMoisture] = useState('');
+  const [greenhouseData, setGreenhouseData] = useState({});
+  const [openEnvDialog, setOpenEnvDialog] = useState(false);
+  const [historicalEnvData, setHistoricalEnvData] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState(null);
+
+  const dryingAreas = ["Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", "Drying Area 5", "Drying Room"];
+  const deviceMapping = {
+    "Drying Area 1": "GH_SENSOR_1",
+    "Drying Area 2": "GH_SENSOR_2",
+    "Drying Area 3": "GH_SENSOR_3",
+    "Drying Area 4": "GH_SENSOR_4",
+    "Drying Area 5": "GH_SENSOR_5",
+    "Drying Room": "GH_SENSOR_6" // Example mapping, adjust as needed
+  };
 
   const fetchDryingData = async () => {
     setIsLoading(true);
     try {
-      const qcResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
-      if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
-      const qcResult = await qcResponse.json();
+      const [qcResponse, dryingResponse, greenhouseResponse] = await Promise.all([
+        fetch('https://processing-facility-backend.onrender.com/api/qc'),
+        fetch('https://processing-facility-backend.onrender.com/api/drying-data'),
+        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest')
+      ]);
+      if (!qcResponse.ok || !dryingResponse.ok || !greenhouseResponse.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const [qcResult, dryingDataRaw, greenhouseResult] = await Promise.all([
+        qcResponse.json(),
+        dryingResponse.json(),
+        greenhouseResponse.json()
+      ]);
       const pendingPreprocessingData = qcResult.allRows || [];
-
-      const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
-      if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
-      const dryingDataRaw = await dryingResponse.json();
 
       const formattedData = pendingPreprocessingData.map(batch => {
         const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber);
         const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-        const status = latestEntry
-          ? latestEntry.exited_at
-            ? 'Dried'
-            : 'In Drying'
-          : 'Not in Drying';
-        const dryingArea = latestEntry ? latestEntry.dryingArea : 'N/A';
-
         return {
           ...batch,
-          status,
-          dryingArea,
+          status: latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying',
+          dryingArea: latestEntry?.dryingArea || 'N/A',
           startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
           endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
           weight: batch.weight || 'N/A',
@@ -89,14 +70,17 @@ const DryingStation = () => {
           producer: batch.producer || 'N/A',
           productLine: batch.productLine || 'N/A',
           processingType: batch.processingType || 'N/A',
-          quality: batch.quality || 'N/A',
+          quality: batch.quality || 'N/A'
         };
       });
 
       setDryingData(formattedData);
+      setGreenhouseData(greenhouseResult.reduce((acc, { device_id, temperature, humidity }) => ({
+        ...acc,
+        [device_id]: { temperature: temperature || 0, humidity: humidity || 0 }
+      }), {}));
     } catch (error) {
-      console.error('Error fetching drying data:', error);
-      setSnackbarMessage(error.message || 'Error fetching data. Please try again.');
+      setSnackbarMessage(error.message || 'Error fetching data');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     } finally {
@@ -111,8 +95,20 @@ const DryingStation = () => {
       const data = await response.json();
       setDryingMeasurements(data);
     } catch (error) {
-      console.error('Error fetching drying measurements:', error);
       setSnackbarMessage(error.message || 'Failed to fetch drying measurements');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  };
+
+  const fetchHistoricalEnvData = async (device_id) => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/greenhouse-historical/${device_id}`);
+      if (!response.ok) throw new Error('Failed to fetch historical environmental data');
+      const data = await response.json();
+      setHistoricalEnvData(data);
+    } catch (error) {
+      setSnackbarMessage(error.message || 'Failed to fetch historical environmental data');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
@@ -120,17 +116,16 @@ const DryingStation = () => {
 
   const handleAddMoisture = async () => {
     if (!newMoisture || isNaN(newMoisture) || newMoisture < 0 || newMoisture > 100) {
-      setSnackbarMessage('Please enter a valid moisture value (0-100)');
+      setSnackbarMessage('Enter a valid moisture value (0-100)');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
-
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-measurement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batchNumber: selectedBatch.batchNumber, moisture: parseFloat(newMoisture) }),
+        body: JSON.stringify({ batchNumber: selectedBatch.batchNumber, moisture: parseFloat(newMoisture) })
       });
       if (!response.ok) throw new Error('Failed to save drying measurement');
       const result = await response.json();
@@ -140,7 +135,6 @@ const DryingStation = () => {
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
     } catch (error) {
-      console.error('Error adding drying measurement:', error);
       setSnackbarMessage(error.message || 'Failed to add drying measurement');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -149,24 +143,22 @@ const DryingStation = () => {
 
   useEffect(() => {
     fetchDryingData();
-    const intervalId = setInterval(() => {
-      fetchDryingData();
-    }, 300000); // 5 minutes
+    const intervalId = setInterval(fetchDryingData, 300000); // 5 minutes
     return () => clearInterval(intervalId);
   }, []);
 
-  const handleRefreshData = () => {
-    fetchDryingData();
-  };
-
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-  };
+  const handleRefreshData = () => fetchDryingData();
 
   const handleDetailsClick = (batch) => {
     setSelectedBatch(batch);
     fetchDryingMeasurements(batch.batchNumber);
     setOpenDialog(true);
+  };
+
+  const handleEnvDetailsClick = (device_id) => {
+    setSelectedDevice(device_id);
+    fetchHistoricalEnvData(device_id);
+    setOpenEnvDialog(true);
   };
 
   const handleCloseDialog = () => {
@@ -176,52 +168,37 @@ const DryingStation = () => {
     setNewMoisture('');
   };
 
+  const handleCloseEnvDialog = () => {
+    setOpenEnvDialog(false);
+    setSelectedDevice(null);
+    setHistoricalEnvData([]);
+  };
+
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
     {
       field: 'status',
       headerName: 'Status',
       width: 100,
-      renderCell: (params) => {
-        const status = params.value;
-        let color;
-        switch (status) {
-          case 'In Drying':
-            color = 'primary';
-            break;
-          case 'Dried':
-            color = 'success';
-            break;
-          case 'Not in Drying':
-            color = 'default';
-            break;
-          default:
-            color = 'default';
-        }
-        return (
-          <Chip
-            label={status}
-            color={color}
-            size="small"
-            sx={{ borderRadius: '16px', fontWeight: 'medium' }}
-          />
-        );
-      },
+      renderCell: ({ value }) => (
+        <Chip
+          label={value}
+          color={value === 'In Drying' ? 'primary' : value === 'Dried' ? 'success' : 'default'}
+          size="small"
+          sx={{ borderRadius: '16px', fontWeight: 'medium' }}
+        />
+      )
     },
     {
       field: 'details',
       headerName: 'Details',
       width: 100,
       sortable: false,
-      renderCell: (params) => (
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleDetailsClick(params.row)}
-        >
+      renderCell: ({ row }) => (
+        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(row)}>
           Details
         </Button>
-      ),
+      )
     },
     { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
     { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
@@ -230,114 +207,96 @@ const DryingStation = () => {
     { field: 'producer', headerName: 'Producer', width: 90 },
     { field: 'productLine', headerName: 'Product Line', width: 130 },
     { field: 'processingType', headerName: 'Processing Type', width: 160 },
-    { field: 'quality', headerName: 'Quality', width: 100 },
-  ];
-
-  const dryingAreas = [
-    "Drying Area 1",
-    "Drying Area 2",
-    "Drying Area 3",
-    "Drying Area 4",
-    "Drying Area 5",
-    "Drying Room",
+    { field: 'quality', headerName: 'Quality', width: 100 }
   ];
 
   const getAreaData = (area) => {
-    const areaData = dryingData.filter(batch => batch.dryingArea === area);
-    return areaData.sort((a, b) => {
-      // Sort by status: In Drying (0), Not in Drying (1), Dried (2)
-      const statusOrder = {
-        'In Drying': 0,
-        'Not in Drying': 1,
-        'Dried': 2,
-      };
-      const statusA = statusOrder[a.status] || 3; // Default to 3 for unexpected statuses
-      const statusB = statusOrder[b.status] || 3;
-      if (statusA !== statusB) return statusA - statusB;
-
-      // Sort by startDryingDate (oldest first, ascending)
-      if (a.startDryingDate !== b.startDryingDate) {
-        return a.startDryingDate.localeCompare(b.startDryingDate);
-      }
-
-      // Sort by type: Arabica (0), Robusta (1), others (2+)
-      const typeOrder = {
-        'Arabica': 0,
-        'Robusta': 1,
-      };
-      const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 2 + (a.type || '').localeCompare('');
-      const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 2 + (b.type || '').localeCompare('');
-      return typeA - typeB;
-    });
+    return dryingData
+      .filter(batch => batch.dryingArea === area)
+      .sort((a, b) => {
+        const statusOrder = { 'In Drying': 0, 'Not in Drying': 1, 'Dried': 2 };
+        const statusA = statusOrder[a.status] || 3;
+        const statusB = statusOrder[b.status] || 3;
+        if (statusA !== statusB) return statusA - statusB;
+        if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate);
+        const typeOrder = { 'Arabica': 0, 'Robusta': 1 };
+        const typeA = typeOrder[a.type] ?? 2;
+        const typeB = typeOrder[b.type] ?? 2;
+        return typeA - typeB;
+      });
   };
 
   const renderDataGrid = (area) => {
     const areaData = getAreaData(area);
+    const deviceId = deviceMapping[area];
+    const envData = greenhouseData[deviceId] || { temperature: 0, humidity: 0 };
     return (
-      <>
-        <Typography variant="h6" gutterBottom>{area}</Typography>
+      <Grid item xs={12}>
+        <Typography variant="h6" gutterBottom>
+          {area}
+        </Typography>
+        <Typography variant="body2" gutterBottom>
+          Temp: {envData.temperature}°C | Humidity: {envData.humidity}%
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleEnvDetailsClick(deviceId)}
+            sx={{ ml: 2 }}
+          >
+            See Details
+          </Button>
+        </Typography>
         <div style={{ height: 400, width: '100%' }}>
           {areaData.length === 0 ? (
-            <Typography variant="body1" align="center" color="textSecondary" style={{ paddingTop: '180px' }}>
+            <Typography variant="body1" align="center" color="textSecondary" sx={{ pt: '180px' }}>
               No batches in {area}
             </Typography>
           ) : (
             <DataGrid
               rows={areaData}
               columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5, 10, 20]}
-              disableSelectionOnClick
-              getRowId={(row) => row.batchNumber}
+              pageSizeOptions={[5, 10, 20]}
+              disableRowSelectionOnClick
+              getRowId={row => row.batchNumber}
               slots={{ toolbar: GridToolbar }}
-              autosizeOnMount
-              autosizeOptions={{
-                includeHeaders: true,
-                includeOutliers: true,
-                expand: true,
-              }}
+              autoHeight
               rowHeight={35}
             />
           )}
         </div>
-      </>
+      </Grid>
     );
   };
 
-  // Generate 7-day optimal curve starting from startDryingDate
   const generateOptimalCurve = () => {
-    if (!selectedBatch || selectedBatch.startDryingDate === 'N/A') {
-      return { labels: [], data: [] }; // Return empty arrays if no valid start date
-    }
+    if (!selectedBatch || selectedBatch.startDryingDate === 'N/A') return { labels: [], data: [] };
     const startDate = new Date(selectedBatch.startDryingDate);
     const labels = [];
     const data = [];
-    for (let i = 0; i <= 168; i += 24) { // Every 24 hours for 7 days
+    for (let i = 0; i <= 168; i += 24) {
       const date = new Date(startDate);
       date.setHours(date.getHours() + i);
       labels.push(date.toLocaleDateString());
-      data.push(50 * Math.exp(-0.00858 * i)); // 50% to 12% over 168 hours
+      data.push(50 * Math.exp(-0.00858 * i));
     }
     return { labels, data };
   };
 
   const optimalCurve = generateOptimalCurve();
 
-  // Graph data with fixed 7-day optimal curve and user measurements
-  const chartData = {
-    labels: optimalCurve.labels, // Use the 7-day labels from optimal curve
+  const moistureChartData = {
+    labels: optimalCurve.labels,
     datasets: [
       {
         label: 'Measured Moisture',
         data: dryingMeasurements.map(m => ({
           x: new Date(m.measurement_date).toLocaleDateString(),
-          y: m.moisture,
+          y: m.moisture
         })),
-        fill: false,
+        type: 'scatter',
         backgroundColor: 'rgba(75,192,192,1)',
         borderColor: 'rgba(75,192,192,0.2)',
-        type: 'scatter',
-        pointRadius: 5,
+        pointRadius: 5
       },
       {
         label: 'Optimal Natural Sun Drying Curve',
@@ -345,134 +304,119 @@ const DryingStation = () => {
         fill: false,
         borderColor: 'rgba(255,99,132,1)',
         borderDash: [5, 5],
-        tension: 0.4,
-      },
-    ],
+        tension: 0.4
+      }
+    ]
   };
 
-  const chartOptions = {
+  const moistureChartOptions = {
     scales: {
-      x: {
-        title: { display: true, text: 'Date' },
-        type: 'category', // Use category scale for discrete dates
-      },
-      y: {
-        title: { display: true, text: 'Moisture (%)' },
-        min: 0,
-        max: 60,
-      },
+      x: { title: { display: true, text: 'Date' }, type: 'category' },
+      y: { title: { display: true, text: 'Moisture (%)' }, min: 0, max: 60 }
     },
-    plugins: {
-      legend: { display: true },
-      tooltip: { mode: 'index', intersect: false },
-    },
+    plugins: { legend: { display: true }, tooltip: { mode: 'index', intersect: false } }
   };
 
-  if (status === 'loading') {
-    return <p>Loading...</p>;
-  }
+  const envChartData = {
+    labels: historicalEnvData.map(d => new Date(d.recorded_at).toLocaleDateString()),
+    datasets: [
+      {
+        label: 'Temperature (°C)',
+        data: historicalEnvData.map(d => d.temperature),
+        borderColor: 'rgba(255,99,132,1)',
+        fill: false,
+        tension: 0.1
+      },
+      {
+        label: 'Humidity (%)',
+        data: historicalEnvData.map(d => d.humidity),
+        borderColor: 'rgba(75,192,192,1)',
+        fill: false,
+        tension: 0.1
+      }
+    ]
+  };
 
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'drying')) {
-    return (
-      <Typography variant="h6">
-        Access Denied. You do not have permission to view this page.
-      </Typography>
-    );
+  const envChartOptions = {
+    scales: {
+      x: { title: { display: true, text: 'Date' }, type: 'category' },
+      y: { title: { display: true, text: 'Value' }, min: 0, max: 100 }
+    },
+    plugins: { legend: { display: true }, tooltip: { mode: 'index', intersect: false } }
+  };
+
+  if (status === 'loading') return <p>Loading...</p>;
+  if (!session?.user || !['admin', 'manager', 'drying'].includes(session.user.role)) {
+    return <Typography variant="h6">Access Denied</Typography>;
   }
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={3} sx={{ p: 2 }}>
       <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Drying Station
-            </Typography>
+            <Typography variant="h5" gutterBottom>Drying Station</Typography>
             <Button
               variant="contained"
               color="primary"
               onClick={handleRefreshData}
               disabled={isLoading}
               startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
-              sx={{ mb: 2, mt: 2 }}
+              sx={{ mb: 2 }}
             >
               {isLoading ? 'Refreshing...' : 'Refresh Data'}
             </Button>
-
-            {/* Row 1: Drying Area 1 and 2 */}
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                {renderDataGrid('Drying Area 1')}
-              </Grid>
-              <Grid item xs={12} md={6}>
-                {renderDataGrid('Drying Area 2')}
-              </Grid>
-            </Grid>
-
-            {/* Row 2: Drying Area 3 and 4 */}
-            <Grid container spacing={3} style={{ marginTop: '16px' }}>
-              <Grid item xs={12} md={6}>
-                {renderDataGrid('Drying Area 3')}
-              </Grid>
-              <Grid item xs={12} md={6}>
-                {renderDataGrid('Drying Area 4')}
-              </Grid>
-            </Grid>
-
-            {/* Row 3: Drying Area 5 */}
-            <Grid container spacing={3} style={{ marginTop: '16px' }}>
-              <Grid item xs={12} md={6}>
-                {renderDataGrid('Drying Area 5')}
-              </Grid>
-              <Grid item xs={12} md={6}>
-                {renderDataGrid('Drying Room')}
-              </Grid>
+              {dryingAreas.map(area => renderDataGrid(area))}
             </Grid>
           </CardContent>
         </Card>
       </Grid>
 
-      {/* Drying Measurement Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>Drying Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} style={{ marginBottom: '16px', marginTop: '16px' }}>
+          <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
             <Grid item xs={8}>
               <TextField
                 label="Moisture (%)"
                 value={newMoisture}
-                onChange={(e) => setNewMoisture(e.target.value)}
+                onChange={e => setNewMoisture(e.target.value)}
                 type="number"
                 fullWidth
                 inputProps={{ min: 0, max: 100, step: 0.01 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAddMoisture}
-                fullWidth
-                style={{ height: '100%' }}
-              >
+              <Button variant="contained" color="primary" onClick={handleAddMoisture} fullWidth sx={{ height: '100%' }}>
                 Add Measurement
               </Button>
             </Grid>
           </Grid>
-          <Line data={chartData} options={chartOptions} />
+          <Line data={moistureChartData} options={moistureChartOptions} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Close</Button>
         </DialogActions>
       </Dialog>
 
+      <Dialog open={openEnvDialog} onClose={handleCloseEnvDialog} maxWidth="md" fullWidth>
+        <DialogTitle>Environmental Data - Device {selectedDevice}</DialogTitle>
+        <DialogContent>
+          <Line data={envChartData} options={envChartOptions} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEnvDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
+        onClose={() => setOpenSnackbar(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+        <Alert severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
