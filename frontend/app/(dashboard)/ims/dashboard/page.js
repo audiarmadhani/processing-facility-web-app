@@ -186,7 +186,7 @@ function InventoryManagement() {
   return (
     <Grid container spacing={3}>
       {/* Cherry Inventory */}
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={12}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
@@ -220,7 +220,7 @@ function InventoryManagement() {
                 </Select>
               </FormControl>
             </Box>
-            <div style={{ height: 400, width: '100%' }}>
+            <div style={{ height: 800, width: '100%' }}>
               <DataGrid
                 rows={filteredCherryData}
                 columns={cherryColumns}
@@ -243,7 +243,7 @@ function InventoryManagement() {
       </Grid>
 
       {/* Green Bean Inventory */}
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={12}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
@@ -263,7 +263,7 @@ function InventoryManagement() {
                 </Select>
               </FormControl>
             </Box>
-            <div style={{ height: 400, width: '100%' }}>
+            <div style={{ height: 800, width: '100%' }}>
               <DataGrid
                 rows={filteredGreenBeanData}
                 columns={greenBeanColumns}
