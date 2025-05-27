@@ -1380,23 +1380,25 @@ const OrderCreation = () => {
         aria-labelledby="order-details-modal-title"
         aria-describedby="order-details-modal-description"
       >
-        <Paper sx={{ 
-          p: 3, 
-          maxWidth: 600, 
-          maxHeight: '80vh', 
-          overflowY: 'auto', 
-          mx: 'auto', 
-          mt: '5vh', 
-          borderRadius: 2, 
-        }}>
+        <Paper
+          sx={{
+            p: 3,
+            maxWidth: 600,
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            mx: 'auto',
+            mt: '5vh',
+            borderRadius: 2,
+          }}
+        >
           {loading ? (
             <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
           ) : editOrder ? (
             <Box>
-              <Typography 
-                variant="h5" 
-                id="order-details-modal-title" 
-                gutterBottom 
+              <Typography
+                variant="h5"
+                id="order-details-modal-title"
+                gutterBottom
                 sx={{ textAlign: 'center', fontWeight: 'bold', mb: 2 }}
               >
                 Edit Order - Order ID: {editOrder.order_id || 'N/A'}
@@ -1418,7 +1420,7 @@ const OrderCreation = () => {
                     onChange={handleEditInputChange}
                     label="Customer"
                   >
-                    {(Array.isArray(customers) ? customers : []).map(customer => (
+                    {(Array.isArray(customers) ? customers : []).map((customer) => (
                       <MenuItem key={customer.customer_id} value={customer.customer_id}>
                         {customer.name}
                       </MenuItem>
@@ -1506,12 +1508,7 @@ const OrderCreation = () => {
                   sx={{ mb: 2 }}
                 />
                 <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={sameBillingAddress}
-                      onChange={handleEditSameBillingChange}
-                    />
-                  }
+                  control={<Checkbox checked={sameBillingAddress} onChange={handleEditSameBillingChange} />}
                   label="Billing address same as shipping address"
                   sx={{ mb: 2 }}
                 />
@@ -1551,8 +1548,8 @@ const OrderCreation = () => {
                       >
                         <MenuItem value="">None</MenuItem>
                         {(Array.isArray(drivers) ? drivers : [])
-                          .filter(d => d.availability_status === 'Available')
-                          .map(driver => (
+                          .filter((d) => d.availability_status === 'Available')
+                          .map((driver) => (
                             <MenuItem key={driver.driver_id} value={driver.driver_id}>
                               {driver.name} ({driver.vehicle_number})
                             </MenuItem>
@@ -1570,38 +1567,40 @@ const OrderCreation = () => {
                       </Select>
                     </FormControl>
                   )}
-                  {editOrder.shipping_method === 'Self' && editOrder.driver_id && drivers.find(d => d.driver_id === editOrder.driver_id) && (
-                    <>
-                      <TextField
-                        fullWidth
-                        label="Driver Name"
-                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.name || ''}
-                        InputProps={{ readOnly: true }}
-                        sx={{ mb: 2 }}
-                      />
-                      <TextField
-                        fullWidth
-                        label="Vehicle Number Plate"
-                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.vehicle_number || ''}
-                        InputProps={{ readOnly: true }}
-                        sx={{ mb: 2 }}
-                      />
-                      <TextField
-                        fullWidth
-                        label="Vehicle Type"
-                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.vehicle_type || ''}
-                        InputProps={{ readOnly: true }}
-                        sx={{ mb: 2 }}
-                      />
-                      <TextField
-                        fullWidth
-                        label="Max Capacity (kg)"
-                        value={drivers.find(d => d.driver_id === editOrder.driver_id)?.max_capacity || ''}
-                        InputProps={{ readOnly: true }}
-                        sx={{ mb: 2 }}
-                      />
-                    </>
-                  )}
+                  {editOrder.shipping_method === 'Self' &&
+                    editOrder.driver_id &&
+                    drivers.find((d) => d.driver_id === editOrder.driver_id) && (
+                      <>
+                        <TextField
+                          fullWidth
+                          label="Driver Name"
+                          value={drivers.find((d) => d.driver_id === editOrder.driver_id)?.name || ''}
+                          InputProps={{ readOnly: true }}
+                          sx={{ mb: 2 }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Vehicle Number Plate"
+                          value={drivers.find((d) => d.driver_id === editOrder.driver_id)?.vehicle_number || ''}
+                          InputProps={{ readOnly: true }}
+                          sx={{ mb: 2 }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Vehicle Type"
+                          value={drivers.find((d) => d.driver_id === editOrder.driver_id)?.vehicle_type || ''}
+                          InputProps={{ readOnly: true }}
+                          sx={{ mb: 2 }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Max Capacity (kg)"
+                          value={drivers.find((d) => d.driver_id === editOrder.driver_id)?.max_capacity || ''}
+                          InputProps={{ readOnly: true }}
+                          sx={{ mb: 2 }}
+                        />
+                      </>
+                    )}
                   {editOrder.shipping_method === 'Customer' && (
                     <>
                       <TextField
@@ -1656,14 +1655,11 @@ const OrderCreation = () => {
                           {stockLoading ? (
                             <MenuItem disabled>Loading...</MenuItem>
                           ) : Array.isArray(stock) && stock.length > 0 ? (
-                            stock.map(batch => {
-                              const remainingWeight = getRemainingWeight(batch.batchNumber, editOrder.items, index);
-                              return (
-                                <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                  {batch.batchNumber} ({batch.quality}, {batch.processingType}, {remainingWeight.toFixed(2)} kg)
-                                </MenuItem>
-                              );
-                            })
+                            stock.map((batch) => (
+                              <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                                {`${batch.batchNumber} (${batch.quality || 'Standard'}, ${batch.processingType || 'Unknown'}, ${batch.remaining_quantity.toFixed(2)} kg)`}
+                              </MenuItem>
+                            ))
                           ) : (
                             <MenuItem disabled>No stock available</MenuItem>
                           )}
@@ -1675,6 +1671,7 @@ const OrderCreation = () => {
                         value={item.quantity}
                         onChange={(e) => handleEditItemChange(index, 'quantity', e.target.value)}
                         sx={{ mr: 1, width: '120px' }}
+                        inputProps={{ min: 0, step: 0.01 }}
                       />
                       <TextField
                         label="Price per Unit (IDR)"
@@ -1682,6 +1679,7 @@ const OrderCreation = () => {
                         value={item.price}
                         onChange={(e) => handleEditItemChange(index, 'price', e.target.value)}
                         sx={{ mr: 1, width: '120px' }}
+                        inputProps={{ min: 0, step: 0.01 }}
                       />
                       <IconButton
                         onClick={() => removeEditItem(index)}
@@ -1693,7 +1691,9 @@ const OrderCreation = () => {
                       </IconButton>
                     </Box>
                   ))}
-                  <Button variant="outlined" onClick={addEditItem} sx={{ mb: 2 }}>Add Another Item</Button>
+                  <Button variant="outlined" onClick={addEditItem} sx={{ mb: 2 }}>
+                    Add Another Item
+                  </Button>
                 </Box>
 
                 <Divider sx={{ mb: 2 }} />
@@ -1703,7 +1703,11 @@ const OrderCreation = () => {
                     fullWidth
                     label="Subtotal Price (IDR)"
                     name="price"
-                    value={editOrder.price ? Number(editOrder.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0 IDR'}
+                    value={
+                      editOrder.price
+                        ? Number(editOrder.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                        : '0 IDR'
+                    }
                     InputProps={{ readOnly: true }}
                     sx={{ mb: 2 }}
                   />
@@ -1715,13 +1719,16 @@ const OrderCreation = () => {
                     onChange={handleEditInputChange}
                     type="number"
                     sx={{ mb: 2 }}
+                    inputProps={{ min: 0, max: 100, step: 0.1 }}
                   />
                   <TextField
                     fullWidth
                     label="Grand Total (IDR)"
                     value={
                       editOrder.price && editOrder.tax_percentage
-                        ? (Number(editOrder.price || 0) * (1 + Number(editOrder.tax_percentage || 0) / 100)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                        ? (
+                            Number(editOrder.price || 0) * (1 + Number(editOrder.tax_percentage || 0) / 100)
+                          ).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
                         : '0 IDR'
                     }
                     InputProps={{ readOnly: true }}
