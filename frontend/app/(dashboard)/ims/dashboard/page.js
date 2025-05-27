@@ -1,343 +1,339 @@
-const express = require('express');
-const router = express.Router();
-const sequelize = require('../config/database');
+"use client";
 
-// Reserve cherry inventory for an order
-router.post('/inventory/cherries/reserve', async (req, res) => {
-  const t = await sequelize.transaction();
-  try {
-    const { order_id, batchNumber, quantity, createdBy, updatedBy } = req.body;
+import React, { useState, useEffect } from 'react';
+import {
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Snackbar,
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Box,
+  Button,
+  Modal,
+  Paper,
+  IconButton,
+} from '@mui/material';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import CloseIcon from '@mui/icons-material/Close';
 
-    if (!order_id || !batchNumber || !quantity || quantity <= 0 || !createdBy || !updatedBy) {
-      await t.rollback();
-      return res.status(400).json({ error: 'order_id, batchNumber, quantity, createdBy, and updatedBy are required, and quantity must be positive' });
+const API_BASE_URL = 'https://processing-facility-backend.onrender.com';
+
+function InventoryManagement() {
+  const [cherryData, setCherryData] = useState([]);
+  const [greenBeanData, setGreenBeanData] = useState([]); // Raw data for details modal
+  const [aggregatedGreenBeanData, setAggregatedGreenBeanData] = useState([]); // Aggregated data for table
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('error');
+  const [cherryFilterType, setCherryFilterType] = useState('');
+  const [cherryFilterStatus, setCherryFilterStatus] = useState('');
+  const [greenBeanFilterType, setGreenBeanFilterType] = useState('');
+  const [openDetailsModal, setOpenDetailsModal] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
+
+  useEffect(() => {
+    fetchCherryData();
+    fetchGreenBeanData();
+  }, []);
+
+  const fetchCherryData = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/inventory/cherries`);
+      if (!response.ok) throw new Error('Failed to fetch cherry data');
+      const data = await response.json();
+      setCherryData(data.map((row, index) => ({ ...row, id: index })));
+    } catch (error) {
+      console.error('Error fetching cherry data:', error);
+      setSnackbarMessage('Failed to load cherry inventory.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      setCherryData([]);
     }
+  };
 
-    // Verify order exists
-    const [order] = await sequelize.query(
-      `SELECT order_id FROM "Orders" WHERE order_id = :order_id`,
-      { replacements: { order_id }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
-
-    if (!order) {
-      await t.rollback();
-      return res.status(404).json({ error: 'Order not found' });
-    }
-
-    // Check batch status
-    const [batch] = await sequelize.query(
-      `SELECT status FROM "CherryInventoryStatus" WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
-
-    if (!batch) {
-      await t.rollback();
-      return res.status(404).json({ error: `Cherry batch ${batchNumber} not found or already exited` });
-    }
-
-    if (batch.status === 'Reserved' || batch.status === 'Picked') {
-      await t.rollback();
-      return res.status(400).json({ error: `Cherry batch ${batchNumber} is already ${batch.status.toLowerCase()}` });
-    }
-
-    // Update inventory status
-    await sequelize.query(
-      `UPDATE "CherryInventoryStatus" 
-       SET status = 'Reserved', orderId = :order_id, "updatedAt" = NOW(), "updatedBy" = :updatedBy
-       WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber, order_id, updatedBy }, transaction: t }
-    );
-
-    // Log inventory movement
-    await sequelize.query(
-      `INSERT INTO "CherryInventoryMovements" ("batchNumber", "movementType", orderId, "movedAt", "createdBy")
-       VALUES (:batchNumber, 'Reservation', :order_id, NOW(), :createdBy)`,
-      {
-        replacements: { batchNumber, order_id, createdBy },
-        transaction: t,
-        type: sequelize.QueryTypes.INSERT,
-      }
-    );
-
-    // Update OrderItems
-    await sequelize.query(
-      `INSERT INTO "OrderItems" (order_id, product, quantity, price, batchNumber, product_type, created_at)
-       VALUES (:order_id, :product, :quantity, 0, :batchNumber, 'cherry', NOW())
-       ON CONFLICT (order_id, batchNumber) DO UPDATE 
-       SET quantity = EXCLUDED.quantity, updated_at = NOW()`,
-      {
-        replacements: { order_id, product: `Cherry Batch ${batchNumber}`, quantity, batchNumber },
-        transaction: t,
-        type: sequelize.QueryTypes.INSERT,
-      }
-    );
-
-    await t.commit();
-    res.status(200).json({ message: `Cherry batch ${batchNumber} reserved for order ${order_id}` });
-  } catch (error) {
-    await t.rollback();
-    console.error('Error reserving cherry inventory:', error);
-    res.status(500).json({ error: 'Failed to reserve cherry inventory', details: error.message });
-  }
-});
-
-// Reserve green bean inventory for an order
-router.post('/inventory/greenbeans/reserve', async (req, res) => {
-  const t = await sequelize.transaction();
-  try {
-    const { order_id, batchNumber, quantity, createdBy, updatedBy } = req.body;
-
-    if (!order_id || !batchNumber || !quantity || quantity <= 0 || !createdBy || !updatedBy) {
-      await t.rollback();
-      return res.status(400).json({ error: 'order_id, batchNumber, quantity, createdBy, and updatedBy are required, and quantity must be positive' });
-    }
-
-    // Verify order exists
-    const [order] = await sequelize.query(
-      `SELECT order_id FROM "Orders" WHERE order_id = :order_id`,
-      { replacements: { order_id }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
-
-    if (!order) {
-      await t.rollback();
-      return res.status(404).json({ error: 'Order not found' });
-    }
-
-    // Check batch status
-    const [batch] = await sequelize.query(
-      `SELECT status FROM "GreenBeansInventoryStatus" WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
-
-    if (!batch) {
-      await t.rollback();
-      return res.status(404).json({ error: `Green bean batch ${batchNumber} not found or already exited` });
-    }
-
-    if (batch.status === 'Reserved' || batch.status === 'Picked') {
-      await t.rollback();
-      return res.status(400).json({ error: `Green bean batch ${batchNumber} is already ${batch.status.toLowerCase()}` });
-    }
-
-    // Update inventory status
-    await sequelize.query(
-      `UPDATE "GreenBeansInventoryStatus" 
-       SET status = 'Reserved', orderId = :order_id, "updatedAt" = NOW(), "updatedBy" = :updatedBy
-       WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber, order_id, updatedBy }, transaction: t }
-    );
-
-    // Log inventory movement
-    await sequelize.query(
-      `INSERT INTO "GreenBeansInventoryMovements" ("batchNumber", "movementType", orderId, "movedAt", "createdBy")
-       VALUES (:batchNumber, 'Reservation', :order_id, NOW(), :createdBy)`,
-      {
-        replacements: { batchNumber, order_id, createdBy },
-        transaction: t,
-        type: sequelize.QueryTypes.INSERT,
-      }
-    );
-
-    // Update OrderItems
-    await sequelize.query(
-      `INSERT INTO "OrderItems" (order_id, product, quantity, price, batchNumber, product_type, created_at)
-       VALUES (:order_id, :product, :quantity, 0, :batchNumber, 'greenbeans', NOW())
-       ON CONFLICT (order_id, batchNumber) DO UPDATE 
-       SET quantity = EXCLUDED.quantity, updated_at = NOW()`,
-      {
-        replacements: { order_id, product: `Green Bean Batch ${batchNumber}`, quantity, batchNumber },
-        transaction: t,
-        type: sequelize.QueryTypes.INSERT,
-      }
-    );
-
-    await t.commit();
-    res.status(200).json({ message: `Green bean batch ${batchNumber} reserved for order ${order_id}` });
-  } catch (error) {
-    await t.rollback();
-    console.error('Error reserving green bean inventory:', error);
-    res.status(500).json({ error: 'Failed to reserve green bean inventory', details: error.message });
-  }
-});
-
-// Mark cherry batch as exited (shipped)
-router.post('/inventory/cherries/exit', async (req, res) => {
-  const t = await sequelize.transaction();
-  try {
-    const { order_id, batchNumber, createdBy, updatedBy, desa, kecamatan, kabupaten, cost, paidTo, farmerID, paymentMethod, bankAccount, bankName } = req.body;
-
-    if (!order_id || !batchNumber || !createdBy || !updatedBy) {
-      await t.rollback();
-      return res.status(400).json({ error: 'order_id, batchNumber, createdBy, and updatedBy are required' });
-    }
-
-    // Verify order exists and is in transit
-    const [order] = await sequelize.query(
-      `SELECT status FROM "Orders" WHERE order_id = :order_id AND status = 'In Transit'`,
-      { replacements: { order_id }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
-
-    if (!order) {
-      await t.rollback();
-      return res.status(400).json({ error: 'Order not found or not in In Transit status' });
-    }
-
-    // Check batch status
-    const [batch] = await sequelize.query(
-      `SELECT status, orderId FROM "CherryInventoryStatus" WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
-
-    if (!batch) {
-      await t.rollback();
-      return res.status(404).json({ error: `Cherry batch ${batchNumber} not found or already exited` });
-    }
-
-    if (batch.status !== 'Reserved' || batch.orderId !== order_id) {
-      await t.rollback();
-      return res.status(400).json({ error: `Cherry batch ${batchNumber} is not reserved for this order` });
-    }
-
-    // Update inventory status
-    await sequelize.query(
-      `UPDATE "CherryInventoryStatus" 
-       SET status = 'Picked', "exitedAt" = NOW(), "updatedAt" = NOW(), "updatedBy" = :updatedBy
-       WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber, updatedBy }, transaction: t }
-    );
-
-    // Log inventory movement
-    await sequelize.query(
-      `INSERT INTO "CherryInventoryMovements" ("batchNumber", "movementType", orderId, "movedAt", "createdBy")
-       VALUES (:batchNumber, 'Exit', :order_id, NOW(), :createdBy)`,
-      {
-        replacements: { batchNumber, order_id, createdBy },
-        transaction: t,
-        type: sequelize.QueryTypes.INSERT,
-      }
-    );
-
-    // Log transport details if provided
-    if (desa && kecamatan && kabupaten && cost && paidTo && paymentMethod) {
-      await sequelize.query(
-        `INSERT INTO "TransportData" ("batchNumber", "desa", "kecamatan", "kabupaten", "cost", "paidTo", "farmerID", "paymentMethod", "bankAccount", "bankName", "createdAt")
-         VALUES (:batchNumber, :desa, :kecamatan, :kabupaten, :cost, :paidTo, :farmerID, :paymentMethod, :bankAccount, :bankName, NOW())`,
-        {
-          replacements: {
-            batchNumber,
-            desa,
-            kecamatan,
-            kabupaten,
-            cost,
-            paidTo,
-            farmerID: farmerID || null,
-            paymentMethod,
-            bankAccount: bankAccount || null,
-            bankName: bankName || null,
-          },
-          transaction: t,
-          type: sequelize.QueryTypes.INSERT,
-        }
+  const fetchGreenBeanData = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/inventory/green-beans`);
+      if (!response.ok) throw new Error('Failed to fetch green bean data');
+      const data = await response.json();
+      const mappedData = data.map((row, index) => ({
+        ...row,
+        id: index,
+        type: row.type || row.beanType || 'Unknown', // Handle potential type field mismatch
+      }));
+      setGreenBeanData(mappedData);
+      // Aggregate data by batchNumber
+      const aggregated = Object.values(
+        mappedData.reduce((acc, row) => {
+          const key = row.batchNumber;
+          if (!acc[key]) {
+            acc[key] = {
+              id: key, // Use batchNumber as ID for DataGrid
+              batchNumber: row.batchNumber,
+              parentBatchNumber: row.parentBatchNumber,
+              type: row.type,
+              quality: row.quality,
+              weight: 0,
+              totalBags: 0,
+              storedDateTrunc: row.storedDateTrunc, // Use latest stored date
+              processingType: row.processingType,
+            };
+          }
+          acc[key].weight += parseFloat(row.weight || 0);
+          acc[key].totalBags += parseInt(row.totalBags || 0, 10);
+          // Update storedDateTrunc if newer
+          if (
+            row.storedDateTrunc &&
+            (!acc[key].storedDateTrunc || new Date(row.storedDateTrunc) > new Date(acc[key].storedDateTrunc))
+          ) {
+            acc[key].storedDateTrunc = row.storedDateTrunc;
+          }
+          return acc;
+        }, {})
       );
+      setAggregatedGreenBeanData(aggregated);
+    } catch (error) {
+      console.error('Error fetching green bean data:', error);
+      setSnackbarMessage('Failed to load green bean inventory.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      setGreenBeanData([]);
+      setAggregatedGreenBeanData([]);
     }
+  };
 
-    await t.commit();
-    res.status(200).json({ message: `Cherry batch ${batchNumber} marked as exited for order ${order_id}` });
-  } catch (error) {
-    await t.rollback();
-    console.error('Error exiting cherry inventory:', error);
-    res.status(500).json({ error: 'Failed to exit cherry inventory', details: error.message });
-  }
-});
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
 
-// Mark green bean batch as shipped
-router.post('/inventory/greenbeans/ship', async (req, res) => {
-  const t = await sequelize.transaction();
-  try {
-    const { order_id, batchNumber, createdBy, updatedBy, desa, kecamatan, kabupaten, cost, paidTo, farmerID, paymentMethod, bankAccount, bankName } = req.body;
+  const handleOpenDetailsModal = (batchNumber) => {
+    setSelectedBatch(batchNumber);
+    setOpenDetailsModal(true);
+  };
 
-    if (!order_id || !batchNumber || !createdBy || !updatedBy) {
-      await t.rollback();
-      return res.status(400).json({ error: 'order_id, batchNumber, createdBy, and updatedBy are required' });
-    }
+  const handleCloseDetailsModal = () => {
+    setOpenDetailsModal(false);
+    setSelectedBatch(null);
+  };
 
-    // Verify order exists and is in transit
-    const [order] = await sequelize.query(
-      `SELECT status FROM "Orders" WHERE order_id = :order_id AND status = 'In Transit'`,
-      { replacements: { order_id }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
+  const cherryColumns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
+    { field: 'type', headerName: 'Type', width: 110, sortable: true },
+    { field: 'status', headerName: 'Status', width: 150, sortable: true },
+    { field: 'weight', headerName: 'Weight (kg)', width: 120, sortable: true },
+    { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
+    { field: 'receivingDateTrunc', headerName: 'Received Date', width: 160, sortable: true },
+    { field: 'rfid', headerName: 'RFID', width: 120, sortable: true },
+    { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
+  ];
 
-    if (!order) {
-      await t.rollback();
-      return res.status(400).json({ error: 'Order not found or not in In Transit status' });
-    }
+  const greenBeanColumns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { field: 'parentBatchNumber', headerName: 'Cherry Batch', width: 160, sortable: true },
+    { field: 'type', headerName: 'Type', width: 110, sortable: true },
+    { field: 'quality', headerName: 'Quality', width: 100, sortable: true },
+    { field: 'weight', headerName: 'Total Weight (kg)', width: 140, sortable: true },
+    { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
+    { field: 'storedDateTrunc', headerName: 'Latest Stored Date', width: 160, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 150, sortable: true },
+    {
+      field: 'details',
+      headerName: 'Details',
+      width: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => handleOpenDetailsModal(params.row.batchNumber)}
+        >
+          Details
+        </Button>
+      ),
+    },
+  ];
 
-    // Check batch status
-    const [batch] = await sequelize.query(
-      `SELECT status, orderId FROM "GreenBeansInventoryStatus" WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber }, type: sequelize.QueryTypes.SELECT, transaction: t }
-    );
+  const detailColumns = [
+    { field: 'storedDateTrunc', headerName: 'Stored Date', width: 160, sortable: true },
+    { field: 'weight', headerName: 'Weight (kg)', width: 120, sortable: true },
+    { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
+    { field: 'parentBatchNumber', headerName: 'Cherry Batch', width: 160, sortable: true },
+    { field: 'quality', headerName: 'Quality', width: 100, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 150, sortable: true },
+    { field: 'type', headerName: 'Type', width: 110, sortable: true },
+  ];
 
-    if (!batch) {
-      await t.rollback();
-      return res.status(404).json({ error: `Green bean batch ${batchNumber} not found or already exited` });
-    }
+  const filteredCherryData = cherryData.filter(
+    (row) =>
+      (!cherryFilterType || row.type === cherryFilterType) &&
+      (!cherryFilterStatus || row.status === cherryFilterStatus)
+  );
 
-    if (batch.status !== 'Reserved' || batch.orderId !== order_id) {
-      await t.rollback();
-      return res.status(400).json({ error: `Green bean batch ${batchNumber} is not reserved for this order` });
-    }
+  const filteredGreenBeanData = aggregatedGreenBeanData.filter(
+    (row) => !greenBeanFilterType || row.type === greenBeanFilterType
+  );
 
-    // Update inventory status
-    await sequelize.query(
-      `UPDATE "GreenBeansInventoryStatus" 
-       SET status = 'Picked', "exitedAt" = NOW(), "updatedAt" = NOW(), "updatedBy" = :updatedBy
-       WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL`,
-      { replacements: { batchNumber, updatedBy }, transaction: t }
-    );
+  const batchDetails = greenBeanData
+    .filter((row) => row.batchNumber === selectedBatch)
+    .map((row, index) => ({ ...row, id: index }));
 
-    // Log inventory movement
-    await sequelize.query(
-      `INSERT INTO "GreenBeansInventoryMovements" ("batchNumber", "movementType", orderId, "movedAt", "createdBy")
-       VALUES (:batchNumber, 'Exit', :order_id, NOW(), :createdBy)`,
-      {
-        replacements: { batchNumber, order_id, createdBy },
-        transaction: t,
-        type: sequelize.QueryTypes.INSERT,
-      }
-    );
+  return (
+    <Grid container spacing={3}>
+      {/* Cherry Inventory */}
+      <Grid item xs={12} md={6}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Cherry Inventory
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <FormControl sx={{ minWidth: 120 }}>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={cherryFilterType}
+                  onChange={(e) => setCherryFilterType(e.target.value)}
+                  label="Type"
+                >
+                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="Arabica">Arabica</MenuItem>
+                  <MenuItem value="Robusta">Robusta</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 150 }}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={cherryFilterStatus}
+                  onChange={(e) => setCherryFilterStatus(e.target.value)}
+                  label="Status"
+                >
+                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="Stored">Stored</MenuItem>
+                  <MenuItem value="In Dry Mill">In Dry Mill</MenuItem>
+                  <MenuItem value="Drying">Drying</MenuItem>
+                  <MenuItem value="Processed">Processed</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <div style={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={filteredCherryData}
+                columns={cherryColumns}
+                pageSize={5}
+                rowsPerPageOptions={[5, 10, 20]}
+                disableSelectionOnClick
+                sortingOrder={['asc', 'desc']}
+                slots={{ toolbar: GridToolbar }}
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
+                rowHeight={35}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </Grid>
 
-    // Log transport details if provided
-    if (desa && kecamatan && kabupaten && cost && paidTo && paymentMethod) {
-      await sequelize.query(
-        `INSERT INTO "TransportData" ("batchNumber", "desa", "kecamatan", "kabupaten", "cost", "paidTo", "farmerID", "paymentMethod", "bankAccount", "bankName", "createdAt")
-         VALUES (:batchNumber, :desa, :kecamatan, :kabupaten, :cost, :paidTo, :farmerID, :paymentMethod, :bankAccount, :bankName, NOW())`,
-        {
-          replacements: {
-            batchNumber,
-            desa,
-            kecamatan,
-            kabupaten,
-            cost,
-            paidTo,
-            farmerID: farmerID || null,
-            paymentMethod,
-            bankAccount: bankAccount || null,
-            bankName: bankName || null,
-          },
-          transaction: t,
-          type: sequelize.QueryTypes.INSERT,
-        }
-      );
-    }
+      {/* Green Bean Inventory */}
+      <Grid item xs={12} md={6}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Green Bean Inventory
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <FormControl sx={{ minWidth: 120 }}>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={greenBeanFilterType}
+                  onChange={(e) => setGreenBeanFilterType(e.target.value)}
+                  label="Type"
+                >
+                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="Arabica">Arabica</MenuItem>
+                  <MenuItem value="Robusta">Robusta</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <div style={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={filteredGreenBeanData}
+                columns={greenBeanColumns}
+                pageSize={5}
+                rowsPerPageOptions={[5, 10, 20]}
+                disableSelectionOnClick
+                sortingOrder={['asc', 'desc']}
+                slots={{ toolbar: GridToolbar }}
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
+                rowHeight={35}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </Grid>
 
-    await t.commit();
-    res.status(200).json({ message: `Green bean batch ${batchNumber} marked as shipped for order ${order_id}` });
-  } catch (error) {
-    await t.rollback();
-    console.error('Error shipping green bean inventory:', error);
-    res.status(500).json({ error: 'Failed to ship green bean inventory', details: error.message });
-  }
-});
+      {/* Batch Details Modal */}
+      <Modal open={openDetailsModal} onClose={handleCloseDetailsModal}>
+        <Paper
+          sx={{
+            p: 3,
+            maxWidth: 800,
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            mx: 'auto',
+            mt: '5vh',
+            borderRadius: 2,
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              Batch Details: {selectedBatch}
+            </Typography>
+            <IconButton onClick={handleCloseDetailsModal}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <div style={{ height: 300, width: '100%' }}>
+            <DataGrid
+              rows={batchDetails}
+              columns={detailColumns}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 20]}
+              disableSelectionOnClick
+              sortingOrder={['asc', 'desc']}
+              autosizeOnMount
+              autosizeOptions={{
+                includeHeaders: true,
+                includeOutliers: true,
+                expand: true,
+              }}
+              rowHeight={35}
+            />
+          </div>
+        </Paper>
+      </Modal>
 
-module.exports = router;
+      {/* Snackbar */}
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </Grid>
+  );
+}
+
+export default InventoryManagement;
