@@ -12,12 +12,16 @@ import {
 import TotalWeightBags from './charts/TotalBarChart';
 import TotalCost from './charts/TotalCostChart';
 import { 
-  ArabicaWeightMoM, RobustaWeightMoM, ArabicaCostMoM, RobustaCostMoM,
-  ArabicaAvgCostMoM, RobustaAvgCostMoM, ArabicaWeightMoM, RobustaProcessedMoM,
-  ArabicaProductionMoM, RobustaProductionMoM, ArabicaCategoryChart, 
-  RobustaCategoryChart, ArabicaCherryQualitybyDate, RobustaCherryQualitybyDate,
-  ArabicaFarmersContribution, RobustaFarmersContribution, ArabicaSankeyChart, 
-  RobustaSankeyChart, ArabicaAchievement, RobustaAchievement 
+  ArabicaWeightMoM, RobustaWeightMoM, 
+  ArabicaCostMoM, RobustaCostMoM,
+  ArabicaAvgCostMoM, RobustaAvgCostMoM, 
+  ArabicaProcessedMoM,RobustaProcessedMoM,
+  ArabicaProductionMoM, RobustaProductionMoM, 
+  ArabicaCategoryChart, RobustaCategoryChart, 
+  ArabicaCherryQualitybyDate, RobustaCherryQualitybyDate,
+  ArabicaFarmersContribution, RobustaFarmersContribution, 
+  ArabicaSankeyChart, RobustaSankeyChart, 
+  ArabicaAchievement, RobustaAchievement 
 } from './charts';
 const ArabicaMap = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMap = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
