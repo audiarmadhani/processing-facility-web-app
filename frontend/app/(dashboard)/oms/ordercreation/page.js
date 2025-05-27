@@ -1127,12 +1127,12 @@ const OrderCreation = () => {
                   rows={ordersRows}
                   columns={ordersColumns}
                   editMode="row"
-                  rowModesModel={rowModesModel}
-                  onRowEditStart={handleRowEditStart}
-                  onRowEditStop={handleRowEditStop}
-                  onEditRowsModelChange={handleEditRowsModelChange}
-                  processRowUpdate={processRowUpdate}
-                  onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
+                  // rowModesModel={rowModesModel}
+                  // onRowEditStart={handleRowEditStart}
+                  // onRowEditStop={handleRowEditStop}
+                  // onEditRowsModelChange={handleEditRowsModelChange}
+                  // processRowUpdate={processRowUpdate}
+                  // onProcessRowUpdateError={(error) => setSnackbar({ open: true, message: error.message, severity: 'error' })}
                   pageSizeOptions={[5, 10, 25]}
                   initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
                   sx={{ height: '100%' }}
