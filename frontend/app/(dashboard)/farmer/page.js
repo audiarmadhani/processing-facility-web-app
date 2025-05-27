@@ -140,6 +140,7 @@ function FarmerInputStation() {
       farmType,
       notes,
       farmVarieties : farmVarietiesCSV.trim(),
+      isContract,
     };
 
     try {
