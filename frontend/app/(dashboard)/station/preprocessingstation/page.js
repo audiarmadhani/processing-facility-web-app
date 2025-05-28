@@ -29,8 +29,8 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
-  const [rfid, setRfid] = useState(''); // Store scanned RFID
-  const [rfidTag, setRfidTag] = useState(''); // Store scanned RFID tag
+  const [rfid, setRfid] = useState('');
+  const [rfidTag, setRfidTag] = useState('');
   const [bagsProcessed, setBagsProcessed] = useState(1);
   const [batchNumber, setBatchNumber] = useState('');
   const [bagsAvailable, setBagsAvailable] = useState(0);
@@ -51,6 +51,7 @@ const PreprocessingStation = () => {
   const [productLine, setProductLine] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [quality, setQuality] = useState('');
+  const [notes, setNotes] = useState('');
 
   const fetchAvailableBags = async (batchNumber, totalBags) => {
     try {
@@ -130,7 +131,7 @@ const PreprocessingStation = () => {
           setBatchNumber(batchData.batchNumber);
           setFarmerName(batchData.farmerName);
           setReceivingDate(batchData.receivingDateTrunc || '');
-          setQCDate(batchData.qcDateTrunc || '');
+          setQcDate(batchData.qcDateTrunc || '');
           setWeight(batchData.weight || '');
           setTotalBags(batchData.totalBags || '');
           setBagsAvailable(batchData.totalBags || 0);
@@ -179,7 +180,7 @@ const PreprocessingStation = () => {
 
   const handleBatchNumberSearch = async () => {
     if (!batchNumber) {
-      setSnackbarMessage('Please enter a batch number.');
+      setSnackbarMessage('Please enter a batchNumber.');
       setSnackbarSeverity('warning');
       setOpenSnackbar(true);
       return;
@@ -243,6 +244,7 @@ const PreprocessingStation = () => {
       processingType: processingType,
       quality: quality,
       createdBy: session.user.name,
+      notes: notes.trim() || null
     };
 
     try {
@@ -280,13 +282,14 @@ const PreprocessingStation = () => {
     setBagsAvailable(0);
     setFarmerName('');
     setReceivingDate('');
-    setQCDate('');
+    setQcDate('');
     setWeight('');
     setTotalBags('');
     setProducer('');
     setProductLine('');
     setProcessingType('');
     setQuality('');
+    setNotes('');
     setTotalProcessedBags('');
     setBagsAvailable('');
   };
@@ -423,6 +426,7 @@ const PreprocessingStation = () => {
     { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
     { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
+    { field: 'notes', headerName: 'Notes', width: 200, sortable: true }
   ];
 
   const unprocessedColumns = [
@@ -592,28 +596,28 @@ const PreprocessingStation = () => {
 
               <Divider style={{ margin: '16px 0' }} />
 
-              <Grid item xs={12} style={{ marginTop: '12px' }}>
-                <FormControl fullWidth required>
-                  <InputLabel id="pd-label">Producer</InputLabel>
-                  <Select
-                    labelId="pd-label"
-                    id="pd"
-                    value={producer}
-                    onChange={(e) => {
-                      setProducer(e.target.value);
-                    }}
-                    input={<OutlinedInput label="Producer" />}
-                    MenuProps={MenuProps}
-                  >
-                    <MenuItem value=""><em>None</em></MenuItem>
-                    <MenuItem value="HQ">HEQA</MenuItem>
-                    <MenuItem value="BTM">BTM</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} style={{ marginTop: '12px' }}>
+                <Grid item xs={12} style={{ marginTop: '8px' }}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="pd-label">Producer</InputLabel>
+                    <Select
+                      labelId="pd-label"
+                      id="pd"
+                      value={producer}
+                      onChange={(e) => {
+                        setProducer(e.target.value);
+                      }}
+                      input={<OutlinedInput label="Producer" />}
+                      MenuProps={MenuProps}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      <MenuItem value="HQ">HEQA</MenuItem>
+                      <MenuItem value="BTM">BTM</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
+                <Grid item xs={12} style={{ marginTop: '8px' }}>
                   <FormControl fullWidth required>
                     <InputLabel id="pl-label">Product Line</InputLabel>
                     <Select
@@ -635,7 +639,7 @@ const PreprocessingStation = () => {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} style={{ marginTop: '12px' }}>
+                <Grid item xs={12} style={{ marginTop: '8px' }}>
                   <FormControl fullWidth required>
                     <InputLabel id="pt-label">Processing Type</InputLabel>
                     <Select
@@ -657,7 +661,7 @@ const PreprocessingStation = () => {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} style={{ marginTop: '12px' }}>
+                <Grid item xs={12} style={{ marginTop: '8px' }}>
                   <FormControl fullWidth required>
                     <InputLabel id="ql-label">Quality</InputLabel>
                     <Select
@@ -675,6 +679,18 @@ const PreprocessingStation = () => {
                       )) : []}
                     </Select>
                   </FormControl>
+                </Grid>
+
+                <Grid item xs={12} style={{ marginTop: '8px' }}>
+                  <TextField
+                    label="Notes"
+                    multiline
+                    rows={5}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    fullWidth
+                    margin="normal"
+                  />
                 </Grid>
 
                 <Grid item>
@@ -716,6 +732,7 @@ const PreprocessingStation = () => {
                           <div key={logIndex} style={{ marginLeft: '16px' }}>
                             <Typography>Processing Date: {new Date(log.processingDate).toISOString().slice(0, 10)}</Typography>
                             <Typography>Bags Processed: {log.bagsProcessed}</Typography>
+                            {log.notes && <Typography>Notes: {log.notes}</Typography>}
                             <Divider style={{ margin: '4px 0' }} />
                           </div>
                         ))

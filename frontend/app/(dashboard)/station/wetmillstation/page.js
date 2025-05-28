@@ -139,6 +139,7 @@ const WetmillStation = () => {
     { field: 'productLine', headerName: 'Product Line', width: 130 },
     { field: 'processingType', headerName: 'Processing Type', width: 160 },
     { field: 'quality', headerName: 'Quality', width: 130 },
+    { field: 'preprocessing_notes', headerName: 'Preprocessing Notes', width: 200 },
   ];
 
   if (status === 'loading') return <p>Loading...</p>;
