@@ -164,7 +164,7 @@ const DryMillStation = () => {
         return [{
           grade: gradeData.grade,
           weight: parseFloat(gradeData.weight) || 0,
-          bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights.map(String) : [],
+          bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights.map(w => String(w)) : [],
           bagged_at: gradeData.bagged_at || new Date().toISOString().split("T")[0],
           tempSequence: gradeData.tempSequence || "0001",
           is_stored: gradeData.is_stored || false,
@@ -177,7 +177,7 @@ const DryMillStation = () => {
           fetchedGradesMap[grade.grade] = {
             grade: grade.grade,
             weight: parseFloat(grade.weight) || 0,
-            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map(String) : [],
+            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map(w => String(w)) : [],
             bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
             tempSequence: grade.tempSequence || "0001",
             is_stored: grade.is_stored || false,
@@ -209,7 +209,7 @@ const DryMillStation = () => {
       }
     } catch (error) {
       console.error("Error fetching existing grades:", error);
-      setSnackbarMessage(error.response?.data?.error || "Failed to fetch existing grades.");
+      setSnackbarMessage(error.response?.data?.error || "Failed to fetch existing grades. Please try again.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
@@ -520,7 +520,7 @@ const DryMillStation = () => {
     const sequence = selectedBatch.parentBatchNumber ? grades[index].tempSequence : await fetchSequenceNumber(grade);
     const newWeight = parseFloat(weight).toString();
     const updatedBagWeights = [...grades[index].bagWeights, newWeight];
-    const totalWeight = updatedBagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
+    const totalWeight = parseFloat(grades[index].weight || 0) + parseFloat(weight);
 
     setGrades((prevGrades) => {
       const newGrades = [...prevGrades];
@@ -557,7 +557,7 @@ const DryMillStation = () => {
           newGrades[index] = {
             ...newGrades[index],
             bagWeights: newGrades[index].bagWeights.filter((_, i) => i !== newGrades[index].bagWeights.length - 1),
-            weight: newGrades[index].bagWeights.reduce((sum, w) => sum + parseFloat(w), 0),
+            weight: parseFloat(newGrades[index].weight || 0) - parseFloat(weight),
           };
           return newGrades;
         });
@@ -574,15 +574,16 @@ const DryMillStation = () => {
       return;
     }
     const grade = grades[gradeIndex].grade;
+    const removedWeight = parseFloat(grades[gradeIndex].bagWeights[bagIndex]);
     const updatedBagWeights = grades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex);
-    const totalWeight = updatedBagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
+    const totalWeight = parseFloat(grades[gradeIndex].weight || 0) - removedWeight;
 
     setGrades((prevGrades) => {
       const newGrades = [...prevGrades];
       newGrades[gradeIndex] = {
         ...newGrades[gradeIndex],
         bagWeights: updatedBagWeights,
-        weight: totalWeight,
+        weight: totalWeight >= 0 ? totalWeight : 0,
       };
       return newGrades;
     });
@@ -592,7 +593,7 @@ const DryMillStation = () => {
         await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`, {
           grade,
           bagWeights: updatedBagWeights,
-          weight: totalWeight.toString(),
+          weight: totalWeight >= 0 ? totalWeight.toString() : "0",
           bagged_at: new Date().toISOString().slice(0, 10),
         });
         setSnackbarMessage("Bag removed successfully.");
@@ -610,7 +611,7 @@ const DryMillStation = () => {
           newGrades[gradeIndex] = {
             ...newGrades[gradeIndex],
             bagWeights: grades[gradeIndex].bagWeights,
-            weight: grades[gradeIndex].bagWeights.reduce((sum, w) => sum + parseFloat(w), 0),
+            weight: parseFloat(grades[gradeIndex].weight || 0) + removedWeight,
           };
           return newGrades;
         });
@@ -665,6 +666,7 @@ const DryMillStation = () => {
     if (selectedBatch && batchNumberToFetch) {
       console.log("Fetching grades for batchNumber:", batchNumberToFetch);
       fetchExistingGrades(batchNumberToFetch).then((existingGrades) => {
+        console.log("Fetched grades:", existingGrades);
         setGrades(existingGrades);
         const initialWeights = {};
         existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
@@ -728,7 +730,7 @@ const DryMillStation = () => {
       width: 100,
       sortable: false,
       renderCell: (params) => (
-        <Button variant="primary" size="small" onClick={() => handleDetailsClick(params.row)}>
+        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
           Details
         </Button>
       ),
@@ -767,7 +769,7 @@ const DryMillStation = () => {
       width: 100,
       sortable: false,
       renderCell: (params) => (
-        <Button variant="primary" size="small" onClick={() => handleDetailsClick(params.row)}>
+        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
           Details
         </Button>
       ),
@@ -954,7 +956,7 @@ const DryMillStation = () => {
                             key={`${grade.grade}-bag-${bagIndex}`}
                             sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
                           >
-                            <Typography variant="body1">Bag {bagIndex + 1}: {weight} kg</Typography>
+                            <Typography variant="body1">Bag {bagIndex + 1}: {parseFloat(weight).toFixed(2)} kg</Typography>
                             <Box sx={{ display: "flex", gap: 1 }}>
                               {selectedBatch?.isStored || grade.is_stored ? null : (
                                 <Button
