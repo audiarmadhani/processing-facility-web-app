@@ -20,10 +20,11 @@ const TransportStation = () => {
   const [paidTo, setPaidTo] = useState('');
   const [isOtherFarmer, setIsOtherFarmer] = useState(false);
   const [customPaidTo, setCustomPaidTo] = useState('');
+  const [customFarmerAddress, setCustomFarmerAddress] = useState('');
+  const [customBankAccount, setCustomBankAccount] = useState('');
+  const [customBankName, setCustomBankName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [farmers, setFarmers] = useState([]);
-  const [bankAccount, setBankAccount] = useState('');
-  const [bankName, setBankName] = useState('');
   const [transportData, setTransportData] = useState([]);
   const [locationData, setLocationData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -108,8 +109,9 @@ const TransportStation = () => {
       setIsOtherFarmer(true);
       setSelectedFarmerDetails(null);
       setCustomPaidTo('');
-      setBankAccount('');
-      setBankName('');
+      setCustomFarmerAddress('');
+      setCustomBankAccount('');
+      setCustomBankName('');
     } else {
       setIsOtherFarmer(false);
       const selectedFarmer = farmers.find(farmer => farmer.farmerName === value);
@@ -119,13 +121,16 @@ const TransportStation = () => {
         bankAccount: selectedFarmer.bankAccount || '',
         bankName: selectedFarmer.bankName || ''
       } : null);
-      setBankAccount(selectedFarmer?.bankAccount || '');
-      setBankName(selectedFarmer?.bankName || '');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isOtherFarmer && !customPaidTo) {
+      setSnackbarMessage('Please enter a name for Paid To.');
+      setSnackbarOpen(true);
+      return;
+    }
     try {
       const payload = {
         batchNumber: selectedBatchNumbers.join(','),
@@ -136,8 +141,8 @@ const TransportStation = () => {
         paidTo: isOtherFarmer ? customPaidTo : paidTo,
         farmerID: isOtherFarmer ? null : selectedFarmerDetails?.farmerID,
         paymentMethod,
-        bankAccount: isOtherFarmer ? null : bankAccount,
-        bankName: isOtherFarmer ? null : bankName
+        bankAccount: isOtherFarmer ? customBankAccount || null : selectedFarmerDetails?.bankAccount || null,
+        bankName: isOtherFarmer ? customBankName || null : selectedFarmerDetails?.bankName || null
       };
       const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', payload);
       if (response.status === 201) {
@@ -159,10 +164,11 @@ const TransportStation = () => {
           setCost('');
           setPaidTo('');
           setCustomPaidTo('');
+          setCustomFarmerAddress('');
+          setCustomBankAccount('');
+          setCustomBankName('');
           setIsOtherFarmer(false);
           setPaymentMethod('');
-          setBankAccount('');
-          setBankName('');
           setSelectedFarmerDetails(null);
           setSnackbarMessage('Transport data and payment created successfully!');
           setSnackbarOpen(true);
@@ -279,14 +285,40 @@ const TransportStation = () => {
                   </FormControl>
                 </Grid>
                 {isOtherFarmer && (
-                  <Grid item xs={12}>
-                    <TextField
-                      label="Custom Paid To"
-                      value={customPaidTo}
-                      onChange={e => setCustomPaidTo(e.target.value)}
-                      fullWidth
-                    />
-                  </Grid>
+                  <>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Paid To Name"
+                        value={customPaidTo}
+                        onChange={e => setCustomPaidTo(e.target.value)}
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Address"
+                        value={customFarmerAddress}
+                        onChange={e => setCustomFarmerAddress(e.target.value)}
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Bank Account"
+                        value={customBankAccount}
+                        onChange={e => setCustomBankAccount(e.target.value)}
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Bank Name"
+                        value={customBankName}
+                        onChange={e => setCustomBankName(e.target.value)}
+                        fullWidth
+                      />
+                    </Grid>
+                  </>
                 )}
                 {!isOtherFarmer && selectedFarmerDetails && (
                   <>
