@@ -114,85 +114,80 @@ const DryMillStation = () => {
   };
 
   const fetchExistingGrades = (batch) => {
-    try {
-      if (!batch) throw new Error("Selected batch is not set.");
+    return new Promise((resolve, reject) => {
+      try {
+        if (!batch) throw new Error("Selected batch is not set.");
 
-      const isSubBatch = !!batch.parentBatchNumber;
-      const relevantBatchNumber = isSubBatch ? batch.parentBatchNumber : batch.batchNumber;
-      const parentBatch = parentBatches.find(p => p.batchNumber === relevantBatchNumber) || 
-                         subBatches.find(s => s.batchNumber === relevantBatchNumber);
+        const isSubBatch = !!batch.parentBatchNumber;
+        const relevantBatchNumber = isSubBatch ? batch.parentBatchNumber : batch.batchNumber;
+        const parentBatch = parentBatches.find(p => p.batchNumber === relevantBatchNumber) || 
+                           subBatches.find(s => s.batchNumber === relevantBatchNumber);
 
-      const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
-      const gradesData = [];
+        const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
+        const gradesData = [];
 
-      if (parentBatch?.green_bean_splits) {
-        const splits = parentBatch.green_bean_splits.split("; ");
-        splits.forEach(split => {
-          const match = split.match(/Grade: ([^,]+), Weight: ([^,]+), Split: ([^,]+), Bagged: ([^,]+), Stored: ([^;]+)/);
-          if (match) {
-            const [, grade, weightStr, , baggedAt, stored] = match;
-            const weight = weightStr === "N/A" ? "" : parseFloat(weightStr);
-            const isStored = stored === "Yes";
-            const bagWeights = parentBatch.bagWeights.filter((_, idx) => 
-              parentBatch.bagWeights.slice(0, idx + 1).length <= 
-              parentBatch.bagWeights.length * (gradeOrder.indexOf(grade) + 1) / gradeOrder.length
+        if (parentBatch?.green_bean_splits) {
+          const splits = parentBatch.green_bean_splits.split("; ");
+          splits.forEach(split => {
+            const match = split.match(/Grade: ([^,]+), Weight: ([^,]+), Split: ([^,]+), Bagged: ([^,]+), Stored: ([^;]+)/);
+            if (match) {
+              const [, grade, weightStr, , baggedAt, stored] = match;
+              const weight = weightStr === "N/A" ? "" : parseFloat(weightStr);
+              const isStored = stored === "Yes";
+              const bagWeights = parentBatch.bagWeights.filter((_, idx) => 
+                parentBatch.bagWeights.slice(0, idx + 1).length <= 
+                parentBatch.bagWeights.length * (gradeOrder.indexOf(grade) + 1) / gradeOrder.length
+              );
+              gradesData.push({
+                grade,
+                weight: weight || "",
+                bagWeights: bagWeights.map(w => w.toString()),
+                bagged_at: baggedAt !== "N/A" ? baggedAt : new Date().toISOString().split("T")[0],
+                tempSequence: "0001",
+                isStored
+              });
+            }
+          });
+        }
+
+        const filteredGrades = isSubBatch
+          ? gradesData.filter(g => g.grade === batch.quality)
+          : gradeOrder.map(grade => 
+              gradesData.find(g => g.grade === grade) || {
+                grade,
+                weight: "",
+                bagWeights: [],
+                bagged_at: new Date().toISOString().split("T")[0],
+                tempSequence: "0001",
+                isStored: false
+              }
             );
-            gradesData.push({
-              grade,
-              weight: weight || "",
-              bagWeights: bagWeights.map(w => w.toString()),
-              bagged_at: baggedAt !== "N/A" ? baggedAt : new Date().toISOString().split("T")[0],
-              tempSequence: "0001",
-              isStored
-            });
+
+        filteredGrades.forEach(grade => {
+          if (grade.bagWeights.length > 0 && grade.tempSequence) {
+            const key = `${batch?.parentBatchNumber || batch?.batchNumber}-${batch?.producer}-${batch?.productLine}-${batch?.processingType}-${batch?.type}-${grade.grade}`;
+            setSequenceMap(prev => ({
+              ...prev,
+              [key]: grade.tempSequence
+            }));
           }
         });
+
+        resolve(filteredGrades.length > 0 ? filteredGrades : [{
+          grade: batch.quality || "Grade 1",
+          weight: "",
+          bagWeights: [],
+          bagged_at: new Date().toISOString().split("T")[0],
+          tempSequence: "0001",
+          isStored: false
+        }]);
+      } catch (error) {
+        setSnackbarMessage(error.message || "Failed to fetch existing grades.");
+        setSnackbarSeverity("error");
+        setOpenSnackbar(true);
+        reject(error);
       }
-
-      const filteredGrades = isSubBatch
-        ? gradesData.filter(g => g.grade === batch.quality)
-        : gradeOrder.map(grade => 
-            gradesData.find(g => g.grade === grade) || {
-              grade,
-              weight: "",
-              bagWeights: [],
-              bagged_at: new Date().toISOString().split("T")[0],
-              tempSequence: "0001",
-              isStored: false
-            }
-          );
-
-      filteredGrades.forEach(grade => {
-        if (grade.bagWeights.length > 0 && grade.tempSequence) {
-          const key = `${batch?.parentBatchNumber || batch?.batchNumber}-${batch?.producer}-${batch?.productLine}-${batch?.processingType}-${batch?.type}-${grade.grade}`;
-          setSequenceMap(prev => ({
-            ...prev,
-            [key]: grade.tempSequence
-          }));
-        }
-      });
-
-      return filteredGrades.length > 0 ? filteredGrades : [{
-        grade: batch.quality || "Grade 1",
-        weight: "",
-        bagWeights: [],
-        bagged_at: new Date().toISOString().split("T")[0],
-        tempSequence: "0001",
-        isStored: false
-      }];
-    } catch (error) {
-      setSnackbarMessage(error.message || "Failed to fetch existing grades.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-      return [{
-        grade: batch.quality || "Grade 1",
-        weight: "",
-        bagWeights: [],
-        bagged_at: new Date().toISOString().split("T")[0],
-        tempSequence: "0001",
-        isStored: false
-      }];
-    }
+    });
   };
 
   const fetchLatestRfid = async () => {
@@ -532,7 +527,7 @@ const DryMillStation = () => {
       fetchDryMillData();
       fetchLatestRfid();
     }, 300000);
-    return () => clearInterval(id);
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -542,6 +537,16 @@ const DryMillStation = () => {
         const initialWeights = {};
         existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
         setCurrentWeights(initialWeights);
+        setOpenDialog(true);
+      }).catch(() => {
+        setGrades([{
+          grade: selectedBatch.quality || "Grade 1",
+          weight: "",
+          bagWeights: [],
+          bagged_at: new Date().toISOString().split("T")[0],
+          tempSequence: "0001",
+          isStored: false
+        }]);
         setOpenDialog(true);
       });
     }
