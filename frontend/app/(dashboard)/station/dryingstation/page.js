@@ -31,8 +31,6 @@ ChartJS.register(
   ScatterController
 );
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
 const DryingStation = () => {
   const { data: session, status } = useSession();
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -44,6 +42,7 @@ const DryingStation = () => {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [dryingMeasurements, setDryingMeasurements] = useState([]);
   const [newMoisture, setNewMoisture] = useState('');
+  const [newMeasurementDate, setNewMeasurementDate] = useState('');
   const [greenhouseData, setGreenhouseData] = useState({});
   const [openEnvDialog, setOpenEnvDialog] = useState(false);
   const [historicalEnvData, setHistoricalEnvData] = useState([]);
@@ -56,7 +55,7 @@ const DryingStation = () => {
     "Drying Area 3": "GH_SENSOR_3",
     "Drying Area 4": "GH_SENSOR_4",
     "Drying Area 5": "GH_SENSOR_5",
-    "Drying Room": "GH_SENSOR_6" // Example mapping, adjust as needed
+    "Drying Room": "GH_SENSOR_6"
   };
 
   const fetchDryingData = async () => {
@@ -142,16 +141,43 @@ const DryingStation = () => {
       setOpenSnackbar(true);
       return;
     }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const measurementDate = newMeasurementDate || today;
+    const selectedDate = new Date(measurementDate);
+    const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
+    const now = new Date();
+
+    if (selectedDate > now) {
+      setSnackbarMessage('Measurement date cannot be in the future');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    if (startDryingDate && selectedDate < startDryingDate) {
+      setSnackbarMessage('Measurement date cannot be before the start drying date');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
     try {
+      const payload = {
+        batchNumber: selectedBatch.batchNumber,
+        moisture: parseFloat(newMoisture),
+        measurement_date: measurementDate
+      };
       const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-measurement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batchNumber: selectedBatch.batchNumber, moisture: parseFloat(newMoisture) })
+        body: JSON.stringify(payload)
       });
       if (!response.ok) throw new Error('Failed to save drying measurement');
       const result = await response.json();
       setDryingMeasurements([...dryingMeasurements, result.measurement]);
       setNewMoisture('');
+      setNewMeasurementDate('');
       setSnackbarMessage('Drying measurement added successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
@@ -187,6 +213,7 @@ const DryingStation = () => {
     setSelectedBatch(null);
     setDryingMeasurements([]);
     setNewMoisture('');
+    setNewMeasurementDate('');
   };
 
   const handleCloseEnvDialog = () => {
@@ -398,7 +425,7 @@ const DryingStation = () => {
         <DialogTitle>Drying Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
-            <Grid item xs={8}>
+            <Grid item xs={4}>
               <TextField
                 label="Moisture (%)"
                 value={newMoisture}
@@ -406,6 +433,16 @@ const DryingStation = () => {
                 type="number"
                 fullWidth
                 inputProps={{ min: 0, max: 100, step: 0.01 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Measurement Date"
+                type="date"
+                value={newMeasurementDate}
+                onChange={e => setNewMeasurementDate(e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={4}>
