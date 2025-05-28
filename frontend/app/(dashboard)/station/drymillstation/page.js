@@ -54,12 +54,12 @@ const DryMillStation = () => {
         notes: batch.notes || "N/A",
         type: batch.type || "N/A",
         storeddatetrunc: batch.storeddatetrunc || "N/A",
-        isStored: batch.isStored,
+        isStored: batch.isStored || false,
         parentBatchNumber: batch.parentBatchNumber || null,
         weight: batch.weight || "N/A",
         referenceNumber: batch.referenceNumber || "N/A",
-        bagWeights: batch.bagWeights || [],
-        green_bean_splits: batch.green_bean_splits || null
+        bagWeights: Array.isArray(batch.bagWeights) ? batch.bagWeights : [],
+        green_bean_splits: batch.green_bean_splits || ""
       }));
 
       const parentBatchesData = formattedData.filter(
@@ -68,6 +68,9 @@ const DryMillStation = () => {
       const subBatchesData = formattedData.filter(
         (batch) => batch.parentBatchNumber
       );
+
+      console.log("Parent Batches:", parentBatchesData);
+      console.log("Sub Batches:", subBatchesData);
 
       setParentBatches(parentBatchesData);
       setSubBatches(subBatchesData);
@@ -116,31 +119,37 @@ const DryMillStation = () => {
   const fetchExistingGrades = (batch) => {
     return new Promise((resolve, reject) => {
       try {
-        if (!batch) throw new Error("Selected batch is not set.");
+        if (!batch) {
+          throw new Error("Selected batch is not set.");
+        }
+
+        console.log("Fetching grades for batch:", batch);
 
         const isSubBatch = !!batch.parentBatchNumber;
         const relevantBatchNumber = isSubBatch ? batch.parentBatchNumber : batch.batchNumber;
         const parentBatch = parentBatches.find(p => p.batchNumber === relevantBatchNumber) || 
                            subBatches.find(s => s.batchNumber === relevantBatchNumber);
 
+        console.log("Parent batch found:", parentBatch);
+
         const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
         const gradesData = [];
 
         if (parentBatch?.green_bean_splits) {
-          const splits = parentBatch.green_bean_splits.split("; ");
-          splits.forEach(split => {
+          const splits = parentBatch.green_bean_splits.split("; ").filter(s => s.trim());
+          splits.forEach((split, idx) => {
             const match = split.match(/Grade: ([^,]+), Weight: ([^,]+), Split: ([^,]+), Bagged: ([^,]+), Stored: ([^;]+)/);
             if (match) {
               const [, grade, weightStr, , baggedAt, stored] = match;
-              const weight = weightStr === "N/A" ? "" : parseFloat(weightStr);
+              const weight = weightStr === "N/A" ? 0 : parseFloat(weightStr) || 0;
               const isStored = stored === "Yes";
-              const bagWeights = parentBatch.bagWeights.filter((_, idx) => 
-                parentBatch.bagWeights.slice(0, idx + 1).length <= 
-                parentBatch.bagWeights.length * (gradeOrder.indexOf(grade) + 1) / gradeOrder.length
-              );
+              // Assign bagWeights proportionally based on grade index
+              const bagsPerGrade = Math.floor(parentBatch.bagWeights.length / splits.length);
+              const startIdx = idx * bagsPerGrade;
+              const bagWeights = parentBatch.bagWeights.slice(startIdx, startIdx + bagsPerGrade);
               gradesData.push({
                 grade,
-                weight: weight || "",
+                weight,
                 bagWeights: bagWeights.map(w => w.toString()),
                 bagged_at: baggedAt !== "N/A" ? baggedAt : new Date().toISOString().split("T")[0],
                 tempSequence: "0001",
@@ -150,22 +159,48 @@ const DryMillStation = () => {
           });
         }
 
-        const filteredGrades = isSubBatch
-          ? gradesData.filter(g => g.grade === batch.quality)
-          : gradeOrder.map(grade => 
-              gradesData.find(g => g.grade === grade) || {
-                grade,
-                weight: "",
-                bagWeights: [],
-                bagged_at: new Date().toISOString().split("T")[0],
-                tempSequence: "0001",
-                isStored: false
-              }
-            );
+        console.log("Parsed gradesData:", gradesData);
+
+        let filteredGrades = [];
+        if (isSubBatch) {
+          if (batch.quality) {
+            const subBatchGrade = gradesData.find(g => g.grade === batch.quality) || {
+              grade: batch.quality,
+              weight: 0,
+              bagWeights: [],
+              bagged_at: new Date().toISOString().split("T")[0],
+              tempSequence: "0001",
+              isStored: parentBatch?.isStored || false
+            };
+            filteredGrades = [subBatchGrade];
+          } else {
+            filteredGrades = [{
+              grade: "Grade 1",
+              weight: 0,
+              bagWeights: [],
+              bagged_at: new Date().toISOString().split("T")[0],
+              tempSequence: "0001",
+              isStored: parentBatch?.isStored || false
+            }];
+          }
+        } else {
+          filteredGrades = gradeOrder.map(grade => 
+            gradesData.find(g => g.grade === grade) || {
+              grade,
+              weight: 0,
+              bagWeights: [],
+              bagged_at: new Date().toISOString().split("T")[0],
+              tempSequence: "0001",
+              isStored: parentBatch?.isStored || false
+            }
+          );
+        }
+
+        console.log("Filtered grades:", filteredGrades);
 
         filteredGrades.forEach(grade => {
           if (grade.bagWeights.length > 0 && grade.tempSequence) {
-            const key = `${batch?.parentBatchNumber || batch?.batchNumber}-${batch?.producer}-${batch?.productLine}-${batch?.processingType}-${batch?.type}-${grade.grade}`;
+            const key = `${batch?.parentBatchNumber || batch?.batchNumber}-${batch?.producer || 'N/A'}-${batch?.productLine || 'N/A'}-${batch?.processingType || 'N/A'}-${batch?.type || 'N/A'}-${grade.grade}`;
             setSequenceMap(prev => ({
               ...prev,
               [key]: grade.tempSequence
@@ -173,19 +208,20 @@ const DryMillStation = () => {
           }
         });
 
-        resolve(filteredGrades.length > 0 ? filteredGrades : [{
-          grade: batch.quality || "Grade 1",
-          weight: "",
+        resolve(filteredGrades);
+      } catch (error) {
+        console.error("Error in fetchExistingGrades:", error);
+        setSnackbarMessage(error.message || "Failed to fetch existing grades.");
+        setSnackbarSeverity("error");
+        setOpenSnackbar(true);
+        resolve([{
+          grade: batch?.quality || "Grade 1",
+          weight: 0,
           bagWeights: [],
           bagged_at: new Date().toISOString().split("T")[0],
           tempSequence: "0001",
           isStored: false
         }]);
-      } catch (error) {
-        setSnackbarMessage(error.message || "Failed to fetch existing grades.");
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
-        reject(error);
       }
     });
   };
@@ -310,7 +346,7 @@ const DryMillStation = () => {
       return currentGrade.tempSequence;
     }
 
-    const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade}`;
+    const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer || 'N/A'}-${selectedBatch?.productLine || 'N/A'}-${selectedBatch?.processingType || 'N/A'}-${selectedBatch?.type || 'N/A'}-${grade}`;
     
     if (sequenceMap[key]) {
       return sequenceMap[key];
@@ -318,9 +354,9 @@ const DryMillStation = () => {
 
     try {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
-        producer: selectedBatch.producer,
-        productLine: selectedBatch.productLine,
-        processingType: selectedBatch.processingType,
+        producer: selectedBatch.producer || "N/A",
+        productLine: selectedBatch.productLine || "N/A",
+        processingType: selectedBatch.processingType || "N/A",
         year: new Date().getFullYear().toString().slice(-2),
         grade,
         action: "increment"
@@ -343,9 +379,9 @@ const DryMillStation = () => {
       for (const adjustment of sequenceAdjustments) {
         if (adjustment.action === "increment") {
           await axios.post("https://processing-facility-backend.onrender.com/api/lot-number-sequence", {
-            producer: selectedBatch.producer,
-            productLine: selectedBatch.productLine,
-            processingType: selectedBatch.processingType,
+            producer: selectedBatch.producer || "N/A",
+            productLine: selectedBatch.productLine || "N/A",
+            processingType: selectedBatch.processingType || "N/A",
             year: new Date().getFullYear().toString().slice(-2),
             grade: adjustment.grade,
             action: "decrement"
@@ -367,21 +403,21 @@ const DryMillStation = () => {
     const productionDate = selectedBatch?.dryMillExited && selectedBatch.status === "Processed"
       ? new Date(selectedBatch.dryMillExited).toLocaleDateString()
       : new Date().toLocaleDateString();
-    const producerAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HQ";
-    const producerReferenceAbbreviation = selectedBatch.producer === "BTM" ? "BTM" : "HEQA";
+    const producerAbbreviation = selectedBatch?.producer === "BTM" ? "BTM" : "HQ";
+    const producerReferenceAbbreviation = selectedBatch?.producer === "BTM" ? "BTM" : "HEQA";
     const currentYear = new Date().getFullYear().toString().slice(-2);
-    const productLineEntry = productLines.find(pl => pl.productLine === selectedBatch.productLine) || {};
+    const productLineEntry = productLines.find(pl => pl.productLine === selectedBatch?.productLine) || {};
     const productLineAbbreviation = productLineEntry.abbreviation || "Unknown";
     const productLineReferenceAbbreviation = productLineAbbreviation === "R" ? "RE" : productLineAbbreviation === "M" ? "MI" : productLineAbbreviation === "C" ? "CO" : productLineAbbreviation;
-    const processingTypeEntry = processingTypes.find(pt => pt.processingType === selectedBatch.processingType) || {};
+    const processingTypeEntry = processingTypes.find(pt => pt.processingType === selectedBatch?.processingType) || {};
     const processingTypeAbbreviation = processingTypeEntry.abbreviation || "Unknown";
     const qualityAbbreviation = grade === "Specialty Grade" ? "S" : grade === "Grade 1" ? "G1" : grade === "Grade 2" ? "G2" : grade === "Grade 3" ? "G3" : "G4";
     const tempSequence = grades.find(g => g.grade === grade)?.tempSequence || "0001";
     const lotNumber = `${producerAbbreviation}${currentYear}${productLineAbbreviation}-${processingTypeAbbreviation}-${tempSequence}-${qualityAbbreviation}`;
-    const referenceMatch = referenceMappings.find(rm => rm.producer === selectedBatch.producer && rm.productLine === selectedBatch.productLine && rm.processingType === selectedBatch.processingType && rm.type === selectedBatch.type) || {};
+    const referenceMatch = referenceMappings.find(rm => rm.producer === selectedBatch?.producer && rm.productLine === selectedBatch?.productLine && rm.processingType === selectedBatch?.processingType && rm.type === selectedBatch?.type) || {};
     const referenceSequence = referenceMatch.referenceNumber ? referenceMatch.referenceNumber.split("-")[3] : "000";
     const referenceNumber = `ID-${producerReferenceAbbreviation}-${productLineReferenceAbbreviation}-${referenceSequence}-${qualityAbbreviation}`;
-    const cherryLotNumber = selectedBatch.batchNumber;
+    const cherryLotNumber = selectedBatch?.batchNumber || "N/A";
     const labels = [
       { label: "Lot Number", value: lotNumber },
       { label: "Reference Number", value: referenceNumber },
@@ -458,6 +494,8 @@ const DryMillStation = () => {
   };
 
   const handleAddBag = async (index, weight) => {
+    console.log("Adding bag:", { index, weight, grades, selectedBatch });
+
     if (!weight || isNaN(weight) || parseFloat(weight) <= 0) {
       setSnackbarMessage("Please enter a valid weight.");
       setSnackbarSeverity("error");
@@ -470,6 +508,13 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
+    if (!grades[index]) {
+      setSnackbarMessage("Invalid grade selected.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+
     const grade = grades[index].grade;
     const sequence = await fetchSequenceNumber(grade);
     setGrades(prevGrades => {
@@ -477,7 +522,8 @@ const DryMillStation = () => {
       newGrades[index] = {
         ...newGrades[index],
         bagWeights: [...newGrades[index].bagWeights, parseFloat(weight).toString()],
-        tempSequence: sequence
+        tempSequence: sequence,
+        weight: (parseFloat(newGrades[index].weight || 0) + parseFloat(weight)).toString()
       };
       return newGrades;
     });
@@ -500,9 +546,11 @@ const DryMillStation = () => {
       );
       setGrades(prevGrades => {
         const newGrades = [...prevGrades];
+        const removedWeight = parseFloat(newGrades[gradeIndex].bagWeights[bagIndex]);
         newGrades[gradeIndex] = {
           ...newGrades[gradeIndex],
-          bagWeights: newGrades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex)
+          bagWeights: newGrades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex),
+          weight: (parseFloat(newGrades[gradeIndex].weight || 0) - removedWeight).toString()
         };
         return newGrades;
       });
@@ -518,11 +566,14 @@ const DryMillStation = () => {
   };
 
   useEffect(() => {
-    fetchDryMillData();
-    fetchLatestRfid();
-    fetchProcessingTypes();
-    fetchProductLines();
-    fetchReferenceMappings();
+    const initializeData = async () => {
+      await fetchDryMillData();
+      await fetchLatestRfid();
+      await fetchProcessingTypes();
+      await fetchProductLines();
+      await fetchReferenceMappings();
+    };
+    initializeData();
     const intervalId = setInterval(() => {
       fetchDryMillData();
       fetchLatestRfid();
@@ -531,26 +582,32 @@ const DryMillStation = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedBatch && batchNumberToFetch) {
+    if (selectedBatch && batchNumberToFetch && parentBatches.length > 0) {
+      console.log("useEffect triggered:", { selectedBatch, batchNumberToFetch });
       fetchExistingGrades(selectedBatch).then(existingGrades => {
+        console.log("Setting grades:", existingGrades);
         setGrades(existingGrades);
         const initialWeights = {};
-        existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
+        existingGrades.forEach((_, idx) => {
+          initialWeights[idx] = "";
+        });
         setCurrentWeights(initialWeights);
         setOpenDialog(true);
       }).catch(() => {
-        setGrades([{
+        const defaultGrade = [{
           grade: selectedBatch.quality || "Grade 1",
-          weight: "",
+          weight: 0,
           bagWeights: [],
           bagged_at: new Date().toISOString().split("T")[0],
           tempSequence: "0001",
           isStored: false
-        }]);
+        }];
+        setGrades(defaultGrade);
+        setCurrentWeights({ 0: "" });
         setOpenDialog(true);
       });
     }
-  }, [selectedBatch, batchNumberToFetch]);
+  }, [selectedBatch, batchNumberToFetch, parentBatches]);
 
   const handleRefreshData = () => {
     fetchDryMillData();
@@ -570,6 +627,7 @@ const DryMillStation = () => {
     setSelectedBatch(null);
     setBatchNumberToFetch(null);
     setGrades([]);
+    setCurrentWeights({});
     setSequenceAdjustments([]);
   };
 
@@ -767,7 +825,7 @@ const DryMillStation = () => {
         <DialogTitle>Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 2 }}>
-            {grades.map((grade, index) => {
+            {grades.length > 0 ? grades.map((grade, index) => {
               const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w || 0), 0);
               const totalBags = grade.bagWeights.length;
               return (
@@ -843,7 +901,11 @@ const DryMillStation = () => {
                   </Box>
                 </Grid>
               );
-            })}
+            }) : (
+              <Grid item xs={12}>
+                <Typography variant="body1" color="text.secondary">No grades available.</Typography>
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>
@@ -852,7 +914,7 @@ const DryMillStation = () => {
             variant="contained"
             color="primary"
             onClick={handleSortAndWeigh}
-            disabled={!selectedBatch || selectedBatch?.isStored}
+            disabled={!selectedBatch || selectedBatch?.isStored || grades.length === 0}
           >
             Save Splits
           </Button>
