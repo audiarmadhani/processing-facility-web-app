@@ -22,7 +22,6 @@ import {
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from 'axios';
 
-
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 function FarmerInputStation() {
@@ -42,11 +41,15 @@ function FarmerInputStation() {
   const [notes, setNotes] = useState('');
   const [farmVarieties, setFarmVarieties] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [desa, setDesa] = useState('');
   const [kecamatan, setKecamatan] = useState('');
   const [kabupaten, setKabupaten] = useState('');
   const [locationData, setLocationData] = useState([]);
-  const [isContract, setIsContract] = useState('');
+  const [contractType, setContractType] = useState('');
+  const [broker, setBroker] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -60,19 +63,23 @@ function FarmerInputStation() {
   };
 
   const bankOptions = [
-    'Bank Mandiri',
-    'BRI',
-    'BCA',
-    'BNI',
-    'BTN',
-    'BSI',
-    'CIMB Niaga',
-    'OCBC NISP',
-    'Permata Bank',
-    'Danamon',
-    'BPD Bali',
-    // Add more banks as needed
+    'Bank Mandiri', 'BRI', 'BCA', 'BNI', 'BTN', 'BSI',
+    'CIMB Niaga', 'OCBC NISP', 'Permata Bank', 'Danamon', 'BPD Bali'
   ];
+
+  const brokerOptions = ['Nyoman', 'Agus TS'];
+
+  const paymentMethodOptions = [
+    'Bank Transfer to Farmer', 'Bank Transfer to Broker',
+    'Cash to Farmer', 'Cash to Broker'
+  ];
+
+  const contractTypeOptions = ['Contract', 'Beli Putus'];
+
+  const varietyOptions = {
+    Arabica: ['Cobra', 'Yellow Caturra', 'Kopyol'],
+    Robusta: ['BP42']
+  };
 
   useEffect(() => {
     if (session?.user?.role) {
@@ -80,6 +87,11 @@ function FarmerInputStation() {
       fetchLocationData();
     }
   }, [session?.user?.role]);
+
+  useEffect(() => {
+    // Reset farmVarieties when farmType changes
+    setFarmVarieties([]);
+  }, [farmType]);
 
   const fetchFarmerData = async () => {
     try {
@@ -106,6 +118,9 @@ function FarmerInputStation() {
     } catch (error) {
       console.error("Error fetching farmer data:", error);
       setFarmerData([]);
+      setSnackbarMessage('Failed to fetch farmer data.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
     }
   };
 
@@ -116,6 +131,7 @@ function FarmerInputStation() {
     } catch (error) {
       console.error('Error fetching location data:', error);
       setSnackbarMessage('Failed to fetch location data.');
+      setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
   };
@@ -123,24 +139,35 @@ function FarmerInputStation() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate bank details for bank transfer methods
+    if (['Bank Transfer to Farmer', 'Bank Transfer to Broker'].includes(paymentMethod) &&
+        (!bankAccount.trim() || !bankName.trim())) {
+      setSnackbarMessage('Bank account and bank name are required for bank transfer methods.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
     const farmVarietiesCSV = farmVarieties.join(", ");
 
     const payload = {
-      farmerName : farmerName.trim(),
+      farmerName: farmerName.trim(),
       desa,
       kecamatan,
       kabupaten,
       farmerAddress,
-      bankAccount,
-      bankName,
+      bankAccount: bankAccount.trim() || null,
+      bankName: bankName.trim() || null,
       farmerLandArea,
       farmerContact,
       latitude: latitude.trim() === "" ? null : parseFloat(latitude),
       longitude: longitude.trim() === "" ? null : parseFloat(longitude),
       farmType,
       notes,
-      farmVarieties : farmVarietiesCSV.trim(),
-      isContract,
+      farmVarieties: farmVarietiesCSV.trim() || null,
+      contractType,
+      broker: broker || null,
+      paymentMethod
     };
 
     try {
@@ -168,18 +195,27 @@ function FarmerInputStation() {
         setFarmType('');
         setNotes('');
         setFarmVarieties([]);
-        setIsContract('');
+        setContractType('');
+        setBroker('');
+        setPaymentMethod('');
 
         await fetchFarmerData();
 
+        setSnackbarMessage('Farmer successfully added!');
+        setSnackbarSeverity('success');
         setSnackbarOpen(true);
-        
       } else {
         const errorData = await response.json();
-        console.error(errorData.message || "Error creating batch.");
+        console.error(errorData.message || "Error creating farmer.");
+        setSnackbarMessage(errorData.message || 'Failed to add farmer.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
     } catch (error) {
       console.error("Failed to communicate with the backend:", error);
+      setSnackbarMessage('Failed to communicate with the backend.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
     }
   };
 
@@ -206,7 +242,6 @@ function FarmerInputStation() {
   const kecamatanList = kabupaten ? [...new Set(locationData.filter(item => item.kabupaten === kabupaten).map(item => item.kecamatan))] : [];
   const desaList = kecamatan ? locationData.filter(item => item.kecamatan === kecamatan).map(item => item.desa) : [];
 
-
   const columns = [
     { field: "farmerID", headerName: "ID", sortable: true, width: 40 },
     { field: "farmerName", headerName: "Name", sortable: true, width: 150 },
@@ -214,17 +249,16 @@ function FarmerInputStation() {
     { field: "kecamatan", headerName: "Kecamatan", sortable: true, width: 120 },
     { field: "kabupaten", headerName: "Kabupaten", sortable: true, width: 120 },
     { field: "farmerAddress", headerName: "Address", sortable: true, width: 200 },
-    { field: "isContract", headerName: "Contract", sortable: true, width: 80 },
+    { field: "contractType", headerName: "Contract Type", sortable: true, width: 120 },
+    { field: "broker", headerName: "Broker", sortable: true, width: 100 },
+    { field: "paymentMethod", headerName: "Payment Method", sortable: true, width: 150 },
     { field: "bankAccount", headerName: "Bank Account", sortable: true, width: 150 },
     { field: "bankName", headerName: "Bank Name", sortable: true, width: 120 },
     { field: "farmerLandArea", headerName: "Land Area", sortable: true, width: 120 },
     { field: "farmerContact", headerName: "Contact", sortable: true, width: 150 },
-    // { field: "latitude", headerName: "Latitude", sortable: true },
-    // { field: "longitude", headerName: "Longitude", sortable: true },
     { field: "farmType", headerName: "Type", sortable: true, width: 90 },
     { field: "farmVarieties", headerName: "Coffee Varieties", sortable: true, width: 180 },
     { field: "registrationDate", headerName: "Registration Date", sortable: true, width: 150 },
-    // { field: "isActive", headerName: "Active", sortable: true },
     { field: "notes", headerName: "Notes", sortable: true, width: 150 },
   ];
 
@@ -233,8 +267,8 @@ function FarmerInputStation() {
     return <p>Loading...</p>;
   }
 
-  // Redirect to the sign-in page if the user is not logged in or doesn't have the admin role
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'receiving')) {
+  // Restrict access to admin, manager, or receiving roles
+  if (!session?.user || !['admin', 'manager', 'receiving'].includes(session.user.role)) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.
@@ -332,25 +366,25 @@ function FarmerInputStation() {
 
                 <Grid item xs={6}>
                   <FormControl fullWidth required>
-                    <InputLabel id="contract-label">Land Contract</InputLabel>
+                    <InputLabel id="contract-type-label">Contract Type</InputLabel>
                     <Select
-                      labelId="contract-label"
-                      id="contract"
-                      value={isContract}
-                      onChange={(e) => setIsContract(e.target.value)}
-                      input={<OutlinedInput label="Land Contract" />}
+                      labelId="contract-type-label"
+                      value={contractType}
+                      onChange={(e) => setContractType(e.target.value)}
+                      input={<OutlinedInput label="Contract Type" />}
                     >
-                      <MenuItem value="Yes">Yes</MenuItem>
-                      <MenuItem value="No">No</MenuItem>
+                      {contractTypeOptions.map(option => (
+                        <MenuItem key={option} value={option}>{option}</MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
 
                 <Grid item xs={6}>
                   <FormControl fullWidth required>
-                    <InputLabel id="type-label">Farm Type</InputLabel>
+                    <InputLabel id="farm-type-label">Farm Type</InputLabel>
                     <Select
-                      labelId="type-label"
+                      labelId="farm-type-label"
                       value={farmType}
                       onChange={(e) => setFarmType(e.target.value)}
                       input={<OutlinedInput label="Farm Type" />}
@@ -362,21 +396,52 @@ function FarmerInputStation() {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth disabled={!farmType}>
                     <InputLabel id="variety-label">Farm Varieties</InputLabel>
                     <Select
                       labelId="variety-label"
-                      id="variety"
                       multiple
                       value={farmVarieties}
                       onChange={(e) => setFarmVarieties(e.target.value)}
-                      input={<OutlinedInput label="Coffee Varieties" />}
+                      input={<OutlinedInput label="Farm Varieties" />}
                       MenuProps={MenuProps}
                     >
-                      <MenuItem value="Bourbon">Bourbon</MenuItem>
-                      <MenuItem value="Java">Java</MenuItem>
-                      <MenuItem value="S795">S795</MenuItem>
-                      <MenuItem value="Typica">Typica</MenuItem>
+                      {(varietyOptions[farmType] || []).map(variety => (
+                        <MenuItem key={variety} value={variety}>{variety}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <FormControl fullWidth>
+                    <InputLabel id="broker-label">Broker</InputLabel>
+                    <Select
+                      labelId="broker-label"
+                      value={broker}
+                      onChange={(e) => setBroker(e.target.value)}
+                      input={<OutlinedInput label="Broker" />}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {brokerOptions.map(option => (
+                        <MenuItem key={option} value={option}>{option}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="payment-method-label">Payment Method</InputLabel>
+                    <Select
+                      labelId="payment-method-label"
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      input={<OutlinedInput label="Payment Method" />}
+                    >
+                      {paymentMethodOptions.map(option => (
+                        <MenuItem key={option} value={option}>{option}</MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -386,14 +451,15 @@ function FarmerInputStation() {
                     freeSolo
                     options={bankOptions}
                     value={bankName}
-                    onChange={(event, newValue) => setBankName(newValue)}
+                    onChange={(event, newValue) => setBankName(newValue || '')}
                     onInputChange={(event, newInputValue) => setBankName(newInputValue)}
                     renderInput={(params) => (
                       <TextField
                         {...params}
                         label="Bank Name"
+                        multiline
                         fullWidth
-                        required
+                        required={paymentMethod.includes('Bank Transfer')}
                       />
                     )}
                   />
@@ -406,7 +472,7 @@ function FarmerInputStation() {
                     value={bankAccount}
                     onChange={(e) => setBankAccount(e.target.value)}
                     fullWidth
-                    required
+                    required={paymentMethod.includes('Bank Transfer')}
                     input={<OutlinedInput label="Bank Account Number" />}
                   />
                 </Grid>
@@ -473,10 +539,10 @@ function FarmerInputStation() {
       >
         <Alert
           onClose={handleCloseSnackbar}
-          severity="success"
+          severity={snackbarSeverity}
           sx={{ width: "100%" }}
         >
-          Farmer successfully added!
+          {snackbarMessage}
         </Alert>
       </Snackbar>
     </Grid>
