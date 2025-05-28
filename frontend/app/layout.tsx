@@ -28,8 +28,8 @@ import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 
 export const metadata = {
-  title: "Kopi Fabriek Platform",
-  description: "Processing Facility Platform",
+  title: "BTM HEQA Platform",
+  description: "BTM HEQA Processing Facility Platform",
   icons: {
     icon: "https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon%20(1).ico?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbiAoMSkuaWNvIiwiaWF0IjoxNzM4NTU1NTU5LCJleHAiOjEwMzc4NTU1NTU5fQ.rqew4VRFFxA7l_Q6sgpYAVOpHkTbG_h9F0CqIKQODd8",
   },
@@ -141,7 +141,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               authentication={AUTHENTICATION}
               branding={{
                 logo: <img src="https://cvxrcxjdirmajmkbiulc.supabase.co/storage/v1/object/sign/assets/favicon%20(1).ico?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhc3NldHMvZmF2aWNvbiAoMSkuaWNvIiwiaWF0IjoxNzM4NTU1NTU5LCJleHAiOjEwMzc4NTU1NTU5fQ.rqew4VRFFxA7l_Q6sgpYAVOpHkTbG_h9F0CqIKQODd8" alt="Kopi Fabriek" width={32} height={32} />,
-                title: "Kopi Fabriek Platform",
+                title: "BTM HEQA Platform",
                 homeUrl: "/",
               }}
             >

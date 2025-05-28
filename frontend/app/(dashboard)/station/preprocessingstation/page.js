@@ -368,15 +368,15 @@ const PreprocessingStation = () => {
 
   const producerOptions = {
     "": [" "],
-    HQ: ["Regional Lot", "Micro Lot", "Competition Lot"],
+    HQ: ["Regional Lot", "Micro Lot", "Experimental Lot"],
     BTM: ["Commercial Lot"],
   };
 
   const productLineOptions = {
       "": [" "],
       "Regional Lot": ["Pulped Natural", "Washed"],
-      "Micro Lot": ["Natural", "Washed", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Honey", "CM Natural", "CM Washed"],
-      "Competition Lot": ["CM Natural", "CM Washed"],
+      "Micro Lot": ["Natural", "Washed", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Honey", "CM Natural", "CM Washed", "CM Honey"],
+      "Experimental Lot": ["CM Natural", "CM Washed", "CM Honey"],
       "Commercial Lot": ["Washed", "Natural"],
   };
 
@@ -390,6 +390,7 @@ const PreprocessingStation = () => {
       "Anaerobic Honey": ["Specialty"],
       "CM Natural": ["Specialty"],
       "CM Washed": ["Specialty"],
+      "CM Honey": ["Specialty"],
   };
 
   useEffect(() => {
