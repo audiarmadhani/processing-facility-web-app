@@ -426,7 +426,7 @@ const PreprocessingStation = () => {
     { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
     { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
-    { field: 'notes', headerName: 'Notes', width: 200, sortable: true }
+    { field: 'preprocessing_notes', headerName: 'Notes', width: 200, sortable: true }
   ];
 
   const unprocessedColumns = [
