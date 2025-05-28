@@ -150,60 +150,65 @@ const DryMillStation = () => {
         throw new Error("Invalid response format: grades data is not an array");
       }
 
-      const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
-      const fetchedGradesMap = {};
-      data.forEach((grade) => {
-        fetchedGradesMap[grade.grade] = {
-          grade: grade.grade,
-          weight: grade.weight || "",
-          bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
-          bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
-          tempSequence: grade.tempSequence || "0001",
+      if (selectedBatch.parentBatchNumber) {
+        // Sub-batch: fetch only the specific grade matching selectedBatch.quality
+        const gradeData = data.find((grade) => grade.grade === selectedBatch.quality) || {
+          grade: selectedBatch.quality || "Grade 1",
+          weight: "",
+          bagWeights: [],
+          bagged_at: new Date().toISOString().split("T")[0],
+          tempSequence: "0001",
         };
-      });
+        return [{
+          grade: gradeData.grade,
+          weight: gradeData.weight || "",
+          bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights : [],
+          bagged_at: gradeData.bagged_at || new Date().toISOString().split("T")[0],
+          tempSequence: gradeData.tempSequence || "0001",
+        }];
+      } else {
+        // Parent batch: fetch all grades
+        const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
+        const fetchedGradesMap = {};
+        data.forEach((grade) => {
+          fetchedGradesMap[grade.grade] = {
+            grade: grade.grade,
+            weight: grade.weight || "",
+            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
+            bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
+            tempSequence: grade.tempSequence || "0001",
+          };
+        });
 
-      const gradesData = selectedBatch.parentBatchNumber
-        ? gradeOrder
-            .filter((grade) => grade === selectedBatch.quality)
-            .map((grade) =>
-              fetchedGradesMap[grade] || {
-                grade,
-                weight: "",
-                bagWeights: [],
-                bagged_at: new Date().toISOString().split("T")[0],
-                tempSequence: "0001",
-              }
-            )
-        : gradeOrder.map((grade) =>
-            fetchedGradesMap[grade] || {
-              grade,
-              weight: "",
-              bagWeights: [],
-              bagged_at: new Date().toISOString().split("T")[0],
-              tempSequence: "0001",
-            }
-          );
+        const gradesData = gradeOrder.map((grade) =>
+          fetchedGradesMap[grade] || {
+            grade,
+            weight: "",
+            bagWeights: [],
+            bagged_at: new Date().toISOString().split("T")[0],
+            tempSequence: "0001",
+          }
+        );
 
-      gradesData.forEach((grade) => {
-        if (grade.bagWeights.length > 0 && grade.tempSequence) {
-          const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade.grade}`;
-          setSequenceMap((prev) => ({
-            ...prev,
-            [key]: grade.tempSequence,
-          }));
-        }
-      });
+        gradesData.forEach((grade) => {
+          if (grade.bagWeights.length > 0 && grade.tempSequence) {
+            const key = `${selectedBatch?.parentBatchNumber || selectedBatch?.batchNumber}-${selectedBatch?.producer}-${selectedBatch?.productLine}-${selectedBatch?.processingType}-${selectedBatch?.type}-${grade.grade}`;
+            setSequenceMap((prev) => ({
+              ...prev,
+              [key]: grade.tempSequence,
+            }));
+          }
+        });
 
-      return gradesData.length > 0 ? gradesData : [
-        { grade: selectedBatch.quality || "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" }
-      ];
+        return gradesData;
+      }
     } catch (error) {
       console.error("Error fetching existing grades:", error);
       setSnackbarMessage(error.response?.data?.error || "Failed to fetch existing grades.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
-        { grade: selectedBatch.quality || "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" }
+        { grade: selectedBatch?.quality || "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" }
       ];
     }
   };
@@ -252,14 +257,18 @@ const DryMillStation = () => {
   };
 
   const handleConfirmComplete = async () => {
-    if (!selectedBatch) return;
+    if (!selectedBatch || !session?.user?.email) return;
     try {
-      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/complete`, {});
+      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/complete`, {
+        createdBy: session.user.email,
+        updatedBy: session.user.email,
+      });
       const data = response.data;
       setSnackbarMessage(data.message);
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
       setOpenDialog(false);
+      setOpenCompleteDialog(false);
       fetchDryMillData();
     } catch (error) {
       console.error("Error marking batch as processed:", error);
@@ -495,7 +504,7 @@ const DryMillStation = () => {
       return;
     }
     const grade = grades[index].grade;
-    const sequence = await fetchSequenceNumber(grade);
+    const sequence = selectedBatch.parentBatchNumber ? grades[index].tempSequence : await fetchSequenceNumber(grade);
     setGrades((prevGrades) => {
       const newGrades = [...prevGrades];
       newGrades[index] = {
@@ -506,6 +515,34 @@ const DryMillStation = () => {
       return newGrades;
     });
     setCurrentWeights((prev) => ({ ...prev, [index]: "" }));
+
+    if (selectedBatch.parentBatchNumber) {
+      try {
+        await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`, {
+          grade,
+          bagWeights: [...grades[index].bagWeights, parseFloat(weight).toString()],
+          bagged_at: new Date().toISOString().slice(0, 10),
+        });
+        setSnackbarMessage("Bag added successfully.");
+        setSnackbarSeverity("success");
+        setOpenSnackbar(true);
+        fetchDryMillData();
+      } catch (error) {
+        console.error("Error updating bags:", error);
+        setSnackbarMessage(error.response?.data?.error || "Failed to update bags.");
+        setSnackbarSeverity("error");
+        setOpenSnackbar(true);
+        // Revert local state change
+        setGrades((prevGrades) => {
+          const newGrades = [...prevGrades];
+          newGrades[index] = {
+            ...newGrades[index],
+            bagWeights: newGrades[index].bagWeights.filter((_, i) => i !== newGrades[index].bagWeights.length - 1),
+          };
+          return newGrades;
+        });
+      }
+    }
   };
 
   const handleRemoveBag = async (gradeIndex, bagIndex) => {
@@ -517,28 +554,45 @@ const DryMillStation = () => {
       return;
     }
     const grade = grades[gradeIndex].grade;
-    try {
-      const response = await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/remove-bag`, {
-        grade,
-        bagIndex,
-      });
-      setGrades((prevGrades) => {
-        const newGrades = [...prevGrades];
-        newGrades[gradeIndex] = {
-          ...newGrades[gradeIndex],
-          bagWeights: newGrades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex),
-        };
-        return newGrades;
-      });
+    const updatedBagWeights = grades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex);
+
+    setGrades((prevGrades) => {
+      const newGrades = [...prevGrades];
+      newGrades[gradeIndex] = {
+        ...newGrades[gradeIndex],
+        bagWeights: updatedBagWeights,
+      };
+      return newGrades;
+    });
+
+    if (selectedBatch.parentBatchNumber) {
+      try {
+        await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`, {
+          grade,
+          bagWeights: updatedBagWeights,
+          bagged_at: new Date().toISOString().slice(0, 10),
+        });
+        setSnackbarMessage("Bag removed successfully.");
+        setSnackbarSeverity("success");
+        setOpenSnackbar(true);
+        fetchDryMillData();
+      } catch (error) {
+        console.error("Error removing bag:", error);
+        setSnackbarMessage(error.response?.data?.error || "Failed to remove bag.");
+        setSnackbarSeverity("error");
+        setOpenSnackbar(true);
+        // Revert local state change
+        setGrades((prevGrades) => {
+          const newGrades = [...prevGrades];
+          newGrades[gradeIndex] = {
+            ...newGrades[gradeIndex],
+            bagWeights: grades[gradeIndex].bagWeights,
+          };
+          return newGrades;
+        });
+      }
+    } else {
       setSequenceAdjustments((prev) => prev.filter((adj) => adj.grade !== grade));
-      setSnackbarMessage(response.data.message);
-      setSnackbarSeverity("success");
-      setOpenSnackbar(true);
-    } catch (error) {
-      console.error("Error removing bag:", error);
-      setSnackbarMessage(error.response?.data?.error || "Failed to remove bag.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
     }
   };
 
@@ -732,8 +786,8 @@ const DryMillStation = () => {
       <DataGrid
         rows={sortedData}
         columns={subBatchColumns}
-        initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-        pageSizeOptions={[10, 20, 50]}
+        initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+        pageSizeOptions={[5, 10, 20]}
         disableRowSelectionOnClick
         getRowId={(row) => row.batchNumber}
         slots={{ toolbar: GridToolbar }}
@@ -762,7 +816,7 @@ const DryMillStation = () => {
               onClick={handleRefreshData}
               disabled={isLoading}
               sx={{ mb: 2, ml: 0 }}
-              startIcon={isLoading ? <CircularProgress size={20} /> : null}
+              startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
             >
               {isLoading ? "Refreshing..." : "Refresh Data"}
             </Button>
@@ -791,6 +845,8 @@ const DryMillStation = () => {
                 <Grid item xs={12} key={`${grade.grade}-${index}`}>
                   <Box sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
                     <Typography variant="subtitle1">{grade.grade}</Typography>
+                    <Typography variant="body2">Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg</Typography>
+                    <Divider sx={{ my: 1 }} />
                     <Box sx={{ display: "flex", gap: 2, mb: 1, alignItems: "center" }}>
                       <Button
                         variant="contained"
@@ -831,7 +887,6 @@ const DryMillStation = () => {
                     </Box>
                     <Divider sx={{ my: 1 }} />
                     <Box>
-                      <Typography variant="body2">Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg</Typography>
                       {grade.bagWeights.length > 0 ? (
                         grade.bagWeights.map((weight, bagIndex) => (
                           <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
@@ -846,7 +901,7 @@ const DryMillStation = () => {
                                 variant="contained"
                                 color="secondary"
                                 size="small"
-                                onClick={() => handlePrintLabel(selectedBatch.batchNumber, grade.grade, bagIndex, weight)}
+                                onClick={() => handlePrintLabel(selectedBatch?.batchNumber, grade.grade, bagIndex, weight)}
                               >
                                 Print Label
                               </Button>
@@ -865,22 +920,39 @@ const DryMillStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSortAndWeigh}
-            disabled={!selectedBatch || selectedBatch?.isStored}
-          >
-            Save Splits
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={handleConfirmComplete}
-            disabled={!selectedBatch || selectedBatch?.isStored || !grades.some((g) => g.bagWeights.length > 0)}
-          >
-            Mark Complete
-          </Button>
+          {selectedBatch?.parentBatchNumber ? (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                if (grades[0]) {
+                  handleAddBag(0, currentWeights[0]);
+                }
+              }}
+              disabled={!selectedBatch || selectedBatch?.isStored || !grades[0] || !currentWeights[0] || isNaN(parseFloat(currentWeights[0])) || parseFloat(currentWeights[0]) <= 0}
+            >
+              Save
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSortAndWeigh}
+                disabled={!selectedBatch || selectedBatch?.isStored}
+              >
+                Save Splits
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setOpenCompleteDialog(true)}
+                disabled={!selectedBatch || selectedBatch?.isStored || !grades.some((g) => g.bagWeights.length > 0)}
+              >
+                Mark Complete
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
 
@@ -905,7 +977,13 @@ const DryMillStation = () => {
           <Typography variant="body1" sx={{ mb: 2 }}>
             Enter the RFID tag to confirm storage in the warehouse.
           </Typography>
-          <TextField label="RFID Tag" value={rfid} onChange={(e) => setRfid(e.target.value)} fullWidth variant="outlined" />
+          <TextField
+            label="RFID Tag"
+            value={rfid}
+            onChange={(e) => setRfid(e.target.value)}
+            fullWidth
+            variant="outlined"
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseStorageDialog}>Cancel</Button>
