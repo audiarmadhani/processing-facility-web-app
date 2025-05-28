@@ -140,7 +140,7 @@ const DryMillStation = () => {
         throw new Error("Selected batch is not set.");
       }
 
-      console.log("Fetching grades with selectedBatch:", selectedBatch);
+      console.log("Fetching grades for batchNumber:", batchNumber, "with selectedBatch:", selectedBatch);
 
       const response = await axios.get(
         `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`
@@ -152,19 +152,22 @@ const DryMillStation = () => {
 
       if (selectedBatch.parentBatchNumber) {
         // Sub-batch: fetch only the specific grade matching selectedBatch.quality
-        const gradeData = data.find((grade) => grade.grade === selectedBatch.quality) || {
-          grade: selectedBatch.quality || "Grade 1",
-          weight: "",
+        const normalizedQuality = selectedBatch.quality?.trim();
+        const gradeData = data.find((grade) => grade.grade?.trim() === normalizedQuality) || {
+          grade: normalizedQuality || "Grade 1",
+          weight: "0",
           bagWeights: [],
           bagged_at: new Date().toISOString().split("T")[0],
           tempSequence: "0001",
+          is_stored: false,
         };
         return [{
           grade: gradeData.grade,
-          weight: gradeData.weight || "",
-          bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights : [],
+          weight: parseFloat(gradeData.weight) || 0,
+          bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights.map(String) : [],
           bagged_at: gradeData.bagged_at || new Date().toISOString().split("T")[0],
           tempSequence: gradeData.tempSequence || "0001",
+          is_stored: gradeData.is_stored || false,
         }];
       } else {
         // Parent batch: fetch all grades
@@ -173,20 +176,22 @@ const DryMillStation = () => {
         data.forEach((grade) => {
           fetchedGradesMap[grade.grade] = {
             grade: grade.grade,
-            weight: grade.weight || "",
-            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights : [],
+            weight: parseFloat(grade.weight) || 0,
+            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map(String) : [],
             bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
             tempSequence: grade.tempSequence || "0001",
+            is_stored: grade.is_stored || false,
           };
         });
 
         const gradesData = gradeOrder.map((grade) =>
           fetchedGradesMap[grade] || {
             grade,
-            weight: "",
+            weight: 0,
             bagWeights: [],
             bagged_at: new Date().toISOString().split("T")[0],
             tempSequence: "0001",
+            is_stored: false,
           }
         );
 
@@ -208,7 +213,14 @@ const DryMillStation = () => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
-        { grade: selectedBatch?.quality || "Grade 1", weight: "", bagWeights: [], bagged_at: new Date().toISOString().split("T")[0], tempSequence: "0001" }
+        {
+          grade: selectedBatch?.quality?.trim() || "Grade 1",
+          weight: 0,
+          bagWeights: [],
+          bagged_at: new Date().toISOString().split("T")[0],
+          tempSequence: "0001",
+          is_stored: false,
+        }
       ];
     }
   };
@@ -313,6 +325,7 @@ const DryMillStation = () => {
         grades: grades.map((g) => ({
           grade: g.grade,
           bagWeights: g.bagWeights,
+          weight: g.weight.toString(),
           bagged_at: today,
           tempSequence: g.tempSequence,
         })),
@@ -497,7 +510,7 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
-    if (selectedBatch?.isStored) {
+    if (selectedBatch?.isStored || grades[index]?.is_stored) {
       setSnackbarMessage("Cannot add bags to a stored batch.");
       setSnackbarSeverity("warning");
       setOpenSnackbar(true);
@@ -505,11 +518,16 @@ const DryMillStation = () => {
     }
     const grade = grades[index].grade;
     const sequence = selectedBatch.parentBatchNumber ? grades[index].tempSequence : await fetchSequenceNumber(grade);
+    const newWeight = parseFloat(weight).toString();
+    const updatedBagWeights = [...grades[index].bagWeights, newWeight];
+    const totalWeight = updatedBagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
+
     setGrades((prevGrades) => {
       const newGrades = [...prevGrades];
       newGrades[index] = {
         ...newGrades[index],
-        bagWeights: [...newGrades[index].bagWeights, parseFloat(weight).toString()],
+        bagWeights: updatedBagWeights,
+        weight: totalWeight,
         tempSequence: sequence,
       };
       return newGrades;
@@ -520,7 +538,8 @@ const DryMillStation = () => {
       try {
         await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`, {
           grade,
-          bagWeights: [...grades[index].bagWeights, parseFloat(weight).toString()],
+          bagWeights: updatedBagWeights,
+          weight: totalWeight.toString(),
           bagged_at: new Date().toISOString().slice(0, 10),
         });
         setSnackbarMessage("Bag added successfully.");
@@ -538,6 +557,7 @@ const DryMillStation = () => {
           newGrades[index] = {
             ...newGrades[index],
             bagWeights: newGrades[index].bagWeights.filter((_, i) => i !== newGrades[index].bagWeights.length - 1),
+            weight: newGrades[index].bagWeights.reduce((sum, w) => sum + parseFloat(w), 0),
           };
           return newGrades;
         });
@@ -547,7 +567,7 @@ const DryMillStation = () => {
 
   const handleRemoveBag = async (gradeIndex, bagIndex) => {
     if (!selectedBatch) return;
-    if (selectedBatch.isStored) {
+    if (selectedBatch.isStored || grades[gradeIndex]?.is_stored) {
       setSnackbarMessage("Cannot remove bags from a stored batch.");
       setSnackbarSeverity("warning");
       setOpenSnackbar(true);
@@ -555,12 +575,14 @@ const DryMillStation = () => {
     }
     const grade = grades[gradeIndex].grade;
     const updatedBagWeights = grades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex);
+    const totalWeight = updatedBagWeights.reduce((sum, w) => sum + parseFloat(w), 0);
 
     setGrades((prevGrades) => {
       const newGrades = [...prevGrades];
       newGrades[gradeIndex] = {
         ...newGrades[gradeIndex],
         bagWeights: updatedBagWeights,
+        weight: totalWeight,
       };
       return newGrades;
     });
@@ -570,6 +592,7 @@ const DryMillStation = () => {
         await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`, {
           grade,
           bagWeights: updatedBagWeights,
+          weight: totalWeight.toString(),
           bagged_at: new Date().toISOString().slice(0, 10),
         });
         setSnackbarMessage("Bag removed successfully.");
@@ -587,12 +610,41 @@ const DryMillStation = () => {
           newGrades[gradeIndex] = {
             ...newGrades[gradeIndex],
             bagWeights: grades[gradeIndex].bagWeights,
+            weight: grades[gradeIndex].bagWeights.reduce((sum, w) => sum + parseFloat(w), 0),
           };
           return newGrades;
         });
       }
     } else {
       setSequenceAdjustments((prev) => prev.filter((adj) => adj.grade !== grade));
+    }
+  };
+
+  const handleSaveSubBatch = async () => {
+    if (!selectedBatch || !grades[0]) return;
+    if (selectedBatch.isStored || grades[0].is_stored) {
+      setSnackbarMessage("Cannot save changes to a stored batch.");
+      setSnackbarSeverity("warning");
+      setOpenSnackbar(true);
+      return;
+    }
+    try {
+      await axios.post(`https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`, {
+        grade: grades[0].grade,
+        bagWeights: grades[0].bagWeights,
+        weight: grades[0].weight.toString(),
+        bagged_at: new Date().toISOString().slice(0, 10),
+      });
+      setSnackbarMessage("Sub-batch saved successfully.");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
+      fetchDryMillData();
+      setOpenDialog(false);
+    } catch (error) {
+      console.error("Error saving sub-batch:", error);
+      setSnackbarMessage(error.response?.data?.error || "Failed to save sub-batch.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
     }
   };
 
@@ -666,7 +718,7 @@ const DryMillStation = () => {
           label={params.value}
           color={params.value === "In Dry Mill" ? "primary" : params.value === "Processed" ? "success" : "default"}
           size="small"
-          sx={{ borderRadius: "16px", fontWeight: "medium" }}
+          sx={{ borderRadius: "16px", fontWeight: "bold" }}
         />
       ),
     },
@@ -676,7 +728,7 @@ const DryMillStation = () => {
       width: 100,
       sortable: false,
       renderCell: (params) => (
-        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
+        <Button variant="primary" size="small" onClick={() => handleDetailsClick(params.row)}>
           Details
         </Button>
       ),
@@ -705,7 +757,7 @@ const DryMillStation = () => {
           label={params.value}
           color={params.value === "In Dry Mill" ? "primary" : params.value === "Processed" ? "success" : "default"}
           size="small"
-          sx={{ borderRadius: "16px", fontWeight: "medium" }}
+          sx={{ borderRadius: "16px", fontWeight: "bold" }}
         />
       ),
     },
@@ -715,7 +767,7 @@ const DryMillStation = () => {
       width: 100,
       sortable: false,
       renderCell: (params) => (
-        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(params.row)}>
+        <Button variant="primary" size="small" onClick={() => handleDetailsClick(params.row)}>
           Details
         </Button>
       ),
@@ -740,7 +792,7 @@ const DryMillStation = () => {
           label={params.value ? "Stored" : "Not Stored"}
           color={params.value ? "success" : "default"}
           size="small"
-          sx={{ borderRadius: "16px", fontWeight: "medium" }}
+          sx={{ borderRadius: "16px", fontWeight: "bold" }}
         />
       ),
     },
@@ -839,20 +891,23 @@ const DryMillStation = () => {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
-              const totalWeight = grade.bagWeights.reduce((sum, w) => sum + parseFloat(w || 0), 0);
+              const totalWeight = grade.weight || grade.bagWeights.reduce((sum, w) => sum + parseFloat(w || 0), 0);
               const totalBags = grade.bagWeights.length;
               return (
                 <Grid item xs={12} key={`${grade.grade}-${index}`}>
                   <Box sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}>
                     <Typography variant="subtitle1">{grade.grade}</Typography>
-                    <Typography variant="body2">Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg</Typography>
+                    <Typography variant="body2">
+                      Total Bags: {totalBags} | Total Weight: {totalWeight.toFixed(2)} kg
+                      {grade.is_stored && " | Stored"}
+                    </Typography>
                     <Divider sx={{ my: 1 }} />
                     <Box sx={{ display: "flex", gap: 2, mb: 1, alignItems: "center" }}>
                       <Button
                         variant="contained"
                         color="primary"
                         onClick={() => handleAddBag(index, 50)}
-                        disabled={selectedBatch?.isStored}
+                        disabled={selectedBatch?.isStored || grade.is_stored}
                         sx={{ mr: 1 }}
                       >
                         50 kg
@@ -861,7 +916,7 @@ const DryMillStation = () => {
                         variant="contained"
                         color="primary"
                         onClick={() => handleAddBag(index, 60)}
-                        disabled={selectedBatch?.isStored}
+                        disabled={selectedBatch?.isStored || grade.is_stored}
                         sx={{ mr: 1 }}
                       >
                         60 kg
@@ -874,13 +929,19 @@ const DryMillStation = () => {
                         inputProps={{ min: 0, step: 0.1 }}
                         variant="outlined"
                         sx={{ width: 150, mr: 1 }}
-                        disabled={selectedBatch?.isStored}
+                        disabled={selectedBatch?.isStored || grade.is_stored}
                       />
                       <Button
                         variant="contained"
                         color="secondary"
                         onClick={() => handleAddBag(index, currentWeights[index])}
-                        disabled={selectedBatch?.isStored || !currentWeights[index] || isNaN(parseFloat(currentWeights[index])) || parseFloat(currentWeights[index]) <= 0}
+                        disabled={
+                          selectedBatch?.isStored ||
+                          grade.is_stored ||
+                          !currentWeights[index] ||
+                          isNaN(parseFloat(currentWeights[index])) ||
+                          parseFloat(currentWeights[index]) <= 0
+                        }
                       >
                         Add Bag
                       </Button>
@@ -889,11 +950,19 @@ const DryMillStation = () => {
                     <Box>
                       {grade.bagWeights.length > 0 ? (
                         grade.bagWeights.map((weight, bagIndex) => (
-                          <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                          <Box
+                            key={`${grade.grade}-bag-${bagIndex}`}
+                            sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
+                          >
                             <Typography variant="body1">Bag {bagIndex + 1}: {weight} kg</Typography>
                             <Box sx={{ display: "flex", gap: 1 }}>
-                              {selectedBatch?.isStored ? null : (
-                                <Button variant="contained" color="error" size="small" onClick={() => handleRemoveBag(index, bagIndex)}>
+                              {selectedBatch?.isStored || grade.is_stored ? null : (
+                                <Button
+                                  variant="contained"
+                                  color="error"
+                                  size="small"
+                                  onClick={() => handleRemoveBag(index, bagIndex)}
+                                >
                                   Remove
                                 </Button>
                               )}
@@ -924,12 +993,8 @@ const DryMillStation = () => {
             <Button
               variant="contained"
               color="primary"
-              onClick={() => {
-                if (grades[0]) {
-                  handleAddBag(0, currentWeights[0]);
-                }
-              }}
-              disabled={!selectedBatch || selectedBatch?.isStored || !grades[0] || !currentWeights[0] || isNaN(parseFloat(currentWeights[0])) || parseFloat(currentWeights[0]) <= 0}
+              onClick={handleSaveSubBatch}
+              disabled={!selectedBatch || selectedBatch?.isStored || grades[0]?.is_stored}
             >
               Save
             </Button>
