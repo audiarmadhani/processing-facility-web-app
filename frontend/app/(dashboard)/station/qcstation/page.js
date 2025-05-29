@@ -804,6 +804,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
+                        sx={{marginTop: "16px"}}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -813,6 +814,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
+                        sx={{marginTop: "16px"}}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -822,6 +824,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
+                        sx={{marginTop: "16px"}}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -831,6 +834,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
+                        sx={{marginTop: "16px"}}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -840,6 +844,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
+                        sx={{marginTop: "16px"}}
                       />
                     </Grid>
                   </Grid>
