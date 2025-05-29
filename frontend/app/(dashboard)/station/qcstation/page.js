@@ -923,6 +923,19 @@ const QCStation = () => {
                 </Select>
               </FormControl>
 
+              {contractType === 'Beli Putus' && (
+                <TextField
+                  label="Price per kg (Rp)"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  type="number"
+                  fullWidth
+                  required
+                  margin="normal"
+                  inputProps={{ min: 0, step: 0.01 }}
+                />
+              )}
+
               <FormControl fullWidth required sx={{marginTop: "16px"}}>
                 <InputLabel id="pm-label">Payment Method</InputLabel>
                 <Select
@@ -939,19 +952,6 @@ const QCStation = () => {
                   <MenuItem value="Check">Check</MenuItem>
                 </Select>
               </FormControl>
-
-              {contractType === 'Beli Putus' && (
-                <TextField
-                  label="Price per kg (Rp)"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  type="number"
-                  fullWidth
-                  required
-                  margin="normal"
-                  inputProps={{ min: 0, step: 0.01 }}
-                />
-              )}
               
               <TextField
                 label="QC Notes"
