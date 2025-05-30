@@ -85,7 +85,12 @@ const QCStation = () => {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       if (!response.ok) throw new Error('Failed to fetch QC data');
       const data = await response.json();
-      setQcData(data.allRows || []);
+				if (["admin", "manager"].includes(session.user.role)) {
+					setQcData(data.allRows || []);
+				} else if (["staff", "receiving"].includes(session.user.role)) {
+						// Use map directly on the array
+          setQcData(data.allRows || []);
+				}
     } catch (error) {
       console.error('Error fetching QC data:', error);
     }
@@ -742,7 +747,7 @@ const QCStation = () => {
     return <p>Loading...</p>;
   }
 
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'qc')) {
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'staff')) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.
