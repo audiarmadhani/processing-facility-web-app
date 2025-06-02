@@ -34,6 +34,7 @@ ChartJS.register(
   TimeScale
 );
 
+
 const DryingStation = () => {
   const { data: session, status } = useSession();
   const [openSnackbar, setOpenSnackbar] = useState(false);
