@@ -30,9 +30,10 @@ function ReceivingStation() {
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [notes, setNotes] = useState('');
   const [numberOfBags, setNumberOfBags] = useState(1);
+  const [bagCountInput, setBagCountInput] = useState('1'); // Temporary input state
   const [bagWeights, setBagWeights] = useState(['']);
   const [totalWeight, setTotalWeight] = useState(0);
-  const [brix, setBrix] = useState(''); // New state for Brix
+  const [brix, setBrix] = useState('');
   const [receivingData, setReceivingData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -106,15 +107,22 @@ function ReceivingStation() {
     setBagWeights(updatedBagWeights);
   };
 
-  const handleNumberOfBagsChange = (e) => {
-    const value = Math.max(1, parseInt(e.target.value, 10));
-    setNumberOfBags(value);
+  const handleBagCountInputChange = (e) => {
+    setBagCountInput(e.target.value);
+  };
 
-    if (value > bagWeights.length) {
-      const newWeights = [...bagWeights, ...Array(value - bagWeights.length).fill('')];
-      setBagWeights(newWeights);
+  const handleBagCountBlur = () => {
+    const parsedValue = parseInt(bagCountInput, 10);
+    const newValue = isNaN(parsedValue) || parsedValue < 1 ? 1 : parsedValue;
+    setNumberOfBags(newValue);
+    setBagCountInput(newValue.toString());
+
+    if (newValue > bagWeights.length) {
+      // Add new empty fields
+      setBagWeights([...bagWeights, ...Array(newValue - bagWeights.length).fill('')]);
     } else {
-      setBagWeights(bagWeights.slice(0, value));
+      // Truncate to new length, preserving weights
+      setBagWeights(bagWeights.slice(0, newValue));
     }
   };
 
@@ -203,7 +211,7 @@ function ReceivingStation() {
       weight: totalWeight,
       totalBags: bagWeights.length,
       type,
-      brix: brix ? parseFloat(brix) : null, // Include Brix in payload
+      brix: brix ? parseFloat(brix) : null,
       bagPayload: bagWeights.map((weight, index) => ({
         bagNumber: index + 1,
         weight: parseFloat(weight) || 0,
@@ -235,9 +243,10 @@ function ReceivingStation() {
         setBagWeights(['']);
         setNotes('');
         setNumberOfBags(1);
+        setBagCountInput('1');
         setTotalWeight(0);
         setType('');
-        setBrix(''); // Reset Brix
+        setBrix('');
         fetchReceivingData();
       } else {
         const errorData = await response.json();
@@ -265,7 +274,7 @@ function ReceivingStation() {
     { field: 'farmerID', headerName: 'Farmer ID', width: 100, sortable: true },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
-    { field: 'brix', headerName: 'Brix (°Bx)', width: 120, sortable: true }, // New Brix column
+    { field: 'brix', headerName: 'Brix (°Bx)', width: 120, sortable: true },
     { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
     { field: 'createdBy', headerName: 'Created By', width: 180, sortable: true },
   ];
@@ -373,10 +382,12 @@ function ReceivingStation() {
                   <TextField
                     label="Number of Bags"
                     type="number"
-                    value={numberOfBags}
-                    onChange={handleNumberOfBagsChange}
+                    value={bagCountInput}
+                    onChange={handleBagCountInputChange}
+                    onBlur={handleBagCountBlur}
                     fullWidth
                     required
+                    inputProps={{ min: 1 }}
                   />
                 </Grid>
 
@@ -402,6 +413,7 @@ function ReceivingStation() {
                       value={weight}
                       onChange={(e) => handleBagWeightChange(index, e.target.value)}
                       fullWidth
+                      inputProps={{ step: 0.1, min: 0 }}
                     />
                   </Grid>
                 ))}
