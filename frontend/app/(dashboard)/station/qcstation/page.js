@@ -85,12 +85,7 @@ const QCStation = () => {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       if (!response.ok) throw new Error('Failed to fetch QC data');
       const data = await response.json();
-				if (["admin", "manager"].includes(session.user.role)) {
-					setQcData(data.allRows || []);
-				} else if (["staff", "receiving"].includes(session.user.role)) {
-						// Use map directly on the array
-          setQcData(data.allRows || []);
-				}
+      setQcData(data.allRows || []);
     } catch (error) {
       console.error('Error fetching QC data:', error);
     }
