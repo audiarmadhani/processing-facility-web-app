@@ -623,7 +623,7 @@ const QCStation = () => {
 
     addText("_".repeat(signatureLength), 130, signatureY);
     addText("Manager", 130, labelY);
-    addText('(..................)', 130, labelY + 12);
+    addText('(Haris Ariansyah)', 130, labelY + 12);
 
     addText("_".repeat(signatureLength), 190, signatureY);
     addText("Farmer", 190, labelY);
