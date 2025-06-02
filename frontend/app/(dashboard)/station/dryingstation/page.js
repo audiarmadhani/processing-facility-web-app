@@ -17,8 +17,10 @@ import {
   Title, 
   Tooltip, 
   Legend, 
-  ScatterController 
+  ScatterController,
+  TimeScale
 } from 'chart.js';
+import 'chartjs-adapter-date-fns'; // For time scale support
 
 ChartJS.register(
   CategoryScale, 
@@ -28,7 +30,8 @@ ChartJS.register(
   Title, 
   Tooltip, 
   Legend, 
-  ScatterController
+  ScatterController,
+  TimeScale
 );
 
 const DryingStation = () => {
@@ -366,7 +369,13 @@ const DryingStation = () => {
   };
 
   const envChartData = {
-    labels: historicalEnvData.map(d => new Date(d.recorded_at).toLocaleDateString()),
+    labels: historicalEnvData.map(d => {
+      const date = new Date(d.recorded_at);
+      // Adjust UTC to WIB (+7 hours)
+      date.setHours(date.getHours() + 6);
+      // Format as YYYY-MM-DD HH:mm
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }),
     datasets: [
       {
         label: 'Temperature (°C)',
@@ -387,10 +396,27 @@ const DryingStation = () => {
 
   const envChartOptions = {
     scales: {
-      x: { title: { display: true, text: 'Date' }, type: 'category' },
-      y: { title: { display: true, text: 'Value' }, min: 0, max: 100 }
+      x: {
+        type: 'time',
+        time: {
+          unit: 'hour',
+          displayFormats: {
+            hour: 'yyyy-MM-dd HH:mm'
+          },
+          tooltipFormat: 'yyyy-MM-dd HH:mm'
+        },
+        title: { display: true, text: 'Date and Time (WIB)' }
+      },
+      y: { 
+        title: { display: true, text: 'Value' }, 
+        min: 0, 
+        max: 100 
+      }
     },
-    plugins: { legend: { display: true }, tooltip: { mode: 'index', intersect: false } }
+    plugins: { 
+      legend: { display: true }, 
+      tooltip: { mode: 'index', intersect: false } 
+    }
   };
 
   if (status === 'loading') return <p>Loading...</p>;
