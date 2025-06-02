@@ -372,8 +372,8 @@ const DryingStation = () => {
   const envChartData = {
     labels: historicalEnvData.map(d => {
       const date = new Date(d.recorded_at);
-      // Adjust UTC to WIB (+7 hours)
-      date.setHours(date.getHours() + 6);
+      // Adjust UTC to WITA (+8 hours)
+      date.setHours(date.getHours() + 8);
       // Format as YYYY-MM-DD HH:mm
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     }),
@@ -406,7 +406,7 @@ const DryingStation = () => {
           },
           tooltipFormat: 'yyyy-MM-dd HH:mm'
         },
-        title: { display: true, text: 'Date and Time (WIB)' }
+        title: { display: true, text: 'Date and Time (WITA)' }
       },
       y: { 
         title: { display: true, text: 'Value' }, 
