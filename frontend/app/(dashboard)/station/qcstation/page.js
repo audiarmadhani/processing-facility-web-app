@@ -679,7 +679,7 @@ const QCStation = () => {
     { field: 'farmerName', headerName: 'Farmer Name', width: 140 },
     
     { field: 'price', headerName: 'Cherry Price (/kg)', width: 180 },
-    { field: 'total_price', headerName: 'Total Cherry Price', width: 140 },
+    { field: 'total_price', headerName: 'Total Cherry Price', width: 180 },
     
     { field: 'type', headerName: 'Type', width: 110 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
