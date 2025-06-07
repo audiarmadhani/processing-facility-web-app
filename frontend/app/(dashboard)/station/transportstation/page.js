@@ -400,7 +400,7 @@ const TransportStation = () => {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Data</Typography>
-            <div style={{ height: 500, width: '100%' }}>
+            <div style={{ height: 520, width: '100%' }}>
               <DataGrid
                 rows={transportData}
                 columns={columns}
