@@ -185,10 +185,10 @@ const TransportStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
-    { field: 'createdAtTrunc', headerName: 'Batch Number', width: 150 },
-    { field: 'kabupaten', headerName: 'Batch Number', width: 150 },
-    { field: 'kecamatan', headerName: 'Batch Number', width: 150 },
-    { field: 'desa', headerName: 'Batch Number', width: 150 },
+    { field: 'createdAtTrunc', headerName: 'Receiving Date', width: 150 },
+    { field: 'kabupaten', headerName: 'Kabupaten', width: 150 },
+    { field: 'kecamatan', headerName: 'Kecamatan', width: 150 },
+    { field: 'desa', headerName: 'Desa', width: 150 },
     {
       field: 'cost',
       headerName: 'Cost',
@@ -400,7 +400,7 @@ const TransportStation = () => {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Data</Typography>
-            <div style={{ height: 400, width: '100%' }}>
+            <div style={{ height: 500, width: '100%' }}>
               <DataGrid
                 rows={transportData}
                 columns={columns}
