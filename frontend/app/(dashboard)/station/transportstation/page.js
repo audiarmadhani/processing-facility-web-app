@@ -184,15 +184,28 @@ const TransportStation = () => {
   };
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', sortable: true },
-    { field: 'createdAtTrunc', headerName: 'Created At', sortable: true },
-    { field: 'kabupaten', headerName: 'Kabupaten', sortable: true },
-    { field: 'kecamatan', headerName: 'Kecamatan', sortable: true },
-    { field: 'desa', headerName: 'Desa', sortable: true },
-    { field: 'cost', headerName: 'Cost', sortable: true },
-    { field: 'paidTo', headerName: 'Paid To', sortable: true },
-    { field: 'bankAccount', headerName: 'Bank Account', sortable: true },
-    { field: 'bankName', headerName: 'Bank Name', sortable: true }
+    { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
+    { field: 'createdAtTrunc', headerName: 'Batch Number', width: 150 },
+    { field: 'kabupaten', headerName: 'Batch Number', width: 150 },
+    { field: 'kecamatan', headerName: 'Batch Number', width: 150 },
+    { field: 'desa', headerName: 'Batch Number', width: 150 },
+    {
+      field: 'cost',
+      headerName: 'Cost',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => {
+        if (value == null || isNaN(value)) return 'N/A';
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+    },
+    { field: 'paidTo', headerName: 'Paid To', width: 150 },
+    { field: 'bankAccount', headerName: 'Bank Account Number', width: 200 },
+    { field: 'bankName', headerName: 'Bank Name', width: 150 },
   ];
 
   const kabupatenList = [...new Set(locationData.map(item => item.kabupaten))];
@@ -391,10 +404,14 @@ const TransportStation = () => {
               <DataGrid
                 rows={transportData}
                 columns={columns}
-                pageSizeOptions={[5]}
+                pageSize={5}
                 slots={{ toolbar: GridToolbar }}
-                disableRowSelectionOnClick
-                autoHeight
+                autosizeOnMount
+                autosizeOptions={{
+                  includeHeaders: true,
+                  includeOutliers: true,
+                  expand: true,
+                }}
                 rowHeight={35}
               />
             </div>
