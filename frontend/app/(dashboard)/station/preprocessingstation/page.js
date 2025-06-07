@@ -310,14 +310,12 @@ const PreprocessingStation = () => {
 
         return {
           ...batch,
+          id: `${batch.batchNumber}-${batch.processingType || 'unknown'}`, // Unique ID
           sla,
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
-          // processedWeight: parseFloat(batch.processedWeight || 0).toFixed(2),
-          // weightAvailable: parseFloat(batch.weightAvailable || 0).toFixed(2),
         };
       });
-
       const unprocessedBatches = formattedData.filter(batch => parseFloat(batch.availableWeight) > 0);
 
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
@@ -796,7 +794,7 @@ const PreprocessingStation = () => {
                 rowsPerPageOptions={[5, 10, 20]}
                 disableSelectionOnClick
                 sortingOrder={['asc', 'desc']}
-                getRowId={(row) => row.batchNumber}
+                getRowId={(row => row.id)} // Use composite ID
                 slots={{ toolbar: GridToolbar }}
                 autosizeOnMount
                 autosizeOptions={{
