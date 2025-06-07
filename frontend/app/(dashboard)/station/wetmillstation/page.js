@@ -29,7 +29,7 @@ const WetmillStation = () => {
       const qcResponse = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       if (!qcResponse.ok) throw new Error('Failed to fetch QC data');
       const qcResult = await qcResponse.json();
-      const qcData = qcResult.allRows || [];
+      const qcData = qcResult.distinctRows || [];
 
       const wetmillResponse = await fetch('https://processing-facility-backend.onrender.com/api/wetmill-data');
       if (!wetmillResponse.ok) throw new Error('Failed to fetch wet mill data');
