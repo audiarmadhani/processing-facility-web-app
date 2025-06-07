@@ -318,7 +318,7 @@ const PreprocessingStation = () => {
         };
       });
 
-      const unprocessedBatches = formattedData.filter(batch => parseFloat(batch.weightAvailable) > 0);
+      const unprocessedBatches = formattedData.filter(batch => parseFloat(batch.availableWeight) > 0);
 
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
