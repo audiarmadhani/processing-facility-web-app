@@ -313,8 +313,8 @@ const PreprocessingStation = () => {
           sla,
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
-          processedWeight: parseFloat(batch.processedWeight || 0).toFixed(2),
-          weightAvailable: parseFloat(batch.weightAvailable || 0).toFixed(2),
+          // processedWeight: parseFloat(batch.processedWeight || 0).toFixed(2),
+          // weightAvailable: parseFloat(batch.weightAvailable || 0).toFixed(2),
         };
       });
 
@@ -412,36 +412,45 @@ const PreprocessingStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
-    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
-    { field: 'totalWeight', headerName: 'Total Weight (kg)', width: 130, sortable: true },
-    { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 150, sortable: true },
-    { field: 'weightAvailable', headerName: 'Available Weight (kg)', width: 150, sortable: true },
-    // { field: 'total_price', headerName: 'Total Cherry Price', width: 180, sortable: true, renderCell: ({ value }) => {
-      // if (value == null || isNaN(value)) return 'N/A';
-      // return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
-    // }},
+
     { field: 'type', headerName: 'Type', width: 100, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
     { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
     { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
+
+    { field: 'totalWeight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
+    { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
+    { field: 'weightAvailable', headerName: 'Available Weight (kg)', width: 180, sortable: true },
+    // { field: 'total_price', headerName: 'Total Cherry Price', width: 180, sortable: true, renderCell: ({ value }) => {
+      // if (value == null || isNaN(value)) return 'N/A';
+      // return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+    // }},
+    
+    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
+    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
+    
     { field: 'preprocessing_notes', headerName: 'Notes', width: 200, sortable: true },
   ];
 
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'type', headerName: 'Type', width: 150, sortable: true },
+    { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
+    { field: 'totalWeight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
+
+    { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
+
     { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
     { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
-    { field: 'type', headerName: 'Type', width: 150, sortable: true },
+    
     { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
     { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
     { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
     { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
-    { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
-    { field: 'totalWeight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
-    { field: 'weightAvailable', headerName: 'Available Weight (kg)', width: 150, sortable: true },
+    
+    
   ];
 
   if (status === 'loading') {
