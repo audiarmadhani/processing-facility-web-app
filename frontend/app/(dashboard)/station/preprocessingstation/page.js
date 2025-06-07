@@ -332,18 +332,18 @@ const PreprocessingStation = () => {
 
       const processedBatches = formattedData.filter(batch => parseFloat(batch.processedWeight) > 0);
 
-      const sortedDataType = processedBatches.sort((a, b) => {
-        if (a.type !== b.type) return a.type.localeCompare(b.type);
-        return 0;
-      });
+      // const sortedDataType = processedBatches.sort((a, b) => {
+        // if (a.type !== b.type) return a.type.localeCompare(b.type);
+        // return 0;
+      // });
 
-      const sortedData = sortedDataType.sort((a, b) => {
-        if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') return -1;
-        if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') return 1;
-        return parseFloat(b.weightAvailable) - parseFloat(a.weightAvailable);
-      });
+      // const sortedData = sortedDataType.sort((a, b) => {
+        // if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') return -1;
+        // if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') return 1;
+        // return parseFloat(b.weightAvailable) - parseFloat(a.weightAvailable);
+      // });
 
-      setPreprocessingData(sortedData);
+      setPreprocessingData(processedBatches);
       setUnprocessedBatches(sortedUnprocessedBatches);
     } catch (error) {
       console.error('Error fetching preprocessing data:', error);
@@ -417,10 +417,10 @@ const PreprocessingStation = () => {
     { field: 'totalWeight', headerName: 'Total Weight (kg)', width: 130, sortable: true },
     { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 150, sortable: true },
     { field: 'weightAvailable', headerName: 'Available Weight (kg)', width: 150, sortable: true },
-    { field: 'total_price', headerName: 'Total Cherry Price', width: 180, sortable: true, renderCell: ({ value }) => {
-      if (value == null || isNaN(value)) return 'N/A';
-      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
-    }},
+    // { field: 'total_price', headerName: 'Total Cherry Price', width: 180, sortable: true, renderCell: ({ value }) => {
+      // if (value == null || isNaN(value)) return 'N/A';
+      // return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+    // }},
     { field: 'type', headerName: 'Type', width: 100, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
     { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
