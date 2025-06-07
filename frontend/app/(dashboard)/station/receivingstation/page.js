@@ -39,6 +39,7 @@ function ReceivingStation() {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [type, setType] = useState('');
+  const [producer, setProducer] = useState('');
   const [assigningRFID, setAssigningRFID] = useState(false);
   const [lastCreatedBatchNumber, setLastCreatedBatchNumber] = useState(null);
 
@@ -211,6 +212,7 @@ function ReceivingStation() {
       weight: totalWeight,
       totalBags: bagWeights.length,
       type,
+      producer,
       brix: brix ? parseFloat(brix) : null,
       bagPayload: bagWeights.map((weight, index) => ({
         bagNumber: index + 1,
@@ -246,6 +248,7 @@ function ReceivingStation() {
         setBagCountInput('1');
         setTotalWeight(0);
         setType('');
+        setProducer('');
         setBrix('');
         fetchReceivingData();
       } else {
@@ -277,6 +280,7 @@ function ReceivingStation() {
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
     { field: 'brix', headerName: 'Brix (°Bx)', width: 120, sortable: true },
+    { field: 'producer', headerName: 'Producer', width: 150, sortable: true },
     { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
     { field: 'createdBy', headerName: 'Created By', width: 180, sortable: true },
   ];
@@ -365,6 +369,23 @@ function ReceivingStation() {
                     >
                       <MenuItem value="Arabica">Arabica</MenuItem>
                       <MenuItem value="Robusta">Robusta</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="producer-label">Producer</InputLabel>
+                    <Select
+                      labelId="producer-label"
+                      id="producer"
+                      value={producer}
+                      onChange={(e) => setProducer(e.target.value)}
+                      input={<OutlinedInput label="Producer" />}
+                      MenuProps={MenuProps}
+                    >
+                      <MenuItem value="BTM">BTM</MenuItem>
+                      <MenuItem value="HEQA">HEQA</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
