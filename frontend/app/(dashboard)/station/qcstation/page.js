@@ -85,7 +85,7 @@ const QCStation = () => {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       if (!response.ok) throw new Error('Failed to fetch QC data');
       const data = await response.json();
-      setQcData(data.allRows || []);
+      setQcData(data.distinctRows || []);
     } catch (error) {
       console.error('Error fetching QC data:', error);
     }
@@ -480,7 +480,7 @@ const QCStation = () => {
 
       const refreshQCData = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const refreshData = await refreshQCData.json();
-      setQcData(refreshData.allRows || []);
+      setQcData(refreshData.distinctRows || []);
 
     } catch (error) {
       console.error('Error submitting QC data:', error);
