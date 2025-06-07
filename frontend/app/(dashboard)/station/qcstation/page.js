@@ -674,12 +674,38 @@ const QCStation = () => {
 			),
 			},
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
-    { field: 'receivingDate', headerName: 'Receiving Date', width: 110 },
+    { field: 'receivingDate', headerName: 'Receiving Date', width: 150 },
     { field: 'qcDate', headerName: 'QC Date', width: 110 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 140 },
     
-    { field: 'price', headerName: 'Cherry Price (/kg)', width: 180 },
-    { field: 'total_price', headerName: 'Total Cherry Price', width: 180 },
+    {
+      field: 'price',
+      headerName: 'Cherry Price (/kg)',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => {
+        if (value == null || isNaN(value)) return 'N/A';
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+    },
+    {
+      field: 'total_price',
+      headerName: 'Total Cherry Price',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => {
+        if (value == null || isNaN(value)) return 'N/A';
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+    },
     
     { field: 'type', headerName: 'Type', width: 110 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
