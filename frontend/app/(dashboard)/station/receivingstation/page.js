@@ -275,8 +275,34 @@ function ReceivingStation() {
     { field: 'receivingDateTrunc', headerName: 'Received Date', width: 160, sortable: true },
     { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
     { field: 'broker', headerName: 'Broker Name', width: 180, sortable: true },
-    { field: 'price', headerName: 'Cherry Price (/kg)', width: 180, sortable: true },
-    { field: 'total_price', headerName: 'Total Cherry Price', width: 180, sortable: true },
+    {
+      field: 'price',
+      headerName: 'Cherry Price (/kg)',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => {
+        if (value == null || isNaN(value)) return 'N/A';
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+    },
+    {
+      field: 'total_price',
+      headerName: 'Total Cherry Price',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => {
+        if (value == null || isNaN(value)) return 'N/A';
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+    },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
     { field: 'brix', headerName: 'Brix (°Bx)', width: 120, sortable: true },
