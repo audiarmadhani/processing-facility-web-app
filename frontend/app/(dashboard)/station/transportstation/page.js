@@ -34,7 +34,7 @@ const TransportStation = () => {
   const fetchBatchNumbers = async () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
-      setBatchNumbers(response.data.todayData?.map(item => item.batchNumber) || []);
+      setBatchNumbers(response.data.allRows?.map(item => item.batchNumber) || []);
     } catch (error) {
       setSnackbarMessage('Failed to fetch batch numbers.');
       setSnackbarOpen(true);
