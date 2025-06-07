@@ -25,26 +25,27 @@ import {
 } from '@mui/material';
 
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
   const [rfid, setRfid] = useState('');
   const [rfidTag, setRfidTag] = useState('');
-  const [bagsProcessed, setBagsProcessed] = useState(1);
+  const [weightProcessed, setWeightProcessed] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
-  const [bagsAvailable, setBagsAvailable] = useState(0);
-  const [totalProcessedBags, setTotalProcessedBags] = useState(0);
+  const [weightAvailable, setWeightAvailable] = useState(0);
+  const [totalProcessedWeight, setTotalProcessedWeight] = useState(0);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [farmerName, setFarmerName] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
   const [qcDate, setQCDate] = useState('');
-  const [weight, setWeight] = useState('');
+  const [totalWeight, setTotalWeight] = useState('');
   const [totalBags, setTotalBags] = useState('');
   const [openHistory, setOpenHistory] = useState(false);
-  const [bagsHistory, setBagsHistory] = useState([]);
+  const [weightHistory, setWeightHistory] = useState([]);
   const [preprocessingData, setPreprocessingData] = useState([]);
   const [unprocessedBatches, setUnprocessedBatches] = useState([]);
   const [producer, setProducer] = useState('');
@@ -53,25 +54,21 @@ const PreprocessingStation = () => {
   const [quality, setQuality] = useState('');
   const [notes, setNotes] = useState('');
 
-  const fetchAvailableBags = async (batchNumber, totalBags) => {
+  const fetchAvailableWeight = async (batchNumber, totalWeight) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch preprocessing data');
       const preprocessingResponse = await response.json();
-      console.log('Preprocessing Response:', preprocessingResponse);
-      if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalBagsProcessed))) {
-        const totalProcessedBags = parseFloat(preprocessingResponse.totalBagsProcessed);
-        const availableBags = totalBags - totalProcessedBags;
-        console.log('Total Bags:', totalBags);
-        console.log('Total Processed Bags:', totalProcessedBags);
-        console.log('Available Bags:', availableBags);
-        return { availableBags, totalProcessedBags };
+      if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalWeightProcessed))) {
+        const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed);
+        const weightAvailable = totalWeight - totalProcessedWeight;
+        return { weightAvailable, totalProcessedWeight };
       } else {
-        throw new Error('Total bags processed is not a valid number');
+        return { weightAvailable: totalWeight, totalProcessedWeight: 0 };
       }
     } catch (error) {
-      console.error('Error fetching available bags:', error);
-      return { availableBags: 0, totalProcessedBags: 0 };
+      console.error('Error fetching available weight:', error);
+      return { weightAvailable: totalWeight, totalProcessedWeight: 0 };
     }
   };
 
@@ -84,22 +81,16 @@ const PreprocessingStation = () => {
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
   
       const data = dataArray[0];
-      const { availableBags, totalProcessedBags } = await fetchAvailableBags(batchNumber, data.totalBags);
-  
-      console.log('fetchAvailableBags result:', { availableBags, totalProcessedBags });
-  
+      const { weightAvailable, totalProcessedWeight } = await fetchAvailableWeight(batchNumber, data.weight);
+
       setFarmerName(data.farmerName);
       setReceivingDate(data.receivingDateTrunc);
       setQCDate(data.qcDateTrunc);
-      setWeight(data.weight);
+      setTotalWeight(data.weight);
       setTotalBags(data.totalBags);
-      setBagsAvailable(availableBags);
-      setTotalProcessedBags(totalProcessedBags);
-  
-      console.log('Total Bags:', data.totalBags);
-      console.log('Total Processed Bags:', totalProcessedBags);
-      console.log('Available Bags:', availableBags);
-  
+      setWeightAvailable(weightAvailable);
+      setTotalProcessedWeight(totalProcessedWeight);
+
       setSnackbarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
       setSnackbarSeverity('success');
     } catch (error) {
@@ -112,18 +103,14 @@ const PreprocessingStation = () => {
   const handleRfidScan = async () => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/Warehouse_Exit`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch RFID: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Failed to fetch RFID: ${response.status}`);
       const data = await response.json();
 
       if (data.rfid) {
         setRfid(data.rfid);
         setRfidTag(data.rfid);
         const receivingResponse = await fetch(`https://processing-facility-backend.onrender.com/api/receivingrfid/${data.rfid}`);
-        if (!receivingResponse.ok) {
-          throw new Error(`Failed to fetch receiving data: ${receivingResponse.status}`);
-        }
+        if (!receivingResponse.ok) throw new Error(`Failed to fetch receiving data: ${receivingResponse.status}`);
         const receivingData = await receivingResponse.json();
 
         if (receivingData && receivingData.length > 0) {
@@ -131,11 +118,12 @@ const PreprocessingStation = () => {
           setBatchNumber(batchData.batchNumber);
           setFarmerName(batchData.farmerName);
           setReceivingDate(batchData.receivingDateTrunc || '');
-          setQcDate(batchData.qcDateTrunc || '');
-          setWeight(batchData.weight || '');
+          setQCDate(batchData.qcDateTrunc || '');
+          setTotalWeight(batchData.weight || '');
           setTotalBags(batchData.totalBags || '');
-          setBagsAvailable(batchData.totalBags || 0);
-          await fetchAvailableBags(batchData.batchNumber, batchData.totalBags);
+          const { weightAvailable, totalProcessedWeight } = await fetchAvailableWeight(batchData.batchNumber, batchData.weight);
+          setWeightAvailable(weightAvailable);
+          setTotalProcessedWeight(totalProcessedWeight);
 
           setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
           setSnackbarSeverity('success');
@@ -161,26 +149,26 @@ const PreprocessingStation = () => {
   const clearRfidData = async (scannedAt) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/${scannedAt}`, { method: 'DELETE' });
-      if (!response.ok) {
-        throw new Error(`Failed to clear RFID Data: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Failed to clear RFID Data: ${response.status}`);
     } catch (error) {
       console.error("Error clearing RFID Data:", error);
     }
   };
 
-  const handleAllBags = () => {
-    if (bagsAvailable) {
-      setBagsProcessed(bagsAvailable);
+  const handleAllWeight = () => {
+    if (weightAvailable > 0) {
+      setWeightProcessed(weightAvailable.toFixed(2));
     } else {
-      console.warn('No available bags to process.');
-      setBagsProcessed(1);
+      setWeightProcessed('');
+      setSnackbarMessage('No weight available to process.');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
     }
   };
 
   const handleBatchNumberSearch = async () => {
     if (!batchNumber) {
-      setSnackbarMessage('Please enter a batchNumber.');
+      setSnackbarMessage('Please enter a batch number.');
       setSnackbarSeverity('warning');
       setOpenSnackbar(true);
       return;
@@ -189,62 +177,70 @@ const PreprocessingStation = () => {
     await fetchBatchData(batchNumber);
   };
 
-  const fetchBagsHistory = async () => {
+  const fetchWeightHistory = async () => {
     try {
       const batchesResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving");
       const batches = await batchesResponse.json();
       const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing");
-      const processedBags = await processedResponse.json();
-  
+      const processedWeights = await processedResponse.json();
+
       const historyData = batches.map((batch) => {
-        const processedLogs = processedBags.filter(log => log.batchNumber === batch.batchNumber);
-        const totalProcessedBags = processedLogs.reduce((acc, log) => acc + log.bagsProcessed, 0);
-        const bagsAvailable = batch.totalBags - totalProcessedBags;
+        const processedLogs = processedWeights.filter(log => log.batchNumber === batch.batchNumber);
+        const totalProcessedWeight = processedLogs.reduce((acc, log) => acc + parseFloat(log.weightProcessed || 0), 0);
+        const weightAvailable = batch.weight - totalProcessedWeight;
         return {
           batchNumber: batch.batchNumber,
-          totalBags: batch.totalBags,
-          bagsProcessed: totalProcessedBags,
-          bagsAvailable,
+          totalWeight: batch.weight,
+          totalProcessedWeight: totalProcessedWeight.toFixed(2),
+          weightAvailable: weightAvailable.toFixed(2),
           processedLogs: processedLogs.map(log => ({
             processingDate: log.processingDate,
-            bagsProcessed: log.bagsProcessed,
+            weightProcessed: parseFloat(log.weightProcessed || 0).toFixed(2),
+            notes: log.notes,
           })),
         };
       });
-  
-      setBagsHistory(historyData);
+
+      setWeightHistory(historyData);
       setOpenHistory(true);
     } catch (error) {
-      console.error("Error fetching bags history:", error);
+      console.error("Error fetching weight history:", error);
     }
   };
 
-  const showBagsHistory = () => {
-    fetchBagsHistory();
+  const showWeightHistory = () => {
+    fetchWeightHistory();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const trimmedBatchNumber = batchNumber.trim();
-    const trimmedBagsProcessed = bagsProcessed;
+    const trimmedWeightProcessed = parseFloat(weightProcessed);
 
-    if (trimmedBagsProcessed > bagsAvailable) {
-      setSnackbarMessage(`Cannot process more bags than available. Available: ${bagsAvailable}`);
+    if (isNaN(trimmedWeightProcessed) || trimmedWeightProcessed <= 0) {
+      setSnackbarMessage('Please enter a valid weight to process.');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    if (trimmedWeightProcessed > weightAvailable) {
+      setSnackbarMessage(`Cannot process more weight than available. Available: ${weightAvailable.toFixed(2)} kg`);
       setSnackbarSeverity('warning');
       setOpenSnackbar(true);
       return;
     }
 
     const preprocessingData = {
-      bagsProcessed: trimmedBagsProcessed, 
       batchNumber: trimmedBatchNumber,
-      producer: producer,
-      productLine: productLine,
-      processingType: processingType,
-      quality: quality,
+      weightProcessed: trimmedWeightProcessed,
+      producer,
+      productLine,
+      processingType,
+      quality,
       createdBy: session.user.name,
-      notes: notes.trim() || null
+      notes: notes.trim() || null,
     };
 
     try {
@@ -255,12 +251,11 @@ const PreprocessingStation = () => {
       });
       if (!response.ok) throw new Error('Failed to start processing');
 
-      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedBagsProcessed} bags!`);
+      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedWeightProcessed.toFixed(2)} kg!`);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
 
       await fetchPreprocessingData();
-
       resetForm();
     } catch (error) {
       handleError('Failed to start preprocessing. Please try again.', error);
@@ -277,21 +272,20 @@ const PreprocessingStation = () => {
   const resetForm = () => {
     setRfid('');
     setRfidTag('');
-    setBagsProcessed(1);
+    setWeightProcessed('');
     setBatchNumber('');
-    setBagsAvailable(0);
+    setWeightAvailable(0);
+    setTotalProcessedWeight(0);
     setFarmerName('');
     setReceivingDate('');
-    setQcDate('');
-    setWeight('');
+    setQCDate('');
+    setTotalWeight('');
     setTotalBags('');
     setProducer('');
     setProductLine('');
     setProcessingType('');
     setQuality('');
     setNotes('');
-    setTotalProcessedBags('');
-    setBagsAvailable('');
   };
 
   const handleCloseHistory = () => {
@@ -303,27 +297,29 @@ const PreprocessingStation = () => {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const result = await response.json();
       const pendingPreprocessingData = result.allRows || [];
-  
+
       const today = new Date();
       const formattedData = pendingPreprocessingData.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
         let sla = 'N/A';
-  
+
         if (!isNaN(receivingDate)) {
           const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-  
+
         return {
           ...batch,
           sla,
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
-          lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A'
+          lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
+          processedWeight: parseFloat(batch.processedWeight || 0).toFixed(2),
+          weightAvailable: parseFloat(batch.weightAvailable || 0).toFixed(2),
         };
       });
-  
-      const unprocessedBatches = formattedData.filter(batch => batch.availableBags > 0);
-  
+
+      const unprocessedBatches = formattedData.filter(batch => parseFloat(batch.weightAvailable) > 0);
+
       const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
@@ -334,19 +330,19 @@ const PreprocessingStation = () => {
         return 0;
       });
 
-      const processedBatches = formattedData.filter(batch => batch.processedBags > 0);
+      const processedBatches = formattedData.filter(batch => parseFloat(batch.processedWeight) > 0);
 
       const sortedDataType = processedBatches.sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         return 0;
       });
-  
+
       const sortedData = sortedDataType.sort((a, b) => {
-        if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') {return -1;}
-        if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') {return 1;}
-        return b.availableBags - a.availableBags;
+        if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') return -1;
+        if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') return 1;
+        return parseFloat(b.weightAvailable) - parseFloat(a.weightAvailable);
       });
-  
+
       setPreprocessingData(sortedData);
       setUnprocessedBatches(sortedUnprocessedBatches);
     } catch (error) {
@@ -376,57 +372,61 @@ const PreprocessingStation = () => {
   };
 
   const productLineOptions = {
-      "": [" "],
-      "Regional Lot": ["Pulped Natural", "Washed"],
-      "Micro Lot": ["Natural", "Washed", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Honey", "CM Natural", "CM Washed", "CM Honey"],
-      "Experimental Lot": ["CM Natural", "CM Washed", "CM Honey"],
-      "Commercial Lot": ["Washed", "Natural"],
+    "": [" "],
+    "Regional Lot": ["Pulped Natural", "Washed"],
+    "Micro Lot": ["Natural", "Washed", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Honey", "CM Natural", "CM Washed", "CM Honey"],
+    "Experimental Lot": ["CM Natural", "CM Washed", "CM Honey"],
+    "Commercial Lot": ["Washed", "Natural"],
   };
 
   const processingTypeOptions = {
-      "": [" "],
-      "Pulped Natural": ["Specialty"],
-      "Washed": ["Specialty", "G1", "G2", "G3", "G4"],
-      "Natural": ["Specialty", "G1", "G2", "G3", "G4"],
-      "Anaerobic Natural": ["Specialty"],
-      "Anaerobic Washed": ["Specialty"],
-      "Anaerobic Honey": ["Specialty"],
-      "CM Natural": ["Specialty"],
-      "CM Washed": ["Specialty"],
-      "CM Honey": ["Specialty"],
+    "": [" "],
+    "Pulped Natural": ["Specialty"],
+    "Washed": ["Specialty", "G1", "G2", "G3", "G4"],
+    "Natural": ["Specialty", "G1", "G2", "G3", "G4"],
+    "Anaerobic Natural": ["Specialty"],
+    "Anaerobic Washed": ["Specialty"],
+    "Anaerobic Honey": ["Specialty"],
+    "CM Natural": ["Specialty"],
+    "CM Washed": ["Specialty"],
+    "CM Honey": ["Specialty"],
   };
 
   useEffect(() => {
     if (producer && !producerOptions[producer].includes(productLine)) {
-        setProductLine('');
+      setProductLine('');
     }
-  }, [producer, productLine, producerOptions]);
+  }, [producer]);
 
   useEffect(() => {
     if (productLine && !productLineOptions[productLine].includes(processingType)) {
-        setProcessingType('');
+      setProcessingType('');
     }
-  }, [productLine, processingType, productLineOptions]);
+  }, [productLine]);
 
   useEffect(() => {
     if (processingType && !processingTypeOptions[processingType].includes(quality)) {
-        setQuality('');
+      setQuality('');
     }
-  }, [processingType, quality, processingTypeOptions]);
+  }, [processingType]);
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
-    { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
-    { field: 'processedBags', headerName: 'Processed Bags', width: 130, sortable: true },
-    { field: 'availableBags', headerName: 'Available Bags', width: 130, sortable: true },
+    { field: 'totalWeight', headerName: 'Total Weight (kg)', width: 130, sortable: true },
+    { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 150, sortable: true },
+    { field: 'weightAvailable', headerName: 'Available Weight (kg)', width: 150, sortable: true },
+    { field: 'total_price', headerName: 'Total Cherry Price', width: 180, sortable: true, renderCell: ({ value }) => {
+      if (value == null || isNaN(value)) return 'N/A';
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+    }},
     { field: 'type', headerName: 'Type', width: 100, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
     { field: 'productLine', headerName: 'Product Line', width: 130, sortable: true },
     { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
-    { field: 'preprocessing_notes', headerName: 'Notes', width: 200, sortable: true }
+    { field: 'preprocessing_notes', headerName: 'Notes', width: 200, sortable: true },
   ];
 
   const unprocessedColumns = [
@@ -440,8 +440,8 @@ const PreprocessingStation = () => {
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
     { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
-    { field: 'weight', headerName: 'Total Weight', width: 150, sortable: true },
-    { field: 'availableBags', headerName: 'Available Bags', width: 150, sortable: true },
+    { field: 'totalWeight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
+    { field: 'weightAvailable', headerName: 'Available Weight (kg)', width: 150, sortable: true },
   ];
 
   if (status === 'loading') {
@@ -497,7 +497,7 @@ const PreprocessingStation = () => {
                   </Button>
                 </Grid>
               </Grid>
-  
+
               <Grid container spacing={2} style={{ marginTop: '16px' }}>
                 <Grid item xs={12}>
                   <TextField
@@ -528,8 +528,8 @@ const PreprocessingStation = () => {
                 </Grid>
                 <Grid item xs={6}>
                   <TextField
-                    label="Total Weight"
-                    value={weight || ''}
+                    label="Total Weight (kg)"
+                    value={totalWeight || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
                     margin="normal"
@@ -545,14 +545,14 @@ const PreprocessingStation = () => {
                   />
                 </Grid>
               </Grid>
-  
+
               <Divider style={{ margin: '16px 0' }} />
-  
+
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <TextField
-                    label="Total Processed Bags"
-                    value={totalProcessedBags || 0}
+                    label="Total Processed Weight (kg)"
+                    value={totalProcessedWeight.toFixed(2) || '0.00'}
                     InputProps={{ readOnly: true }}
                     fullWidth
                     margin="normal"
@@ -560,11 +560,11 @@ const PreprocessingStation = () => {
                 </Grid>
                 <Grid item xs={6}>
                   <TextField
-                    label="Total Bags Available"
-                    value={bagsAvailable || 0}
+                    label="Weight Available (kg)"
+                    value={weightAvailable.toFixed(2) || '0.00'}
                     InputProps={{
                       readOnly: true,
-                      style: { color: bagsAvailable <= 0 ? 'red' : 'inherit' },
+                      style: { color: weightAvailable <= 0 ? 'red' : 'inherit' },
                     }}
                     fullWidth
                     margin="normal"
@@ -576,37 +576,36 @@ const PreprocessingStation = () => {
                 <Grid item xs={6}>
                   <TextField
                     type="number"
-                    label="Bags to Process"
-                    value={bagsProcessed}
-                    onChange={(e) => setBagsProcessed(Number(e.target.value))}
+                    label="Weight to Process (kg)"
+                    value={weightProcessed}
+                    onChange={(e) => setWeightProcessed(e.target.value)}
                     fullWidth
                     margin="normal"
+                    inputProps={{ step: 0.01, min: 0 }}
                   />
                 </Grid>
                 <Grid item>
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={handleAllBags}
+                    onClick={handleAllWeight}
                   >
-                    Process All Bags
+                    Process All Weight
                   </Button>
                 </Grid>
               </Grid>
 
               <Divider style={{ margin: '16px 0' }} />
 
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} style={{ marginTop: '8px' }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
                   <FormControl fullWidth required>
                     <InputLabel id="pd-label">Producer</InputLabel>
                     <Select
                       labelId="pd-label"
                       id="pd"
                       value={producer}
-                      onChange={(e) => {
-                        setProducer(e.target.value);
-                      }}
+                      onChange={(e) => setProducer(e.target.value)}
                       input={<OutlinedInput label="Producer" />}
                       MenuProps={MenuProps}
                     >
@@ -616,52 +615,45 @@ const PreprocessingStation = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
-                <Grid item xs={12} style={{ marginTop: '8px' }}>
+                <Grid item xs={12}>
                   <FormControl fullWidth required>
                     <InputLabel id="pl-label">Product Line</InputLabel>
                     <Select
                       labelId="pl-label"
                       id="pl"
                       value={productLine}
-                      onChange={(e) => {
-                        setProductLine(e.target.value);
-                      }}
+                      onChange={(e) => setProductLine(e.target.value)}
                       input={<OutlinedInput label="Product Line" />}
                       MenuProps={MenuProps}
                       disabled={!producer}
                     >
                       <MenuItem value=""><em>None</em></MenuItem>
-                      {producerOptions[producer] ? producerOptions[producer].map((option) => (
+                      {producerOptions[producer]?.map((option) => (
                         <MenuItem key={option} value={option}>{option}</MenuItem>
-                      )) : []}
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
-
-                <Grid item xs={12} style={{ marginTop: '8px' }}>
+                <Grid item xs={12}>
                   <FormControl fullWidth required>
                     <InputLabel id="pt-label">Processing Type</InputLabel>
                     <Select
                       labelId="pt-label"
                       id="pt"
                       value={processingType}
-                      onChange={(e) => {
-                        setProcessingType(e.target.value);
-                      }}
+                      onChange={(e) => setProcessingType(e.target.value)}
                       input={<OutlinedInput label="Processing Type" />}
                       MenuProps={MenuProps}
                       disabled={!productLine}
                     >
                       <MenuItem value=""><em>None</em></MenuItem>
-                      {productLineOptions[productLine] ? productLineOptions[productLine].map((option) => (
+                      {productLineOptions[productLine]?.map((option) => (
                         <MenuItem key={option} value={option}>{option}</MenuItem>
-                      )) : []}
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
-
-                <Grid item xs={12} style={{ marginTop: '8px' }}>
+                <Grid item xs={12}>
                   <FormControl fullWidth required>
                     <InputLabel id="ql-label">Quality</InputLabel>
                     <Select
@@ -674,18 +666,17 @@ const PreprocessingStation = () => {
                       disabled={!processingType}
                     >
                       <MenuItem value=""><em>None</em></MenuItem>
-                      {processingTypeOptions[processingType] ? processingTypeOptions[processingType].map((option) => (
+                      {processingTypeOptions[processingType]?.map((option) => (
                         <MenuItem key={option} value={option}>{option}</MenuItem>
-                      )) : []}
+                      ))}
                     </Select>
                   </FormControl>
                 </Grid>
-
-                <Grid item xs={12} style={{ marginTop: '8px' }}>
+                <Grid item xs={12}>
                   <TextField
                     label="Notes"
                     multiline
-                    rows={5}
+                    rows= {5}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     fullWidth
@@ -701,6 +692,14 @@ const PreprocessingStation = () => {
               </Grid>
             </form>
 
+            <Grid container spacing={2} style={{ marginTop: '16px' }}>
+              <Grid item>
+                <Button variant="contained" color="info" onClick={showWeightHistory}>
+                  Show Processing History
+                </Button>
+              </Grid>
+            </Grid>
+
             <Snackbar
               open={openSnackbar}
               autoHideDuration={6000}
@@ -712,17 +711,17 @@ const PreprocessingStation = () => {
             </Snackbar>
 
             <Dialog open={openHistory} onClose={handleCloseHistory}>
-              <DialogTitle>Bags Processing History</DialogTitle>
+              <DialogTitle>Weight Processing History</DialogTitle>
               <DialogContent>
-                {bagsHistory.length === 0 ? (
+                {weightHistory.length === 0 ? (
                   <Typography>No processing history available.</Typography>
                 ) : (
-                  bagsHistory.map((history, index) => (
+                  weightHistory.map((history, index) => (
                     <div key={index} style={{ marginBottom: '16px' }}>
                       <Typography variant="h6">Batch: {history.batchNumber}</Typography>
-                      <Typography>Total Bags: {history.totalBags}</Typography>
-                      <Typography>Processed Bags: {history.bagsProcessed}</Typography>
-                      <Typography>Available Bags: {history.bagsAvailable}</Typography>
+                      <Typography>Total Weight: {history.totalWeight} kg</Typography>
+                      <Typography>Processed Weight: {history.totalProcessedWeight} kg</Typography>
+                      <Typography>Available Weight: {history.weightAvailable} kg</Typography>
                       <Divider style={{ margin: '8px 0' }} />
                       <Typography variant="subtitle1">Processing Logs:</Typography>
                       {history.processedLogs.length === 0 ? (
@@ -731,7 +730,7 @@ const PreprocessingStation = () => {
                         history.processedLogs.map((log, logIndex) => (
                           <div key={logIndex} style={{ marginLeft: '16px' }}>
                             <Typography>Processing Date: {new Date(log.processingDate).toISOString().slice(0, 10)}</Typography>
-                            <Typography>Bags Processed: {log.bagsProcessed}</Typography>
+                            <Typography>Weight Processed: {log.weightProcessed} kg</Typography>
                             {log.notes && <Typography>Notes: {log.notes}</Typography>}
                             <Divider style={{ margin: '4px 0' }} />
                           </div>
