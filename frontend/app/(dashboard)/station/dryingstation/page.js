@@ -452,7 +452,7 @@ const DryingStation = () => {
         <DialogTitle>Drying Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
-            <Grid item xs={4}>
+            <Grid item xs={5}>
               <TextField
                 label="Moisture (%)"
                 value={newMoisture}
@@ -462,7 +462,7 @@ const DryingStation = () => {
                 inputProps={{ min: 0, max: 100, step: 0.01 }}
               />
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={5}>
               <TextField
                 label="Measurement Date"
                 type="date"
@@ -472,7 +472,7 @@ const DryingStation = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={2}>
               <Button variant="contained" color="primary" onClick={handleAddMoisture} fullWidth sx={{ height: '100%' }}>
                 Add Measurement
               </Button>
