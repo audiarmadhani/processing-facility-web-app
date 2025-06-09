@@ -418,17 +418,6 @@ function ReceivingStation() {
 
                 <Grid item xs={12}>
                   <TextField
-                    label="Brix (°Bx)"
-                    type="number"
-                    value={brix}
-                    onChange={(e) => setBrix(e.target.value)}
-                    fullWidth
-                    inputProps={{ step: 0.1, min: 0 }}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
                     label="Number of Bags"
                     type="number"
                     value={bagCountInput}
@@ -466,6 +455,18 @@ function ReceivingStation() {
                     />
                   </Grid>
                 ))}
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="Brix (°Bx)"
+                    type="number"
+                    value={brix}
+                    onChange={(e) => setBrix(e.target.value)}
+                    fullWidth
+                    inputProps={{ step: 0.1, min: 0 }}
+                  />
+                </Grid>
+
                 <Grid item xs={12}>
                   <Typography variant="h6">Total Weight: {totalWeight.toFixed(2)} kg</Typography>
                 </Grid>
