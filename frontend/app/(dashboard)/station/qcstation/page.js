@@ -277,7 +277,7 @@ const QCStation = () => {
     const scaleY = canvas.height / smallHeight;
 
     predictions
-        .filter(({ confidence }) => confidence > 0.5)
+        .filter(({ confidence }) => confidence > 0.1)
         .forEach(({ x, y, width, height, class: ripeness, confidence }) => {
             const color = colorMap[ripeness] || "#FFFFFF";
             const xScaled = x * scaleX, yScaled = y * scaleY;
