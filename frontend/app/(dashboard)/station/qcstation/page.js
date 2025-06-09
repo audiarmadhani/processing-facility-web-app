@@ -186,21 +186,29 @@ const QCStation = () => {
 
   const handleCapture = async () => {
     const video = webcamRef.current.video;
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
   
-    canvas.width = 3840;
-    canvas.height = 2160;
+    // Create canvas for plain image
+    const plainCanvas = document.createElement("canvas");
+    const plainContext = plainCanvas.getContext("2d");
+    plainCanvas.width = 3840;
+    plainCanvas.height = 2160;
+    plainContext.drawImage(video, 0, 0, plainCanvas.width, plainCanvas.height);
+  
+    // Create canvas for annotated image
+    const annotatedCanvas = document.createElement("canvas");
+    const annotatedContext = annotatedCanvas.getContext("2d");
+    annotatedCanvas.width = 3840;
+    annotatedCanvas.height = 2160;
+    annotatedContext.drawImage(video, 0, 0, annotatedCanvas.width, annotatedCanvas.height);
   
     const analysisResults = [];
   
+    // Perform Roboflow analysis on downscaled images
     for (let i = 0; i < 3; i++) {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
       const smallCanvas = document.createElement("canvas");
       smallCanvas.width = 640;
       smallCanvas.height = 360;
-      smallCanvas.getContext("2d").drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+      smallCanvas.getContext("2d").drawImage(plainCanvas, 0, 0, smallCanvas.width, smallCanvas.height);
   
       const blob = await new Promise((resolve) => {
         smallCanvas.toBlob(resolve, "image/jpeg", 0.8);
@@ -214,6 +222,7 @@ const QCStation = () => {
       }
     }
   
+    // Average Roboflow results
     const averagedResults = {
       unripe: 0,
       semi_ripe: 0,
@@ -240,12 +249,26 @@ const QCStation = () => {
       overripe: averagedResults.overripe.toFixed(2),
     });
   
+    // Draw annotations only on annotated canvas
     if (analysisResults[analysisResults.length - 1].predictions.length > 0) {
-      drawBoundingBoxes(context, canvas, analysisResults[analysisResults.length - 1].predictions);
-      drawRipenessCounts(context, canvas, averagedResults);
+      drawBoundingBoxes(annotatedContext, annotatedCanvas, analysisResults[analysisResults.length - 1].predictions);
+      drawRipenessCounts(annotatedContext, annotatedCanvas, averagedResults);
     }
   
-    saveAndUploadImage(canvas, batchNumber);
+    // Draw overlay text on annotated canvas
+    drawOverlayText(
+      annotatedContext,
+      annotatedCanvas,
+      batchNumber,
+      farmerName,
+      ripeness,
+      color,
+      foreignMatter,
+      overallQuality
+    );
+  
+    // Save and upload both images
+    saveAndUploadImage(plainCanvas, annotatedCanvas, batchNumber);
   
     setOpen(false);
   };
@@ -303,19 +326,34 @@ const QCStation = () => {
     labels.forEach((text, i) => ctx.fillText(text, canvas.width - 380, canvas.height - 140 + i * 40));
   };
 
-  const saveAndUploadImage = async (canvas, batchNumber) => {
-    const imageSrc = canvas.toDataURL("image/jpeg", 1);
-    const byteString = atob(imageSrc.split(",")[1]);
-    const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-    const file = new Blob([ab], { type: mimeString });
-
+  const saveAndUploadImage = async (plainCanvas, annotatedCanvas, batchNumber) => {
     const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
-    const jpegFile = new File([file], `image_${cleanBatchNumber}.jpeg`, { type: "image/jpeg" });
-
-    await uploadImage(jpegFile, cleanBatchNumber);
+  
+    // Process plain image
+    const plainImageSrc = plainCanvas.toDataURL("image/jpeg", 1);
+    const plainByteString = atob(plainImageSrc.split(",")[1]);
+    const plainMimeString = plainImageSrc.split(",")[0].split(":")[1].split(";")[0];
+    const plainAb = new ArrayBuffer(plainByteString.length);
+    const plainIa = new Uint8Array(plainAb);
+    for (let i = 0; i < plainByteString.length; i++) plainIa[i] = plainByteString.charCodeAt(i);
+    const plainFile = new Blob([plainAb], { type: plainMimeString });
+    const plainJpegFile = new File([plainFile], `image_${cleanBatchNumber}_plain.jpeg`, { type: "image/jpeg" });
+  
+    // Process annotated image
+    const annotatedImageSrc = annotatedCanvas.toDataURL("image/jpeg", 1);
+    const annotatedByteString = atob(annotatedImageSrc.split(",")[1]);
+    const annotatedMimeString = annotatedImageSrc.split(",")[0].split(":")[1].split(";")[0];
+    const annotatedAb = new ArrayBuffer(annotatedByteString.length);
+    const annotatedIa = new Uint8Array(annotatedAb);
+    for (let i = 0; i < annotatedByteString.length; i++) annotatedIa[i] = annotatedByteString.charCodeAt(i);
+    const annotatedFile = new Blob([annotatedAb], { type: annotatedMimeString });
+    const annotatedJpegFile = new File([annotatedFile], `image_${cleanBatchNumber}_annotated.jpeg`, { type: "image/jpeg" });
+  
+    // Upload both images
+    await Promise.all([
+      uploadImage(plainJpegFile, cleanBatchNumber),
+      uploadImage(annotatedJpegFile, cleanBatchNumber),
+    ]);
   };
 
   const uploadImage = async (file, batchNumber) => {
