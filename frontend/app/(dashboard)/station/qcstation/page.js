@@ -169,7 +169,7 @@ const QCStation = () => {
 
         const ripenessCounts = { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
         data.predictions.forEach(({ confidence, class: ripeness }) => {
-            if (confidence >= 0.5) ripenessCounts[ripeness]++;
+            if (confidence >= 0.25) ripenessCounts[ripeness]++;
         });
 
         const total = Object.values(ripenessCounts).reduce((sum, count) => sum + count, 0);
