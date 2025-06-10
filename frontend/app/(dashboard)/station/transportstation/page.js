@@ -537,7 +537,7 @@ const TransportStation = () => {
                   </Tooltip>
                 </Grid>
                 <Grid item xs={6}>
-                  <Tooltip title="Cost per worker for loading (IDR)">
+                  <Tooltip title="Cost per worker (IDR)">
                     <TextField
                       label="Cost per Loading Worker"
                       type="number"
@@ -548,7 +548,7 @@ const TransportStation = () => {
                     />
                   </Tooltip>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid item xs={12}>
                   <TextField
                     label="Total Loading Cost"
                     value={(Number(loadingWorkerCount) * Number(loadingWorkerCostPerPerson)).toFixed(0)}
@@ -569,7 +569,7 @@ const TransportStation = () => {
                   </Tooltip>
                 </Grid>
                 <Grid item xs={6}>
-                  <Tooltip title="Cost per worker for unloading (IDR)">
+                  <Tooltip title="Cost per worker (IDR)">
                     <TextField
                       label="Cost per Unloading Worker"
                       type="number"
@@ -580,7 +580,7 @@ const TransportStation = () => {
                     />
                   </Tooltip>
                 </Grid>
-                <Grid item xs={8}>
+                <Grid item xs={12}>
                   <TextField
                     label="Total Unloading Cost"
                     value={(Number(unloadingWorkerCount) * Number(unloadingWorkerCostPerPerson)).toFixed(0)}
