@@ -266,24 +266,25 @@ const TransportStation = () => {
           (Number(row.transportCostFarmToCollection) + Number(row.transportCostCollectionToFacility)) : 
           Number(row.cost);
         description = contractType === 'Kontrak Lahan' ? 
-          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
-          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}kg (Ladang ke Fasilitas)`;
+          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}nkg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
+          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight} kg (Ladang ke Fasilitas)`;
         break;
       case 'loading':
         amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
-        description = `Upah Kuli Pemuatan Kopi ${row.paidTo} ${farmerName} ${weight}kg`;
+        description = `Upah Kuli ${row.paidTo} ${farmerName} ${weight} kg`;
         break;
       case 'unloading':
         amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
-        description = `Upah Kuli Pembongkaran Kopi ${row.paidTo} ${farmerName} ${weight}kg`;
+        description = `Upah Kuli ${row.paidTo} ${farmerName} ${weight} kg`;
         break;
       case 'harvesting':
         amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
-        description = `Upah Kuli Panen Kopi ${row.paidTo} ${farmerName} ${weight}kg`;
+        description = `Upah Kuli ${row.paidTo} ${farmerName} ${weight} kg`;
         break;
     }
 
     const amountInWords = angkaTerbilang(amount).replace(/(^\w|\s\w)/g, m => m.toUpperCase()) + ' Rupiah';
+    const amountIDR = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', maximumFractionDigits: 0}).format(amount);
 
     doc.setFontSize(12);
     doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
@@ -297,7 +298,7 @@ const TransportStation = () => {
     doc.text(`Untuk Pembayaran  : ${description}`, 20, 64);
 
     doc.setFontSize(14);
-    doc.text(`Rp ${amount}`, 40, 80);
+    doc.text(`Rp ${amountIDR}`, 40, 80);
 
     doc.setFontSize(11);
     doc.text('Penerima', 140, 73);
