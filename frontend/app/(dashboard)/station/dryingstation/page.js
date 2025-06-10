@@ -257,8 +257,8 @@ const DryingStation = () => {
     { field: 'weight', headerName: 'Weight', width: 100 },
     { field: 'type', headerName: 'Type', width: 90 },
     { field: 'producer', headerName: 'Producer', width: 90 },
-    { field: 'productLine', headerName: 'Product Line', width: 130 },
-    { field: 'processingType', headerName: 'Processing Type', width: 160 },
+    { field: 'productLine', headerName: 'Product Line', width: 150 },
+    { field: 'processingType', headerName: 'Processing Type', width: 200 },
     { field: 'quality', headerName: 'Quality', width: 100 }
   ];
 
