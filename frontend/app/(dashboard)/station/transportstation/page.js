@@ -40,19 +40,24 @@ const TransportStation = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
-  const [farmerName, setFarmerName] = useState('');
   const [contractType, setContractType] = useState('');
 
   const fetchBatchNumbers = async () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
-      setBatchNumbers(response.data.allRows?.map(item => ({
+      const batches = response.data.allRows?.map(item => ({
         batchNumber: item.batchNumber,
-        farmerId: item.farmerID,
-        farmerName: item.farmerName
-      })) || []);
+        farmerId: item.farmerID
+      })) || [];
+      setBatchNumbers(batches);
+      if (batches.length === 0) {
+        setSnackbarMessage('No batch numbers available.');
+        setSnackbarSeverity('warning');
+        setSnackbarOpen(true);
+      }
     } catch (error) {
-      setSnackbarMessage('Failed to fetch batch numbers.');
+      console.error('Error fetching batch numbers:', error);
+      setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
@@ -63,6 +68,7 @@ const TransportStation = () => {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmer');
       setFarmers(response.data.allRows || []);
     } catch (error) {
+      console.error('Error fetching farmers:', error);
       setSnackbarMessage('Failed to fetch farmers.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
@@ -87,10 +93,11 @@ const TransportStation = () => {
         transportCostCollectionToFacility: Number(row.transportCostCollectionToFacility) || 0,
         totalCost: Number(row.totalCost) ||0,
         createdAt: new Date(row.createdAt).toLocaleString()
-      })) || []);
-    } catch(error) {
+      }))) || [];
+    } catch (error) {
+      console.error('Error fetching transport data:', error);
       setTransportData([]);
-      setSnackBarMessage('Failed to fetch transport data');
+      setSnackBarMessage('Failed to fetch transport data.');
       setSnackBarSeverity('error');
       setSnackBarOpen(true);
     }
@@ -99,9 +106,10 @@ const TransportStation = () => {
   const fetchLocationData = async () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/location');
-      setLocationData(response.data ||[]);
+      setLocationData(response.data || []);
     } catch (error) {
-      setSnackBarMessage('Failed to fetch location data');
+      console.error('Error fetching location data:', error);
+      setSnackBarMessage('Failed to fetch location data.');
       setSnackBarSeverity('error');
       setSnackBarOpen(true);
     }
@@ -110,48 +118,55 @@ const TransportStation = () => {
   const fetchContractType = async (farmerId) => {
     try {
       const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmer/${farmerId}`);
-      setContractType(response.data.contractType || '');
-      setFarmerName(response.data.farmerName || '');
+      setContractType(response.data?.contractType || null);
+      if (!response.data.contractType) {
+        setSnackBarMessage('No contract type found for this farmer.');
+        setSnackBarSeverity('error');
+        setSnackBarOpen(true);
+        setSelectBatchNumbers([]);
+      }
     } catch (error) {
-      setSnackBarMessage('Failed to fetch contract type');
+      console.error('Error fetching contract type:', error);
+      setSnackBarMessage('Failed to fetch contract type.');
       setSnackBarSeverity('error');
       setSnackBarOpen(true);
+      setSelectBatchNumbers([]);
+      setContractType('');
     }
   };
 
   useEffect(() => {
-    if (session) {
+    if (status === 'authenticated') {
       fetchBatchNumbers();
       fetchFarmers();
       fetchTransportData();
       fetchLocationData();
     }
-  }, [session]);
+  }, [status]);
 
   useEffect(() => {
     if (selectedBatchNumbers.length > 0) {
-      const selectedBatches =batchNumbers.filter(batch => 
+      const selectedBatches = batchNumbers.filter(batch => 
         selectedBatchNumbers.includes(batch.batchNumber));
       const uniqueFarmerIds = [...new Set(selectedBatches.map(batch => batch.farmerId))];
       if (uniqueFarmerIds.length > 1) {
-        setSnackBarMessage('Please select batch numbers from the same farmer');
+        setSnackBarMessage('Please select batch numbers from the same farmer.');
         setSnackBarSeverity('error');
         setSnackBarOpen(true);
         setSelectedBatchNumbers([]);
-        setContractedType('');
-        setFarmerName('');
+        setContractType('');
       } else if (uniqueFarmerIds.length === 1) {
         fetchContractType(uniqueFarmerIds[0]);
       } else {
         setContractType('');
-        setFarmerName('');
       }
+    } else {
+      setContractType('');
     }
   }, [selectedBatchNumbers, batchNumbers]);
 
   const handleKabupatenChange = (event, newValue) => {
     setKabupaten(newValue);
-    setKecamatan(null);
     setKecamatan(null);
     setDesa(null);
   };
@@ -179,8 +194,8 @@ const TransportStation = () => {
       setIsOtherFarmer(false);
       const selectedFarmer = farmers.find(farmer => farmer.farmerName === value);
       setSelectedFarmerDetails(selectedFarmer ? {
-        farmerID: selectedFarmer.farmerId,
-        farmerAddress: selectedFarmer.farmerAddress ||'N/A',
+        farmerID: selectedFarmer.farmerID,
+        farmerAddress: selectedFarmer.farmerAddress || 'N/A',
         bankAccount: selectedFarmer.bankAccount || '',
         bankName: selectedFarmer.bankName || ''
       } : null);
@@ -189,10 +204,10 @@ const TransportStation = () => {
 
   const calculateTotalCost = () => {
     const loadingCost = Number(loadingWorkerCount) * Number(loadingWorkerCostPerPerson);
-    const unloadingCostPerPerson = Number(unloadingWorkerCount) * Number(unloadingCostWorkerCostPerPerson);
-    const harvestCost = Number(harvestWorkerCount) * Number(harvestCostWorkerCountPerPerson);
+    const unloadingCost = Number(unloadingWorkerCount) * Number(unloadingWorkerCostPerPerson);
+    const harvestCost = Number(harvestWorkerCount) * Number(harvestWorkerCostPerPerson);
     const transportCost = contractType === 'Kontrak Lahan' ? 
-      (Number(transportCostFarmToCollection) + Number(transportCostToCollectionToFacility)) :
+      (Number(transportCostFarmToCollection) + Number(transportCostCollectionToFacility)) :
       Number(cost);
 
     return loadingCost + unloadingCost + harvestCost + transportCost;
@@ -202,28 +217,35 @@ const TransportStation = () => {
     e.preventDefault();
 
     if (!selectedBatchNumbers.length) {
-      setSnackBarMessage('Please select at least one batch number');
+      setSnackBarMessage('Please select at least one batch number.');
+      setSnackBarSeverity('error');
+      setSnackBarOpen(true);
+      return;
+    }
+
+    if (!contractType) {
+      setSnackBarMessage('Contract type not resolved. Please reselect batch numbers.');
       setSnackBarSeverity('error');
       setSnackBarOpen(true);
       return;
     }
 
     if (!desa || !kecamatan || !kabupaten) {
-      setSnackBarMessage('Please complete all location fields');
+      setSnackBarMessage('Please complete all location fields.');
       setSnackBarSeverity('error');
       setSnackBarOpen(true);
       return;
     }
 
-    if (isOtherFarmer && !customPaidTo) {
-      setSnackBarMessage('Please enter a name for Paid To');
+    if (!paidTo || (isOtherFarmer && !customPaidTo)) {
+      setSnackBarMessage('Please select or enter a name for Paid To.');
       setSnackBarSeverity('error');
       setSnackBarOpen(true);
       return;
     }
 
     if (!paymentMethod) {
-      setSnackBarMessage('Please select a payment method');
+      setSnackBarMessage('Please select a payment method.');
       setSnackBarSeverity('error');
       setSnackBarOpen(true);
       return;
@@ -287,22 +309,21 @@ const TransportStation = () => {
           setIsOtherFarmer(false);
           setPaymentMethod('');
           setSelectedFarmerDetails(null);
-          setFarmerName('');
           setContractType('');
           setSnackbarMessage('Transport data and payment created successfully!');
-          setSnackBarSeverity('success');
-          setSnackBarOpen(true);
+          setSnackbarSeverity('success');
+          setSnackbarOpen(true);
           fetchTransportData();
         } else {
           throw new Error('Failed to create payment data');
         }
       }
     } catch (error) {
-          setSnackBarMessage(error.message || 'Failed to create transport data');
-          setSnackBarSeverity('error');
-          setSnackBarOpen(true);
-      }
-    };
+      setSnackBarMessage(error.message || 'Failed to create transport data.');
+      setSnackBarSeverity('error');
+      setSnackBarOpen(true);
+    }
+  };
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
@@ -452,14 +473,6 @@ const TransportStation = () => {
                       ))}
                     </Select>
                   </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Farmer Name"
-                    value={farmerName}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
