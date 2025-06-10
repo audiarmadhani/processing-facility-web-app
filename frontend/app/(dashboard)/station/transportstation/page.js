@@ -279,20 +279,20 @@ const TransportStation = () => {
 
     const amountInWords = angkaTerbilang(amount) + ' Rupiah';
 
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
     doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 30, { align: 'center' });
 
-    doc.setFontSize(12);
-    doc.text(`No                : ${invoiceNo}`, 20, 50);
-    doc.text(`Tanggal           : ${date}`, 20, 55);
-    doc.text('Terima Dari       : PT Berkas Tuaian Melimpah', 20, 60);
-    doc.text(`Terbilang         : ${amountInWords}`, 20, 65);
+    doc.setFontSize(11);
+    doc.text(`No                       : ${invoiceNo}`, 20, 50);
+    doc.text(`Tanggal                : ${date}`, 20, 55);
+    doc.text('Terima Dari           : PT Berkas Tuaian Melimpah', 20, 60);
+    doc.text(`Terbilang              : ${amountInWords}`, 20, 65);
     doc.text(`Untuk Pembayaran  : ${description}`, 20, 70);
 
-    doc.text(`Rp ${amount}`, 30, 120);
-
-    doc.text('Penerima', 100, 120);
+    doc.text(`Rp ${amount}`, 40, 100);
+    
+    doc.text('Penerima', 140, 100);
 
     doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
     setInvoiceNumber(prev => prev + 1);
@@ -508,7 +508,7 @@ const TransportStation = () => {
     { field: 'bankName', headerName: 'Bank Name', width: 150 },
     {
       field: 'exportShippingInvoice',
-      headerName: 'Export Shipping Invoice',
+      headerName: 'Shipping Invoice',
       width: 180,
       renderCell: ({ row }) => (
         <IconButton
@@ -524,7 +524,7 @@ const TransportStation = () => {
     },
     {
       field: 'exportLoadingInvoice',
-      headerName: 'Export Loading Labor Invoice',
+      headerName: 'Loading Invoice',
       width: 180,
       renderCell: ({ row }) => (
         <IconButton
@@ -538,7 +538,7 @@ const TransportStation = () => {
     },
     {
       field: 'exportUnloadingInvoice',
-      headerName: 'Export Unloading Labor Invoice',
+      headerName: 'Unloading Invoice',
       width: 180,
       renderCell: ({ row }) => (
         <IconButton
@@ -552,7 +552,7 @@ const TransportStation = () => {
     },
     {
       field: 'exportHarvestingInvoice',
-      headerName: 'Export Harvesting Labor Invoice',
+      headerName: 'Harvesting Invoice',
       width: 180,
       renderCell: ({ row }) => (
         <IconButton
