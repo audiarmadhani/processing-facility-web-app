@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
+    "@develoka/angka-terbilang-js": "^1.4.2",
     "@emotion/cache": "^11",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",

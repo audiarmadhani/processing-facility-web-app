@@ -12,7 +12,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import terbilang from 'terbilang-js'; // Updated import for terbilang-js
+import angkaTerbilang from '@develoka/angka-terbilang-js'; // if using import
 
 const TransportStation = () => {
   const { data: session, status } = useSession();
@@ -267,7 +267,7 @@ const TransportStation = () => {
         break;
     }
 
-    const amountInWords = terbilang(amount) + ' Rupiah'; // Updated to use terbilang-js
+    const amountInWords = angkaTerbilang(amount) + ' Rupiah'; // Updated to use angkaTerbilang
 
     doc.setFontSize(16);
     doc.text('KWITANSI', 105, 20, { align: 'center' });
