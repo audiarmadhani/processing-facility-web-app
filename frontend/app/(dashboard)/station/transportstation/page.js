@@ -292,48 +292,34 @@ const TransportStation = () => {
 
       const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', payload);
       if (response.status === 201) {
-        // const totalCost = calculateTotalCost();
-        // const paymentPayload = {
-        //   farmerName: isOtherFarmer ? customPaidTo : paidTo,
-        //   farmerID: isOtherFarmer ? null : selectedFarmerDetails?.farmerID,
-        //   totalAmount: totalCost || 0,
-        //   date: new Date().toISOString(),
-        //   paymentMethod,
-        //   paymentDescription: 'Transport and Manpower Cost',
-        //   isPaid: 0
-        // };
-
-        // const paymentResponse = await axios.post('https://processing-facility-backend.onrender.com/api/payment', paymentPayload);
-        if (response.status === 200) {
-          setSelectedBatchNumbers([]);
-          setDesa(null);
-          setKecamatan(null);
-          setKabupaten(null);
-          setCost('');
-          setLoadingWorkerCount('');
-          setLoadingWorkerCostPerPerson('');
-          setUnloadingWorkerCount('');
-          setUnloadingWorkerCostPerPerson('');
-          setHarvestWorkerCount('');
-          setHarvestWorkerCostPerPerson('');
-          setTransportCostFarmToCollection('');
-          setTransportCostCollectionToFacility('');
-          setPaidTo('');
-          setCustomPaidTo('');
-          setCustomFarmerAddress('');
-          setCustomBankAccount('');
-          setCustomBankName('');
-          setIsOtherFarmer(false);
-          setPaymentMethod('');
-          setSelectedFarmerDetails(null);
-          setContractType('');
-          setSnackbarMessage('Transport data and payment created successfully!');
-          setSnackbarSeverity('success');
-          setSnackbarOpen(true);
-          fetchTransportData();
-        } else {
-          throw new Error('Failed to create payment data');
-        }
+        setSelectedBatchNumbers([]);
+        setDesa(null);
+        setKecamatan(null);
+        setKabupaten(null);
+        setCost('');
+        setLoadingWorkerCount('');
+        setLoadingWorkerCostPerPerson('');
+        setUnloadingWorkerCount('');
+        setUnloadingWorkerCostPerPerson('');
+        setHarvestWorkerCount('');
+        setHarvestWorkerCostPerPerson('');
+        setTransportCostFarmToCollection('');
+        setTransportCostCollectionToFacility('');
+        setPaidTo('');
+        setCustomPaidTo('');
+        setCustomFarmerAddress('');
+        setCustomBankAccount('');
+        setCustomBankName('');
+        setIsOtherFarmer(false);
+        setPaymentMethod('');
+        setSelectedFarmerDetails(null);
+        setContractType('');
+        setSnackbarMessage('Transport data and payment created successfully!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+        fetchTransportData();
+      } else {
+        throw new Error('Failed to create transport data');
       }
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to create transport data.');
