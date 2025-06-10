@@ -46,41 +46,40 @@ const TransportStation = () => {
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [contractType, setContractType] = useState('');
   const [farmerContractCache, setFarmerContractCache] = useState({});
-  const [invoiceNumber, setInvoiceNumber] = useState(1); // Start invoice number from 0001
-  const [batchWeights, setBatchWeights] = useState({}); // Store batch weights
-  const [farmerNames, setFarmerNames] = useState({}); // Store farmer name
+  const [batchWeights, setBatchWeights] = useState({});
+  const [farmerNames, setFarmerNames] = useState({});
 
   const fetchBatchNumbers = async () => {
-  try {
-    const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
-    const batches = response.data.allRows?.map(item => ({
-      batchNumber: item.batchNumber,
-      farmerName: item.farmerName,
-      weight: item.weight || 'N/A' // Use netWeight instead of weight
-    })) || [];
-    setBatchNumbers(batches);
-    const weights = batches.reduce((acc, batch) => ({
-      ...acc,
-      [batch.batchNumber]: batch.weight
-    }), {});
-    setBatchWeights(weights);
-    const farmers = batches.reduce((acc, batch) => ({
-      ...acc,
-      [batch.batchNumber]: batch.farmerName
-    }), {});
-    setFarmerNames(farmers);
-    if (batches.length === 0) {
-      setSnackbarMessage('No batch numbers available.');
-      setSnackbarSeverity('warning');
+    try {
+      const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
+      const batches = response.data.allRows?.map(item => ({
+        batchNumber: item.batchNumber,
+        farmerName: item.farmerName,
+        weight: item.weight || 'N/A'
+      })) || [];
+      setBatchNumbers(batches);
+      const weights = batches.reduce((acc, batch) => ({
+        ...acc,
+        [batch.batchNumber]: batch.weight
+      }), {});
+      setBatchWeights(weights);
+      const farmers = batches.reduce((acc, batch) => ({
+        ...acc,
+        [batch.batchNumber]: batch.farmerName
+      }), {});
+      setFarmerNames(farmers);
+      if (batches.length === 0) {
+        setSnackbarMessage('No batch numbers available.');
+        setSnackbarSeverity('warning');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error fetching batch numbers:', error);
+      setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
+      setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
-  } catch (error) {
-    console.error('Error fetching batch numbers:', error);
-    setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
-    setSnackbarSeverity('error');
-    setSnackbarOpen(true);
-  }
-};
+  };
 
   const fetchFarmers = async () => {
     try {
@@ -248,7 +247,7 @@ const TransportStation = () => {
 
   const generateInvoice = (row, type) => {
     const doc = new jsPDF();
-    const invoiceNo = `000${invoiceNumber}`.slice(-4);
+    const invoiceNo = `000${row.invoiceNumber}`.slice(-4);
     const date = new Date().toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
@@ -257,8 +256,8 @@ const TransportStation = () => {
     let amount = 0;
     let description = '';
     const batchNumber = row.batchNumber || 'Unknown';
-    const weight = batchWeights[batchNumber] || 'N/A'; // Fetch weight from batchWeights
-    const farmerName = farmerNames[batchNumber] || 'N/A'; // Fetch weight from batchWeights
+    const weight = batchWeights[batchNumber] || 'N/A';
+    const farmerName = farmerNames[batchNumber] || 'N/A';
 
     switch (type) {
       case 'shipping':
@@ -266,20 +265,20 @@ const TransportStation = () => {
           (Number(row.transportCostFarmToCollection) + Number(row.transportCostCollectionToFacility)) : 
           Number(row.cost);
         description = contractType === 'Kontrak Lahan' ? 
-          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}nkg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
-          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight} kg (Ladang ke Fasilitas)`;
+          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
+          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}kg (Ladang ke Fasilitas)`;
         break;
       case 'loading':
         amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
-        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah ${row.paidTo} ${farmerName} ${weight}kg`;
         break;
       case 'unloading':
         amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
-        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah ${row.paidTo} ${farmerName} ${weight}kg`;
         break;
       case 'harvesting':
         amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
-        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah ${row.paidTo} ${farmerName} ${weight}kg`;
         break;
     }
 
