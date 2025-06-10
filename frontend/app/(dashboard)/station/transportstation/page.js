@@ -524,6 +524,9 @@ const TransportStation = () => {
                     inputProps={{ min: 0 }}
                   />
                 </Grid>
+
+                <Divider style={{ margin: '16px 0' }} />
+
                 <Grid item xs={6}>
                   <Tooltip title="Number of workers loading cherries onto the truck">
                     <TextField
@@ -556,6 +559,9 @@ const TransportStation = () => {
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
+
+                <Divider style={{ margin: '16px 0' }} />
+
                 <Grid item xs={6}>
                   <Tooltip title="Number of workers unloading cherries from the truck">
                     <TextField
@@ -588,6 +594,9 @@ const TransportStation = () => {
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
+
+                <Divider style={{ margin: '16px 0' }} />
+
                 <Collapse in={contractType === 'Kontrak Lahan'}>
                   <Grid item xs={12}>
                     <TextField
@@ -599,7 +608,10 @@ const TransportStation = () => {
                       inputProps={{ min: 0 }}
                     />
                   </Grid>
-                  <Grid item xs={4}>
+
+                  <Divider style={{ margin: '16px 0' }} />
+
+                  <Grid item xs={6}>
                     <Tooltip title="Number of workers harvesting cherries at the farm">
                       <TextField
                         label="Harvest Workers Count (Buruh Petik)"
@@ -611,7 +623,7 @@ const TransportStation = () => {
                       />
                     </Tooltip>
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item xs={6}>
                     <Tooltip title="Cost per worker for harvesting (IDR)">
                       <TextField
                         label="Cost per Harvest Worker"
@@ -623,7 +635,7 @@ const TransportStation = () => {
                       />
                     </Tooltip>
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item xs={12}>
                     <TextField
                       label="Total Harvest Cost"
                       value={(Number(harvestWorkerCount) * Number(harvestWorkerCostPerPerson)).toFixed(0)}
@@ -631,6 +643,9 @@ const TransportStation = () => {
                       InputProps={{ readOnly: true }}
                     />
                   </Grid>
+
+                  <Divider style={{ margin: '16px 0' }} />
+                  
                 </Collapse>
                 <Grid item xs={12}>
                   <FormControl fullWidth>
