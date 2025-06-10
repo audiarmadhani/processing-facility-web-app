@@ -233,7 +233,7 @@ const TransportStation = () => {
     return loadingCost + unloadingCost + harvestCost + transportCost;
   };
 
-  const generateIvoice = (row, type) => {
+  const generateInvoice = (row, type) => {
     const doc = new jsPDF();
     const invoiceNo = `000${invoiceNumber}`.slice(-4);
     const date = new Date().toLocaleDateString('id-ID', {
