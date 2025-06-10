@@ -5,10 +5,14 @@ import { useSession } from "next-auth/react";
 import {
   TextField, Button, Typography, Snackbar, Alert, Grid, Card, CardContent,
   FormControl, InputLabel, Select, MenuItem, Chip, Autocomplete, OutlinedInput, Divider,
-  Collapse, Tooltip
+  Collapse, Tooltip, IconButton
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import { terbilang } from 'terbilang-js'; // Updated import for terbilang-js
 
 const TransportStation = () => {
   const { data: session, status } = useSession();
@@ -41,7 +45,8 @@ const TransportStation = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [contractType, setContractType] = useState('');
-  const [farmerContractCache, setFarmerContractCache] = useState({}); // Cache for farmer contract types
+  const [farmerContractCache, setFarmerContractCache] = useState({});
+  const [invoiceNumber, setInvoiceNumber] = useState(1); // Start invoice number from 0001
 
   const fetchBatchNumbers = async () => {
     try {
@@ -146,10 +151,8 @@ const TransportStation = () => {
         selectedBatchNumbers.includes(batch.batchNumber));
       const uniqueFarmerIds = [...new Set(selectedBatches.map(batch => batch.farmerId))];
       
-      // Fetch contract types for all unique farmer IDs
       Promise.all(uniqueFarmerIds.map(farmerId => fetchContractType(farmerId)))
         .then(contractTypes => {
-          // Filter out null contract types (failed fetches)
           const validContractTypes = contractTypes.filter(ct => ct !== null);
           const uniqueContractTypes = [...new Set(validContractTypes)];
           
@@ -228,6 +231,65 @@ const TransportStation = () => {
       Number(cost);
 
     return loadingCost + unloadingCost + harvestCost + transportCost;
+  };
+
+  const generateIvoice = (row, type) => {
+    const doc = new jsPDF();
+    const invoiceNo = `000${invoiceNumber}`.slice(-4);
+    const date = new Date().toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    let amount = 0;
+    let description = '';
+
+    switch (type) {
+      case 'shipping':
+        amount = contractType === 'Kontrak Lahan' ? 
+          (Number(row.transportCostFarmToCollection) + Number(row.transportCostCollectionToFacility)) : 
+          Number(row.cost);
+        description = contractType === 'Kontrak Lahan' ? 
+          'Biaya Transportasi (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)' : 
+          'Biaya Transportasi (Ladang ke Fasilitas)';
+        break;
+      case 'loading':
+        amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
+        description = 'Biaya Tenaga Kerja Pemuatan';
+        break;
+      case 'unloading':
+        amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
+        description = 'Biaya Tenaga Kerja Pembongkaran';
+        break;
+      case 'harvesting':
+        amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
+        description = 'Biaya Tenaga Kerja Panen';
+        break;
+    }
+
+    const amountInWords = terbilang(amount) + ' Rupiah'; // Updated to use terbilang-js
+
+    doc.setFontSize(16);
+    doc.text('KWITANSI', 105, 20, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.text(`No.: ${invoiceNo}`, 20, 40);
+    doc.text(`Tanggal: ${date}`, 20, 50);
+    doc.text('Terima Dari: PT Berkas Tuaian Melimpah', 20, 60);
+    doc.text(`Terbilang: ${amountInWords}`, 20, 70);
+    doc.text(`Untuk Pembayaran: ${description}`, 20, 80);
+
+    doc.autoTable({
+      startY: 90,
+      head: [['Keterangan', 'Jumlah (IDR)']],
+      body: [[description, new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)]],
+      theme: 'grid'
+    });
+
+    doc.text(`Jumlah yang Harus Dibayar: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)}`, 20, doc.lastAutoTable.finalY + 20);
+
+    doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
+    setInvoiceNumber(prev => prev + 1);
   };
 
   const handleSubmit = async (e) => {
@@ -438,6 +500,64 @@ const TransportStation = () => {
     { field: 'paidTo', headerName: 'Paid To', width: 150 },
     { field: 'bankAccount', headerName: 'Bank Account Number', width: 200 },
     { field: 'bankName', headerName: 'Bank Name', width: 150 },
+    {
+      field: 'exportShippingInvoice',
+      headerName: 'Export Shipping Invoice',
+      width: 180,
+      renderCell: ({ row }) => (
+        <IconButton
+          color="primary"
+          onClick={() => generateInvoice(row, 'shipping')}
+          disabled={contractType === 'Kontrak Lahan' ? 
+            (!row.transportCostFarmToCollection && !row.transportCostCollectionToFacility) : 
+            !row.cost}
+        >
+          <PictureAsPdfIcon />
+        </IconButton>
+      )
+    },
+    {
+      field: 'exportLoadingInvoice',
+      headerName: 'Export Loading Labor Invoice',
+      width: 180,
+      renderCell: ({ row }) => (
+        <IconButton
+          color="primary"
+          onClick={() => generateInvoice(row, 'loading')}
+          disabled={!row.loadingWorkerCount || !row.loadingWorkerCostPerPerson}
+        >
+          <PictureAsPdfIcon />
+        </IconButton>
+      )
+    },
+    {
+      field: 'exportUnloadingInvoice',
+      headerName: 'Export Unloading Labor Invoice',
+      width: 180,
+      renderCell: ({ row }) => (
+        <IconButton
+          color="primary"
+          onClick={() => generateInvoice(row, 'unloading')}
+          disabled={!row.unloadingWorkerCount || !row.unloadingWorkerCostPerPerson}
+        >
+          <PictureAsPdfIcon />
+        </IconButton>
+      )
+    },
+    {
+      field: 'exportHarvestingInvoice',
+      headerName: 'Export Harvesting Labor Invoice',
+      width: 180,
+      renderCell: ({ row }) => (
+        <IconButton
+          color="primary"
+          onClick={() => generateInvoice(row, 'harvesting')}
+          disabled={!row.harvestWorkerCount || !row.harvestWorkerCostPerPerson}
+        >
+          <PictureAsPdfIcon />
+        </IconButton>
+      )
+    }
   ];
 
   const kabupatenList = [...new Set(locationData.map(item => item.kabupaten))];
@@ -524,9 +644,7 @@ const TransportStation = () => {
                     inputProps={{ min: 0 }}
                   />
                 </Grid>
-
                 <Divider style={{ margin: '16px 0' }} />
-
                 <Grid item xs={6}>
                   <Tooltip title="Number of workers loading cherries onto the truck">
                     <TextField
@@ -559,9 +677,7 @@ const TransportStation = () => {
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
-
                 <Divider style={{ margin: '16px 0' }} />
-
                 <Grid item xs={6}>
                   <Tooltip title="Number of workers unloading cherries from the truck">
                     <TextField
@@ -594,9 +710,7 @@ const TransportStation = () => {
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
-
                 <Divider style={{ margin: '16px 0' }} />
-
                 <Collapse in={contractType === 'Kontrak Lahan'}>
                   <Grid item xs={12}>
                     <TextField
@@ -608,9 +722,7 @@ const TransportStation = () => {
                       inputProps={{ min: 0 }}
                     />
                   </Grid>
-
                   <Divider style={{ margin: '16px 0' }} />
-
                   <Grid item xs={6}>
                     <Tooltip title="Number of workers harvesting cherries at the farm">
                       <TextField
@@ -628,8 +740,8 @@ const TransportStation = () => {
                       <TextField
                         label="Cost per Harvest Worker"
                         type="number"
-                        value={harvestWorkerCostPerPerson}
-                        onChange={e => setHarvestWorkerCostPerPerson(e.target.value)}
+                        value={harvestWorkerCount}
+                        onChange={e => setHarvestWorkerCount(e.target.value)}
                         fullWidth
                         inputProps={{ min: 0 }}
                       />
@@ -643,9 +755,7 @@ const TransportStation = () => {
                       InputProps={{ readOnly: true }}
                     />
                   </Grid>
-
                   <Divider style={{ margin: '16px 0' }} />
-                  
                 </Collapse>
                 <Grid item xs={12}>
                   <FormControl fullWidth>

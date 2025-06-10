@@ -39,7 +39,8 @@
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "react-router-dom": "^7.2.0",
-    "run-script": "^0.1.1"
+    "run-script": "^0.1.1",
+    "terbilang-js": "^1.0.1"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
