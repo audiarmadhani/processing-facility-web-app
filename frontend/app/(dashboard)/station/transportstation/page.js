@@ -50,32 +50,31 @@ const TransportStation = () => {
   const [batchWeights, setBatchWeights] = useState({}); // Store batch weights
 
   const fetchBatchNumbers = async () => {
-    try {
-      const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
-      const batches = response.data.noTransportData?.map(item => ({
-        batchNumber: item.batchNumber,
-        farmerId: item.farmerID,
-        weight: item.weight || 'N/A' // Assuming weight is available in the response
-      })) || [];
-      setBatchNumbers(batches);
-      // Store weights in a map for easy lookup
-      const weights = batches.reduce((acc, batch) => ({
-        ...acc,
-        [batch.batchNumber]: batch.weight
-      }), {});
-      setBatchWeights(weights);
-      if (batches.length === 0) {
-        setSnackbarMessage('No batch numbers available.');
-        setSnackbarSeverity('warning');
-        setSnackbarOpen(true);
-      }
-    } catch (error) {
-      console.error('Error fetching batch numbers:', error);
-      setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
-      setSnackbarSeverity('error');
+  try {
+    const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
+    const batches = response.data.allRows?.map(item => ({
+      batchNumber: item.batchNumber,
+      farmerName: item.farmerName,
+      weight: item.weight || 'N/A' // Use netWeight instead of weight
+    })) || [];
+    setBatchNumbers(batches);
+    const weights = batches.reduce((acc, batch) => ({
+      ...acc,
+      [batch.batchNumber]: batch.weight
+    }), {});
+    setBatchWeights(weights);
+    if (batches.length === 0) {
+      setSnackbarMessage('No batch numbers available.');
+      setSnackbarSeverity('warning');
       setSnackbarOpen(true);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching batch numbers:', error);
+    setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
+    setSnackbarSeverity('error');
+    setSnackbarOpen(true);
+  }
+};
 
   const fetchFarmers = async () => {
     try {
@@ -277,7 +276,7 @@ const TransportStation = () => {
         break;
     }
 
-    const amountInWords = angkaTerbilang(amount) + ' Rupiah';
+    const amountInWords = angkaTerbilang(amount).replace(/(^\w|\s\w)/g, m => m.toUpperCase()) + ' Rupiah';
 
     doc.setFontSize(12);
     doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
@@ -290,10 +289,13 @@ const TransportStation = () => {
     doc.text(`Terbilang                  : ${amountInWords}`, 20, 58);
     doc.text(`Untuk Pembayaran  : ${description}`, 20, 64);
 
+    doc.setFontSize(14);
     doc.text(`Rp ${amount}`, 40, 80);
+
+    doc.setFontSize(11);
     doc.text('Penerima', 140, 73);
 
-    doc.rect(30, 71, 45, 15);
+    doc.rect(30, 71, 50, 15);
     doc.rect(5, 5, 200, 95);
 
     doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
