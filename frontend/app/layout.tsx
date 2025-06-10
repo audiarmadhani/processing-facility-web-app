@@ -51,7 +51,7 @@ const NAVIGATION: Navigation = [
     icon: <CottageIcon />,
     children: [
       { segment: "receivingstation", title: "Receiving Station", icon: <WarehouseIcon /> },
-      { segment: "transportstation", title: "Cherry Inbound Transport", icon: <LocalShippingIcon /> },
+      { segment: "transportstation", title: "Inbound Transport and Labor", icon: <LocalShippingIcon /> },
       { segment: "qcstation", title: "Cherry QC Station", icon: <NoteAltIcon /> },
 
       { kind: "divider" },
