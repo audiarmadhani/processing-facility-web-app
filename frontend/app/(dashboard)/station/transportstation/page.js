@@ -54,13 +54,13 @@ const TransportStation = () => {
       if (batches.length === 0) {
         setSnackbarMessage('No batch numbers available.');
         setSnackbarSeverity('warning');
-        setSnackBarOpen(true);
+        setSnackbarOpen(true);
       }
     } catch (error) {
       console.error('Error fetching batch numbers:', error);
       setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
     }
   };
 
@@ -72,7 +72,7 @@ const TransportStation = () => {
       console.error('Error fetching farmers:', error);
       setSnackbarMessage('Failed to fetch farmers.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
     }
   };
 
@@ -100,7 +100,7 @@ const TransportStation = () => {
       setTransportData([]);
       setSnackbarMessage('Failed to fetch transport data.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
     }
   };
 
@@ -112,7 +112,7 @@ const TransportStation = () => {
       console.error('Error fetching location data:', error);
       setSnackbarMessage('Failed to fetch location data.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
     }
   };
 
@@ -121,7 +121,7 @@ const TransportStation = () => {
       return farmerContractCache[farmerId];
     }
     try {
-      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmer/${farmerId}`);
+      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmerid/${farmerId}`);
       const contractType = response.data?.contractType || null;
       setFarmerContractCache(prev => ({ ...prev, [farmerId]: contractType }));
       return contractType;
@@ -156,13 +156,13 @@ const TransportStation = () => {
           if (validContractTypes.length === 0) {
             setSnackbarMessage('No valid contract types found for selected batches.');
             setSnackbarSeverity('error');
-            setSnackBarOpen(true);
+            setSnackbarOpen(true);
             setSelectedBatchNumbers([]);
             setContractType('');
           } else if (uniqueContractTypes.length > 1) {
             setSnackbarMessage('Please select batch numbers with the same contract type.');
             setSnackbarSeverity('error');
-            setSnackBarOpen(true);
+            setSnackbarOpen(true);
             setSelectedBatchNumbers([]);
             setContractType('');
           } else {
@@ -173,7 +173,7 @@ const TransportStation = () => {
           console.error('Error validating contract types:', error);
           setSnackbarMessage('Failed to validate contract types.');
           setSnackbarSeverity('error');
-          setSnackBarOpen(true);
+          setSnackbarOpen(true);
           setSelectedBatchNumbers([]);
           setContractType('');
         });
@@ -236,35 +236,35 @@ const TransportStation = () => {
     if (!selectedBatchNumbers.length) {
       setSnackbarMessage('Please select at least one batch number.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
       return;
     }
 
     if (!contractType) {
       setSnackbarMessage('Contract type not resolved. Please reselect batch numbers.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
       return;
     }
 
     if (!desa || !kecamatan || !kabupaten) {
       setSnackbarMessage('Please complete all location fields.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
       return;
     }
 
     if (!paidTo || (isOtherFarmer && !customPaidTo)) {
       setSnackbarMessage('Please select or enter a name for Paid To.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
       return;
     }
 
     if (!paymentMethod) {
       setSnackbarMessage('Please select a payment method.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
       return;
     }
 
@@ -329,7 +329,7 @@ const TransportStation = () => {
           setContractType('');
           setSnackbarMessage('Transport data and payment created successfully!');
           setSnackbarSeverity('success');
-          setSnackBarOpen(true);
+          setSnackbarOpen(true);
           fetchTransportData();
         } else {
           throw new Error('Failed to create payment data');
@@ -338,7 +338,7 @@ const TransportStation = () => {
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to create transport data.');
       setSnackbarSeverity('error');
-      setSnackBarOpen(true);
+      setSnackbarOpen(true);
     }
   };
 
@@ -756,7 +756,7 @@ const TransportStation = () => {
                 </Grid>
               </Grid>
             </form>
-            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackBarOpen(false)}>
+            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)}>
               <Alert severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
             </Snackbar>
           </CardContent>
