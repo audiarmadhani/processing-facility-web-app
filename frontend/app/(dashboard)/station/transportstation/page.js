@@ -110,7 +110,8 @@ const TransportStation = () => {
         transportCostFarmToCollection: Number(row.transportCostFarmToCollection) || 0,
         transportCostCollectionToFacility: Number(row.transportCostCollectionToFacility) || 0,
         totalCost: Number(row.totalCost) || 0,
-        createdAt: new Date(row.createdAt).toLocaleString()
+        createdAt: new Date(row.createdAt).toLocaleString(),
+        invoiceNumbers: row.invoiceNumbers || {}
       })) || []);
     } catch (error) {
       console.error('Error fetching transport data:', error);
@@ -247,7 +248,7 @@ const TransportStation = () => {
 
   const generateInvoice = (row, type) => {
     const doc = new jsPDF();
-    const invoiceNo = `000${row.invoiceNumber}`.slice(-4);
+    const invoiceNo = row.invoiceNumbers[type] || 'N/A';
     const date = new Date().toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
@@ -294,20 +295,18 @@ const TransportStation = () => {
     doc.text(`Tanggal                    : ${date}`, 20, 44);
     doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 50);
 
-    // Handle Terbilang with wrapping
-    const maxWidth = 170; // Adjust based on page width (A4 width is ~210mm minus margins)
+    const maxWidth = 170;
     const amountInWordsLines = doc.splitTextToSize(`Terbilang                  : ${amountInWords}`, maxWidth);
     let y = 56;
     amountInWordsLines.forEach(line => {
       doc.text(line, 20, y);
-      y += 6; // Line spacing
+      y += 6;
     });
 
-    // Handle Untuk Pembayaran with wrapping
     const descriptionLines = doc.splitTextToSize(`Untuk Pembayaran  : ${description}`, maxWidth);
     descriptionLines.forEach(line => {
       doc.text(line, 20, y);
-      y += 6; // Line spacing
+      y += 6;
     });
 
     doc.setFontSize(14);
