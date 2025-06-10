@@ -78,7 +78,7 @@ const DryingStation = () => {
         dryingResponse.json(),
         greenhouseResponse.json()
       ]);
-      const pendingPreprocessingData = qcResult.allRows || [];
+      const pendingPreprocessingData = qcResult.distinctRows || [];
 
       const formattedData = pendingPreprocessingData.map(batch => {
         const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber);
