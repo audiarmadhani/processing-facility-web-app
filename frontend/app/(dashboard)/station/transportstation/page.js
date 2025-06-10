@@ -48,6 +48,7 @@ const TransportStation = () => {
   const [farmerContractCache, setFarmerContractCache] = useState({});
   const [invoiceNumber, setInvoiceNumber] = useState(1); // Start invoice number from 0001
   const [batchWeights, setBatchWeights] = useState({}); // Store batch weights
+  const [farmerNames, setFarmerNames] = useState({}); // Store farmer name
 
   const fetchBatchNumbers = async () => {
   try {
@@ -63,6 +64,11 @@ const TransportStation = () => {
       [batch.batchNumber]: batch.weight
     }), {});
     setBatchWeights(weights);
+    const farmers = batches.reduce((acc, batch) => ({
+      ...acc,
+      [batch.batchNumber]: batch.farmerName
+    }), {});
+    setFarmerNames(farmers);
     if (batches.length === 0) {
       setSnackbarMessage('No batch numbers available.');
       setSnackbarSeverity('warning');
@@ -252,6 +258,7 @@ const TransportStation = () => {
     let description = '';
     const batchNumber = row.batchNumber || 'Unknown';
     const weight = batchWeights[batchNumber] || 'N/A'; // Fetch weight from batchWeights
+    const farmerName = farmerNames[batchNumber] || 'N/A'; // Fetch weight from batchWeights
 
     switch (type) {
       case 'shipping':
@@ -259,20 +266,20 @@ const TransportStation = () => {
           (Number(row.transportCostFarmToCollection) + Number(row.transportCostCollectionToFacility)) : 
           Number(row.cost);
         description = contractType === 'Kontrak Lahan' ? 
-          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
-          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Fasilitas)`;
+          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
+          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}kg (Ladang ke Fasilitas)`;
         break;
       case 'loading':
         amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
-        description = `Upah Kuli Pemuatan Kopi ${row.paidTo} ${weight}kg`;
+        description = `Upah Kuli Pemuatan Kopi ${row.paidTo} ${farmerName} ${weight}kg`;
         break;
       case 'unloading':
         amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
-        description = `Upah Kuli Pembongkaran Kopi ${row.paidTo} ${weight}kg`;
+        description = `Upah Kuli Pembongkaran Kopi ${row.paidTo} ${farmerName} ${weight}kg`;
         break;
       case 'harvesting':
         amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
-        description = `Upah Kuli Panen Kopi ${row.paidTo} ${weight}kg`;
+        description = `Upah Kuli Panen Kopi ${row.paidTo} ${farmerName} ${weight}kg`;
         break;
     }
 
