@@ -271,15 +271,15 @@ const TransportStation = () => {
         break;
       case 'loading':
         amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
-        description = `Upah Kuli ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
         break;
       case 'unloading':
         amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
-        description = `Upah Kuli ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
         break;
       case 'harvesting':
         amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
-        description = `Upah Kuli ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
         break;
     }
 
@@ -291,14 +291,14 @@ const TransportStation = () => {
     doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 27, { align: 'center' });
 
     doc.setFontSize(11);
-    doc.text(`No                            : ${invoiceNo}`, 20, 40);
-    doc.text(`Tanggal                    : ${date}`, 20, 46);
-    doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 52);
-    doc.text(`Terbilang                  : ${amountInWords}`, 20, 58);
-    doc.text(`Untuk Pembayaran  : ${description}`, 20, 64);
+    doc.text(`No                            : ${invoiceNo}`, 20, 38);
+    doc.text(`Tanggal                    : ${date}`, 20, 44);
+    doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 50);
+    doc.text(`Terbilang                  : ${amountInWords}`, 20, 56);
+    doc.text(`Untuk Pembayaran  : ${description}`, 20, 62);
 
     doc.setFontSize(14);
-    doc.text(`Rp ${amountIDR}`, 40, 80);
+    doc.text(`${amountIDR}`, 40, 80);
 
     doc.setFontSize(11);
     doc.text('Penerima', 140, 73);
