@@ -12,7 +12,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import angkaTerbilang from '@develoka/angka-terbilang-js'; // if using import
+import angkaTerbilang from '@develoka/angka-terbilang-js';
 
 const TransportStation = () => {
   const { data: session, status } = useSession();
@@ -47,15 +47,23 @@ const TransportStation = () => {
   const [contractType, setContractType] = useState('');
   const [farmerContractCache, setFarmerContractCache] = useState({});
   const [invoiceNumber, setInvoiceNumber] = useState(1); // Start invoice number from 0001
+  const [batchWeights, setBatchWeights] = useState({}); // Store batch weights
 
   const fetchBatchNumbers = async () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
       const batches = response.data.noTransportData?.map(item => ({
         batchNumber: item.batchNumber,
-        farmerId: item.farmerID
+        farmerId: item.farmerID,
+        weight: item.weight || 'N/A' // Assuming weight is available in the response
       })) || [];
       setBatchNumbers(batches);
+      // Store weights in a map for easy lookup
+      const weights = batches.reduce((acc, batch) => ({
+        ...acc,
+        [batch.batchNumber]: batch.weight
+      }), {});
+      setBatchWeights(weights);
       if (batches.length === 0) {
         setSnackbarMessage('No batch numbers available.');
         setSnackbarSeverity('warning');
@@ -238,11 +246,13 @@ const TransportStation = () => {
     const invoiceNo = `000${invoiceNumber}`.slice(-4);
     const date = new Date().toLocaleDateString('id-ID', {
       day: '2-digit',
-      month: '2-digit',
+      month: 'short',
       year: 'numeric'
     });
     let amount = 0;
     let description = '';
+    const batchNumber = row.batchNumber || 'Unknown';
+    const weight = batchWeights[batchNumber] || 'N/A'; // Fetch weight from batchWeights
 
     switch (type) {
       case 'shipping':
@@ -250,43 +260,37 @@ const TransportStation = () => {
           (Number(row.transportCostFarmToCollection) + Number(row.transportCostCollectionToFacility)) : 
           Number(row.cost);
         description = contractType === 'Kontrak Lahan' ? 
-          'Biaya Transportasi (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)' : 
-          'Biaya Transportasi (Ladang ke Fasilitas)';
+          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
+          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Fasilitas)`;
         break;
       case 'loading':
         amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
-        description = 'Biaya Tenaga Kerja Pemuatan';
+        description = `Upah Kuli Pemuatan Kopi ${row.paidTo} ${weight}kg`;
         break;
       case 'unloading':
         amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
-        description = 'Biaya Tenaga Kerja Pembongkaran';
+        description = `Upah Kuli Pembongkaran Kopi ${row.paidTo} ${weight}kg`;
         break;
       case 'harvesting':
         amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
-        description = 'Biaya Tenaga Kerja Panen';
+        description = `Upah Kuli Panen Kopi ${row.paidTo} ${weight}kg`;
         break;
     }
 
-    const amountInWords = angkaTerbilang(amount) + ' Rupiah'; // Updated to use angkaTerbilang
+    const amountInWords = angkaTerbilang(amount) + ' Rupiah';
 
     doc.setFontSize(16);
-    doc.text('KWITANSI', 105, 20, { align: 'center' });
+    doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
+    doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 30, { align: 'center' });
 
     doc.setFontSize(12);
-    doc.text(`No.: ${invoiceNo}`, 20, 40);
-    doc.text(`Tanggal: ${date}`, 20, 50);
-    doc.text('Terima Dari: PT Berkas Tuaian Melimpah', 20, 60);
-    doc.text(`Terbilang: ${amountInWords}`, 20, 70);
-    doc.text(`Untuk Pembayaran: ${description}`, 20, 80);
+    doc.text(`No: ${invoiceNo}`, 20, 50);
+    doc.text(`Tanggal: ${date}`, 20, 60);
+    doc.text('Terima Dari: PT Berkas Tuaian Melimpah', 20, 70);
+    doc.text(`Terbilang: ${amountInWords}`, 20, 80);
+    doc.text(`Untuk Pembayaran: ${description}`, 20, 90);
 
-    doc.autoTable({
-      startY: 90,
-      head: [['Keterangan', 'Jumlah (IDR)']],
-      body: [[description, new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)]],
-      theme: 'grid'
-    });
-
-    doc.text(`Jumlah yang Harus Dibayar: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)}`, 20, doc.lastAutoTable.finalY + 20);
+    doc.text('Penerima', 20, 120);
 
     doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
     setInvoiceNumber(prev => prev + 1);
@@ -740,8 +744,8 @@ const TransportStation = () => {
                       <TextField
                         label="Cost per Harvest Worker"
                         type="number"
-                        value={harvestWorkerCount}
-                        onChange={e => setHarvestWorkerCount(e.target.value)}
+                        value={harvestWorkerCostPerPerson}
+                        onChange={e => setHarvestWorkerCostPerPerson(e.target.value)}
                         fullWidth
                         inputProps={{ min: 0 }}
                       />
