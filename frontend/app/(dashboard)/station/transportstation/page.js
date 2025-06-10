@@ -320,8 +320,6 @@ const TransportStation = () => {
     doc.rect(5, 5, 200, 95);
 
     doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
-
-    setInvoiceNumber(prev => prev + 1);
   };
 
   const handleSubmit = async (e) => {
