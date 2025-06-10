@@ -292,19 +292,19 @@ const TransportStation = () => {
 
       const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', payload);
       if (response.status === 201) {
-        const totalCost = calculateTotalCost();
-        const paymentPayload = {
-          farmerName: isOtherFarmer ? customPaidTo : paidTo,
-          farmerID: isOtherFarmer ? null : selectedFarmerDetails?.farmerID,
-          totalAmount: totalCost || 0,
-          date: new Date().toISOString(),
-          paymentMethod,
-          paymentDescription: 'Transport and Manpower Cost',
-          isPaid: 0
-        };
+        // const totalCost = calculateTotalCost();
+        // const paymentPayload = {
+        //   farmerName: isOtherFarmer ? customPaidTo : paidTo,
+        //   farmerID: isOtherFarmer ? null : selectedFarmerDetails?.farmerID,
+        //   totalAmount: totalCost || 0,
+        //   date: new Date().toISOString(),
+        //   paymentMethod,
+        //   paymentDescription: 'Transport and Manpower Cost',
+        //   isPaid: 0
+        // };
 
-        const paymentResponse = await axios.post('https://processing-facility-backend.onrender.com/api/payment', paymentPayload);
-        if (paymentResponse.status === 200) {
+        // const paymentResponse = await axios.post('https://processing-facility-backend.onrender.com/api/payment', paymentPayload);
+        if (response.status === 200) {
           setSelectedBatchNumbers([]);
           setDesa(null);
           setKecamatan(null);
