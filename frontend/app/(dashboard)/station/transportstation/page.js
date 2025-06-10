@@ -336,7 +336,7 @@ const TransportStation = () => {
     { field: 'desa', headerName: 'Desa', width: 150 },
     {
       field: 'cost',
-      headerName: 'Transport Cost (Farm to Facility)',
+      headerName: 'TC Farm to Facility',
       width: 180,
       sortable: true,
       renderCell: ({ value }) => {
@@ -350,7 +350,7 @@ const TransportStation = () => {
     },
     {
       field: 'transportCostFarmToCollection',
-      headerName: 'Transport Cost (Farm to Collection)',
+      headerName: 'TC Farm to Collection',
       width: 180,
       sortable: true,
       renderCell: ({ value }) => {
@@ -364,7 +364,7 @@ const TransportStation = () => {
     },
     {
       field: 'transportCostCollectionToFacility',
-      headerName: 'Transport Cost (Collection to Facility)',
+      headerName: 'TC Collection to Facility',
       width: 180,
       sortable: true,
       renderCell: ({ value }) => {
