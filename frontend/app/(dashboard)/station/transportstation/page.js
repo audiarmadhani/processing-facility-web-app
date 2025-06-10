@@ -48,39 +48,34 @@ const TransportStation = () => {
   const [farmerContractCache, setFarmerContractCache] = useState({});
   const [invoiceNumber, setInvoiceNumber] = useState(1); // Start invoice number from 0001
   const [batchWeights, setBatchWeights] = useState({}); // Store batch weights
-  const [farmerNames, setFarmerNames] = useState({}); // Store farmer name
 
   const fetchBatchNumbers = async () => {
-  try {
-    const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
-    const batches = response.data.allRows?.map(item => ({
-      batchNumber: item.batchNumber,
-      farmerName: item.farmerName,
-      weight: item.weight || 'N/A' // Use netWeight instead of weight
-    })) || [];
-    setBatchNumbers(batches);
-    const weights = batches.reduce((acc, batch) => ({
-      ...acc,
-      [batch.batchNumber]: batch.weight
-    }), {});
-    setBatchWeights(weights);
-    const farmers = batches.reduce((acc, batch) => ({
-      ...acc,
-      [batch.batchNumber]: batch.farmerName
-    }), {});
-    setFarmerNames(farmers);
-    if (batches.length === 0) {
-      setSnackbarMessage('No batch numbers available.');
-      setSnackbarSeverity('warning');
+    try {
+      const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
+      const batches = response.data.noTransportData?.map(item => ({
+        batchNumber: item.batchNumber,
+        farmerId: item.farmerID,
+        weight: item.weight || 'N/A' // Assuming weight is available in the response
+      })) || [];
+      setBatchNumbers(batches);
+      // Store weights in a map for easy lookup
+      const weights = batches.reduce((acc, batch) => ({
+        ...acc,
+        [batch.batchNumber]: batch.weight
+      }), {});
+      setBatchWeights(weights);
+      if (batches.length === 0) {
+        setSnackbarMessage('No batch numbers available.');
+        setSnackbarSeverity('warning');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error fetching batch numbers:', error);
+      setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
+      setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
-  } catch (error) {
-    console.error('Error fetching batch numbers:', error);
-    setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
-    setSnackbarSeverity('error');
-    setSnackbarOpen(true);
-  }
-};
+  };
 
   const fetchFarmers = async () => {
     try {
@@ -258,7 +253,6 @@ const TransportStation = () => {
     let description = '';
     const batchNumber = row.batchNumber || 'Unknown';
     const weight = batchWeights[batchNumber] || 'N/A'; // Fetch weight from batchWeights
-    const farmerName = farmerNames[batchNumber] || 'N/A'; // Fetch weight from batchWeights
 
     switch (type) {
       case 'shipping':
@@ -266,58 +260,40 @@ const TransportStation = () => {
           (Number(row.transportCostFarmToCollection) + Number(row.transportCostCollectionToFacility)) : 
           Number(row.cost);
         description = contractType === 'Kontrak Lahan' ? 
-          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight}nkg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
-          `Biaya Transportasi Kopi ${row.paidTo} ${farmerName} ${weight} kg (Ladang ke Fasilitas)`;
+          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
+          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Fasilitas)`;
         break;
       case 'loading':
         amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
-        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah Kuli Pemuatan Kopi ${row.paidTo} ${weight}kg`;
         break;
       case 'unloading':
         amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
-        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah Kuli Pembongkaran Kopi ${row.paidTo} ${weight}kg`;
         break;
       case 'harvesting':
         amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
-        description = `Upah ${row.paidTo} ${farmerName} ${weight} kg`;
+        description = `Upah Kuli Panen Kopi ${row.paidTo} ${weight}kg`;
         break;
     }
 
-    const amountInWords = angkaTerbilang(amount).replace(/(^\w|\s\w)/g, m => m.toUpperCase()) + ' Rupiah';
-    const amountIDR = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', maximumFractionDigits: 0}).format(amount);
+    const amountInWords = angkaTerbilang(amount) + ' Rupiah';
 
     doc.setFontSize(12);
     doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
     doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 27, { align: 'center' });
 
     doc.setFontSize(11);
-    doc.text(`No                            : ${invoiceNo}`, 20, 38);
-    doc.text(`Tanggal                    : ${date}`, 20, 44);
-    doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 50);
+    doc.text(`No                            : ${invoiceNo}`, 20, 40);
+    doc.text(`Tanggal                    : ${date}`, 20, 46);
+    doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 52);
+    doc.text(`Terbilang                  : ${amountInWords}`, 20, 58);
+    doc.text(`Untuk Pembayaran  : ${description}`, 20, 64);
 
-    // Handle Terbilang with wrapping
-    const maxWidth = 170; // Adjust based on page width (A4 width is ~210mm minus margins)
-    const amountInWordsLines = doc.splitTextToSize(`Terbilang                  : ${amountInWords}`, maxWidth);
-    let y = 56;
-    amountInWordsLines.forEach(line => {
-      doc.text(line, 20, y);
-      y += 6; // Line spacing
-    });
-
-    // Handle Untuk Pembayaran with wrapping
-    const descriptionLines = doc.splitTextToSize(`Untuk Pembayaran  : ${description}`, maxWidth);
-    descriptionLines.forEach(line => {
-      doc.text(line, 20, y);
-      y += 6; // Line spacing
-    });
-
-    doc.setFontSize(14);
-    doc.text(`${amountIDR}`, 40, 80);
-
-    doc.setFontSize(11);
+    doc.text(`Rp ${amount}`, 40, 80);
     doc.text('Penerima', 140, 73);
 
-    doc.rect(30, 71, 50, 15);
+    doc.rect(30, 71, 45, 15);
     doc.rect(5, 5, 200, 95);
 
     doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
