@@ -281,20 +281,23 @@ const TransportStation = () => {
 
     doc.setFontSize(12);
     doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
-    doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 30, { align: 'center' });
+    doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 27, { align: 'center' });
 
     doc.setFontSize(11);
-    doc.text(`No                       : ${invoiceNo}`, 20, 50);
-    doc.text(`Tanggal                : ${date}`, 20, 55);
-    doc.text('Terima Dari           : PT Berkas Tuaian Melimpah', 20, 60);
-    doc.text(`Terbilang              : ${amountInWords}`, 20, 65);
-    doc.text(`Untuk Pembayaran  : ${description}`, 20, 70);
+    doc.text(`No                            : ${invoiceNo}`, 20, 40);
+    doc.text(`Tanggal                    : ${date}`, 20, 46);
+    doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 52);
+    doc.text(`Terbilang                  : ${amountInWords}`, 20, 58);
+    doc.text(`Untuk Pembayaran  : ${description}`, 20, 64);
 
-    doc.text(`Rp ${amount}`, 40, 100);
-    
-    doc.text('Penerima', 140, 100);
+    doc.text(`Rp ${amount}`, 40, 80);
+    doc.text('Penerima', 140, 73);
+
+    doc.rect(30, 71, 45, 15);
+    doc.rect(5, 5, 200, 95);
 
     doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
+
     setInvoiceNumber(prev => prev + 1);
   };
 
