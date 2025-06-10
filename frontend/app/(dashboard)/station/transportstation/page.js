@@ -46,7 +46,7 @@ const TransportStation = () => {
   const fetchBatchNumbers = async () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');
-      const batches = response.data.allRows?.map(item => ({
+      const batches = response.data.noTransportData?.map(item => ({
         batchNumber: item.batchNumber,
         farmerId: item.farmerID
       })) || [];
