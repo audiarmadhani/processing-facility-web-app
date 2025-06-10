@@ -294,8 +294,22 @@ const TransportStation = () => {
     doc.text(`No                            : ${invoiceNo}`, 20, 38);
     doc.text(`Tanggal                    : ${date}`, 20, 44);
     doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 50);
-    doc.text(`Terbilang                  : ${amountInWords}`, 20, 56);
-    doc.text(`Untuk Pembayaran  : ${description}`, 20, 62);
+
+    // Handle Terbilang with wrapping
+    const maxWidth = 170; // Adjust based on page width (A4 width is ~210mm minus margins)
+    const amountInWordsLines = doc.splitTextToSize(`Terbilang                  : ${amountInWords}`, maxWidth);
+    let y = 56;
+    amountInWordsLines.forEach(line => {
+      doc.text(line, 20, y);
+      y += 6; // Line spacing
+    });
+
+    // Handle Untuk Pembayaran with wrapping
+    const descriptionLines = doc.splitTextToSize(`Untuk Pembayaran  : ${description}`, maxWidth);
+    descriptionLines.forEach(line => {
+      doc.text(line, 20, y);
+      y += 6; // Line spacing
+    });
 
     doc.setFontSize(14);
     doc.text(`${amountIDR}`, 40, 80);
