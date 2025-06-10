@@ -170,7 +170,7 @@ const DryingStation = () => {
       const payload = {
         batchNumber: selectedBatch.batchNumber,
         moisture: parseFloat(newMoisture),
-        measurement_date: measurementDate
+        measurement_date: selectedDate
       };
       const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-measurement', {
         method: 'POST',
