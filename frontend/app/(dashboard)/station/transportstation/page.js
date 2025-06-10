@@ -537,7 +537,7 @@ const TransportStation = () => {
                   </Tooltip>
                 </Grid>
                 <Grid item xs={6}>
-                  <Tooltip title="Cost per worker (IDR)">
+                  <Tooltip title="Cost per loading worker (IDR)">
                     <TextField
                       label="Cost per Loading Worker"
                       type="number"
@@ -569,7 +569,7 @@ const TransportStation = () => {
                   </Tooltip>
                 </Grid>
                 <Grid item xs={6}>
-                  <Tooltip title="Cost per worker (IDR)">
+                  <Tooltip title="Cost per unloading worker (IDR)">
                     <TextField
                       label="Cost per Unloading Worker"
                       type="number"
