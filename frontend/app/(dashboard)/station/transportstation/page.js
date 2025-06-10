@@ -451,7 +451,7 @@ const TransportStation = () => {
 
   return (
     <Grid container spacing={3} sx={{ p: 2 }}>
-      <Grid item xs={12} md={12}>
+      <Grid item xs={12} md={6}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Station Form</Typography>
@@ -748,7 +748,7 @@ const TransportStation = () => {
           </CardContent>
         </Card>
       </Grid>
-      <Grid item xs={12} md={12}>
+      <Grid item xs={12} md={6}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Data</Typography>
