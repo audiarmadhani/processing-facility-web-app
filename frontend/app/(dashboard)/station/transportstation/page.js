@@ -451,7 +451,7 @@ const TransportStation = () => {
 
   return (
     <Grid container spacing={3} sx={{ p: 2 }}>
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={4}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Station Form</Typography>
@@ -524,7 +524,7 @@ const TransportStation = () => {
                     inputProps={{ min: 0 }}
                   />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={6}>
                   <Tooltip title="Number of workers loading cherries onto the truck">
                     <TextField
                       label="Loading Workers Count"
@@ -536,7 +536,7 @@ const TransportStation = () => {
                     />
                   </Tooltip>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={6}>
                   <Tooltip title="Cost per worker for loading (IDR)">
                     <TextField
                       label="Cost per Loading Worker"
@@ -548,7 +548,7 @@ const TransportStation = () => {
                     />
                   </Tooltip>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={8}>
                   <TextField
                     label="Total Loading Cost"
                     value={(Number(loadingWorkerCount) * Number(loadingWorkerCostPerPerson)).toFixed(0)}
@@ -556,7 +556,7 @@ const TransportStation = () => {
                     InputProps={{ readOnly: true }}
                   />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={6}>
                   <Tooltip title="Number of workers unloading cherries from the truck">
                     <TextField
                       label="Unloading Workers Count"
@@ -568,7 +568,7 @@ const TransportStation = () => {
                     />
                   </Tooltip>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={6}>
                   <Tooltip title="Cost per worker for unloading (IDR)">
                     <TextField
                       label="Cost per Unloading Worker"
@@ -580,7 +580,7 @@ const TransportStation = () => {
                     />
                   </Tooltip>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={8}>
                   <TextField
                     label="Total Unloading Cost"
                     value={(Number(unloadingWorkerCount) * Number(unloadingWorkerCostPerPerson)).toFixed(0)}
@@ -748,7 +748,7 @@ const TransportStation = () => {
           </CardContent>
         </Card>
       </Grid>
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12} md={8}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Data</Typography>
