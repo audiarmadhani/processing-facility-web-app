@@ -279,18 +279,20 @@ const TransportStation = () => {
 
     const amountInWords = angkaTerbilang(amount) + ' Rupiah';
 
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
     doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 30, { align: 'center' });
 
     doc.setFontSize(12);
-    doc.text(`No: ${invoiceNo}`, 20, 50);
-    doc.text(`Tanggal: ${date}`, 20, 60);
-    doc.text('Terima Dari: PT Berkas Tuaian Melimpah', 20, 70);
-    doc.text(`Terbilang: ${amountInWords}`, 20, 80);
-    doc.text(`Untuk Pembayaran: ${description}`, 20, 90);
+    doc.text(`No                : ${invoiceNo}`, 20, 50);
+    doc.text(`Tanggal           : ${date}`, 20, 55);
+    doc.text('Terima Dari       : PT Berkas Tuaian Melimpah', 20, 60);
+    doc.text(`Terbilang         : ${amountInWords}`, 20, 65);
+    doc.text(`Untuk Pembayaran  : ${description}`, 20, 70);
 
-    doc.text('Penerima', 20, 120);
+    doc.text(`Rp ${amount}`, 30, 120);
+
+    doc.text('Penerima', 100, 120);
 
     doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
     setInvoiceNumber(prev => prev + 1);
