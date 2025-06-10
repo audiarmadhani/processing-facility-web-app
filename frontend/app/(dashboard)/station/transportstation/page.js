@@ -38,9 +38,10 @@ const TransportStation = () => {
   const [locationData, setLocationData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [snackbarSeverity, setSnackBarSeverity] = useState('success');
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [contractType, setContractType] = useState('');
+  const [farmerContractCache, setFarmerContractCache] = useState({}); // Cache for farmer contract types
 
   const fetchBatchNumbers = async () => {
     try {
@@ -51,15 +52,15 @@ const TransportStation = () => {
       })) || [];
       setBatchNumbers(batches);
       if (batches.length === 0) {
-        setSnackbarMessage('No batch numbers available.');
-        setSnackbarSeverity('warning');
-        setSnackbarOpen(true);
+        setSnackBarMessage('No batch numbers available.');
+        setSnackBarSeverity('warning');
+        setSnackBarOpen(true);
       }
     } catch (error) {
       console.error('Error fetching batch numbers:', error);
-      setSnackbarMessage('Failed to fetch batch numbers. Please try again.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      setSnackBarMessage('Failed to fetch batch numbers. Please try again.');
+      setSnackBarSeverity('error');
+      setSnackBarOpen(true);
     }
   };
 
@@ -69,9 +70,9 @@ const TransportStation = () => {
       setFarmers(response.data.allRows || []);
     } catch (error) {
       console.error('Error fetching farmers:', error);
-      setSnackbarMessage('Failed to fetch farmers.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      setSnackBarMessage('Failed to fetch farmers.');
+      setSnackBarSeverity('error');
+      setSnackBarOpen(true);
     }
   };
 
@@ -91,9 +92,9 @@ const TransportStation = () => {
         harvestWorkerCostPerPerson: Number(row.harvestWorkerCostPerPerson) || 0,
         transportCostFarmToCollection: Number(row.transportCostFarmToCollection) || 0,
         transportCostCollectionToFacility: Number(row.transportCostCollectionToFacility) || 0,
-        totalCost: Number(row.totalCost) ||0,
+        totalCost: Number(row.totalCost) || 0,
         createdAt: new Date(row.createdAt).toLocaleString()
-      }))) || [];
+      })) || []);
     } catch (error) {
       console.error('Error fetching transport data:', error);
       setTransportData([]);
@@ -116,22 +117,17 @@ const TransportStation = () => {
   };
 
   const fetchContractType = async (farmerId) => {
+    if (farmerContractCache[farmerId]) {
+      return farmerContractCache[farmerId];
+    }
     try {
       const response = await axios.get(`https://processing-facility-backend.onrender.com/api/farmer/${farmerId}`);
-      setContractType(response.data?.contractType || null);
-      if (!response.data.contractType) {
-        setSnackBarMessage('No contract type found for this farmer.');
-        setSnackBarSeverity('error');
-        setSnackBarOpen(true);
-        setSelectBatchNumbers([]);
-      }
+      const contractType = response.data?.contractType || null;
+      setFarmerContractCache(prev => ({ ...prev, [farmerId]: contractType }));
+      return contractType;
     } catch (error) {
-      console.error('Error fetching contract type:', error);
-      setSnackBarMessage('Failed to fetch contract type.');
-      setSnackBarSeverity('error');
-      setSnackBarOpen(true);
-      setSelectBatchNumbers([]);
-      setContractType('');
+      console.error(`Error fetching contract type for farmer ${farmerId}:`, error);
+      return null;
     }
   };
 
@@ -149,17 +145,38 @@ const TransportStation = () => {
       const selectedBatches = batchNumbers.filter(batch => 
         selectedBatchNumbers.includes(batch.batchNumber));
       const uniqueFarmerIds = [...new Set(selectedBatches.map(batch => batch.farmerId))];
-      if (uniqueFarmerIds.length > 1) {
-        setSnackBarMessage('Please select batch numbers from the same farmer.');
-        setSnackBarSeverity('error');
-        setSnackBarOpen(true);
-        setSelectedBatchNumbers([]);
-        setContractType('');
-      } else if (uniqueFarmerIds.length === 1) {
-        fetchContractType(uniqueFarmerIds[0]);
-      } else {
-        setContractType('');
-      }
+      
+      // Fetch contract types for all unique farmer IDs
+      Promise.all(uniqueFarmerIds.map(farmerId => fetchContractType(farmerId)))
+        .then(contractTypes => {
+          // Filter out null contract types (failed fetches)
+          const validContractTypes = contractTypes.filter(ct => ct !== null);
+          const uniqueContractTypes = [...new Set(validContractTypes)];
+          
+          if (validContractTypes.length === 0) {
+            setSnackBarMessage('No valid contract types found for selected batches.');
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+            setSelectedBatchNumbers([]);
+            setContractType('');
+          } else if (uniqueContractTypes.length > 1) {
+            setSnackBarMessage('Please select batch numbers with the same contract type.');
+            setSnackBarSeverity('error');
+            setSnackBarOpen(true);
+            setSelectedBatchNumbers([]);
+            setContractType('');
+          } else {
+            setContractType(uniqueContractTypes[0]);
+          }
+        })
+        .catch(error => {
+          console.error('Error validating contract types:', error);
+          setSnackBarMessage('Failed to validate contract types.');
+          setSnackBarSeverity('error');
+          setSnackBarOpen(true);
+          setSelectedBatchNumbers([]);
+          setContractType('');
+        });
     } else {
       setContractType('');
     }
@@ -310,9 +327,9 @@ const TransportStation = () => {
           setPaymentMethod('');
           setSelectedFarmerDetails(null);
           setContractType('');
-          setSnackbarMessage('Transport data and payment created successfully!');
-          setSnackbarSeverity('success');
-          setSnackbarOpen(true);
+          setSnackBarMessage('Transport data and payment created successfully!');
+          setSnackBarSeverity('success');
+          setSnackBarOpen(true);
           fetchTransportData();
         } else {
           throw new Error('Failed to create payment data');
@@ -448,7 +465,7 @@ const TransportStation = () => {
 
   return (
     <Grid container spacing={3} sx={{ p: 2 }}>
-      <Grid item xs={12} md={4}>
+      <Grid item xs={12} md={6}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Station Form</Typography>
@@ -739,13 +756,13 @@ const TransportStation = () => {
                 </Grid>
               </Grid>
             </form>
-            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)}>
-              <Alert severity={snackbarSeverity} sx={{ width: '100%' }}>{snackbarMessage}</Alert>
+            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackBarOpen(false)}>
+              <Alert severity={snackBarSeverity} sx={{ width: '100%' }}>{snackBarMessage}</Alert>
             </Snackbar>
           </CardContent>
         </Card>
       </Grid>
-      <Grid item xs={12} md={8}>
+      <Grid item xs={12} md={6}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>Transport Data</Typography>
