@@ -12,7 +12,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { terbilang } from 'terbilang-js'; // Updated import for terbilang-js
+import terbilang from 'terbilang-js'; // Updated import for terbilang-js
 
 const TransportStation = () => {
   const { data: session, status } = useSession();
