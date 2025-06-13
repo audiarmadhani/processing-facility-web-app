@@ -348,29 +348,32 @@ const TransportStation = () => {
     const invoiceTypes = ['shipping', 'loading', 'unloading', 'harvesting'];
     const invoices = [];
     const mergedDoc = new jsPDF();
-
+  
     let isFirstPage = true;
-
+  
     // Add contractType to data for invoice generation
     const invoiceData = { ...data, contractType };
-
+  
     for (const type of invoiceTypes) {
       const invoice = generateSingleInvoice(invoiceData, type, batchNumber);
       if (invoice) {
         const { doc, invoiceNo, type, amount } = invoice;
-
+  
         // Add to merged PDF
-        if (!isFirstPage) mergedDoc.addPage();
-        const pdfBytes = doc.output('arraybuffer');
-        const pages = await new jsPDF({ format: 'a4' }).loadDocument(pdfBytes);
-        pages.getPages().forEach((page, index) => {
-          if (index === 0 || !isFirstPage) {
+        if (!isFirstPage) {
+          mergedDoc.addPage();
+        }
+        const pages = doc.getNumberOfPages();
+        for (let i = 1; i <= pages; i++) {
+          if (i > 1) {
             mergedDoc.addPage();
           }
-          mergedDoc.addImage(page.getImageData(), 'PDF', 0, 0, 210, 297);
-        });
+          doc.setPage(i);
+          const pageData = doc.output('datauristring');
+          mergedDoc.addImage(pageData, 'PDF', 0, 0, 210, 297);
+        }
         isFirstPage = false;
-
+  
         // Upload to Google Drive
         const pdfBlob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
         const fileId = await uploadInvoiceToGoogleDrive(pdfBlob, invoiceNo, type, batchNumber);
@@ -379,7 +382,7 @@ const TransportStation = () => {
         }
       }
     }
-
+  
     if (invoices.length > 0) {
       // Save merged PDF locally for download
       mergedDoc.save(`Merged_Invoices_${batchNumber}.pdf`);
