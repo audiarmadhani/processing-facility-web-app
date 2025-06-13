@@ -142,6 +142,25 @@ const TransportStation = () => {
     }
   };
 
+  const fetchBatchDetails = async (batchNumber) => {
+    try {
+      const response = await axios.get(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
+      if (response.status === 404 || !response.data || response.data.length === 0) {
+        throw new Error(`Batch ${batchNumber} not found in receiving data.`);
+      }
+      const batch = response.data[0]; // Route returns an array
+      return {
+        batchNumber: batch.batchNumber,
+        farmerId: batch.farmerID,
+        weight: batch.weight || 'N/A',
+        contractType: batch.contractType || null
+      };
+    } catch (error) {
+      console.error(`Error fetching batch details for ${batchNumber}:`, error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     if (status === 'authenticated') {
       fetchBatchNumbers();
@@ -371,29 +390,34 @@ const TransportStation = () => {
 
   const handleDownloadInvoices = async (row) => {
     const batchNumber = row.batchNumber;
-    // Fetch contract type for the batch to ensure correct invoice generation
-    const batch = batchNumbers.find(b => b.batchNumber === batchNumber);
-    if (!batch) {
-      setSnackbarMessage('Batch number not found.');
+    try {
+      // Fetch batch details to get farmerId, weight, and contractType
+      const batch = await fetchBatchDetails(batchNumber);
+      if (!batch.farmerId) {
+        throw new Error(`Farmer ID not found for batch ${batchNumber}.`);
+      }
+      if (!batch.contractType) {
+        throw new Error(`Contract type not found for batch ${batchNumber}.`);
+      }
+
+      // Update batchWeights with fetched weight
+      setBatchWeights(prev => ({
+        ...prev,
+        [batchNumber]: batch.weight
+      }));
+
+      // Generate and upload invoices
+      await generateAndUploadInvoices(row, batchNumber, batch.contractType);
+
+      setSnackbarMessage(`Invoices for batch ${batchNumber} generated and uploaded successfully!`);
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error(`Error processing invoices for batch ${batchNumber}:`, error);
+      setSnackbarMessage(error.message || `Failed to generate invoices for batch ${batchNumber}.`);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
-      return;
     }
-
-    const farmerContractType = await fetchContractType(batch.farmerId);
-    if (!farmerContractType) {
-      setSnackbarMessage('Failed to fetch contract type for batch.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-      return;
-    }
-
-    // Generate and upload invoices for existing data
-    await generateAndUploadInvoices(row, batchNumber, farmerContractType);
-
-    setSnackbarMessage(`Invoices for batch ${batchNumber} generated and uploaded successfully!`);
-    setSnackbarSeverity('success');
-    setSnackbarOpen(true);
   };
 
   const handleSubmit = async (e) => {
