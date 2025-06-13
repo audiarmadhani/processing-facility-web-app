@@ -41,7 +41,15 @@ const NAVIGATION: Navigation = [
 
   { kind: "divider" },
 
-  { segment: "farmer", title: "Our Farmers", icon: <GroupsIcon /> },
+  {
+    segment: "contacts",
+    title: "Our Contacts",
+    icon: <CottageIcon />,
+    children: [
+      { segment: "farmer", title: "Our Farmers", icon: <GroupsIcon /> },
+      { segment: "shipper", title: "Our Shippers", icon: <LocalShippingIcon /> },
+    ],
+  },
 
   { kind: "divider" },
 
