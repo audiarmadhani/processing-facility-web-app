@@ -937,7 +937,7 @@ const TransportStation = () => {
                   <>
                     <Grid item xs={12}>
                       <TextField
-                        label="Farmer ID"
+                        label="ID"
                         value={selectedFarmerDetails.farmerID || ''}
                         fullWidth
                         InputProps={{ readOnly: true }}
@@ -945,7 +945,7 @@ const TransportStation = () => {
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
-                        label="Farmer Address"
+                        label="Address"
                         value={selectedFarmerDetails.farmerAddress || 'N/A'}
                         fullWidth
                         InputProps={{ readOnly: true }}
