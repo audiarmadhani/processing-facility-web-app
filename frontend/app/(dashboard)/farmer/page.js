@@ -33,6 +33,7 @@ function FarmerInputStation() {
   const [farmerAddress, setFarmerAddress] = useState('');
   const [bankAccount, setBankAccount] = useState('');
   const [bankName, setBankName] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
   const [farmerLandArea, setFarmerLandArea] = useState('');
   const [farmerContact, setFarmerContact] = useState('');
   const [latitude, setLatitude] = useState('');
@@ -158,6 +159,7 @@ function FarmerInputStation() {
       farmerAddress,
       bankAccount: bankAccount.trim() || null,
       bankName: bankName.trim() || null,
+      bankAccountName: bankAccountName.trim() || null,
       farmerLandArea,
       farmerContact,
       latitude: latitude.trim() === "" ? null : parseFloat(latitude),
@@ -188,6 +190,7 @@ function FarmerInputStation() {
         setFarmerAddress('');
         setBankAccount('');
         setBankName('');
+        setBankAccountName('');
         setFarmerLandArea('');
         setFarmerContact('');
         setLatitude('');
@@ -252,8 +255,9 @@ function FarmerInputStation() {
     { field: "contractType", headerName: "Contract Type", sortable: true, width: 120 },
     { field: "broker", headerName: "Broker", sortable: true, width: 100 },
     { field: "paymentMethod", headerName: "Payment Method", sortable: true, width: 150 },
-    { field: "bankAccount", headerName: "Bank Account", sortable: true, width: 150 },
     { field: "bankName", headerName: "Bank Name", sortable: true, width: 120 },
+    { field: "bankAccount", headerName: "Bank Account", sortable: true, width: 150 },
+    { field: "bankAccountName", headerName: "Bank Account Name", sortable: true, width: 180 },
     { field: "farmerLandArea", headerName: "Land Area", sortable: true, width: 120 },
     { field: "farmerContact", headerName: "Contact", sortable: true, width: 150 },
     { field: "farmType", headerName: "Type", sortable: true, width: 90 },
@@ -474,6 +478,18 @@ function FarmerInputStation() {
                     fullWidth
                     required={paymentMethod.includes('Bank Transfer')}
                     input={<OutlinedInput label="Bank Account Number" />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="Bank Account Name"
+                    type="text"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    fullWidth
+                    required={paymentMethod.includes('Bank Transfer')}
+                    input={<OutlinedInput label="Bank Account Name" />}
                   />
                 </Grid>
 

@@ -250,14 +250,14 @@ const TransportStation = () => {
     let amount = 0;
     let description = '';
     const weight = batchWeights[batchNumber] || 'N/A';
-    const paidToName = isOtherFarmer ? customPaidTo : paidTo;
+    const paidToName = data.paidTo || 'Unknown';
 
     switch (type) {
       case 'shipping':
-        amount = contractType === 'Kontrak Lahan' ? 
+        amount = data.contractType === 'Kontrak Lahan' ? 
           (Number(data.transportCostFarmToCollection) + Number(data.transportCostCollectionToFacility)) : 
           Number(data.cost);
-        description = contractType === 'Kontrak Lahan' ? 
+        description = data.contractType === 'Kontrak Lahan' ? 
           `Biaya Transportasi Kopi ${paidToName} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
           `Biaya Transportasi Kopi ${paidToName} ${weight}kg (Ladang ke Fasilitas)`;
         break;
@@ -325,15 +325,18 @@ const TransportStation = () => {
     }
   };
 
-  const generateAndUploadInvoices = async (data, batchNumber) => {
+  const generateAndUploadInvoices = async (data, batchNumber, contractType) => {
     const invoiceTypes = ['shipping', 'loading', 'unloading', 'harvesting'];
     const invoices = [];
     const mergedDoc = new jsPDF();
 
     let isFirstPage = true;
 
+    // Add contractType to data for invoice generation
+    const invoiceData = { ...data, contractType };
+
     for (const type of invoiceTypes) {
-      const invoice = generateSingleInvoice(data, type, batchNumber);
+      const invoice = generateSingleInvoice(invoiceData, type, batchNumber);
       if (invoice) {
         const { doc, invoiceNo, type, amount } = invoice;
 
@@ -366,35 +369,31 @@ const TransportStation = () => {
     return [];
   };
 
-  const downloadMergedInvoices = (row) => {
-    const mergedDoc = new jsPDF();
-    const invoiceTypes = ['shipping', 'loading', 'unloading', 'harvesting'];
-    let isFirstPage = true;
-
-    for (const type of invoiceTypes) {
-      const invoice = generateSingleInvoice(row, type, row.batchNumber);
-      if (invoice) {
-        const { doc } = invoice;
-        if (!isFirstPage) mergedDoc.addPage();
-        const pdfBytes = doc.output('arraybuffer');
-        const pages = mergedDoc.loadDocument(pdfBytes);
-        pages.getPages().forEach((page, index) => {
-          if (index === 0 || !isFirstPage) {
-            mergedDoc.addPage();
-          }
-          mergedDoc.addImage(page.getImageData(), 'PDF', 0, 0, 210, 297);
-        });
-        isFirstPage = false;
-      }
-    }
-
-    if (!isFirstPage) {
-      mergedDoc.save(`Merged_Invoices_${row.batchNumber}.pdf`);
-    } else {
-      setSnackbarMessage('No valid invoices to download.');
-      setSnackbarSeverity('warning');
+  const handleDownloadInvoices = async (row) => {
+    const batchNumber = row.batchNumber;
+    // Fetch contract type for the batch to ensure correct invoice generation
+    const batch = batchNumbers.find(b => b.batchNumber === batchNumber);
+    if (!batch) {
+      setSnackbarMessage('Batch number not found.');
+      setSnackbarSeverity('error');
       setSnackbarOpen(true);
+      return;
     }
+
+    const farmerContractType = await fetchContractType(batch.farmerId);
+    if (!farmerContractType) {
+      setSnackbarMessage('Failed to fetch contract type for batch.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Generate and upload invoices for existing data
+    await generateAndUploadInvoices(row, batchNumber, farmerContractType);
+
+    setSnackbarMessage(`Invoices for batch ${batchNumber} generated and uploaded successfully!`);
+    setSnackbarSeverity('success');
+    setSnackbarOpen(true);
   };
 
   const handleSubmit = async (e) => {
@@ -461,7 +460,7 @@ const TransportStation = () => {
       if (response.status === 201) {
         // Generate and upload invoices for each selected batch number
         for (const batchNumber of selectedBatchNumbers) {
-          await generateAndUploadInvoices(payload, batchNumber);
+          await generateAndUploadInvoices(payload, batchNumber, contractType);
         }
 
         setSelectedBatchNumbers([]);
@@ -617,7 +616,7 @@ const TransportStation = () => {
       renderCell: ({ row }) => (
         <IconButton
           color="primary"
-          onClick={() => downloadMergedInvoices(row)}
+          onClick={() => handleDownloadInvoices(row)}
         >
           <PictureAsPdfIcon />
         </IconButton>
