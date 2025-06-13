@@ -349,8 +349,6 @@ const TransportStation = () => {
     const invoices = [];
     const mergedDoc = new jsPDF();
   
-    let isFirstPage = true;
-  
     // Add contractType to data for invoice generation
     const invoiceData = { ...data, contractType };
   
@@ -359,22 +357,29 @@ const TransportStation = () => {
       if (invoice) {
         const { doc, invoiceNo, type, amount } = invoice;
   
-        // Add to merged PDF
-        if (!isFirstPage) {
-          mergedDoc.addPage();
-        }
+        // Append pages to merged PDF
         const pages = doc.getNumberOfPages();
         for (let i = 1; i <= pages; i++) {
-          if (i > 1) {
+          if (i > 1 || invoices.length > 0) {
             mergedDoc.addPage();
           }
           doc.setPage(i);
-          const pageData = doc.output('datauristring');
-          mergedDoc.addImage(pageData, 'PDF', 0, 0, 210, 297);
+          // Copy page content to mergedDoc
+          const pageInfo = doc.internal.getPageInfo(i);
+          const pageContent = pageInfo.pageContext;
+          const mergedPageInfo = mergedDoc.internal.getPageInfo(mergedDoc.internal.getNumberOfPages());
+          mergedPageInfo.pageContext.write = pageContent.write; // Copy text content
+          mergedPageInfo.pageContext.font = pageContent.font; // Copy font
+          mergedPageInfo.pageContext.fillColor = pageContent.fillColor; // Copy fill color
+          // Reapply text and graphics
+          doc.output('arraybuffer'); // Ensure page is rendered
+          const textLines = doc.getTextLines();
+          for (const line of textLines) {
+            mergedDoc.text(line.text, line.x, line.y);
+          }
         }
-        isFirstPage = false;
   
-        // Upload to Google Drive
+        // Upload individual invoice to Google Drive
         const pdfBlob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
         const fileId = await uploadInvoiceToGoogleDrive(pdfBlob, invoiceNo, type, batchNumber);
         if (fileId) {
