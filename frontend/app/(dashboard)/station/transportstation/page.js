@@ -38,6 +38,7 @@ const TransportStation = () => {
   const [customBankName, setCustomBankName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [farmers, setFarmers] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [transportData, setTransportData] = useState([]);
   const [locationData, setLocationData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -79,6 +80,18 @@ const TransportStation = () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmer');
       setFarmers(response.data.allRows || []);
+    } catch (error) {
+      console.error('Error fetching farmers:', error);
+      setSnackbarMessage('Failed to fetch farmers.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const response = await axios.get('https://processing-facility-backend.onrender.com/api/contact');
+      setContacts(response.data.allRows || []);
     } catch (error) {
       console.error('Error fetching farmers:', error);
       setSnackbarMessage('Failed to fetch farmers.');
@@ -874,9 +887,9 @@ const TransportStation = () => {
                       onChange={handlePaidToChange}
                       input={<OutlinedInput label="Paid To" />}
                     >
-                      {farmers.map(farmer => (
-                        <MenuItem key={farmer.farmerID} value={farmer.farmerName}>
-                          {farmer.farmerName}
+                      {contacts.map(contact => (
+                        <MenuItem key={contact.ID} value={contact.name}>
+                          {contact.name}
                         </MenuItem>
                       ))}
                       <MenuItem value="Others">Others</MenuItem>
