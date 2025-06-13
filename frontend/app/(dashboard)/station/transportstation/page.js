@@ -178,6 +178,7 @@ const TransportStation = () => {
     if (status === 'authenticated') {
       fetchBatchNumbers();
       fetchFarmers();
+      fetchContacts();
       fetchTransportData();
       fetchLocationData();
     }
