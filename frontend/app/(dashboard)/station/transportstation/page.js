@@ -268,9 +268,12 @@ const TransportStation = () => {
     });
     let amount = 0;
     let description = '';
-    const weight = batchWeights[batchNumber] || 'N/A';
-    const paidToName = data.paidTo || 'Unknown';
-
+    const weight = data.weight || 'N/A'; // Use data.weight instead of batchWeights
+    const paidToName = data.paidTo && data.paidTo !== '0' ? data.paidTo : 'Unknown'; // Handle '0' explicitly
+  
+    // Debug: Log values used in PDF
+    console.log(`Creating PDF for ${invoiceNo}:`, { paidToName, weight, batchNumber });
+  
     switch (type) {
       case 'shipping':
         amount = data.contractType === 'Kontrak Lahan' ? 
@@ -293,28 +296,28 @@ const TransportStation = () => {
         description = `Upah Kuli Panen Kopi ${paidToName} ${weight}kg`;
         break;
     }
-
+  
     if (amount <= 0) return null; // Skip if no valid amount
-
+  
     const amountInWords = angkaTerbilang(amount) + ' Rupiah';
-
+  
     doc.setFontSize(12);
     doc.text('KWITANSI PEMBAYARAN', 105, 20, { align: 'center' });
     doc.text('PT.BERKAS TUAIAN MELIMPAH', 105, 27, { align: 'center' });
-
+  
     doc.setFontSize(11);
     doc.text(`No                            : ${invoiceNo}`, 20, 40);
     doc.text(`Tanggal                    : ${date}`, 20, 46);
     doc.text('Terima Dari              : PT Berkas Tuaian Melimpah', 20, 52);
     doc.text(`Terbilang                  : ${amountInWords}`, 20, 58);
     doc.text(`Untuk Pembayaran  : ${description}`, 20, 64);
-
+  
     doc.text(`Rp ${amount.toLocaleString('id-ID')}`, 40, 80);
     doc.text('Penerima', 140, 73);
-
+  
     doc.rect(30, 71, 45, 15);
     doc.rect(5, 5, 200, 95);
-
+  
     return { doc, invoiceNo, type, amount };
   };
 
