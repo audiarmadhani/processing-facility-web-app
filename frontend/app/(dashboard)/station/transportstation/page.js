@@ -46,8 +46,7 @@ const TransportStation = () => {
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [contractType, setContractType] = useState('');
   const [farmerContractCache, setFarmerContractCache] = useState({});
-  const [invoiceNumber, setInvoiceNumber] = useState(1); // Start invoice number from 0001
-  const [batchWeights, setBatchWeights] = useState({}); // Store batch weights
+  const [batchWeights, setBatchWeights] = useState({});
 
   const fetchBatchNumbers = async () => {
     try {
@@ -55,10 +54,9 @@ const TransportStation = () => {
       const batches = response.data.noTransportData?.map(item => ({
         batchNumber: item.batchNumber,
         farmerId: item.farmerID,
-        weight: item.weight || 'N/A' // Assuming weight is available in the response
+        weight: item.weight || 'N/A'
       })) || [];
       setBatchNumbers(batches);
-      // Store weights in a map for easy lookup
       const weights = batches.reduce((acc, batch) => ({
         ...acc,
         [batch.batchNumber]: batch.weight
@@ -241,9 +239,9 @@ const TransportStation = () => {
     return loadingCost + unloadingCost + harvestCost + transportCost;
   };
 
-  const generateInvoice = (row, type) => {
+  const generateSingleInvoice = (data, type, batchNumber) => {
     const doc = new jsPDF();
-    const invoiceNo = `000${invoiceNumber}`.slice(-4);
+    const invoiceNo = `${batchNumber}-${type === 'shipping' ? 'S' : type === 'loading' ? 'L' : type === 'unloading' ? 'U' : 'H'}`;
     const date = new Date().toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
@@ -251,31 +249,33 @@ const TransportStation = () => {
     });
     let amount = 0;
     let description = '';
-    const batchNumber = row.batchNumber || 'Unknown';
-    const weight = batchWeights[batchNumber] || 'N/A'; // Fetch weight from batchWeights
+    const weight = batchWeights[batchNumber] || 'N/A';
+    const paidToName = isOtherFarmer ? customPaidTo : paidTo;
 
     switch (type) {
       case 'shipping':
         amount = contractType === 'Kontrak Lahan' ? 
-          (Number(row.transportCostFarmToCollection) + Number(row.transportCostCollectionToFacility)) : 
-          Number(row.cost);
+          (Number(data.transportCostFarmToCollection) + Number(data.transportCostCollectionToFacility)) : 
+          Number(data.cost);
         description = contractType === 'Kontrak Lahan' ? 
-          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
-          `Biaya Transportasi Kopi ${row.paidTo} ${weight}kg (Ladang ke Fasilitas)`;
+          `Biaya Transportasi Kopi ${paidToName} ${weight}kg (Ladang ke Titik Pengumpulan dan Titik Pengumpulan ke Fasilitas)` : 
+          `Biaya Transportasi Kopi ${paidToName} ${weight}kg (Ladang ke Fasilitas)`;
         break;
       case 'loading':
-        amount = Number(row.loadingWorkerCount) * Number(row.loadingWorkerCostPerPerson);
-        description = `Upah Kuli Pemuatan Kopi ${row.paidTo} ${weight}kg`;
+        amount = Number(data.loadingWorkerCount) * Number(data.loadingWorkerCostPerPerson);
+        description = `Upah Kuli Pemuatan Kopi ${paidToName} ${weight}kg`;
         break;
       case 'unloading':
-        amount = Number(row.unloadingWorkerCount) * Number(row.unloadingWorkerCostPerPerson);
-        description = `Upah Kuli Pembongkaran Kopi ${row.paidTo} ${weight}kg`;
+        amount = Number(data.unloadingWorkerCount) * Number(data.unloadingWorkerCostPerPerson);
+        description = `Upah Kuli Pembongkaran Kopi ${paidToName} ${weight}kg`;
         break;
       case 'harvesting':
-        amount = Number(row.harvestWorkerCount) * Number(row.harvestWorkerCostPerPerson);
-        description = `Upah Kuli Panen Kopi ${row.paidTo} ${weight}kg`;
+        amount = Number(data.harvestWorkerCount) * Number(data.harvestWorkerCostPerPerson);
+        description = `Upah Kuli Panen Kopi ${paidToName} ${weight}kg`;
         break;
     }
+
+    if (amount <= 0) return null; // Skip if no valid amount
 
     const amountInWords = angkaTerbilang(amount) + ' Rupiah';
 
@@ -290,15 +290,111 @@ const TransportStation = () => {
     doc.text(`Terbilang                  : ${amountInWords}`, 20, 58);
     doc.text(`Untuk Pembayaran  : ${description}`, 20, 64);
 
-    doc.text(`Rp ${amount}`, 40, 80);
+    doc.text(`Rp ${amount.toLocaleString('id-ID')}`, 40, 80);
     doc.text('Penerima', 140, 73);
 
     doc.rect(30, 71, 45, 15);
     doc.rect(5, 5, 200, 95);
 
-    doc.save(`Kwitansi_${type}_${invoiceNo}.pdf`);
+    return { doc, invoiceNo, type, amount };
+  };
 
-    setInvoiceNumber(prev => prev + 1);
+  const uploadInvoiceToGoogleDrive = async (pdfBlob, invoiceNo, type, batchNumber) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', pdfBlob, `${invoiceNo}.pdf`);
+      formData.append('batchNumber', batchNumber);
+      formData.append('invoiceType', type);
+
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/upload-invoice', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload invoice');
+
+      const data = await response.json();
+      console.log(`Invoice ${invoiceNo} uploaded successfully:`, data);
+      return data.fileId;
+    } catch (error) {
+      console.error(`Error uploading invoice ${invoiceNo}:`, error);
+      setSnackbarMessage(`Failed to upload ${type} invoice.`);
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return null;
+    }
+  };
+
+  const generateAndUploadInvoices = async (data, batchNumber) => {
+    const invoiceTypes = ['shipping', 'loading', 'unloading', 'harvesting'];
+    const invoices = [];
+    const mergedDoc = new jsPDF();
+
+    let isFirstPage = true;
+
+    for (const type of invoiceTypes) {
+      const invoice = generateSingleInvoice(data, type, batchNumber);
+      if (invoice) {
+        const { doc, invoiceNo, type, amount } = invoice;
+
+        // Add to merged PDF
+        if (!isFirstPage) mergedDoc.addPage();
+        const pdfBytes = doc.output('arraybuffer');
+        const pages = await new jsPDF({ format: 'a4' }).loadDocument(pdfBytes);
+        pages.getPages().forEach((page, index) => {
+          if (index === 0 || !isFirstPage) {
+            mergedDoc.addPage();
+          }
+          mergedDoc.addImage(page.getImageData(), 'PDF', 0, 0, 210, 297);
+        });
+        isFirstPage = false;
+
+        // Upload to Google Drive
+        const pdfBlob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
+        const fileId = await uploadInvoiceToGoogleDrive(pdfBlob, invoiceNo, type, batchNumber);
+        if (fileId) {
+          invoices.push({ invoiceNo, type, fileId, amount });
+        }
+      }
+    }
+
+    if (invoices.length > 0) {
+      // Save merged PDF locally for download
+      mergedDoc.save(`Merged_Invoices_${batchNumber}.pdf`);
+      return invoices;
+    }
+    return [];
+  };
+
+  const downloadMergedInvoices = (row) => {
+    const mergedDoc = new jsPDF();
+    const invoiceTypes = ['shipping', 'loading', 'unloading', 'harvesting'];
+    let isFirstPage = true;
+
+    for (const type of invoiceTypes) {
+      const invoice = generateSingleInvoice(row, type, row.batchNumber);
+      if (invoice) {
+        const { doc } = invoice;
+        if (!isFirstPage) mergedDoc.addPage();
+        const pdfBytes = doc.output('arraybuffer');
+        const pages = mergedDoc.loadDocument(pdfBytes);
+        pages.getPages().forEach((page, index) => {
+          if (index === 0 || !isFirstPage) {
+            mergedDoc.addPage();
+          }
+          mergedDoc.addImage(page.getImageData(), 'PDF', 0, 0, 210, 297);
+        });
+        isFirstPage = false;
+      }
+    }
+
+    if (!isFirstPage) {
+      mergedDoc.save(`Merged_Invoices_${row.batchNumber}.pdf`);
+    } else {
+      setSnackbarMessage('No valid invoices to download.');
+      setSnackbarSeverity('warning');
+      setSnackbarOpen(true);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -363,6 +459,11 @@ const TransportStation = () => {
 
       const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', payload);
       if (response.status === 201) {
+        // Generate and upload invoices for each selected batch number
+        for (const batchNumber of selectedBatchNumbers) {
+          await generateAndUploadInvoices(payload, batchNumber);
+        }
+
         setSelectedBatchNumbers([]);
         setDesa(null);
         setKecamatan(null);
@@ -385,7 +486,7 @@ const TransportStation = () => {
         setPaymentMethod('');
         setSelectedFarmerDetails(null);
         setContractType('');
-        setSnackbarMessage('Transport data and payment created successfully!');
+        setSnackbarMessage('Transport data and invoices created successfully!');
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
         fetchTransportData();
@@ -510,58 +611,13 @@ const TransportStation = () => {
     { field: 'bankAccount', headerName: 'Bank Account Number', width: 200 },
     { field: 'bankName', headerName: 'Bank Name', width: 150 },
     {
-      field: 'exportShippingInvoice',
-      headerName: 'Shipping Invoice',
+      field: 'downloadInvoices',
+      headerName: 'Download Invoices',
       width: 180,
       renderCell: ({ row }) => (
         <IconButton
           color="primary"
-          onClick={() => generateInvoice(row, 'shipping')}
-          disabled={contractType === 'Kontrak Lahan' ? 
-            (!row.transportCostFarmToCollection && !row.transportCostCollectionToFacility) : 
-            !row.cost}
-        >
-          <PictureAsPdfIcon />
-        </IconButton>
-      )
-    },
-    {
-      field: 'exportLoadingInvoice',
-      headerName: 'Loading Invoice',
-      width: 180,
-      renderCell: ({ row }) => (
-        <IconButton
-          color="primary"
-          onClick={() => generateInvoice(row, 'loading')}
-          disabled={!row.loadingWorkerCount || !row.loadingWorkerCostPerPerson}
-        >
-          <PictureAsPdfIcon />
-        </IconButton>
-      )
-    },
-    {
-      field: 'exportUnloadingInvoice',
-      headerName: 'Unloading Invoice',
-      width: 180,
-      renderCell: ({ row }) => (
-        <IconButton
-          color="primary"
-          onClick={() => generateInvoice(row, 'unloading')}
-          disabled={!row.unloadingWorkerCount || !row.unloadingWorkerCostPerPerson}
-        >
-          <PictureAsPdfIcon />
-        </IconButton>
-      )
-    },
-    {
-      field: 'exportHarvestingInvoice',
-      headerName: 'Harvesting Invoice',
-      width: 180,
-      renderCell: ({ row }) => (
-        <IconButton
-          color="primary"
-          onClick={() => generateInvoice(row, 'harvesting')}
-          disabled={!row.harvestWorkerCount || !row.harvestWorkerCostPerPerson}
+          onClick={() => downloadMergedInvoices(row)}
         >
           <PictureAsPdfIcon />
         </IconButton>
