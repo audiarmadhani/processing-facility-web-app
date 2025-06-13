@@ -347,7 +347,6 @@ const TransportStation = () => {
   const generateAndUploadInvoices = async (data, batchNumber, contractType) => {
     const invoiceTypes = ['shipping', 'loading', 'unloading', 'harvesting'];
     const invoices = [];
-    const mergedDoc = new jsPDF();
   
     // Add contractType to data for invoice generation
     const invoiceData = { ...data, contractType };
@@ -357,29 +356,10 @@ const TransportStation = () => {
       if (invoice) {
         const { doc, invoiceNo, type, amount } = invoice;
   
-        // Append pages to merged PDF
-        const pages = doc.getNumberOfPages();
-        for (let i = 1; i <= pages; i++) {
-          if (i > 1 || invoices.length > 0) {
-            mergedDoc.addPage();
-          }
-          doc.setPage(i);
-          // Copy page content to mergedDoc
-          const pageInfo = doc.internal.getPageInfo(i);
-          const pageContent = pageInfo.pageContext;
-          const mergedPageInfo = mergedDoc.internal.getPageInfo(mergedDoc.internal.getNumberOfPages());
-          mergedPageInfo.pageContext.write = pageContent.write; // Copy text content
-          mergedPageInfo.pageContext.font = pageContent.font; // Copy font
-          mergedPageInfo.pageContext.fillColor = pageContent.fillColor; // Copy fill color
-          // Reapply text and graphics
-          doc.output('arraybuffer'); // Ensure page is rendered
-          const textLines = doc.getTextLines();
-          for (const line of textLines) {
-            mergedDoc.text(line.text, line.x, line.y);
-          }
-        }
+        // Download individual invoice locally
+        doc.save(`${invoiceNo}.pdf`);
   
-        // Upload individual invoice to Google Drive
+        // Upload to Google Drive
         const pdfBlob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
         const fileId = await uploadInvoiceToGoogleDrive(pdfBlob, invoiceNo, type, batchNumber);
         if (fileId) {
@@ -389,8 +369,6 @@ const TransportStation = () => {
     }
   
     if (invoices.length > 0) {
-      // Save merged PDF locally for download
-      mergedDoc.save(`Merged_Invoices_${batchNumber}.pdf`);
       return invoices;
     }
     return [];
