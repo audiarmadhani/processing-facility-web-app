@@ -304,6 +304,7 @@ function ReceivingStation() {
       }
     },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
+    { field: 'farmVarieties', headerName: 'Varieties', width: 150, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
     { field: 'brix', headerName: 'Brix (°Bx)', width: 120, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 150, sortable: true },
