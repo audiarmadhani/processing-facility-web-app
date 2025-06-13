@@ -44,7 +44,7 @@ const NAVIGATION: Navigation = [
   {
     segment: "contacts",
     title: "Our Contacts",
-    icon: <CottageIcon />,
+    icon: <GroupsIcon />,
     children: [
       { segment: "farmer", title: "Our Farmers", icon: <GroupsIcon /> },
       { segment: "shipper", title: "Our Shippers", icon: <LocalShippingIcon /> },
