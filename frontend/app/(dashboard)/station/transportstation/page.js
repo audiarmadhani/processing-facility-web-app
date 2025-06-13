@@ -269,7 +269,7 @@ const TransportStation = () => {
     let amount = 0;
     let description = '';
     const weight = data.weight || 'N/A'; // Use data.weight instead of batchWeights
-    const paidToName = data.paidTo && data.paidTo !== '0' ? data.paidTo : 'Unknown'; // Handle '0' explicitly
+    const paidToName = data.paidTo && data.paidTo !== '0' ? data.paidTo : 'Cash'; // Handle '0' explicitly
   
     // Debug: Log values used in PDF
     console.log(`Creating PDF for ${invoiceNo}:`, { paidToName, weight, batchNumber });
@@ -327,20 +327,23 @@ const TransportStation = () => {
       formData.append('file', pdfBlob, `${invoiceNo}.pdf`);
       formData.append('batchNumber', batchNumber);
       formData.append('invoiceType', type);
-
+  
       const response = await fetch('https://processing-facility-backend.onrender.com/api/upload-invoice', {
         method: 'POST',
         body: formData,
       });
-
-      if (!response.ok) throw new Error('Failed to upload invoice');
-
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload invoice');
+      }
+  
       const data = await response.json();
-      console.log(`Invoice ${invoiceNo} uploaded successfully:`, data);
+      console.log(`Invoice ${invoiceNo} ${data.updated ? 'updated' : 'uploaded'} successfully:`, data);
       return data.fileId;
     } catch (error) {
       console.error(`Error uploading invoice ${invoiceNo}:`, error);
-      setSnackbarMessage(`Failed to upload ${type} invoice.`);
+      setSnackbarMessage(`Failed to ${error.message.includes('replace') ? 'replace' : 'upload'} ${type} invoice: ${error.message}`);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return null;
