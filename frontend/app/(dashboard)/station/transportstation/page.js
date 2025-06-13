@@ -344,17 +344,25 @@ const TransportStation = () => {
     }
   };
 
-  const generateAndUploadInvoices = async (data, batchNumber, contractType) => {
+  const generateAndUploadInvoices = async (data, batchNumber, contractType, batchWeight) => {
     const invoiceTypes = ['shipping', 'loading', 'unloading', 'harvesting'];
     const invoices = [];
   
-    // Add contractType to data for invoice generation
-    const invoiceData = { ...data, contractType };
+    // Add contractType and ensure paidTo and weight are included
+    const invoiceData = { 
+      ...data, 
+      contractType,
+      paidTo: data.paidTo || 'Unknown',
+      weight: batchWeight || 'N/A'
+    };
   
     for (const type of invoiceTypes) {
       const invoice = generateSingleInvoice(invoiceData, type, batchNumber);
       if (invoice) {
         const { doc, invoiceNo, type, amount } = invoice;
+  
+        // Debug: Log invoice data to verify paidTo and weight
+        console.log(`Generating invoice ${invoiceNo}:`, { paidTo: invoiceData.paidTo, weight: invoiceData.weight, amount });
   
         // Download individual invoice locally
         doc.save(`${invoiceNo}.pdf`);
@@ -373,7 +381,7 @@ const TransportStation = () => {
     }
     return [];
   };
-
+  
   const handleDownloadInvoices = async (row) => {
     const batchNumber = row.batchNumber;
     try {
@@ -385,16 +393,25 @@ const TransportStation = () => {
       if (!batch.contractType) {
         throw new Error(`Contract type not found for batch ${batchNumber}.`);
       }
-
+  
       // Update batchWeights with fetched weight
       setBatchWeights(prev => ({
         ...prev,
         [batchNumber]: batch.weight
       }));
-
+  
+      // Ensure paidTo is included in the data
+      const invoiceData = {
+        ...row,
+        paidTo: row.paidTo || 'Unknown'
+      };
+  
+      // Debug: Log data being passed
+      console.log('Invoice Data for Download:', invoiceData);
+  
       // Generate and upload invoices
-      await generateAndUploadInvoices(row, batchNumber, batch.contractType);
-
+      await generateAndUploadInvoices(invoiceData, batchNumber, batch.contractType, batch.weight);
+  
       setSnackbarMessage(`Invoices for batch ${batchNumber} generated and uploaded successfully!`);
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
@@ -405,45 +422,45 @@ const TransportStation = () => {
       setSnackbarOpen(true);
     }
   };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!selectedBatchNumbers.length) {
       setSnackbarMessage('Please select at least one batch number.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
     }
-
+  
     if (!contractType) {
       setSnackbarMessage('Contract type not resolved. Please reselect batch numbers.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
     }
-
+  
     if (!desa || !kecamatan || !kabupaten) {
       setSnackbarMessage('Please complete all location fields.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
     }
-
+  
     if (!paidTo || (isOtherFarmer && !customPaidTo)) {
       setSnackbarMessage('Please select or enter a name for Paid To.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
     }
-
+  
     if (!paymentMethod) {
       setSnackbarMessage('Please select a payment method.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
     }
-
+  
     try {
       const payload = {
         batchNumber: selectedBatchNumbers.join(','),
@@ -465,14 +482,25 @@ const TransportStation = () => {
         bankAccount: isOtherFarmer ? customBankAccount || null : selectedFarmerDetails?.bankAccount || null,
         bankName: isOtherFarmer ? customBankName || null : selectedFarmerDetails?.bankName || null
       };
-
+  
       const response = await axios.post('https://processing-facility-backend.onrender.com/api/transport', payload);
       if (response.status === 201) {
         // Generate and upload invoices for each selected batch number
         for (const batchNumber of selectedBatchNumbers) {
-          await generateAndUploadInvoices(payload, batchNumber, contractType);
+          const batch = await fetchBatchDetails(batchNumber);
+          if (!batch.weight) {
+            console.warn(`Weight not found for batch ${batchNumber}, using 'N/A'`);
+          }
+          // Update batchWeights
+          setBatchWeights(prev => ({
+            ...prev,
+            [batchNumber]: batch.weight || 'N/A'
+          }));
+          // Debug: Log payload
+          console.log('Payload for Invoice:', payload);
+          await generateAndUploadInvoices(payload, batchNumber, contractType, batch.weight);
         }
-
+  
         setSelectedBatchNumbers([]);
         setDesa(null);
         setKecamatan(null);
@@ -503,6 +531,7 @@ const TransportStation = () => {
         throw new Error('Failed to create transport data');
       }
     } catch (error) {
+      console.error('Error submitting transport data:', error);
       setSnackbarMessage(error.message || 'Failed to create transport data.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
