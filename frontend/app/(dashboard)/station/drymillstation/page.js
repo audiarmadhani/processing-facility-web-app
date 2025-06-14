@@ -19,6 +19,8 @@ import {
   TextField,
   Box,
   Divider,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
@@ -34,6 +36,8 @@ const DryMillStation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
+  const [batchProcessingTypes, setBatchProcessingTypes] = useState([]);
+  const [selectedProcessingType, setSelectedProcessingType] = useState(null);
   const [grades, setGrades] = useState([]);
   const [currentWeights, setCurrentWeights] = useState({});
   const [rfid, setRfid] = useState("");
@@ -50,40 +54,66 @@ const DryMillStation = () => {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
 
-      // Create a map to group batches by batchNumber and processingType
+      // Aggregate batches by batchNumber
       const batchMap = {};
+      const subBatchMap = {};
       data.forEach((batch) => {
-        const key = `${batch.batchNumber}-${batch.processingType}`;
-        batchMap[key] = {
-          id: key, // Unique ID for DataGrid
-          batchNumber: batch.batchNumber,
-          status: batch.status,
-          dryMillEntered: batch.dryMillEntered,
-          dryMillExited: batch.dryMillExited,
-          cherry_weight: batch.cherry_weight || "N/A",
-          producer: batch.producer || "N/A",
-          farmerName: batch.farmerName || "N/A",
-          productLine: batch.productLine || "N/A",
-          processingType: batch.processingType || "N/A",
-          quality: batch.quality || "N/A",
-          totalBags: batch.totalBags || "N/A",
-          notes: batch.notes || "N/A",
-          type: batch.type || "N/A",
-          storeddatetrunc: batch.storeddatetrunc || "N/A",
-          isStored: batch.isStored,
-          parentBatchNumber: batch.parentBatchNumber || null,
-          weight: batch.weight || "N/A",
-          referenceNumber: batch.referenceNumber || "N/A",
-          bagWeights: batch.bagWeights || [],
-        };
+        const batchNumber = batch.batchNumber;
+        if (batch.parentBatchNumber) {
+          const subBatchKey = `${batch.batchNumber}-${batch.processingType}`;
+          subBatchMap[subBatchKey] = {
+            id: subBatchKey,
+            batchNumber: batch.batchNumber,
+            status: batch.status,
+            dryMillEntered: batch.dryMillEntered,
+            dryMillExited: batch.dryMillExited,
+            storeddatetrunc: batch.storeddatetrunc || "N/A",
+            weight: batch.weight || "N/A",
+            producer: batch.producer || "N/A",
+            farmerName: batch.farmerName || "N/A",
+            productLine: batch.productLine || "N/A",
+            processingType: batch.processingType || "N/A",
+            quality: batch.quality || "N/A",
+            totalBags: batch.totalBags || "N/A",
+            notes: batch.notes || "N/A",
+            type: batch.type || "N/A",
+            parentBatchNumber: batch.parentBatchNumber,
+            referenceNumber: batch.referenceNumber || "N/A",
+            bagWeights: batch.bagWeights || [],
+            isStored: batch.isStored,
+          };
+        } else {
+          if (!batchMap[batchNumber]) {
+            batchMap[batchNumber] = {
+              id: batchNumber,
+              batchNumber: batchNumber,
+              status: batch.status,
+              dryMillEntered: batch.dryMillEntered,
+              dryMillExited: batch.dryMillExited,
+              cherry_weight: batch.cherry_weight || "N/A",
+              producer: batch.producer || "N/A",
+              farmerName: batch.farmerName || "N/A",
+              productLine: batch.productLine || "N/A",
+              processingTypes: new Set(),
+              totalBags: batch.totalBags || "N/A",
+              notes: batch.notes || "N/A",
+              type: batch.type || "N/A",
+              isStored: batch.isStored,
+            };
+          }
+          batchMap[batchNumber].processingTypes.add(batch.processingType || "N/A");
+        }
       });
 
-      const formattedData = Object.values(batchMap);
+      // Convert processingTypes Set to array
+      Object.values(batchMap).forEach((batch) => {
+        batch.processingTypes = Array.from(batch.processingTypes);
+      });
 
-      const parentBatchesData = formattedData.filter(
-        (batch) => !batch.parentBatchNumber && !batch.isStored && batch.status !== "Processed"
+      const parentBatchesData = Object.values(batchMap).filter(
+        (batch) => !batch.isStored && batch.status !== "Processed"
       );
-      const subBatchesData = formattedData.filter((batch) => batch.parentBatchNumber);
+      const subBatchesData = Object.values(subBatchMap);
 
       setParentBatches(parentBatchesData);
       setSubBatches(subBatchesData);
@@ -133,12 +163,29 @@ const DryMillStation = () => {
     }
   };
 
+  const fetchBatchProcessingTypes = async (batchNumber) => {
+    try {
+      const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
+      const data = response.data;
+      const processingTypes = data
+        .filter((batch) => batch.batchNumber === batchNumber && !batch.parentBatchNumber)
+        .map((batch) => batch.processingTypes)
+        .flat();
+      return [...new Set(processingTypes)]; // Deduplicate
+    } catch (error) {
+      console.error("Error fetching batch processing types:", error);
+      setSnackbarMessage("Failed to fetch processing types for batch.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return [];
+    }
+  };
+
   const fetchExistingGrades = async (batchNumber, processingType) => {
     try {
       if (!batchNumber || !processingType) {
         throw new Error("Batch number or processing type is missing.");
       }
-
       const response = await axios.get(
         `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`,
         { params: { processingType } }
@@ -161,7 +208,7 @@ const DryMillStation = () => {
         return [{
           grade: gradeData.grade,
           weight: parseFloat(gradeData.weight) || 0,
-          bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights.map(w => String(w)) : [],
+          bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights.map((w) => String(w)) : [],
           bagged_at: gradeData.bagged_at || new Date().toISOString().split("T")[0],
           tempSequence: gradeData.tempSequence || "0001",
           is_stored: gradeData.is_stored || false,
@@ -173,7 +220,7 @@ const DryMillStation = () => {
           fetchedGradesMap[grade.grade] = {
             grade: grade.grade,
             weight: parseFloat(grade.weight) || 0,
-            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map(w => String(w)) : [],
+            bagWeights: Array.isArray(grade.bagWeights) ? gradeData.bagWeights.map((w) => String(w)) : [],
             bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
             tempSequence: grade.tempSequence || "0001",
             is_stored: grade.is_stored || false,
@@ -193,7 +240,7 @@ const DryMillStation = () => {
       }
     } catch (error) {
       console.error("Error fetching existing grades:", error);
-      setSnackbarMessage(error.response?.data?.error || "Failed to fetch grades. Ensure processing type is selected.");
+      setSnackbarMessage(error.response?.data?.error || "Failed to fetch grades.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [{
@@ -237,7 +284,10 @@ const DryMillStation = () => {
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
       fetchDryMillData();
-      if (response.data.exited_at) setOpenStorageDialog(true);
+      if (response.data.exited_at) {
+        setSelectedBatch({ batchNumber: response.data.batchNumber });
+        setOpenStorageDialog(true);
+      }
     } catch (error) {
       console.error("Error scanning RFID:", error);
       setSnackbarMessage(error.response?.data?.error || "Failed to scan RFID.");
@@ -248,9 +298,41 @@ const DryMillStation = () => {
     }
   };
 
+  const checkCompletionEligibility = async (batchNumber, processingTypes) => {
+    try {
+      for (const processingType of processingTypes) {
+        const response = await axios.get(
+          `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`,
+          { params: { processingType } }
+        );
+        const grades = response.data;
+        const hasValidSplits = grades.some(
+          (grade) => parseFloat(grade.weight) > 0 && grade.bagged_at && !grade.is_stored
+        );
+        if (!hasValidSplits) {
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error("Error checking completion eligibility:", error);
+      setSnackbarMessage("Failed to validate splits for completion.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return false;
+    }
+  };
+
   const handleConfirmComplete = async () => {
-    if (!selectedBatch || !session?.user?.email || !selectedBatch.processingType) {
-      setSnackbarMessage("Batch, user, or processing type is missing.");
+    if (!selectedBatch || !session?.user?.email) {
+      setSnackbarMessage("Batch or user is missing.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    const isEligible = await checkCompletionEligibility(selectedBatch.batchNumber, batchProcessingTypes);
+    if (!isEligible) {
+      setSnackbarMessage("All processing types must have weighed and bagged splits before marking complete.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return;
@@ -261,7 +343,6 @@ const DryMillStation = () => {
         {
           createdBy: session.user.email,
           updatedBy: session.user.email,
-          processingType: selectedBatch.processingType,
         }
       );
       setSnackbarMessage(response.data.message);
@@ -279,8 +360,8 @@ const DryMillStation = () => {
   };
 
   const handleConfirmStorage = async () => {
-    if (!rfid || !selectedBatch?.processingType) {
-      setSnackbarMessage("RFID or processing type is missing.");
+    if (!rfid || !selectedBatch?.batchNumber) {
+      setSnackbarMessage("RFID or batch number is missing.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return;
@@ -289,7 +370,7 @@ const DryMillStation = () => {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/warehouse/scan", {
         rfid,
         scanned_at: "Warehouse",
-        processingType: selectedBatch.processingType, // Included for potential backend update
+        batchNumber: selectedBatch.batchNumber,
       });
       setRfid("");
       setSnackbarMessage(response.data.message);
@@ -306,7 +387,7 @@ const DryMillStation = () => {
   };
 
   const handleSortAndWeigh = async () => {
-    if (!selectedBatch || !selectedBatch.processingType) {
+    if (!selectedBatch || !selectedProcessingType) {
       setSnackbarMessage("Batch or processing type is missing.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
@@ -324,13 +405,12 @@ const DryMillStation = () => {
             bagged_at: today,
             tempSequence: g.tempSequence,
           })),
-          processingType: selectedBatch.processingType,
+          processingType: selectedProcessingType,
         }
       );
       setSnackbarMessage(response.data.message);
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
-      setOpenDialog(false);
       fetchDryMillData();
     } catch (error) {
       console.error("Error saving green bean splits:", error);
@@ -340,7 +420,7 @@ const DryMillStation = () => {
     }
   };
 
-  const handlePrintLabel = (batchNumber, grade, bagIndex, bagWeight) => {
+  const handlePrintLabel = (batchNumber, processingType, grade, bagIndex, bagWeight) => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [100, 150] });
     const farmerName = selectedBatch?.farmerName || "Unknown Farmer";
     const companyName = selectedBatch?.producer === "BTM" ? "PT Berkas Tuaian Melimpah" : "HEQA";
@@ -361,7 +441,7 @@ const DryMillStation = () => {
         : productLineAbbreviation === "C"
         ? "CO"
         : productLineAbbreviation;
-    const processingTypeEntry = processingTypes.find((pt) => pt.processingType === selectedBatch?.processingType) || {};
+    const processingTypeEntry = processingTypes.find((pt) => pt.processingType === processingType) || {};
     const processingTypeAbbreviation = processingTypeEntry.abbreviation || "Unknown";
     const qualityAbbreviation =
       grade === "Specialty Grade" ? "S" : grade === "Grade 1" ? "G1" : grade === "Grade 2" ? "G2" : grade === "Grade 3" ? "G3" : "G4";
@@ -372,19 +452,19 @@ const DryMillStation = () => {
         (rm) =>
           rm.producer === selectedBatch?.producer &&
           rm.productLine === selectedBatch?.productLine &&
-          rm.processingType === selectedBatch?.processingType &&
+          rm.processingType === processingType &&
           rm.type === selectedBatch?.type
       ) || {};
     const referenceSequence = referenceMatch.referenceNumber ? referenceMatch.referenceNumber.split("-")[3] : "000";
     const referenceNumber = `ID-${producerReferenceAbbreviation}-${productLineReferenceAbbreviation}-${referenceSequence}-${qualityAbbreviation}`;
-    const cherryLotNumber = selectedBatch?.batchNumber;
+    const cherryLotNumber = batchNumber;
     const labels = [
       { label: "Lot Number", value: lotNumber },
       { label: "Reference Number", value: referenceNumber },
       { label: "Cherry Lot Number", value: cherryLotNumber },
       { label: "Farmer", value: farmerName },
       { label: "Type", value: selectedBatch?.type || "N/A" },
-      { label: "Processing Type", value: selectedBatch?.processingType || "N/A" },
+      { label: "Processing Type", value: processingType || "N/A" },
       { label: "Product Line", value: selectedBatch?.productLine || "N/A" },
       { label: "Grade", value: grade },
       { label: "Bag Weight", value: `${bagWeight} kg` },
@@ -466,7 +546,7 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
-    if (!selectedBatch?.processingType) {
+    if (!selectedProcessingType) {
       setSnackbarMessage("Processing type is missing.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
@@ -497,7 +577,7 @@ const DryMillStation = () => {
             bagWeights: updatedBagWeights,
             weight: totalWeight.toString(),
             bagged_at: new Date().toISOString().slice(0, 10),
-            processingType: selectedBatch.processingType,
+            processingType: selectedProcessingType,
           }
         );
         setSnackbarMessage("Bag added successfully.");
@@ -523,7 +603,7 @@ const DryMillStation = () => {
   };
 
   const handleRemoveBag = async (gradeIndex, bagIndex) => {
-    if (!selectedBatch || !selectedBatch.processingType) {
+    if (!selectedBatch || !selectedProcessingType) {
       setSnackbarMessage("Batch or processing type is missing.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
@@ -559,7 +639,7 @@ const DryMillStation = () => {
             bagWeights: updatedBagWeights,
             weight: totalWeight >= 0 ? totalWeight.toString() : "0",
             bagged_at: new Date().toISOString().slice(0, 10),
-            processingType: selectedBatch.processingType,
+            processingType: selectedProcessingType,
           }
         );
         setSnackbarMessage("Bag removed successfully.");
@@ -585,7 +665,7 @@ const DryMillStation = () => {
   };
 
   const handleSaveSubBatch = async () => {
-    if (!selectedBatch || !grades[0] || !selectedBatch.processingType) {
+    if (!selectedBatch || !grades[0] || !selectedProcessingType) {
       setSnackbarMessage("Batch, grade, or processing type is missing.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
@@ -605,14 +685,13 @@ const DryMillStation = () => {
           bagWeights: grades[0].bagWeights,
           weight: grades[0].weight.toString(),
           bagged_at: new Date().toISOString().slice(0, 10),
-          processingType: selectedBatch.processingType,
+          processingType: selectedProcessingType,
         }
       );
       setSnackbarMessage("Sub-batch saved successfully.");
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
       fetchDryMillData();
-      setOpenDialog(false);
     } catch (error) {
       console.error("Error saving sub-batch:", error);
       setSnackbarMessage(error.response?.data?.error || "Failed to save sub-batch.");
@@ -635,16 +714,27 @@ const DryMillStation = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedBatch) {
-      fetchExistingGrades(selectedBatch.batchNumber, selectedBatch.processingType).then((existingGrades) => {
+    if (selectedBatch && !selectedBatch.parentBatchNumber) {
+      fetchBatchProcessingTypes(selectedBatch.batchNumber).then((types) => {
+        setBatchProcessingTypes(types);
+        setSelectedProcessingType(types[0] || null);
+      });
+    } else if (selectedBatch && selectedBatch.parentBatchNumber) {
+      setBatchProcessingTypes([selectedBatch.processingType]);
+      setSelectedProcessingType(selectedBatch.processingType);
+    }
+  }, [selectedBatch]);
+
+  useEffect(() => {
+    if (selectedBatch && selectedProcessingType) {
+      fetchExistingGrades(selectedBatch.batchNumber, selectedProcessingType).then((existingGrades) => {
         setGrades(existingGrades);
         const initialWeights = {};
         existingGrades.forEach((_, idx) => (initialWeights[idx] = ""));
         setCurrentWeights(initialWeights);
-        setOpenDialog(true);
       });
     }
-  }, [selectedBatch]);
+  }, [selectedBatch, selectedProcessingType]);
 
   const handleRefreshData = () => {
     fetchDryMillData();
@@ -653,26 +743,33 @@ const DryMillStation = () => {
 
   const handleDetailsClick = (batch) => {
     setSelectedBatch(batch);
+    setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedBatch(null);
+    setBatchProcessingTypes([]);
+    setSelectedProcessingType(null);
     setGrades([]);
   };
 
   const handleCloseCompleteDialog = () => {
     setOpenCompleteDialog(false);
-    setSelectedBatch(null);
   };
 
   const handleCloseStorageDialog = () => {
     setOpenStorageDialog(false);
     setRfid("");
+    setSelectedBatch(null);
   };
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setSelectedProcessingType(batchProcessingTypes[newValue]);
   };
 
   const parentColumns = [
@@ -706,7 +803,12 @@ const DryMillStation = () => {
     { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 160 },
     { field: "producer", headerName: "Producer", width: 120 },
     { field: "productLine", headerName: "Product Line", width: 160 },
-    { field: "processingType", headerName: "Processing Type", width: 180 },
+    {
+      field: "processingTypes",
+      headerName: "Processing Types",
+      width: 200,
+      valueGetter: (params) => params.value.join(", "),
+    },
     { field: "type", headerName: "Type", width: 120 },
     { field: "totalBags", headerName: "Total Bags", width: 120 },
     { field: "notes", headerName: "Notes", width: 180 },
@@ -822,7 +924,7 @@ const DryMillStation = () => {
   if (status === "loading") return <Typography>Loading...</Typography>;
 
   if (!session?.user || !["admin", "manager", "drymill", "postprocessing"].includes(session.user.role))
-  return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
+    return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
 
   return (
     <Grid container spacing={3}>
@@ -855,8 +957,19 @@ const DryMillStation = () => {
       </Grid>
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Batch {selectedBatch?.batchNumber} ({selectedBatch?.processingType})</DialogTitle>
+        <DialogTitle>Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
+          {batchProcessingTypes.length > 1 && !selectedBatch?.parentBatchNumber && (
+            <Tabs
+              value={batchProcessingTypes.indexOf(selectedProcessingType) || 0}
+              onChange={handleTabChange}
+              sx={{ mb: 2 }}
+            >
+              {batchProcessingTypes.map((type) => (
+                <Tab key={type} label={type} />
+              ))}
+            </Tabs>
+          )}
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
               const totalWeight = grade.weight || grade.bagWeights.reduce((sum, w) => sum + parseFloat(w || 0), 0);
@@ -940,7 +1053,15 @@ const DryMillStation = () => {
                                 variant="contained"
                                 color="secondary"
                                 size="small"
-                                onClick={() => handlePrintLabel(selectedBatch?.batchNumber, grade.grade, bagIndex, weight)}
+                                onClick={() =>
+                                  handlePrintLabel(
+                                    selectedBatch?.batchNumber,
+                                    selectedProcessingType,
+                                    grade.grade,
+                                    bagIndex,
+                                    weight
+                                  )
+                                }
                               >
                                 Print Label
                               </Button>
@@ -976,7 +1097,7 @@ const DryMillStation = () => {
                 variant="contained"
                 color="primary"
                 onClick={handleSortAndWeigh}
-                disabled={!selectedBatch || selectedBatch?.isStored}
+                disabled={!selectedBatch || !selectedProcessingType || selectedBatch?.isStored}
               >
                 Save Splits
               </Button>
@@ -984,7 +1105,11 @@ const DryMillStation = () => {
                 variant="contained"
                 color="secondary"
                 onClick={() => setOpenCompleteDialog(true)}
-                disabled={!selectedBatch || selectedBatch?.isStored || !grades.some((g) => g.bagWeights.length > 0)}
+                disabled={
+                  !selectedBatch ||
+                  selectedBatch?.isStored ||
+                  batchProcessingTypes.length === 0
+                }
               >
                 Mark Complete
               </Button>
@@ -997,8 +1122,8 @@ const DryMillStation = () => {
         <DialogTitle>Confirm Mark as Processed</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Confirm marking Batch {selectedBatch?.batchNumber} ({selectedBatch?.processingType}) as processed. All splits
-            must be weighed and bagged.
+            Confirm marking Batch {selectedBatch?.batchNumber} as processed. All splits for all processing types (
+            {batchProcessingTypes.join(", ")}) must be weighed and bagged.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -1013,8 +1138,7 @@ const DryMillStation = () => {
         <DialogTitle>Confirm Storage in Warehouse</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Enter the RFID tag to confirm storage in the warehouse for Batch {selectedBatch?.batchNumber} (
-            {selectedBatch?.processingType}).
+            Enter the RFID tag to confirm storage in the warehouse for Batch {selectedBatch?.batchNumber}.
           </Typography>
           <TextField
             label="RFID Tag"
