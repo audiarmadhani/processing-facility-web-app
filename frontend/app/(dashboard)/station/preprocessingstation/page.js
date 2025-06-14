@@ -218,6 +218,9 @@ const PreprocessingStation = () => {
     const trimmedBatchNumber = batchNumber.trim();
     const trimmedWeightProcessed = parseFloat(weightProcessed);
 
+    console.log("trimmedWeightProcessed:", trimmedWeightProcessed);
+    console.log("weightAvailable:", weightAvailable);
+
     if (isNaN(trimmedWeightProcessed) || trimmedWeightProcessed <= 0) {
       setSnackbarMessage('Please enter a valid weight to process.');
       setSnackbarSeverity('warning');
