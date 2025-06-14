@@ -254,6 +254,7 @@ const DryMillStation = () => {
       if (!batchNumber || !processingType) {
         throw new Error("Batch number or processing type is missing.");
       }
+      console.log(`Fetching grades for batch: ${batchNumber}, processingType: ${processingType}`); // Debug log
       const response = await axios.get(
         `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`,
         { params: { processingType } }
@@ -262,7 +263,7 @@ const DryMillStation = () => {
       if (!Array.isArray(data)) {
         throw new Error("Invalid response format: grades data is not an array");
       }
-
+  
       if (selectedBatch?.parentBatchNumber) {
         const normalizedQuality = selectedBatch.quality?.trim();
         const gradeData = data.find((grade) => grade.grade?.trim() === normalizedQuality) || {
@@ -296,7 +297,7 @@ const DryMillStation = () => {
             is_stored: grade.is_stored || false,
           };
         });
-
+  
         return gradeOrder.map((grade) =>
           fetchedGradesMap[grade] || {
             grade,
@@ -309,8 +310,8 @@ const DryMillStation = () => {
         );
       }
     } catch (error) {
-      console.error("Error fetching existing grades:", error);
-      setSnackbarMessage(error.response?.data?.error || "Failed to fetch grades.");
+      console.error(`Error fetching grades for batch ${batchNumber}, processingType ${processingType}:`, error);
+      setSnackbarMessage(error.response?.data?.error || "Failed to fetch grades. Please try again.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return [
