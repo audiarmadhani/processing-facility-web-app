@@ -157,7 +157,7 @@ const PreprocessingStation = () => {
 
   const handleAllWeight = () => {
     if (weightAvailable > 0) {
-      setWeightProcessed(weightAvailable.toFixed(2));
+      setWeightProcessed(weightAvailable);
     } else {
       setWeightProcessed('');
       setSnackbarMessage('No weight available to process.');
@@ -191,11 +191,11 @@ const PreprocessingStation = () => {
         return {
           batchNumber: batch.batchNumber,
           totalWeight: batch.weight,
-          totalProcessedWeight: totalProcessedWeight.toFixed(2),
-          weightAvailable: weightAvailable.toFixed(2),
+          totalProcessedWeight: totalProcessedWeight,
+          weightAvailable: weightAvailable,
           processedLogs: processedLogs.map(log => ({
             processingDate: log.processingDate,
-            weightProcessed: parseFloat(log.weightProcessed || 0).toFixed(2),
+            weightProcessed: parseFloat(log.weightProcessed || 0),
             notes: log.notes,
           })),
         };
@@ -229,7 +229,7 @@ const PreprocessingStation = () => {
     }
 
     if (trimmedWeightProcessed > weightAvailable) {
-      setSnackbarMessage(`Cannot process more weight than available. Available: ${weightAvailable.toFixed(2)} kg`);
+      setSnackbarMessage(`Cannot process more weight than available. Available: ${weightAvailable} kg`);
       setSnackbarSeverity('warning');
       setOpenSnackbar(true);
       return;
@@ -254,7 +254,7 @@ const PreprocessingStation = () => {
       });
       if (!response.ok) throw new Error('Failed to start processing');
 
-      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedWeightProcessed.toFixed(2)} kg!`);
+      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedWeightProcessed} kg!`);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
 
@@ -554,7 +554,7 @@ const PreprocessingStation = () => {
                 <Grid item xs={6}>
                   <TextField
                     label="Total Processed Weight (kg)"
-                    value={totalProcessedWeight.toFixed(2) || '0.00'}
+                    value={totalProcessedWeight || '0.00'}
                     InputProps={{ readOnly: true }}
                     fullWidth
                     margin="normal"
@@ -563,7 +563,7 @@ const PreprocessingStation = () => {
                 <Grid item xs={6}>
                   <TextField
                     label="Weight Available (kg)"
-                    value={weightAvailable.toFixed(2) || '0.00'}
+                    value={weightAvailable || '0.00'}
                     InputProps={{
                       readOnly: true,
                       style: { color: weightAvailable <= 0 ? 'red' : 'inherit' },
