@@ -90,7 +90,7 @@ const DryMillStation = () => {
               status: batch.status,
               dryMillEntered: batch.dryMillEntered,
               dryMillExited: batch.dryMillExited,
-              cherry_weight: batch.cherry_weight || "N/A",
+              cherry_weight: 0,
               producer: batch.producer || "N/A",
               farmerName: batch.farmerName || "N/A",
               productLine: batch.productLine || "N/A",
@@ -101,13 +101,18 @@ const DryMillStation = () => {
               isStored: batch.isStored,
             };
           }
-          batchMap[batchNumber].processingTypes.add(batch.processingType || "N/A");
+          // Sum cherry_weight and add processingTypes
+          batchMap[batchNumber].cherry_weight += parseFloat(batch.cherry_weight || 0);
+          (batch.processingTypes || []).forEach((type) => {
+            batchMap[batchNumber].processingTypes.add(type);
+          });
         }
       });
 
-      // Convert processingTypes Set to array
+      // Convert processingTypes Set to array and format cherry_weight
       Object.values(batchMap).forEach((batch) => {
         batch.processingTypes = Array.from(batch.processingTypes);
+        batch.cherry_weight = batch.cherry_weight.toFixed(2);
       });
 
       const parentBatchesData = Object.values(batchMap).filter(
@@ -169,8 +174,7 @@ const DryMillStation = () => {
       const data = response.data;
       const processingTypes = data
         .filter((batch) => batch.batchNumber === batchNumber && !batch.parentBatchNumber)
-        .map((batch) => batch.processingTypes)
-        .flat();
+        .flatMap((batch) => batch.processingTypes || []);
       return [...new Set(processingTypes)]; // Deduplicate
     } catch (error) {
       console.error("Error fetching batch processing types:", error);
@@ -220,7 +224,7 @@ const DryMillStation = () => {
           fetchedGradesMap[grade.grade] = {
             grade: grade.grade,
             weight: parseFloat(grade.weight) || 0,
-            bagWeights: Array.isArray(grade.bagWeights) ? gradeData.bagWeights.map((w) => String(w)) : [],
+            bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map((w) => String(w)) : [],
             bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
             tempSequence: grade.tempSequence || "0001",
             is_stored: grade.is_stored || false,
@@ -807,7 +811,7 @@ const DryMillStation = () => {
       field: "processingTypes",
       headerName: "Processing Types",
       width: 200,
-      valueGetter: (params) => params.value.join(", "),
+      valueGetter: (params) => (params.value || []).join(", "),
     },
     { field: "type", headerName: "Type", width: 120 },
     { field: "totalBags", headerName: "Total Bags", width: 120 },
