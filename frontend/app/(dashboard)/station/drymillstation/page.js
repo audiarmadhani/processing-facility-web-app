@@ -1017,7 +1017,7 @@ const DryMillStation = () => {
         slots={{ toolbar: GridToolbar }}
         autosizeOnMount
         autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
-        rowHeight={auto}
+        rowHeight="auto"
         sx={{ height: 400, width: "100%" }}
       />
     ),
@@ -1044,7 +1044,7 @@ const DryMillStation = () => {
         slots={{ toolbar: GridToolbar }}
         autosizeOnMount
         autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
-        rowHeight={auto}
+        rowHeight="auto"
         sx={{ height: 600, width: "100%" }}
       />
     );
