@@ -197,7 +197,7 @@ router.get('/receiving', async (req, res) => {
        ORDER BY "receivingDate" DESC;`,
       {
         replacements: commodityType ? { commodityType } : {},
-        type: sequelize.QueryTypes.SELECT
+        // type: sequelize.QueryTypes.SELECT
       }
     );
 
@@ -212,7 +212,7 @@ router.get('/receiving', async (req, res) => {
        ORDER BY "receivingDate" DESC;`,
       {
         replacements: commodityType ? { commodityType } : {},
-        type: sequelize.QueryTypes.SELECT
+        // type: sequelize.QueryTypes.SELECT
       }
     );
 
@@ -226,7 +226,7 @@ router.get('/receiving', async (req, res) => {
        ORDER BY "batchNumber" DESC;`,
       {
         replacements: commodityType ? { commodityType } : {},
-        type: sequelize.QueryTypes.SELECT
+        // type: sequelize.QueryTypes.SELECT
       }
     );
 
