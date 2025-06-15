@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import {
   TextField,
@@ -16,32 +16,56 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
-  Autocomplete
+  Autocomplete,
+  Tabs,
+  Tab,
+  Box
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 function ReceivingStation() {
   const { data: session, status } = useSession();
 
+  // Form state
   const [farmerName, setFarmerName] = useState('');
   const [farmerList, setFarmerList] = useState([]);
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [notes, setNotes] = useState('');
   const [numberOfBags, setNumberOfBags] = useState(1);
-  const [bagCountInput, setBagCountInput] = useState('1'); // Temporary input state
+  const [bagCountInput, setBagCountInput] = useState('1');
   const [bagWeights, setBagWeights] = useState(['']);
   const [totalWeight, setTotalWeight] = useState(0);
   const [brix, setBrix] = useState('');
-  const [receivingData, setReceivingData] = useState([]);
+  const [type, setType] = useState('');
+  const [producer, setProducer] = useState('');
+  const [processingType, setProcessingType] = useState('');
+  const [grade, setGrade] = useState('');
+  const [assigningRFID, setAssigningRFID] = useState(false);
+
+  // UI state
+  const [tabValue, setTabValue] = useState(0); // 0: Cherry, 1: Green Bean
+  const [cherryData, setCherryData] = useState([]);
+  const [greenBeanData, setGreenBeanData] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [type, setType] = useState('');
-  const [producer, setProducer] = useState('');
-  const [assigningRFID, setAssigningRFID] = useState(false);
-  const [lastCreatedBatchNumber, setLastCreatedBatchNumber] = useState(null);
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -64,7 +88,6 @@ function ReceivingStation() {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/farmer');
       if (!response.ok) throw new Error('Failed to fetch farmers');
-
       const data = await response.json();
       if (data && Array.isArray(data.allRows)) {
         setFarmerList(data.allRows);
@@ -76,31 +99,39 @@ function ReceivingStation() {
     }
   };
 
-  const fetchReceivingData = async () => {
+  const fetchReceivingData = useCallback(async () => {
     if (!session || !session.user) return;
 
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
-      if (!response.ok) throw new Error(`Failed to fetch receiving data: ${response.status}`);
-
-      const data = await response.json();
-      if (data && Array.isArray(data.allRows) && Array.isArray(data.todayData)) {
-        let filteredData = [];
-        if (["admin", "manager"].includes(session.user.role)) {
-          filteredData = data.allRows.map((row, index) => ({ ...row, id: index }));
-        } else if (["staff", "receiving"].includes(session.user.role)) {
-          filteredData = data.todayData.map((row, index) => ({ ...row, id: index }));
-        }
-        setReceivingData(filteredData);
-      } else {
-        console.error("Unexpected data format from /api/receiving:", data);
-        setReceivingData([]);
+      // Fetch cherry data
+      const cherryResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving?commodityType=Cherry');
+      if (!cherryResponse.ok) throw new Error(`Failed to fetch cherry data: ${cherryResponse.status}`);
+      const cherryData = await cherryResponse.json();
+      let filteredCherryData = [];
+      if (["admin", "manager"].includes(session.user.role)) {
+        filteredCherryData = cherryData.allRows.map((row, index) => ({ ...row, id: index }));
+      } else if (["staff", "receiving"].includes(session.user.role)) {
+        filteredCherryData = cherryData.todayData.map((row, index) => ({ ...row, id: index }));
       }
+      setCherryData(filteredCherryData);
+
+      // Fetch green bean data
+      const greenBeanResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving?commodityType=Green%20Bean');
+      if (!greenBeanResponse.ok) throw new Error(`Failed to fetch green bean data: ${greenBeanResponse.status}`);
+      const greenBeanData = await greenBeanResponse.json();
+      let filteredGreenBeanData = [];
+      if (["admin", "manager"].includes(session.user.role)) {
+        filteredGreenBeanData = greenBeanData.allRows.map((row, index) => ({ ...row, id: index }));
+      } else if (["staff", "receiving"].includes(session.user.role)) {
+        filteredGreenBeanData = greenBeanData.todayData.map((row, index) => ({ ...row, id: index }));
+      }
+      setGreenBeanData(filteredGreenBeanData);
     } catch (error) {
       console.error("Error fetching receiving data:", error);
-      setReceivingData([]);
+      setCherryData([]);
+      setGreenBeanData([]);
     }
-  };
+  }, [session]);
 
   const handleBagWeightChange = (index, value) => {
     const updatedBagWeights = [...bagWeights];
@@ -119,10 +150,8 @@ function ReceivingStation() {
     setBagCountInput(newValue.toString());
 
     if (newValue > bagWeights.length) {
-      // Add new empty fields
       setBagWeights([...bagWeights, ...Array(newValue - bagWeights.length).fill('')]);
     } else {
-      // Truncate to new length, preserving weights
       setBagWeights(bagWeights.slice(0, newValue));
     }
   };
@@ -140,15 +169,12 @@ function ReceivingStation() {
   const getRfidData = async () => {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/get-rfid/Receiving');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch RFID data: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Failed to fetch RFID data: ${response.status}`);
       const data = await response.json();
       if (data && typeof data.rfid === 'string' && data.rfid.trim().length > 0) {
         return data.rfid;
-      } else {
-        return '';
       }
+      return '';
     } catch (error) {
       console.error("Error getting RFID data:", error);
       return '';
@@ -158,9 +184,7 @@ function ReceivingStation() {
   const clearRfidData = async () => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/Receiving`, { method: 'DELETE' });
-      if (!response.ok) {
-        throw new Error(`Failed to clear RFID Data: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Failed to clear RFID Data: ${response.status}`);
     } catch (error) {
       console.error("Error clearing RFID Data:", error);
     }
@@ -170,7 +194,6 @@ function ReceivingStation() {
     e.preventDefault();
 
     if (!session || !session.user) {
-      console.error("No user session found.");
       setSnackbarMessage('No user session found.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
@@ -187,9 +210,7 @@ function ReceivingStation() {
 
     try {
       const rfidCheckResponse = await fetch(`https://processing-facility-backend.onrender.com/api/check-rfid/${scannedRFID}`);
-      if (!rfidCheckResponse.ok) {
-        throw new Error(`RFID check failed: ${rfidCheckResponse.status}`);
-      }
+      if (!rfidCheckResponse.ok) throw new Error(`RFID check failed: ${rfidCheckResponse.status}`);
       const rfidCheckData = await rfidCheckResponse.json();
       if (rfidCheckData.isAssigned) {
         setSnackbarMessage('RFID tag is already assigned to another batch. Please scan a different tag.');
@@ -205,6 +226,7 @@ function ReceivingStation() {
       return;
     }
 
+    const commodityType = tabValue === 0 ? 'Cherry' : 'Green Bean';
     const payload = {
       farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null,
       farmerName,
@@ -213,7 +235,10 @@ function ReceivingStation() {
       totalBags: bagWeights.length,
       type,
       producer,
-      brix: brix ? parseFloat(brix) : null,
+      brix: commodityType === 'Cherry' ? (brix ? parseFloat(brix) : null) : null,
+      processingType: commodityType === 'Green Bean' ? processingType : null,
+      grade: commodityType === 'Green Bean' ? grade : null,
+      commodityType,
       bagPayload: bagWeights.map((weight, index) => ({
         bagNumber: index + 1,
         weight: parseFloat(weight) || 0,
@@ -224,6 +249,7 @@ function ReceivingStation() {
     };
 
     try {
+      setAssigningRFID(true);
       const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
         method: 'POST',
         headers: {
@@ -240,6 +266,7 @@ function ReceivingStation() {
         setSnackbarOpen(true);
         await clearRfidData();
 
+        // Reset form
         setFarmerName('');
         setSelectedFarmerDetails(null);
         setBagWeights(['']);
@@ -250,11 +277,12 @@ function ReceivingStation() {
         setType('');
         setProducer('');
         setBrix('');
+        setProcessingType('');
+        setGrade('');
         fetchReceivingData();
       } else {
         const errorData = await response.json();
-        console.error(errorData.message || 'Error creating batch.');
-        setSnackbarMessage(errorData.message || 'Error creating batch.');
+        setSnackbarMessage(errorData.error || 'Error creating batch.');
         setSnackbarSeverity('error');
         setSnackbarOpen(true);
       }
@@ -263,6 +291,8 @@ function ReceivingStation() {
       setSnackbarMessage('Failed to communicate with the backend.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
+    } finally {
+      setAssigningRFID(false);
     }
   };
 
@@ -270,7 +300,24 @@ function ReceivingStation() {
     setSnackbarOpen(false);
   };
 
-  const columns = [
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    // Reset form when switching tabs
+    setFarmerName('');
+    setSelectedFarmerDetails(null);
+    setBagWeights(['']);
+    setNotes('');
+    setNumberOfBags(1);
+    setBagCountInput('1');
+    setTotalWeight(0);
+    setType('');
+    setProducer('');
+    setBrix('');
+    setProcessingType('');
+    setGrade('');
+  };
+
+  const cherryColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
     { field: 'receivingDateTrunc', headerName: 'Received Date', width: 160, sortable: true },
     { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
@@ -280,28 +327,14 @@ function ReceivingStation() {
       headerName: 'Cherry Price (/kg)',
       width: 180,
       sortable: true,
-      renderCell: ({ value }) => {
-        if (value == null || isNaN(value)) return 'N/A';
-        return new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-          maximumFractionDigits: 0
-        }).format(value);
-      }
+      renderCell: ({ value }) => value == null || isNaN(value) ? 'N/A' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value),
     },
     {
       field: 'total_price',
       headerName: 'Total Cherry Price',
       width: 180,
       sortable: true,
-      renderCell: ({ value }) => {
-        if (value == null || isNaN(value)) return 'N/A';
-        return new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-          maximumFractionDigits: 0
-        }).format(value);
-      }
+      renderCell: ({ value }) => value == null || isNaN(value) ? 'N/A' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value),
     },
     { field: 'type', headerName: 'Type', width: 110, sortable: true },
     { field: 'farmVarieties', headerName: 'Varieties', width: 150, sortable: true },
@@ -312,11 +345,40 @@ function ReceivingStation() {
     { field: 'createdBy', headerName: 'Created By', width: 180, sortable: true },
   ];
 
+  const greenBeanColumns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { field: 'receivingDateTrunc', headerName: 'Received Date', width: 160, sortable: true },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
+    { field: 'broker', headerName: 'Broker Name', width: 180, sortable: true },
+    {
+      field: 'price',
+      headerName: 'Green Bean Price (/kg)',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => value == null || isNaN(value) ? 'N/A' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value),
+    },
+    {
+      field: 'total_price',
+      headerName: 'Total Green Bean Price',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => value == null || isNaN(value) ? 'N/A' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value),
+    },
+    { field: 'type', headerName: 'Type', width: 110, sortable: true },
+    { field: 'farmVarieties', headerName: 'Varieties', width: 150, sortable: true },
+    { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 150, sortable: true },
+    { field: 'grade', headerName: 'Grade', width: 120, sortable: true },
+    { field: 'producer', headerName: 'Producer', width: 150, sortable: true },
+    { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
+    { field: 'createdBy', headerName: 'Created By', width: 180, sortable: true },
+  ];
+
   if (status === 'loading') {
     return <p>Loading...</p>;
   }
 
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'staff')) {
+  if (!session?.user || !['admin', 'manager', 'staff', 'receiving'].includes(session.user.role)) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.
@@ -325,205 +387,394 @@ function ReceivingStation() {
   }
 
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={4}>
-        <Card variant="outlined">
-          <CardContent>
-            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-              Receiving Station Form
-            </Typography>
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Autocomplete
-                    options={farmerList}
-                    getOptionLabel={(option) => option.farmerName}
-                    value={selectedFarmerDetails}
-                    onChange={handleFarmerChange}
-                    renderInput={(params) => (
-                      <TextField {...params} label="Farmer Name" required fullWidth />
+    <Box sx={{ width: '100%' }}>
+      <Tabs value={tabValue} onChange={handleTabChange} aria-label="receiving tabs">
+        <Tab label="Cherry Receiving" />
+        <Tab label="Green Bean Receiving" />
+      </Tabs>
+
+      <TabPanel value={tabValue} index={0}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+                  Cherry Receiving Form
+                </Typography>
+                <form onSubmit={handleSubmit}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Autocomplete
+                        options={farmerList}
+                        getOptionLabel={(option) => option.farmerName}
+                        value={selectedFarmerDetails}
+                        onChange={handleFarmerChange}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Farmer Name" required fullWidth />
+                        )}
+                      />
+                    </Grid>
+                    {selectedFarmerDetails && (
+                      <>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Farmer Address"
+                            value={selectedFarmerDetails.farmerAddress}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Bank Account"
+                            value={selectedFarmerDetails.bankAccount}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Bank Name"
+                            value={selectedFarmerDetails.bankName}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                          />
+                        </Grid>
+                      </>
                     )}
-                  />
-                </Grid>
-
-                {selectedFarmerDetails && (
-                  <>
-                    {/* <Grid item xs={12}>
-                      <TextField
-                        label="Farmer ID"
-                        value={selectedFarmerDetails.farmerID}
-                        fullWidth
-                        InputProps={{ readOnly: true }}
-                      />
-                    </Grid> */}
+                    <Grid item xs={12}>
+                      <FormControl fullWidth required>
+                        <InputLabel id="type-label">Type</InputLabel>
+                        <Select
+                          labelId="type-label"
+                          value={type}
+                          onChange={(e) => setType(e.target.value)}
+                          input={<OutlinedInput label="Type" />}
+                          MenuProps={MenuProps}
+                        >
+                          <MenuItem value="Arabica">Arabica</MenuItem>
+                          <MenuItem value="Robusta">Robusta</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth required>
+                        <InputLabel id="producer-label">Producer</InputLabel>
+                        <Select
+                          labelId="producer-label"
+                          value={producer}
+                          onChange={(e) => setProducer(e.target.value)}
+                          input={<OutlinedInput label="Producer" />}
+                          MenuProps={MenuProps}
+                        >
+                          <MenuItem value="BTM">BTM</MenuItem>
+                          <MenuItem value="HEQA">HEQA</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
                     <Grid item xs={12}>
                       <TextField
-                        label="Farmer Address"
-                        value={selectedFarmerDetails.farmerAddress}
+                        label="Number of Bags"
+                        type="number"
+                        value={bagCountInput}
+                        onChange={handleBagCountInputChange}
+                        onBlur={handleBagCountBlur}
                         fullWidth
-                        InputProps={{ readOnly: true }}
+                        required
+                        inputProps={{ min: 1 }}
                       />
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
-                        label="Bank Account"
-                        value={selectedFarmerDetails.bankAccount}
+                        label="Notes"
+                        multiline
+                        rows={4}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
                         fullWidth
-                        InputProps={{ readOnly: true }}
                       />
                     </Grid>
                     <Grid item xs={12}>
+                      <Typography variant="h6">Bag Weights</Typography>
+                    </Grid>
+                    {bagWeights.map((weight, index) => (
+                      <Grid item xs={6} md={3} key={index}>
+                        <TextField
+                          label={`Bag ${index + 1}`}
+                          type="number"
+                          value={weight}
+                          onChange={(e) => handleBagWeightChange(index, e.target.value)}
+                          fullWidth
+                          inputProps={{ step: 0.1, min: 0 }}
+                        />
+                      </Grid>
+                    ))}
+                    <Grid item xs={12}>
                       <TextField
-                        label="Bank Name"
-                        value={selectedFarmerDetails.bankName}
+                        label="Brix (°Bx)"
+                        type="number"
+                        value={brix}
+                        onChange={(e) => setBrix(e.target.value)}
                         fullWidth
-                        InputProps={{ readOnly: true }}
+                        inputProps={{ step: 0.1, min: 0 }}
                       />
                     </Grid>
-                  </>
-                )}
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="type-label">Type</InputLabel>
-                    <Select
-                      labelId="type-label"
-                      id="type"
-                      value={type}
-                      onChange={(e) => setType(e.target.value)}
-                      input={<OutlinedInput label="Type" />}
-                      MenuProps={MenuProps}
-                    >
-                      <MenuItem value="Arabica">Arabica</MenuItem>
-                      <MenuItem value="Robusta">Robusta</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="producer-label">Producer</InputLabel>
-                    <Select
-                      labelId="producer-label"
-                      id="producer"
-                      value={producer}
-                      onChange={(e) => setProducer(e.target.value)}
-                      input={<OutlinedInput label="Producer" />}
-                      MenuProps={MenuProps}
-                    >
-                      <MenuItem value="BTM">BTM</MenuItem>
-                      <MenuItem value="HEQA">HEQA</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Number of Bags"
-                    type="number"
-                    value={bagCountInput}
-                    onChange={handleBagCountInputChange}
-                    onBlur={handleBagCountBlur}
-                    fullWidth
-                    required
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Notes"
-                    multiline
-                    rows={4}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    fullWidth
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="h6">Bag Weights</Typography>
-                </Grid>
-                {bagWeights.map((weight, index) => (
-                  <Grid item xs={6} md={3} key={index}>
-                    <TextField
-                      label={`Bag ${index + 1}`}
-                      type="number"
-                      value={weight}
-                      onChange={(e) => handleBagWeightChange(index, e.target.value)}
-                      fullWidth
-                      inputProps={{ step: 0.1, min: 0 }}
-                    />
+                    <Grid item xs={12}>
+                      <Typography variant="h6">Total Weight: {totalWeight.toFixed(2)} kg</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="submit"
+                        disabled={assigningRFID}
+                        sx={{ mr: 2 }}
+                      >
+                        Submit
+                      </Button>
+                    </Grid>
                   </Grid>
-                ))}
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Brix (°Bx)"
-                    type="number"
-                    value={brix}
-                    onChange={(e) => setBrix(e.target.value)}
-                    fullWidth
-                    inputProps={{ step: 0.1, min: 0 }}
+                </form>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  Cherry Receiving Data
+                </Typography>
+                <div style={{ height: 800, width: "100%" }}>
+                  <DataGrid
+                    rows={cherryData}
+                    columns={cherryColumns}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                    disableSelectionOnClick
+                    sortingOrder={["asc", "desc"]}
+                    slots={{ toolbar: GridToolbar }}
+                    autosizeOnMount
+                    autosizeOptions={{
+                      includeHeaders: true,
+                      includeOutliers: true,
+                      expand: true,
+                    }}
+                    rowHeight={35}
                   />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="h6">Total Weight: {totalWeight.toFixed(2)} kg</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="submit"
-                    disabled={assigningRFID}
-                    sx={{ mr: 2 }}
-                  >
-                    Submit
-                  </Button>
-                </Grid>
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {["admin", "manager", "receiving", "staff"].includes(session?.user?.role) && (
-        <Grid item xs={12} md={8}>
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h5" gutterBottom>
-                Receiving Data
-              </Typography>
-              <div style={{ height: 800, width: "100%" }}>
-                <DataGrid
-                  rows={receivingData}
-                  columns={columns}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 20]}
-                  disableSelectionOnClick
-                  sortingOrder={["asc", "desc"]}
-                  slots={{ toolbar: GridToolbar }}
-                  autosizeOnMount
-                  autosizeOptions={{
-                    includeHeaders: true,
-                    includeOutliers: true,
-                    expand: true,
-                  }}
-                  rowHeight={35}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      )}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={1}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+                  Green Bean Receiving Form
+                </Typography>
+                <form onSubmit={handleSubmit}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Autocomplete
+                        options={farmerList}
+                        getOptionLabel={(option) => option.farmerName}
+                        value={selectedFarmerDetails}
+                        onChange={handleFarmerChange}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Farmer Name" required fullWidth />
+                        )}
+                      />
+                    </Grid>
+                    {selectedFarmerDetails && (
+                      <>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Farmer Address"
+                            value={selectedFarmerDetails.farmerAddress}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Bank Account"
+                            value={selectedFarmerDetails.bankAccount}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Bank Name"
+                            value={selectedFarmerDetails.bankName}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                          />
+                        </Grid>
+                      </>
+                    )}
+                    <Grid item xs={12}>
+                      <FormControl fullWidth required>
+                        <InputLabel id="type-label">Type</InputLabel>
+                        <Select
+                          labelId="type-label"
+                          value={type}
+                          onChange={(e) => setType(e.target.value)}
+                          input={<OutlinedInput label="Type" />}
+                          MenuProps={MenuProps}
+                        >
+                          <MenuItem value="Arabica">Arabica</MenuItem>
+                          <MenuItem value="Robusta">Robusta</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth required>
+                        <InputLabel id="producer-label">Producer</InputLabel>
+                        <Select
+                          labelId="producer-label"
+                          value={producer}
+                          onChange={(e) => setProducer(e.target.value)}
+                          input={<OutlinedInput label="Producer" />}
+                          MenuProps={MenuProps}
+                        >
+                          <MenuItem value="BTM">BTM</MenuItem>
+                          <MenuItem value="HEQA">HEQA</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth required>
+                        <InputLabel id="processing-type-label">Processing Type</InputLabel>
+                        <Select
+                          labelId="processing-type-label"
+                          value={processingType}
+                          onChange={(e) => setProcessingType(e.target.value)}
+                          input={<OutlinedInput label="Processing Type" />}
+                          MenuProps={MenuProps}
+                        >
+                          <MenuItem value="Washed">Washed</MenuItem>
+                          <MenuItem value="Natural">Natural</MenuItem>
+                          <MenuItem value="Honey">Honey</MenuItem>
+                          <MenuItem value="Anaerobic">Anaerobic</MenuItem>
+                          <MenuItem value="CM Natural">CM Natural</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth required>
+                        <InputLabel id="grade-label">Grade</InputLabel>
+                        <Select
+                          labelId="grade-label"
+                          value={grade}
+                          onChange={(e) => setGrade(e.target.value)}
+                          input={<OutlinedInput label="Grade" />}
+                          MenuProps={MenuProps}
+                        >
+                          <MenuItem value="Specialty Grade">Specialty Grade</MenuItem>
+                          <MenuItem value="Grade 1">Grade 1</MenuItem>
+                          <MenuItem value="Grade 2">Grade 2</MenuItem>
+                          <MenuItem value="Grade 3">Grade 3</MenuItem>
+                          <MenuItem value="Grade 4">Grade 4</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Number of Bags"
+                        type="number"
+                        value={bagCountInput}
+                        onChange={handleBagCountInputChange}
+                        onBlur={handleBagCountBlur}
+                        fullWidth
+                        required
+                        inputProps={{ min: 1 }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Notes"
+                        multiline
+                        rows={4}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="h6">Bag Weights</Typography>
+                    </Grid>
+                    {bagWeights.map((weight, index) => (
+                      <Grid item xs={6} md={3} key={index}>
+                        <TextField
+                          label={`Bag ${index + 1}`}
+                          type="number"
+                          value={weight}
+                          onChange={(e) => handleBagWeightChange(index, e.target.value)}
+                          fullWidth
+                          inputProps={{ step: 0.1, min: 0 }}
+                        />
+                      </Grid>
+                    ))}
+                    <Grid item xs={12}>
+                      <Typography variant="h6">Total Weight: {totalWeight.toFixed(2)} kg</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        type="submit"
+                        disabled={assigningRFID}
+                        sx={{ mr: 2 }}
+                      >
+                        Submit
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </form>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  Green Bean Receiving Data
+                </Typography>
+                <div style={{ height: 800, width: "100%" }}>
+                  <DataGrid
+                    rows={greenBeanData}
+                    columns={greenBeanColumns}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                    disableSelectionOnClick
+                    sortingOrder={["asc", "desc"]}
+                    slots={{ toolbar: GridToolbar }}
+                    autosizeOnMount
+                    autosizeOptions={{
+                      includeHeaders: true,
+                      includeOutliers: true,
+                      expand: true,
+                    }}
+                    rowHeight={35}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
 
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </Grid>
+    </Box>
   );
 }
 
