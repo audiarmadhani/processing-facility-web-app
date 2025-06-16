@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -86,7 +86,7 @@ function ReceivingStation() {
 
   const fetchFarmerList = async () => {
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/farmer');
+      const response = await fetch(`${API_BASE_URL}/api/farmer`);
       if (!response.ok) throw new Error('Failed to fetch farmers');
       const data = await response.json();
       if (data && Array.isArray(data.allRows)) {
@@ -104,7 +104,7 @@ function ReceivingStation() {
 
     try {
       // Fetch cherry data
-      const cherryResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving?commodityType=Cherry');
+      const cherryResponse = await fetch(`${API_BASE_URL}/api/receiving?commodityType=Cherry`);
       if (!cherryResponse.ok) throw new Error(`Failed to fetch cherry data: ${cherryResponse.status}`);
       const cherryData = await cherryResponse.json();
       let filteredCherryData = [];
@@ -116,7 +116,7 @@ function ReceivingStation() {
       setCherryData(filteredCherryData);
 
       // Fetch green bean data
-      const greenBeanResponse = await fetch('https://processing-facility-backend.onrender.com/api/receiving?commodityType=Green%20Bean');
+      const greenBeanResponse = await fetch(`${API_BASE_URL}/api/receiving?commodityType=Green%20Bean`);
       if (!greenBeanResponse.ok) throw new Error(`Failed to fetch green bean data: ${greenBeanResponse.status}`);
       const greenBeanData = await greenBeanResponse.json();
       let filteredGreenBeanData = [];
@@ -168,7 +168,7 @@ function ReceivingStation() {
 
   const getRfidData = async () => {
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/get-rfid/Receiving');
+      const response = await fetch(`${API_BASE_URL}/api/get-rfid/Receiving`);
       if (!response.ok) throw new Error(`Failed to fetch RFID data: ${response.status}`);
       const data = await response.json();
       if (data && typeof data.rfid === 'string' && data.rfid.trim().length > 0) {
@@ -183,7 +183,7 @@ function ReceivingStation() {
 
   const clearRfidData = async () => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/Receiving`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/api/clear-rfid/Receiving`, { method: 'DELETE' });
       if (!response.ok) throw new Error(`Failed to clear RFID Data: ${response.status}`);
     } catch (error) {
       console.error("Error clearing RFID Data:", error);
@@ -200,6 +200,46 @@ function ReceivingStation() {
       return;
     }
 
+    // Validation
+    if (!selectedFarmerDetails) {
+      setSnackbarMessage('Please select a farmer.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (!type) {
+      setSnackbarMessage('Please select a type.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (!producer) {
+      setSnackbarMessage('Please select a producer.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (bagWeights.some(weight => !weight || parseFloat(weight) <= 0)) {
+      setSnackbarMessage('Please enter valid weights for all bags.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (tabValue === 1) { // Green Bean validation
+      if (!processingType) {
+        setSnackbarMessage('Please select a processing type.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+      if (!grade) {
+        setSnackbarMessage('Please select a grade.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+    }
+
     const scannedRFID = await getRfidData();
     if (!scannedRFID) {
       setSnackbarMessage('Please scan an RFID tag before submitting.');
@@ -209,7 +249,7 @@ function ReceivingStation() {
     }
 
     try {
-      const rfidCheckResponse = await fetch(`https://processing-facility-backend.onrender.com/api/check-rfid/${scannedRFID}`);
+      const rfidCheckResponse = await fetch(`${API_BASE_URL}/api/check-rfid/${scannedRFID}`);
       if (!rfidCheckResponse.ok) throw new Error(`RFID check failed: ${rfidCheckResponse.status}`);
       const rfidCheckData = await rfidCheckResponse.json();
       if (rfidCheckData.isAssigned) {
@@ -228,8 +268,8 @@ function ReceivingStation() {
 
     const commodityType = tabValue === 0 ? 'Cherry' : 'Green Bean';
     const payload = {
-      farmerID: selectedFarmerDetails ? selectedFarmerDetails.farmerID : null,
-      farmerName,
+      farmerID: selectedFarmerDetails.farmerID,
+      farmerName: selectedFarmerDetails.farmerName,
       notes,
       weight: totalWeight,
       totalBags: bagWeights.length,
@@ -250,7 +290,8 @@ function ReceivingStation() {
 
     try {
       setAssigningRFID(true);
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving', {
+      const endpoint = commodityType === 'Cherry' ? `${API_BASE_URL}/api/receiving` : `${API_BASE_URL}/api/receiving-green-beans`;
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
