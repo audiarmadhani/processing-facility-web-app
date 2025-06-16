@@ -79,7 +79,7 @@ const TransportStation = () => {
   const fetchFarmers = async () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/farmer');
-      setFarmers(response.data.allRows || []);
+      setFarmers(response.data.farmershipperRows || []);
     } catch (error) {
       console.error('Error fetching farmers:', error);
       setSnackbarMessage('Failed to fetch farmers.');
