@@ -68,7 +68,7 @@ function FarmerInputStation() {
     'CIMB Niaga', 'OCBC NISP', 'Permata Bank', 'Danamon', 'BPD Bali'
   ];
 
-  const brokerOptions = ['Nyoman', 'Agus TS', 'Ketut Darpa'];
+  const brokerOptions = ['Nyoman', 'Agus TS', 'Ketut Darpa', 'Kanggo'];
 
   const paymentMethodOptions = [
     'Bank Transfer to Farmer', 'Bank Transfer to Broker',
