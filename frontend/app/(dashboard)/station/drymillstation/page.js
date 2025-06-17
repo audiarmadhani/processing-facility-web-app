@@ -154,6 +154,7 @@ const DryMillStation = () => {
           totalBags: batch.totalBags || "N/A",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
+          farmVarieties: batch.farmVarieties || 'N/A',
           isStored: batch.isStored,
           batchType: batch.batchType || "Cherry", // New field for green beans
         }));
@@ -911,6 +912,9 @@ const DryMillStation = () => {
   const parentColumns = useMemo(
     () => [
       { field: "batchNumber", headerName: "Batch Number", width: 160 },
+      { field: "farmerName", headerName: "Farmer Name", width: 160 },
+      { field: "farmVarieties", headerName: "Farm Varieties", width: 160 },
+      { field: "type", headerName: "Type", width: 120 },
       {
         field: "status",
         headerName: "Status",
@@ -951,7 +955,6 @@ const DryMillStation = () => {
         width: 200,
         valueGetter: (params) => (params.value || []).join(", "),
       },
-      { field: "type", headerName: "Type", width: 120 },
       { field: "batchType", headerName: "Batch Type", width: 120 }, // New column
       { field: "totalBags", headerName: "Total Bags", width: 120 },
       { field: "notes", headerName: "Notes", width: 180 },

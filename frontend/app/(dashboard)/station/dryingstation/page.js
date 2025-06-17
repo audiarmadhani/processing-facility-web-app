@@ -94,7 +94,9 @@ const DryingStation = () => {
           producer: batch.producer || 'N/A',
           productLine: batch.productLine || 'N/A',
           processingType: batch.processingType || 'N/A',
-          quality: batch.quality || 'N/A'
+          quality: batch.quality || 'N/A',
+          farmerName: batch.farmerName || 'N/A',
+          farmVarieties: batch.farmVarieties || 'N/A',
         };
       });
 
@@ -228,6 +230,8 @@ const DryingStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 160 },
+    { field: 'farmVarieties', headerName: 'Farm Varieties', width: 160 },
     {
       field: 'status',
       headerName: 'Status',

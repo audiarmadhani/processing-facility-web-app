@@ -129,6 +129,9 @@ const WetmillStation = () => {
         );
       },
     },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 160 },
+    { field: 'type', headerName: 'Type', width: 140 },
+    { field: 'farmVarieties', headerName: 'Farm Varieties', width: 160 },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180 },
     { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180 },
     { field: 'totalBags', headerName: 'Total Bags', width: 100 },
