@@ -1016,7 +1016,6 @@ router.get('/dry-mill-data', async (req, res) => {
         ARRAY_AGG(bd.weight) FILTER (WHERE bd.weight IS NOT NULL) AS bagWeights,
         pp."storedDate" AS "storedDate",
         rd.rfid,
-        fm."farmerName",
         fm."farmVarieties"
       FROM "ReceivingData" rd
       LEFT JOIN "DryMillData" dm ON rd."batchNumber" = dm."batchNumber"
@@ -1036,7 +1035,6 @@ router.get('/dry-mill-data', async (req, res) => {
         pp."productLine", pp."processingType",
         pp."referenceNumber", pp.notes, rd.notes, rd."type",
         pp."storedDate", rd.rfid,
-        fm."farmerName",
         fm."farmVarieties"
       ORDER BY dm."entered_at" DESC
     `, {

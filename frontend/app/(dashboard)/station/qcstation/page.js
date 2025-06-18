@@ -1019,8 +1019,8 @@ const QCStation = () => {
                 >
                   <MenuItem value="Cash to Farmer">Cash to Farmer</MenuItem>
                   <MenuItem value="Cash to Broker">Cash to Broker</MenuItem>
-                  <MenuItem value="Bank Transfer">Bank Transfer to Farmer</MenuItem>
-                  <MenuItem value="Bank Transfer">Bank Transfer to Broker</MenuItem>
+                  <MenuItem value="Bank Transfer to Farmer">Bank Transfer to Farmer</MenuItem>
+                  <MenuItem value="Bank Transfer to Broker">Bank Transfer to Broker</MenuItem>
                   <MenuItem value="Check">Contract</MenuItem>
                 </Select>
               </FormControl>
