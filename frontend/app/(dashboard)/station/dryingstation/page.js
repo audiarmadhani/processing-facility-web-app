@@ -51,7 +51,7 @@ const DryingStation = () => {
   const [historicalEnvData, setHistoricalEnvData] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
 
-  const dryingAreas = ["Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", "Drying Area 5", "Drying Room"];
+  const dryingAreas = ["Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", "Drying Area 5", "Drying Sun Dry", "Drying Room"];
   const deviceMapping = {
     "Drying Area 1": "GH_SENSOR_1",
     "Drying Area 2": "GH_SENSOR_2",
