@@ -20,7 +20,7 @@ import {
   ScatterController,
   TimeScale
 } from 'chart.js';
-import 'chartjs-adapter-date-fns'; // For time scale support
+import 'chartjs-adapter-date-fns';
 
 ChartJS.register(
   CategoryScale, 
@@ -34,13 +34,12 @@ ChartJS.register(
   TimeScale
 );
 
-
 const DryingStation = () => {
   const { data: session, status } = useSession();
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-  const [dryingData, setDryingData] = useState([]);
+  const [dryingData, setDryingData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -80,25 +79,44 @@ const DryingStation = () => {
       ]);
       const pendingPreprocessingData = qcResult.distinctRows || [];
 
-      const formattedData = pendingPreprocessingData.map(batch => {
-        const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber);
-        const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-        return {
-          ...batch,
-          status: latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying',
-          dryingArea: latestEntry?.dryingArea || 'N/A',
-          startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
-          endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-          weight: batch.weight || 'N/A',
-          type: batch.type || 'N/A',
-          producer: batch.producer || 'N/A',
-          productLine: batch.productLine || 'N/A',
-          processingType: batch.processingType || 'N/A',
-          quality: batch.quality || 'N/A',
-          farmerName: batch.farmerName || 'N/A',
-          farmVarieties: batch.farmVarieties || 'N/A',
-        };
-      });
+      const formattedData = dryingAreas.reduce((acc, area) => {
+        acc[area] = pendingPreprocessingData
+          .filter(batch => {
+            const batchDryingData = dryingDataRaw.find(data => data.batchNumber === batch.batchNumber && data.dryingArea === area);
+            return !!batchDryingData;
+          })
+          .map(batch => {
+            const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber && data.dryingArea === area);
+            const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            return {
+              ...batch,
+              status: latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying',
+              dryingArea: latestEntry?.dryingArea || 'N/A',
+              startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
+              endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
+              weight: batch.weight || 'N/A',
+              type: batch.type || 'N/A',
+              producer: batch.producer || 'N/A',
+              productLine: batch.productLine || 'N/A',
+              processingType: batch.processingType || 'N/A',
+              quality: batch.quality || 'N/A',
+              farmerName: batch.farmerName || 'N/A',
+              farmVarieties: batch.farmVarieties || 'N/A',
+            };
+          })
+          .sort((a, b) => {
+            const statusOrder = { 'In Drying': 0, 'Not in Drying': 1, 'Dried': 2 };
+            const statusA = statusOrder[a.status] || 3;
+            const statusB = statusOrder[b.status] || 3;
+            if (statusA !== statusB) return statusA - statusB;
+            if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate);
+            const typeOrder = { 'Arabica': 0, 'Robusta': 1 };
+            const typeA = typeOrder[a.type] ?? 2;
+            const typeB = typeOrder[b.type] ?? 2;
+            return typeA - typeB;
+          });
+        return acc;
+      }, {});
 
       setDryingData(formattedData);
       setGreenhouseData(greenhouseResult.reduce((acc, { device_id, temperature, humidity }) => ({
@@ -266,60 +284,52 @@ const DryingStation = () => {
     { field: 'quality', headerName: 'Quality', width: 100 }
   ];
 
-  const getAreaData = (area) => {
-    return dryingData
-      .filter(batch => batch.dryingArea === area)
-      .sort((a, b) => {
-        const statusOrder = { 'In Drying': 0, 'Not in Drying': 1, 'Dried': 2 };
-        const statusA = statusOrder[a.status] || 3;
-        const statusB = statusOrder[b.status] || 3;
-        if (statusA !== statusB) return statusA - statusB;
-        if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate);
-        const typeOrder = { 'Arabica': 0, 'Robusta': 1 };
-        const typeA = typeOrder[a.type] ?? 2;
-        const typeB = typeOrder[b.type] ?? 2;
-        return typeA - typeB;
-      });
-  };
-
   const renderDataGrid = (area) => {
-    const areaData = getAreaData(area);
+    const areaData = dryingData[area] || [];
     const deviceId = deviceMapping[area];
     const envData = greenhouseData[deviceId] || { temperature: 0, humidity: 0 };
     return (
       <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom>
-          {area}
-        </Typography>
-        <Typography variant="body2" gutterBottom>
-          Temp: {envData.temperature}°C | Humidity: {envData.humidity}%
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handleEnvDetailsClick(deviceId)}
-            sx={{ ml: 2 }}
-          >
-            See Details
-          </Button>
-        </Typography>
-        <div style={{ height: 400, width: '100%' }}>
-          {areaData.length === 0 ? (
-            <Typography variant="body1" align="center" color="textSecondary" sx={{ pt: '180px' }}>
-              No batches in {area}
+        <Card variant="outlined" sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              {area}
             </Typography>
-          ) : (
-            <DataGrid
-              rows={areaData}
-              columns={columns}
-              pageSizeOptions={[5, 10, 20]}
-              disableRowSelectionOnClick
-              getRowId={row => row.batchNumber}
-              slots={{ toolbar: GridToolbar }}
-              autoHeight
-              rowHeight={35}
-            />
-          )}
-        </div>
+            <Typography variant="body2" gutterBottom>
+              Temp: {envData.temperature}°C | Humidity: {envData.humidity}%
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleEnvDetailsClick(deviceId)}
+                sx={{ ml: 2 }}
+              >
+                See Details
+              </Button>
+            </Typography>
+            <div style={{ height: 400, width: '100%', overflow: 'auto' }}>
+              {areaData.length === 0 ? (
+                <Typography variant="body1" align="center" color="textSecondary" sx={{ pt: '180px' }}>
+                  No batches in {area}
+                </Typography>
+              ) : (
+                <DataGrid
+                  rows={areaData}
+                  columns={columns}
+                  pageSizeOptions={[5, 10, 20]}
+                  disableRowSelectionOnClick
+                  getRowId={row => row.batchNumber}
+                  slots={{ toolbar: GridToolbar }}
+                  sx={{ 
+                    maxHeight: 400, 
+                    border: '1px solid rgba(0,0,0,0.12)', 
+                    '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
+                  }}
+                  rowHeight={35}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </Grid>
     );
   };
@@ -376,9 +386,7 @@ const DryingStation = () => {
   const envChartData = {
     labels: historicalEnvData.map(d => {
       const date = new Date(d.recorded_at);
-      // Adjust UTC to WITA (+8 hours)
       date.setHours(date.getHours() + 8);
-      // Format as YYYY-MM-DD HH:mm
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     }),
     datasets: [
