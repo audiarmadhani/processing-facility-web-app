@@ -298,18 +298,19 @@ const DryingStation = () => {
     setHistoricalEnvData([]);
   };
 
+
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 120 },
-    { field: 'farmerName', headerName: 'Farmer Name', width: 140 },
-    { field: 'farmVarieties', headerName: 'Type', width: 140 },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 160 },
+    { field: 'farmVarieties', headerName: 'Farm Varieties', width: 160 },
     {
       field: 'status',
       headerName: 'Status',
-      width: 90,
+      width: 100,
       renderCell: ({ value }) => (
         <Chip
           label={value}
-          color={value === 'In Drying' ? 'primary' : value === 'Drying' ? 'success' : 'default'}
+          color={value === 'In Drying' ? 'primary' : value === 'Dried' ? 'success' : 'default'}
           size="small"
           sx={{ borderRadius: '16px', fontWeight: 'medium' }}
         />
@@ -318,7 +319,7 @@ const DryingStation = () => {
     {
       field: 'details',
       headerName: 'Details',
-      width: 80,
+      width: 110,
       sortable: false,
       renderCell: ({ row }) => (
         <Button variant="outlined" size="small" onClick={() => handleDetailsClick(row)}>
@@ -329,7 +330,7 @@ const DryingStation = () => {
     {
       field: 'move',
       headerName: 'Move',
-      width: 80,
+      width: 110,
       sortable: false,
       renderCell: ({ row }) => (
         <Button
@@ -343,13 +344,13 @@ const DryingStation = () => {
         </Button>
       )
     },
-    { field: 'startDryingDate', headerName: 'Start Date', width: 100 },
-    { field: 'endDryingDate', headerName: 'End Date', width: 100 },
-    { field: 'weight', headerName: 'Weight', width: 80 },
-    { field: 'type', headerName: 'Type', width: 80 },
-    { field: 'producer', headerName: 'Producer', width: 80 },
-    { field: 'productLine', headerName: 'Product Line', width: 120 },
-    { field: 'processingType', headerName: 'Processing Type', width: 100 },
+    { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
+    { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
+    { field: 'weight', headerName: 'Weight', width: 100 },
+    { field: 'type', headerName: 'Type', width: 90 },
+    { field: 'producer', headerName: 'Producer', width: 90 },
+    { field: 'productLine', headerName: 'Product Line', width: 150 },
+    { field: 'processingType', headerName: 'Processing Type', width: 200 },
     { field: 'quality', headerName: 'Quality', width: 100 }
   ];
 
