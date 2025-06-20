@@ -80,7 +80,7 @@ const DryingStation = () => {
         greenhouseResponse.json()
       ]);
       const pendingPreprocessingData = qcResult.distinctRows || [];
-
+  
       const formattedData = dryingAreas.reduce((acc, area) => {
         acc[area] = pendingPreprocessingData
           .filter(batch => {
@@ -112,7 +112,9 @@ const DryingStation = () => {
             const statusA = statusOrder[a.status] || 3;
             const statusB = statusOrder[b.status] || 3;
             if (statusA !== statusB) return statusA - statusB;
-            if (a.startDryingDate !== b.startDryingDate) return a.startDryingDate.localeCompare(b.startDryingDate);
+            const dateA = a.startDryingDate === 'N/A' ? '' : a.startDryingDate;
+            const dateB = b.startDryingDate === 'N/A' ? '' : b.startDryingDate;
+            if (dateA !== dateB) return dateA.localeCompare(dateB);
             const typeOrder = { 'Arabica': 0, 'Robusta': 1 };
             const typeA = typeOrder[a.type] ?? 2;
             const typeB = typeOrder[b.type] ?? 2;
@@ -120,7 +122,7 @@ const DryingStation = () => {
           });
         return acc;
       }, {});
-
+  
       setDryingData(formattedData);
       setGreenhouseData(greenhouseResult.reduce((data, { device_id, temperature, humidity }) => ({
         ...data,
