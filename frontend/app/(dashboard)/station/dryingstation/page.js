@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import {
   Button, Typography, Snackbar, Alert, Grid, Card, CardContent, CircularProgress, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel,
-  Table, TableBody, TableCell, TableHead, TableRow, Checkbox
+  Table, TableBody, TableCell, TableHead, TableRow
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { Line } from 'react-chartjs-2';
@@ -42,7 +42,6 @@ const DryingStation = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [dryingData, setDryingData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [areaLoading, setAreaLoading] = useState({}); // Per-area loading state
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [dryingMeasurements, setDryingMeasurements] = useState([]);
@@ -60,10 +59,6 @@ const DryingStation = () => {
   const [newBagNumber, setNewBagNumber] = useState(1);
   const [newProcessingType, setNewProcessingType] = useState('');
   const [newWeightDate, setNewWeightDate] = useState('');
-  const [editingWeightId, setEditingWeightId] = useState(null);
-  const [selectedWeightIds, setSelectedWeightIds] = useState([]);
-  const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
-  const [deletedWeights, setDeletedWeights] = useState([]);
 
   const dryingAreas = ["Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", "Drying Area 5", "Drying Sun Dry", "Drying Room"];
   const deviceMapping = {
@@ -75,70 +70,54 @@ const DryingStation = () => {
     "Drying Room": "GH_SENSOR_6"
   };
 
-  const fetchDryingData = useCallback(async () => {
+  const fetchDryingData = async () => {
     setIsLoading(true);
-    // Initialize loading state for each area
-    const initialAreaLoading = dryingAreas.reduce((acc, area) => ({ ...acc, [area]: true }), {});
-    setAreaLoading(initialAreaLoading);
-
     try {
-      const [qcResponse, dryingResponse, greenhouseResponse, weightsResponse] = await Promise.all([
+      const [qcResponse, dryingResponse, greenhouseResponse, weightResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
         fetch('https://processing-facility-backend.onrender.com/api/drying-data'),
         fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest'),
-        fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurements/aggregated')
+        fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurements/all') // Assume an endpoint to fetch all weight measurements
       ]);
-
-      if (!qcResponse.ok || !dryingResponse.ok || !greenhouseResponse.ok || !weightsResponse.ok) {
-        throw new Error('Failed to fetch data from one or more endpoints');
+      if (!qcResponse.ok || !dryingResponse.ok || !greenhouseResponse.ok) {
+        throw new Error('Failed to fetch data');
       }
-
-      const [qcResult, dryingDataRaw, greenhouseResult, weightsResult] = await Promise.all([
+      const [qcResult, dryingDataRaw, greenhouseResult, weightResult] = await Promise.all([
         qcResponse.json(),
         dryingResponse.json(),
         greenhouseResponse.json(),
-        weightsResponse.json()
+        weightResponse.ok ? weightResponse.json() : []
       ]);
+      const pendingPreprocessingData = qcResult.distinctRows || [];
 
-      // Validate and filter qc data
-      const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 
-        batch && batch.batchNumber && typeof batch.batchNumber === 'string'
-      );
-
-      // Create batch weights lookup from aggregated weights
+      // Calculate total weight per batch for the latest measurement date
       const batchWeights = {};
-      weightsResult.forEach(({ batchNumber, total_weight, measurement_date }) => {
-        if (batchNumber) {
-          batchWeights[batchNumber] = { total: total_weight, date: measurement_date };
-        } else {
-          console.warn('Skipping weight record with undefined batchNumber:', { total_weight, measurement_date });
+      weightResult.forEach(measurement => {
+        const { batchNumber, weight, measurement_date } = measurement;
+        if (!batchWeights[batchNumber] || new Date(measurement_date) > new Date(batchWeights[batchNumber].date)) {
+          batchWeights[batchNumber] = { date: measurement_date, total: 0 };
+        }
+        if (new Date(measurement_date).getTime() === new Date(batchWeights[batchNumber].date).getTime()) {
+          batchWeights[batchNumber].total += weight;
         }
       });
 
-      // Format data per drying area
       const formattedData = dryingAreas.reduce((acc, area) => {
         acc[area] = pendingPreprocessingData
           .filter(batch => {
-            const batchDryingData = dryingDataRaw.find(data => 
-              data.batchNumber === batch.batchNumber && data.dryingArea === area
-            );
+            const batchDryingData = dryingDataRaw.find(data => data.batchNumber === batch.batchNumber && data.dryingArea === area);
             return !!batchDryingData;
           })
           .map(batch => {
-            const batchDryingData = dryingDataRaw.filter(data => 
-              data.batchNumber === batch.batchNumber && data.dryingArea === area
-            );
-            const latestEntry = batchDryingData.sort((a, b) => 
-              new Date(b.created_at) - new Date(a.created_at)
-            )[0];
-
+            const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber && data.dryingArea === area);
+            const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
             return {
               ...batch,
               status: latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying',
               dryingArea: latestEntry?.dryingArea || 'N/A',
               startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
               endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-              weight: batchWeights[batch.batchNumber] ? batchWeights[batch.batchNumber].total.toFixed(2) : 'N/A',
+              weight: batchWeights[batch.batchNumber] ? batchWeights[batchNumber].total.toFixed(2) : 'N/A',
               type: batch.type || 'N/A',
               producer: batch.producer || 'N/A',
               productLine: batch.productLine || 'N/A',
@@ -171,15 +150,13 @@ const DryingStation = () => {
         [device_id]: { temperature: temperature || 0, humidity: humidity || 0 }
       }), {}));
     } catch (error) {
-      console.error('Error in fetchDryingData:', error);
       setSnackbarMessage(error.message || 'Error fetching data');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     } finally {
       setIsLoading(false);
-      setAreaLoading(dryingAreas.reduce((acc, area) => ({ ...acc, [area]: false }), {}));
     }
-  }, [dryingAreas]);
+  };
 
   const fetchDryingMeasurements = async (batchNumber) => {
     try {
@@ -207,19 +184,6 @@ const DryingStation = () => {
     }
   };
 
-  const fetchMaxBagNumber = async (batchNumber, processingType) => {
-    try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-weight-measurements/${batchNumber}/${processingType}/max-bag-number`);
-      if (!response.ok) throw new Error('Failed to fetch max bag number');
-      const { maxBagNumber } = await response.json();
-      setNewBagNumber(maxBagNumber + 1);
-    } catch (error) {
-      setSnackbarMessage(error.message || 'Failed to fetch max bag number, starting at 1');
-      setSnackbarSeverity('warning');
-      setNewBagNumber(1);
-    }
-  };
-
   const fetchHistoricalEnvData = async (device_id) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/greenhouse-historical/${device_id}`);
@@ -228,160 +192,6 @@ const DryingStation = () => {
       setHistoricalEnvData(data);
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to fetch historical environmental data');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-    }
-  };
-
-  const handleAddOrUpdateBagWeight = async () => {
-    if (!newBagWeight || isNaN(newBagWeight) || newBagWeight <= 0) {
-      setSnackbarMessage('Enter a valid weight (positive number)');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-    if (!newProcessingType) {
-      setSnackbarMessage('Select a processing type');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-    if (!newWeightDate) {
-      setSnackbarMessage('Select a measurement date');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-
-    const selectedDate = new Date(newWeightDate);
-    const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
-    const now = new Date();
-
-    if (selectedDate > now) {
-      setSnackbarMessage('Measurement date cannot be in the future');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-
-    if (startDryingDate && selectedDate < startDryingDate) {
-      setSnackbarMessage('Measurement date cannot be before the start drying date');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-
-    try {
-      if (editingWeightId) {
-        // Update existing weight
-        const payload = {
-          weight: parseFloat(newBagWeight),
-          measurement_date: newWeightDate
-        };
-        const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-weight-measurement/${editingWeightId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error('Failed to update weight measurement');
-        const result = await response.json();
-        setWeightMeasurements(weightMeasurements.map(m => m.id === editingWeightId ? result.measurement : m));
-        setSnackbarMessage(`Bag ${newBagNumber} weight updated successfully`);
-        setSnackbarSeverity('success');
-        setEditingWeightId(null);
-      } else {
-        // Add new weight
-        const payload = {
-          batchNumber: selectedBatch.batchNumber,
-          processingType: newProcessingType,
-          bagNumber: newBagNumber,
-          weight: parseFloat(newBagWeight),
-          measurement_date: newWeightDate
-        };
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurement', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error('Failed to save weight measurement');
-        const result = await response.json();
-        setWeightMeasurements([...weightMeasurements, result.measurement]);
-        setNewBagNumber(newBagNumber + 1);
-        setSnackbarMessage(`Bag ${newBagNumber} weight added successfully`);
-        setSnackbarSeverity('success');
-      }
-      setNewBagWeight('');
-      setNewWeightDate(new Date().toISOString().slice(0, 10));
-      await fetchDryingData(); // Refresh to update total weight
-      setOpenSnackbar(true);
-    } catch (error) {
-      setSnackbarMessage(error.message || 'Failed to save weight measurement');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-    }
-  };
-
-  const handleEditBagWeight = (measurement) => {
-    setEditingWeightId(measurement.id);
-    setNewProcessingType(measurement.processingType);
-    setNewBagNumber(measurement.bagNumber);
-    setNewBagWeight(measurement.weight.toString());
-    setNewWeightDate(new Date(measurement.measurement_date).toISOString().slice(0, 10));
-  };
-
-  const handleDeleteBagWeights = async () => {
-    try {
-      const weightsToDelete = weightMeasurements.filter(m => selectedWeightIds.includes(m.id));
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurements/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: selectedWeightIds })
-      });
-      if (!response.ok) throw new Error('Failed to delete weight measurements');
-      const result = await response.json();
-      setWeightMeasurements(weightMeasurements.filter(m => !selectedWeightIds.includes(m.id)));
-      setDeletedWeights(weightsToDelete);
-      setSelectedWeightIds([]);
-      setOpenDeleteConfirmDialog(false);
-      setSnackbarMessage(result.message);
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true);
-      await fetchDryingData(); // Refresh to update total weight
-    } catch (error) {
-      setSnackbarMessage(error.message || 'Failed to delete weight measurements');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-    }
-  };
-
-  const handleUndoDelete = async () => {
-    try {
-      const restoredWeights = [];
-      for (const weight of deletedWeights) {
-        const payload = {
-          batchNumber: weight.batchNumber,
-          processingType: weight.processingType,
-          bagNumber: weight.bagNumber,
-          weight: weight.weight,
-          measurement_date: weight.measurement_date
-        };
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurement', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error('Failed to restore weight measurement');
-        const result = await response.json();
-        restoredWeights.push(result.measurement);
-      }
-      setWeightMeasurements([...weightMeasurements, ...restoredWeights]);
-      setDeletedWeights([]);
-      setSnackbarMessage('Weight measurements restored successfully');
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true);
-      await fetchDryingData(); // Refresh to update total weight
-    } catch (error) {
-      setSnackbarMessage(error.message || 'Failed to restore weight measurements');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
@@ -479,11 +289,78 @@ const DryingStation = () => {
     }
   };
 
+  const handleAddBagWeight = async () => {
+    if (!newBagWeight || isNaN(newBagWeight) || newBagWeight <= 0) {
+      setSnackbarMessage('Enter a valid weight (positive number)');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+    if (!newProcessingType) {
+      setSnackbarMessage('Select a processing type');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+    if (!newWeightDate) {
+      setSnackbarMessage('Select a measurement date');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const selectedDate = new Date(newWeightDate);
+    const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
+    const now = new Date();
+
+    if (selectedDate > now) {
+      setSnackbarMessage('Measurement date cannot be in the future');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    if (startDryingDate && selectedDate < startDryingDate) {
+      setSnackbarMessage('Measurement date cannot be before the start drying date');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    try {
+      const payload = {
+        batchNumber: selectedBatch.batchNumber,
+        processingType: newProcessingType,
+        bagNumber: newBagNumber,
+        weight: parseFloat(newBagWeight),
+        measurement_date: newWeightDate
+      };
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error('Failed to save weight measurement');
+      const result = await response.json();
+      setWeightMeasurements([...weightMeasurements, result.measurement]);
+      setNewBagWeight('');
+      setNewBagNumber(newBagNumber + 1);
+      setSnackbarMessage('Bag weight added successfully');
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
+      await fetchDryingData(); // Refresh to update total weight
+    } catch (error) {
+      setSnackbarMessage(error.message || 'Failed to add weight measurement');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  };
+
   useEffect(() => {
     fetchDryingData();
     const intervalId = setInterval(fetchDryingData, 300000); // 5 minutes
     return () => clearInterval(intervalId);
-  }, [fetchDryingData]);
+  }, []);
 
   const handleRefreshData = () => fetchDryingData();
 
@@ -501,21 +378,17 @@ const DryingStation = () => {
   const handleWeightClick = (batch) => {
     setSelectedBatch(batch);
     fetchWeightMeasurements(batch.batchNumber);
-    setNewBagWeight('');
-    setNewProcessingType('');
-    setNewWeightDate(new Date().toISOString().slice(0, 10));
     setNewBagNumber(1);
-    setEditingWeightId(null);
-    setSelectedWeightIds([]);
-    setDeletedWeights([]);
+    setNewProcessingType('');
+    setNewBagWeight('');
+    setNewWeightDate(new Date().toISOString().slice(0, 10));
     setOpenWeightDialog(true);
   };
 
-  const handleProcessingTypeChange = async (value) => {
-    setNewProcessingType(value);
-    if (value && selectedBatch && !editingWeightId) {
-      await fetchMaxBagNumber(selectedBatch.batchNumber, value);
-    }
+  const handleEnvDetailsClick = (device_id) => {
+    setSelectedDevice(device_id);
+    fetchHistoricalEnvData(device_id);
+    setOpenEnvDialog(true);
   };
 
   const handleCloseDialog = () => {
@@ -540,49 +413,12 @@ const DryingStation = () => {
     setNewBagNumber(1);
     setNewProcessingType('');
     setNewWeightDate('');
-    setEditingWeightId(null);
-    setSelectedWeightIds([]);
-    setDeletedWeights([]);
   };
 
   const handleCloseEnvDialog = () => {
     setOpenEnvDialog(false);
     setSelectedDevice(null);
     setHistoricalEnvData([]);
-  };
-
-  const handleEnvDetailsClick = (device_id) => {
-    setSelectedDevice(device_id);
-    fetchHistoricalEnvData(device_id);
-    setOpenEnvDialog(true);
-  };
-
-  const handleSelectWeight = (id) => {
-    setSelectedWeightIds(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
-
-  const handleSelectAllWeights = (event) => {
-    if (event.target.checked) {
-      setSelectedWeightIds(weightMeasurements.map(m => m.id));
-    } else {
-      setSelectedWeightIds([]);
-    }
-  };
-
-  const handleOpenDeleteConfirmDialog = () => {
-    if (selectedWeightIds.length === 0) {
-      setSnackbarMessage('Please select at least one weight to delete');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-    setOpenDeleteConfirmDialog(true);
-  };
-
-  const handleCloseDeleteConfirmDialog = () => {
-    setOpenDeleteConfirmDialog(false);
   };
 
   const columns = [
@@ -621,8 +457,8 @@ const DryingStation = () => {
       renderCell: ({ row }) => (
         <Button
           variant="outlined"
-          color="secondary"
           size="small"
+          color="secondary"
           onClick={() => handleMoveClick(row)}
           disabled={row.status !== 'In Drying'}
         >
@@ -638,8 +474,8 @@ const DryingStation = () => {
       renderCell: ({ row }) => (
         <Button
           variant="outlined"
-          color="info"
           size="small"
+          color="info"
           onClick={() => handleWeightClick(row)}
         >
           Track Weight
@@ -660,22 +496,6 @@ const DryingStation = () => {
     const areaData = dryingData[area] || [];
     const deviceId = deviceMapping[area];
     const envData = greenhouseData[deviceId] || { temperature: 0, humidity: 0 };
-
-    if (areaLoading[area]) {
-      return (
-        <Grid item xs={12}>
-          <Card variant="outlined" sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>{area}</Typography>
-              <Typography variant="body1" align="center" color="textSecondary">
-                Loading...
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      );
-    }
-
     return (
       <Grid item xs={12}>
         <Card variant="outlined" sx={{ mb: 3 }}>
@@ -933,7 +753,7 @@ const DryingStation = () => {
       <Dialog open={openWeightDialog} onClose={handleCloseWeightDialog} maxWidth="md" fullWidth>
         <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber}</DialogTitle>
         <DialogContent>
-          <Typography variant="h6" gutterBottom>{editingWeightId ? 'Edit Bag Weight' : 'Add Bag Weight'}</Typography>
+          <Typography variant="h6" gutterBottom>Add Bag Weight</Typography>
           <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
             <Grid item xs={3}>
               <FormControl fullWidth>
@@ -941,9 +761,8 @@ const DryingStation = () => {
                 <Select
                   labelId="processing-type-label"
                   value={newProcessingType}
-                  onChange={e => handleProcessingTypeChange(e.target.value)}
+                  onChange={e => setNewProcessingType(e.target.value)}
                   label="Processing Type"
-                  disabled={editingWeightId !== null}
                 >
                   {processingTypes.map(type => (
                     <MenuItem key={type} value={type}>{type}</MenuItem>
@@ -952,9 +771,14 @@ const DryingStation = () => {
               </FormControl>
             </Grid>
             <Grid item xs={2}>
-              <Typography variant="body1" sx={{ mt: 2 }}>
-                Bag Number: {newBagNumber}
-              </Typography>
+              <TextField
+                label="Bag Number"
+                value={newBagNumber}
+                onChange={e => setNewBagNumber(parseInt(e.target.value) || 1)}
+                type="number"
+                fullWidth
+                inputProps={{ min: 1 }}
+              />
             </Grid>
             <Grid item xs={3}>
               <TextField
@@ -977,14 +801,8 @@ const DryingStation = () => {
               />
             </Grid>
             <Grid item xs={2}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAddOrUpdateBagWeight}
-                fullWidth
-                sx={{ height: '100%' }}
-              >
-                {editingWeightId ? 'Update' : 'Add'} Bag
+              <Button variant="contained" color="primary" onClick={handleAddBagWeight} fullWidth sx={{ height: '100%' }}>
+                Add Bag
               </Button>
             </Grid>
           </Grid>
@@ -1003,70 +821,27 @@ const DryingStation = () => {
           })}
 
           <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Weight History</Typography>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleOpenDeleteConfirmDialog}
-            disabled={selectedWeightIds.length === 0}
-            sx={{ mb: 2 }}
-          >
-            Delete Selected
-          </Button>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedWeightIds.length === weightMeasurements.length && weightMeasurements.length > 0}
-                    onChange={handleSelectAllWeights}
-                  />
-                </TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Processing Type</TableCell>
                 <TableCell>Bag Number</TableCell>
                 <TableCell>Weight (kg)</TableCell>
-                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {weightMeasurements.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">No weight measurements recorded</TableCell>
+                  <TableCell colSpan={4} align="center">No weight measurements recorded</TableCell>
                 </TableRow>
               ) : (
                 weightMeasurements.map(m => (
                   <TableRow key={m.id}>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selectedWeightIds.includes(m.id)}
-                        onChange={() => handleSelectWeight(m.id)}
-                      />
-                    </TableCell>
                     <TableCell>{new Date(m.measurement_date).toLocaleDateString()}</TableCell>
                     <TableCell>{m.processingType}</TableCell>
                     <TableCell>{m.bagNumber}</TableCell>
                     <TableCell>{m.weight.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleEditBagWeight(m)}
-                        sx={{ mr: 1 }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        color="error"
-                        onClick={() => {
-                          setSelectedWeightIds([m.id]);
-                          setOpenDeleteConfirmDialog(true);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -1075,29 +850,6 @@ const DryingStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseWeightDialog}>Close</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openDeleteConfirmDialog} onClose={handleCloseDeleteConfirmDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete {selectedWeightIds.length} weight measurement{selectedWeightIds.length > 1 ? 's' : ''}?
-          </Typography>
-          {selectedWeightIds.length > 0 && (
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              Affected bags: {weightMeasurements
-                .filter(m => selectedWeightIds.includes(m.id))
-                .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.weight.toFixed(2)} kg)`)
-                .join(', ')}
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteConfirmDialog}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleDeleteBagWeights}>
-            Delete
-          </Button>
         </DialogActions>
       </Dialog>
 
@@ -1113,22 +865,11 @@ const DryingStation = () => {
 
       <Snackbar
         open={openSnackbar}
-        autoHideDuration={30000} // Extended for undo option
-        onClose={() => {
-          setOpenSnackbar(false);
-          setDeletedWeights([]); // Clear deleted weights after snackbar closes
-        }}
+        autoHideDuration={6000}
+        onClose={() => setOpenSnackbar(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert
-          severity={snackbarSeverity}
-          sx={{ width: '100%' }}
-          action={deletedWeights.length > 0 ? (
-            <Button color="inherit" size="small" onClick={handleUndoDelete}>
-              Undo
-            </Button>
-          ) : null}
-        >
+        <Alert severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
