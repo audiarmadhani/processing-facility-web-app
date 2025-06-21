@@ -5,9 +5,8 @@ import { useSession } from "next-auth/react";
 import {
   Button, Typography, Snackbar, Alert, Grid, Card, CardContent, CircularProgress, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel,
-  Table, TableBody, TableCell, TableHead, TableRow, Checkbox, Accordion, AccordionSummary, AccordionDetails
+  Table, TableBody, TableCell, TableHead, TableRow, Checkbox
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { Line } from 'react-chartjs-2';
 import { 
@@ -74,7 +73,6 @@ const DryingStation = () => {
   const [dryingData, setDryingData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [areaLoading, setAreaLoading] = useState({});
-  const [expandedAreas, setExpandedAreas] = useState({}); // Track expanded drying areas
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [dryingMeasurements, setDryingMeasurements] = useState([]);
@@ -113,7 +111,7 @@ const DryingStation = () => {
   }), []);
 
   const fetchAreaData = useCallback(async (area) => {
-    if (isFetchingRef.current || dryingData[area]?.length > 0) return; // Skip if fetching or data exists
+    if (dryingData[area]?.length > 0) return; // Skip if data exists
     setAreaLoading(prev => ({ ...prev, [area]: true }));
 
     try {
@@ -352,7 +350,6 @@ const DryingStation = () => {
       }
       setNewBagWeight('');
       setNewWeightDate(new Date().toISOString().slice(0, 10));
-      setExpandedAreas(prev => ({ ...prev, [selectedBatch.dryingArea]: true }));
       await fetchAreaData(selectedBatch.dryingArea); // Refresh only affected area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to save weight measurement');
@@ -389,7 +386,6 @@ const DryingStation = () => {
       setSnackbarMessage(result.message);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      setExpandedAreas(prev => ({ ...prev, [selectedBatch.dryingArea]: true }));
       await fetchAreaData(selectedBatch.dryingArea); // Refresh only affected area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to delete weight measurements');
@@ -423,7 +419,6 @@ const DryingStation = () => {
       setSnackbarMessage('Weight measurements restored successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      setExpandedAreas(prev => ({ ...prev, [selectedBatch.dryingArea]: true }));
       await fetchAreaData(selectedBatch.dryingArea); // Refresh only affected area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to restore weight measurements');
@@ -516,7 +511,6 @@ const DryingStation = () => {
       setOpenMoveDialog(false);
       setNewDryingArea('');
       setSelectedBatch(null);
-      setExpandedAreas(prev => ({ ...prev, [newDryingArea]: true }));
       await fetchAreaData(newDryingArea); // Refresh destination area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to move batch');
@@ -532,11 +526,7 @@ const DryingStation = () => {
     setAreaLoading(dryingAreas.reduce((acc, area) => ({ ...acc, [area]: true }), {}));
 
     try {
-      await Promise.all(
-        dryingAreas
-          .filter(area => expandedAreas[area])
-          .map(area => fetchAreaData(area))
-      );
+      await Promise.all(dryingAreas.map(area => fetchAreaData(area)));
     } catch (error) {
       console.error('Error refreshing data:', error);
       setSnackbarMessage(error.message || 'Error refreshing data');
@@ -547,13 +537,24 @@ const DryingStation = () => {
       setIsLoading(false);
       setAreaLoading(dryingAreas.reduce((acc, area) => ({ ...acc, [area]: false }), {}));
     }
-  }, 2000), [dryingAreas, expandedAreas, fetchAreaData]);
+  }, 2000), [dryingAreas, fetchAreaData]);
 
   useEffect(() => {
-    // Initial fetch for first area only
+    // Fetch data for all areas on mount
     if (!isFetchingRef.current) {
-      fetchAreaData(dryingAreas[0]);
-      setExpandedAreas({ [dryingAreas[0]]: true });
+      isFetchingRef.current = true;
+      setIsLoading(true);
+      Promise.all(dryingAreas.map(area => fetchAreaData(area)))
+        .catch(error => {
+          console.error('Initial data fetch error:', error);
+          setSnackbarMessage('Failed to load initial data');
+          setSnackbarSeverity('error');
+          setOpenSnackbar(true);
+        })
+        .finally(() => {
+          isFetchingRef.current = false;
+          setIsLoading(false);
+        });
     }
   }, [dryingAreas, fetchAreaData]);
 
@@ -649,13 +650,6 @@ const DryingStation = () => {
     setOpenDeleteConfirmDialog(false);
   }, []);
 
-  const handleAccordionChange = (area) => (event, isExpanded) => {
-    setExpandedAreas(prev => ({ ...prev, [area]: isExpanded }));
-    if (isExpanded && !dryingData[area]) {
-      fetchAreaData(area);
-    }
-  };
-
   const columns = useMemo(() => [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 160 },
@@ -734,17 +728,18 @@ const DryingStation = () => {
 
     if (areaLoading[area]) {
       return (
-        <AccordionDetails>
-          <Typography variant="body1" align="center" color="textSecondary">
-            Loading...
-          </Typography>
-        </AccordionDetails>
+        <Typography variant="body1" align="center" color="textSecondary">
+          Loading...
+        </Typography>
       );
     }
 
     return (
-      <AccordionDetails>
-        <Typography variant="body2" gutterBottom>
+      <>
+        <Typography variant="h6" gutterBottom>
+          {area}
+        </Typography>
+      <Typography variant="body2" gutterBottom>
           Temp: {envData.temperature}°C | Humidity: {envData.humidity}%
           <Button
             variant="outlined"
@@ -755,7 +750,7 @@ const DryingStation = () => {
             See Details
           </Button>
         </Typography>
-        <div style={{ height: 400, width: '100%', overflow: 'auto' }}>
+        <div style={{ height: '400px', width: '100%', overflow: 'auto' }}>
           {areaData.length === 0 ? (
             <Typography variant="body1" align="center" color="textSecondary" sx={{ pt: '180px' }}>
               No batches in {area}
@@ -781,7 +776,7 @@ const DryingStation = () => {
             />
           )}
         </div>
-      </AccordionDetails>
+      </>
     );
   }, [dryingData, areaLoading, greenhouseData, deviceMapping, columns]);
 
@@ -934,15 +929,7 @@ const DryingStation = () => {
               <Grid container spacing={3}>
                 {dryingAreas.map(area => (
                   <Grid item xs={12} key={area}>
-                    <Accordion
-                      expanded={expandedAreas[area] || false}
-                      onChange={handleAccordionChange(area)}
-                    >
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">{area}</Typography>
-                      </AccordionSummary>
-                      {renderDataGrid(area)}
-                    </Accordion>
+                    {renderDataGrid(area)}
                   </Grid>
                 ))}
               </Grid>
