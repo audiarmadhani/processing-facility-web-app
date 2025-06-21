@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import {
   Button, Typography, Snackbar, Alert, Grid, Card, CardContent, CircularProgress, Chip,
@@ -42,6 +42,7 @@ const DryingStation = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [dryingData, setDryingData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [areaLoading, setAreaLoading] = useState({}); // Per-area loading state
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [dryingMeasurements, setDryingMeasurements] = useState([]);
@@ -74,63 +75,70 @@ const DryingStation = () => {
     "Drying Room": "GH_SENSOR_6"
   };
 
-  const fetchDryingData = async () => {
+  const fetchDryingData = useCallback(async () => {
     setIsLoading(true);
+    // Initialize loading state for each area
+    const initialAreaLoading = dryingAreas.reduce((acc, area) => ({ ...acc, [area]: true }), {});
+    setAreaLoading(initialAreaLoading);
+
     try {
-      const [qcResponse, dryingResponse, greenhouseResponse] = await Promise.all([
+      const [qcResponse, dryingResponse, greenhouseResponse, weightsResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
         fetch('https://processing-facility-backend.onrender.com/api/drying-data'),
-        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest')
+        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest'),
+        fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurements/aggregated')
       ]);
-      if (!qcResponse.ok || !dryingResponse.ok || !greenhouseResponse.ok) {
-        throw new Error('Failed to fetch data');
+
+      if (!qcResponse.ok || !dryingResponse.ok || !greenhouseResponse.ok || !weightsResponse.ok) {
+        throw new Error('Failed to fetch data from one or more endpoints');
       }
-      const [qcResult, dryingDataRaw, greenhouseResult] = await Promise.all([
+
+      const [qcResult, dryingDataRaw, greenhouseResult, weightsResult] = await Promise.all([
         qcResponse.json(),
         dryingResponse.json(),
-        greenhouseResponse.json()
+        greenhouseResponse.json(),
+        weightsResponse.json()
       ]);
-      const pendingPreprocessingData = qcResult.distinctRows || [];
 
-      // Fetch weight measurements for all batches to calculate totals
-      const batchNumbers = [...new Set(pendingPreprocessingData.map(batch => batch.batchNumber))];
-      let weightMeasurements = [];
-      for (const batchNumber of batchNumbers) {
-        const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-weight-measurements/${batchNumber}`);
-        if (response.ok) {
-          const data = await response.json();
-          weightMeasurements = [...weightMeasurements, ...data];
-        }
-      }
+      // Validate and filter qc data
+      const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 
+        batch && batch.batchNumber && typeof batch.batchNumber === 'string'
+      );
 
-      // Calculate total weight per batch for the latest measurement date
+      // Create batch weights lookup from aggregated weights
       const batchWeights = {};
-      weightMeasurements.forEach(measurement => {
-        const { batchNumber, weight, measurement_date } = measurement;
-        if (!batchWeights[batchNumber] || new Date(measurement_date) > new Date(batchWeights[batchNumber].date)) {
-          batchWeights[batchNumber] = { date: measurement_date, total: 0 };
-        }
-        if (new Date(measurement_date).getTime() === new Date(batchWeights[batchNumber].date).getTime()) {
-          batchWeights[batchNumber].total += weight;
+      weightsResult.forEach(({ batchNumber, total_weight, measurement_date }) => {
+        if (batchNumber) {
+          batchWeights[batchNumber] = { total: total_weight, date: measurement_date };
+        } else {
+          console.warn('Skipping weight record with undefined batchNumber:', { total_weight, measurement_date });
         }
       });
 
+      // Format data per drying area
       const formattedData = dryingAreas.reduce((acc, area) => {
         acc[area] = pendingPreprocessingData
           .filter(batch => {
-            const batchDryingData = dryingDataRaw.find(data => data.batchNumber === batch.batchNumber && data.dryingArea === area);
+            const batchDryingData = dryingDataRaw.find(data => 
+              data.batchNumber === batch.batchNumber && data.dryingArea === area
+            );
             return !!batchDryingData;
           })
           .map(batch => {
-            const batchDryingData = dryingDataRaw.filter(data => data.batchNumber === batch.batchNumber && data.dryingArea === area);
-            const latestEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            const batchDryingData = dryingDataRaw.filter(data => 
+              data.batchNumber === batch.batchNumber && data.dryingArea === area
+            );
+            const latestEntry = batchDryingData.sort((a, b) => 
+              new Date(b.created_at) - new Date(a.created_at)
+            )[0];
+
             return {
               ...batch,
               status: latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying',
               dryingArea: latestEntry?.dryingArea || 'N/A',
               startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
               endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-              weight: batchWeights[batchNumber] ? batchWeights[batchNumber].total.toFixed(2) : 'N/A',
+              weight: batchWeights[batch.batchNumber] ? batchWeights[batch.batchNumber].total.toFixed(2) : 'N/A',
               type: batch.type || 'N/A',
               producer: batch.producer || 'N/A',
               productLine: batch.productLine || 'N/A',
@@ -163,13 +171,15 @@ const DryingStation = () => {
         [device_id]: { temperature: temperature || 0, humidity: humidity || 0 }
       }), {}));
     } catch (error) {
+      console.error('Error in fetchDryingData:', error);
       setSnackbarMessage(error.message || 'Error fetching data');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     } finally {
       setIsLoading(false);
+      setAreaLoading(dryingAreas.reduce((acc, area) => ({ ...acc, [area]: false }), {}));
     }
-  };
+  }, [dryingAreas]);
 
   const fetchDryingMeasurements = async (batchNumber) => {
     try {
@@ -473,7 +483,7 @@ const DryingStation = () => {
     fetchDryingData();
     const intervalId = setInterval(fetchDryingData, 300000); // 5 minutes
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchDryingData]);
 
   const handleRefreshData = () => fetchDryingData();
 
@@ -611,8 +621,8 @@ const DryingStation = () => {
       renderCell: ({ row }) => (
         <Button
           variant="outlined"
-          size="small"
           color="secondary"
+          size="small"
           onClick={() => handleMoveClick(row)}
           disabled={row.status !== 'In Drying'}
         >
@@ -628,8 +638,8 @@ const DryingStation = () => {
       renderCell: ({ row }) => (
         <Button
           variant="outlined"
-          size="small"
           color="info"
+          size="small"
           onClick={() => handleWeightClick(row)}
         >
           Track Weight
@@ -650,6 +660,22 @@ const DryingStation = () => {
     const areaData = dryingData[area] || [];
     const deviceId = deviceMapping[area];
     const envData = greenhouseData[deviceId] || { temperature: 0, humidity: 0 };
+
+    if (areaLoading[area]) {
+      return (
+        <Grid item xs={12}>
+          <Card variant="outlined" sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>{area}</Typography>
+              <Typography variant="body1" align="center" color="textSecondary">
+                Loading...
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      );
+    }
+
     return (
       <Grid item xs={12}>
         <Card variant="outlined" sx={{ mb: 3 }}>
