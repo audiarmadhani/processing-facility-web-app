@@ -730,7 +730,7 @@ const DryingStation = () => {
     },
     { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
     { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
-    { field: 'weight', headerName: 'Dry Weight (kg)', width: 120 },
+    { field: 'weight', headerName: 'Dry Weight (kg)', width: 140 },
     { field: 'type', headerName: 'Type', width: 90 },
     { field: 'producer', headerName: 'Producer', width: 90 },
     { field: 'productLine', headerName: 'Product Line', width: 150 },
@@ -788,7 +788,7 @@ const DryingStation = () => {
               rowHeight={35}
               pagination
               initialState={{
-                pagination: { paginationModel: { pageSize: 5 } }
+                pagination: { paginationModel: { pageSize: 10 } }
               }}
             />
           )}
