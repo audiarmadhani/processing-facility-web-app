@@ -71,6 +71,7 @@ const DryingStation = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [dryingData, setDryingData] = useState({});
+  const [noDataAreas, setNoDataAreas] = useState(new Set()); // Track areas with no data
   const [isLoading, setIsLoading] = useState(false);
   const [areaLoading, setAreaLoading] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
@@ -110,24 +111,40 @@ const DryingStation = () => {
     "Drying Room": "GH_SENSOR_6"
   }), []);
 
-  const fetchAreaData = useCallback(async (area) => {
-    if (dryingData[area]?.length > 0) return; // Skip if data exists
+  const fetchAreaData = useCallback(async (area, forceRefresh = false) => {
+    if (!forceRefresh && (dryingData[area]?.length > 0 || noDataAreas.has(area))) return; // Skip if data exists or area is empty
     setAreaLoading(prev => ({ ...prev, [area]: true }));
 
     try {
-      const [qcResponse, dryingResponse, greenhouseResponse] = await Promise.all([
+      // Fetch drying data first to check if area has batches
+      const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
+      if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
+      const dryingDataRaw = await dryingResponse.json();
+
+      // Get batch numbers for this area
+      const areaBatchNumbers = dryingDataRaw
+        .filter(data => data.dryingArea === area && data.batchNumber)
+        .map(data => data.batchNumber);
+
+      // If no batches, mark as no-data and skip further fetches
+      if (areaBatchNumbers.length === 0) {
+        setNoDataAreas(prev => new Set(prev).add(area));
+        setDryingData(prev => ({ ...prev, [area]: [] }));
+        return;
+      }
+
+      // Fetch remaining data only if there are batches
+      const [qcResponse, greenhouseResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
-        fetch('https://processing-facility-backend.onrender.com/api/drying-data'),
         fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest')
       ]);
 
-      if (!qcResponse.ok || !dryingResponse.ok || !greenhouseResponse.ok) {
+      if (!qcResponse.ok || !greenhouseResponse.ok) {
         throw new Error('Failed to fetch data from one or more endpoints');
       }
 
-      const [qcResult, dryingDataRaw, greenhouseResult] = await Promise.all([
+      const [qcResult, greenhouseResult] = await Promise.all([
         qcResponse.json(),
-        dryingResponse.json(),
         greenhouseResponse.json()
       ]);
 
@@ -135,11 +152,6 @@ const DryingStation = () => {
       const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 
         batch && batch.batchNumber && typeof batch.batchNumber === 'string'
       );
-
-      // Get batch numbers for this area
-      const areaBatchNumbers = dryingDataRaw
-        .filter(data => data.dryingArea === area && data.batchNumber)
-        .map(data => data.batchNumber);
 
       // Fetch weights only for relevant batches
       let weightsResult = [];
@@ -204,6 +216,11 @@ const DryingStation = () => {
         });
 
       setDryingData(prev => ({ ...prev, [area]: areaData }));
+      setNoDataAreas(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(area); // Remove from no-data if data was found
+        return newSet;
+      });
       setGreenhouseData(prev => ({
         ...prev,
         ...greenhouseResult.reduce((data, { device_id, temperature, humidity }) => ({
@@ -219,7 +236,7 @@ const DryingStation = () => {
     } finally {
       setAreaLoading(prev => ({ ...prev, [area]: false }));
     }
-  }, [dryingData]);
+  }, [dryingData, noDataAreas]);
 
   const fetchDryingMeasurements = useCallback(async (batchNumber) => {
     try {
@@ -350,7 +367,7 @@ const DryingStation = () => {
       }
       setNewBagWeight('');
       setNewWeightDate(new Date().toISOString().slice(0, 10));
-      await fetchAreaData(selectedBatch.dryingArea); // Refresh only affected area
+      await fetchAreaData(selectedBatch.dryingArea, true); // Force refresh affected area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to save weight measurement');
       setSnackbarSeverity('error');
@@ -386,7 +403,7 @@ const DryingStation = () => {
       setSnackbarMessage(result.message);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      await fetchAreaData(selectedBatch.dryingArea); // Refresh only affected area
+      await fetchAreaData(selectedBatch.dryingArea, true); // Force refresh affected area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to delete weight measurements');
       setSnackbarSeverity('error');
@@ -419,7 +436,7 @@ const DryingStation = () => {
       setSnackbarMessage('Weight measurements restored successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      await fetchAreaData(selectedBatch.dryingArea); // Refresh only affected area
+      await fetchAreaData(selectedBatch.dryingArea, true); // Force refresh affected area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to restore weight measurements');
       setSnackbarSeverity('error');
@@ -511,7 +528,7 @@ const DryingStation = () => {
       setOpenMoveDialog(false);
       setNewDryingArea('');
       setSelectedBatch(null);
-      await fetchAreaData(newDryingArea); // Refresh destination area
+      await fetchAreaData(newDryingArea, true); // Force refresh destination area
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to move batch');
       setSnackbarSeverity('error');
@@ -526,7 +543,7 @@ const DryingStation = () => {
     setAreaLoading(dryingAreas.reduce((acc, area) => ({ ...acc, [area]: true }), {}));
 
     try {
-      await Promise.all(dryingAreas.map(area => fetchAreaData(area)));
+      await Promise.all(dryingAreas.map(area => fetchAreaData(area, true))); // Force refresh all areas
     } catch (error) {
       console.error('Error refreshing data:', error);
       setSnackbarMessage(error.message || 'Error refreshing data');
@@ -718,7 +735,7 @@ const DryingStation = () => {
     { field: 'producer', headerName: 'Producer', width: 90 },
     { field: 'productLine', headerName: 'Product Line', width: 150 },
     { field: 'processingType', headerName: 'Processing Type', width: 200 },
-    { field: 'quality', headerName: 'Quality', width: 100 }
+    { field: 'quality', headerName: 'Quality', width: 160 }
   ], [handleDetailsClick, handleMoveClick, handleWeightClick]);
 
   const renderDataGrid = useCallback((area) => {
@@ -739,7 +756,7 @@ const DryingStation = () => {
         <Typography variant="h6" gutterBottom>
           {area}
         </Typography>
-      <Typography variant="body2" gutterBottom>
+        <Typography variant="body2" gutterBottom>
           Temp: {envData.temperature}°C | Humidity: {envData.humidity}%
           <Button
             variant="outlined"
