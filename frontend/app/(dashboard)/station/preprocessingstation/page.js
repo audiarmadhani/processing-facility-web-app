@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
-
 import {
   TextField,
   Button,
@@ -23,7 +22,6 @@ import {
   MenuItem,
   OutlinedInput,
 } from '@mui/material';
-
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -53,6 +51,7 @@ const PreprocessingStation = () => {
   const [processingType, setProcessingType] = useState('');
   const [quality, setQuality] = useState('');
   const [notes, setNotes] = useState('');
+  const [producerFilter, setProducerFilter] = useState('All');
 
   const fetchAvailableWeight = async (batchNumber, totalWeight) => {
     try {
@@ -62,13 +61,25 @@ const PreprocessingStation = () => {
       if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalWeightProcessed))) {
         const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed);
         const weightAvailable = totalWeight - totalProcessedWeight;
-        return { weightAvailable, totalProcessedWeight };
+        return {
+          weightAvailable,
+          totalProcessedWeight,
+          finished: preprocessingResponse.finished || false
+        };
       } else {
-        return { weightAvailable: totalWeight, totalProcessedWeight: 0 };
+        return {
+          weightAvailable: totalWeight,
+          totalProcessedWeight: 0,
+          finished: false
+        };
       }
     } catch (error) {
       console.error('Error fetching available weight:', error);
-      return { weightAvailable: totalWeight, totalProcessedWeight: 0 };
+      return {
+        weightAvailable: totalWeight,
+        totalProcessedWeight: 0,
+        finished: false
+      };
     }
   };
 
@@ -76,12 +87,10 @@ const PreprocessingStation = () => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch receiving data');
-  
       const dataArray = await response.json();
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
-  
       const data = dataArray[0];
-      const { weightAvailable, totalProcessedWeight } = await fetchAvailableWeight(batchNumber, data.weight);
+      const { weightAvailable, totalProcessedWeight, finished } = await fetchAvailableWeight(batchNumber, data.weight);
 
       setFarmerName(data.farmerName);
       setReceivingDate(data.receivingDateTrunc);
@@ -91,8 +100,13 @@ const PreprocessingStation = () => {
       setWeightAvailable(weightAvailable);
       setTotalProcessedWeight(totalProcessedWeight);
 
-      setSnackbarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
-      setSnackbarSeverity('success');
+      if (finished) {
+        setSnackbarMessage(`Batch ${batchNumber} is already marked as finished.`);
+        setSnackbarSeverity('warning');
+      } else {
+        setSnackbarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
+        setSnackbarSeverity('success');
+      }
     } catch (error) {
       handleError('Error retrieving batch data. Please try again.', error);
     } finally {
@@ -121,12 +135,17 @@ const PreprocessingStation = () => {
           setQCDate(batchData.qcDateTrunc || '');
           setTotalWeight(batchData.weight || '');
           setTotalBags(batchData.totalBags || '');
-          const { weightAvailable, totalProcessedWeight } = await fetchAvailableWeight(batchData.batchNumber, batchData.weight);
+          const { weightAvailable, totalProcessedWeight, finished } = await fetchAvailableWeight(batchData.batchNumber, batchData.weight);
           setWeightAvailable(weightAvailable);
           setTotalProcessedWeight(totalProcessedWeight);
 
-          setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
-          setSnackbarSeverity('success');
+          if (finished) {
+            setSnackbarMessage(`Batch ${batchData.batchNumber} is already marked as finished.`);
+            setSnackbarSeverity('warning');
+          } else {
+            setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
+            setSnackbarSeverity('success');
+          }
 
           await clearRfidData("Preprocessing");
         } else {
@@ -173,8 +192,24 @@ const PreprocessingStation = () => {
       setOpenSnackbar(true);
       return;
     }
-
     await fetchBatchData(batchNumber);
+  };
+
+  const handleFinishBatch = async (batchNumber) => {
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}/finish`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to mark batch as finished');
+      setSnackbarMessage(`Batch ${batchNumber} marked as finished successfully!`);
+      setSnackbarSeverity('success');
+      await fetchPreprocessingData();
+    } catch (error) {
+      handleError('Failed to mark batch as finished. Please try again.', error);
+    } finally {
+      setOpenSnackbar(true);
+    }
   };
 
   const fetchWeightHistory = async () => {
@@ -193,9 +228,11 @@ const PreprocessingStation = () => {
           totalWeight: batch.weight,
           totalProcessedWeight: totalProcessedWeight,
           weightAvailable: weightAvailable,
+          finished: processedLogs.length > 0 ? processedLogs[0].finished : false,
           processedLogs: processedLogs.map(log => ({
             processingDate: log.processingDate,
             weightProcessed: parseFloat(log.weightProcessed || 0),
+            processingType: log.processingType,
             notes: log.notes,
           })),
         };
@@ -214,12 +251,8 @@ const PreprocessingStation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const trimmedBatchNumber = batchNumber.trim();
     const trimmedWeightProcessed = parseFloat(weightProcessed);
-
-    console.log("trimmedWeightProcessed:", trimmedWeightProcessed);
-    console.log("weightAvailable:", weightAvailable);
 
     if (isNaN(trimmedWeightProcessed) || trimmedWeightProcessed <= 0) {
       setSnackbarMessage('Please enter a valid weight to process.');
@@ -253,11 +286,9 @@ const PreprocessingStation = () => {
         body: JSON.stringify(preprocessingData),
       });
       if (!response.ok) throw new Error('Failed to start processing');
-
       setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedWeightProcessed} kg!`);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-
       await fetchPreprocessingData();
       resetForm();
     } catch (error) {
@@ -299,53 +330,66 @@ const PreprocessingStation = () => {
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const result = await response.json();
-      const pendingPreprocessingData = result.allRows || [];
+      const allRows = result.allRows || [];
 
       const today = new Date();
-      const formattedData = pendingPreprocessingData.map(batch => {
+      const formattedData = allRows.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
         let sla = 'N/A';
-
         if (!isNaN(receivingDate)) {
           const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-
         return {
           ...batch,
-          id: `${batch.batchNumber}-${batch.processingType || 'unknown'}`, // Unique ID
+          id: `${batch.batchNumber}-${batch.processingType || 'unknown'}`,
           sla,
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
+          finished: batch.finished || false,
         };
       });
-      const unprocessedBatches = formattedData.filter(batch => parseFloat(batch.availableWeight) > 0);
 
-      const sortedUnprocessedBatches = unprocessedBatches.sort((a, b) => {
-        if (a.type !== b.type) return a.type.localeCompare(b.type);
-        if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
-        if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
-        if (a.color !== b.color) return a.color.localeCompare(b.color);
-        if (a.foreignMatter !== b.foreignMatter) return a.foreignMatter.localeCompare(b.foreignMatter);
-        if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
-        return 0;
+      // Aggregate unprocessed batches by batchNumber
+      const batchMap = new Map();
+      allRows.forEach(batch => {
+        const key = batch.batchNumber;
+        if (!batchMap.has(key)) {
+          batchMap.set(key, {
+            batchNumber: batch.batchNumber,
+            type: batch.type,
+            overallQuality: batch.overallQuality,
+            weight: parseFloat(batch.weight || 0),
+            availableWeight: parseFloat(batch.availableWeight || 0),
+            receivingDate: batch.receivingDate,
+            qcDate: batch.qcDate,
+            cherryScore: batch.cherryScore,
+            cherryGroup: batch.cherryGroup,
+            ripeness: batch.ripeness,
+            color: batch.color,
+            foreignMatter: batch.foreignMatter,
+            finished: batch.finished || false,
+          });
+        } else {
+          const existing = batchMap.get(key);
+          existing.availableWeight += parseFloat(batch.availableWeight || 0);
+        }
       });
 
-      const processedBatches = formattedData.filter(batch => parseFloat(batch.processedWeight) > 0);
+      const unprocessedBatches = Array.from(batchMap.values())
+        .filter(batch => parseFloat(batch.availableWeight) > 0 && !batch.finished)
+        .sort((a, b) => {
+          if (a.type !== b.type) return a.type.localeCompare(b.type);
+          if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
+          if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
+          if (a.color !== b.color) return a.color.localeCompare(b.color);
+          if (a.foreignMatter !== b.foreignMatter) return a.foreignMatter.localeCompare(b.foreignMatter);
+          if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
+          return 0;
+        });
 
-      // const sortedDataType = processedBatches.sort((a, b) => {
-        // if (a.type !== b.type) return a.type.localeCompare(b.type);
-        // return 0;
-      // });
-
-      // const sortedData = sortedDataType.sort((a, b) => {
-        // if (a.startProcessingDate === 'N/A' && b.startProcessingDate !== 'N/A') return -1;
-        // if (a.startProcessingDate !== 'N/A' && b.startProcessingDate === 'N/A') return 1;
-        // return parseFloat(b.weightAvailable) - parseFloat(a.weightAvailable);
-      // });
-
-      setPreprocessingData(processedBatches);
-      setUnprocessedBatches(sortedUnprocessedBatches);
+      setUnprocessedBatches(unprocessedBatches);
+      setPreprocessingData(formattedData);
     } catch (error) {
       console.error('Error fetching preprocessing data:', error);
     }
@@ -411,26 +455,6 @@ const PreprocessingStation = () => {
     }
   }, [processingType]);
 
-  const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-
-    { field: 'type', headerName: 'Type', width: 100, sortable: true },
-    { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
-    { field: 'productLine', headerName: 'Product Line', width: 150, sortable: true },
-    { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
-    { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
-    { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
-    { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
-    { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
-    // { field: 'total_price', headerName: 'Total Cherry Price', width: 180, sortable: true, renderCell: ({ value }) => {
-      // if (value == null || isNaN(value)) return 'N/A';
-      // return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
-    // }},
-    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
-    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
-    { field: 'preprocessing_notes', headerName: 'Notes', width: 200, sortable: true },
-  ];
-
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 150, sortable: true },
@@ -444,13 +468,56 @@ const PreprocessingStation = () => {
     { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
     { field: 'color', headerName: 'Color', width: 150, sortable: true },
     { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
+    {
+      field: 'action',
+      headerName: 'Action',
+      width: 150,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <Button
+          variant="contained"
+          color="warning"
+          size="small"
+          onClick={() => handleFinishBatch(row.batchNumber)}
+          disabled={row.finished}
+        >
+          Finish
+        </Button>
+      ),
+    },
   ];
+
+  const columns = [
+    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { field: 'type', headerName: 'Type', width: 100, sortable: true },
+    { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
+    { field: 'productLine', headerName: 'Product Line', width: 150, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
+    { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
+    { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
+    { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
+    { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
+    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
+    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
+    { field: 'preprocessing_notes', headerName: 'Notes', width: 200, sortable: true },
+    {
+      field: 'finished',
+      headerName: 'Finished',
+      width: 100,
+      sortable: true,
+      renderCell: ({ value }) => (value ? 'Yes' : 'No'),
+    },
+  ];
+
+  const filteredPreprocessingData = producerFilter === 'All'
+    ? preprocessingData
+    : preprocessingData.filter(row => row.producer === producerFilter);
 
   if (status === 'loading') {
     return <p>Loading...</p>;
   }
 
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'preprocessing')) {
+  if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.
@@ -678,7 +745,7 @@ const PreprocessingStation = () => {
                   <TextField
                     label="Notes"
                     multiline
-                    rows= {5}
+                    rows={5}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     fullWidth
@@ -724,6 +791,7 @@ const PreprocessingStation = () => {
                       <Typography>Total Weight: {history.totalWeight} kg</Typography>
                       <Typography>Processed Weight: {history.totalProcessedWeight} kg</Typography>
                       <Typography>Available Weight: {history.weightAvailable} kg</Typography>
+                      <Typography>Finished: {history.finished ? 'Yes' : 'No'}</Typography>
                       <Divider style={{ margin: '8px 0' }} />
                       <Typography variant="subtitle1">Processing Logs:</Typography>
                       {history.processedLogs.length === 0 ? (
@@ -733,6 +801,7 @@ const PreprocessingStation = () => {
                           <div key={logIndex} style={{ marginLeft: '16px' }}>
                             <Typography>Processing Date: {new Date(log.processingDate).toISOString().slice(0, 10)}</Typography>
                             <Typography>Weight Processed: {log.weightProcessed} kg</Typography>
+                            <Typography>Processing Type: {log.processingType}</Typography>
                             {log.notes && <Typography>Notes: {log.notes}</Typography>}
                             <Divider style={{ margin: '4px 0' }} />
                           </div>
@@ -758,14 +827,12 @@ const PreprocessingStation = () => {
             <Typography variant="h5" gutterBottom>
               Pending Processing
             </Typography>
-  
             <div style={{ height: 600, width: '100%' }}>
               <DataGrid
                 rows={unprocessedBatches}
                 columns={unprocessedColumns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
+                pageSizeOptions={[5, 10, 20]}
+                disableRowSelectionOnClick
                 sortingOrder={['asc', 'desc']}
                 getRowId={(row) => row.batchNumber}
                 slots={{ toolbar: GridToolbar }}
@@ -788,16 +855,27 @@ const PreprocessingStation = () => {
             <Typography variant="h5" gutterBottom>
               Processing Order Book
             </Typography>
-  
+            <FormControl sx={{ mb: 2, minWidth: 120 }}>
+              <InputLabel id="producer-filter-label">Producer</InputLabel>
+              <Select
+                labelId="producer-filter-label"
+                value={producerFilter}
+                onChange={(e) => setProducerFilter(e.target.value)}
+                label="Producer"
+              >
+                <MenuItem value="All">All</MenuItem>
+                <MenuItem value="HQ">HEQA</MenuItem>
+                <MenuItem value="BTM">BTM</MenuItem>
+              </Select>
+            </FormControl>
             <div style={{ height: 1000, width: '100%' }}>
               <DataGrid
-                rows={preprocessingData}
+                rows={filteredPreprocessingData}
                 columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
+                pageSizeOptions={[5, 10, 20]}
+                disableRowSelectionOnClick
                 sortingOrder={['asc', 'desc']}
-                getRowId={(row => row.id)} // Use composite ID
+                getRowId={(row) => row.id}
                 slots={{ toolbar: GridToolbar }}
                 autosizeOnMount
                 autosizeOptions={{
