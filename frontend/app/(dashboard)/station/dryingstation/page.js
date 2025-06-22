@@ -848,7 +848,8 @@ const DryingStation = () => {
 
   const envChartData = useMemo(() => ({
     labels: historicalEnvData.map(d => {
-      const date = new Date(d.recorded_at);
+      // Offset recordedAt by +8 hours for WITA (UTC+8)
+      const date = new Date(d.recordedAt);
       date.setHours(date.getHours() + 8);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     }),
@@ -875,11 +876,20 @@ const DryingStation = () => {
       x: {
         type: 'time',
         time: {
+          // Custom parser to handle pre-offset labels (YYYY-MM-DD HH:mm in WITA)
+          parser: (value) => {
+            const [datePart, timePart] = value.split(' ');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hours, minutes] = timePart.split(':').map(Number);
+            // Create date in UTC, assuming input is WITA (UTC+8), so subtract 8 hours
+            const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 8, minutes));
+            return utcDate;
+          },
           unit: 'hour',
           displayFormats: {
-            hour: 'yyyy-MM-dd HH:mm'
+            hour: 'yyyy-MM-dd HH:mm' // Format for x-axis labels
           },
-          tooltipFormat: 'yyyy-MM-dd HH:mm'
+          tooltipFormat: 'yyyy-MM-dd HH:mm' // Format for tooltips
         },
         title: { display: true, text: 'Date and Time (WITA)' }
       },
@@ -891,7 +901,19 @@ const DryingStation = () => {
     },
     plugins: { 
       legend: { display: true }, 
-      tooltip: { mode: 'index', intersect: false } 
+      tooltip: { 
+        mode: 'index', 
+        intersect: false,
+        callbacks: {
+          // Ensure tooltip shows WITA time
+          title: (tooltipItems) => {
+            const date = new Date(tooltipItems[0].parsed.x);
+            // Add 8 hours to convert UTC back to WITA
+            date.setHours(date.getHours() + 8);
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+          }
+        }
+      } 
     }
   }), []);
 
