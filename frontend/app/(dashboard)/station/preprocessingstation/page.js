@@ -376,7 +376,7 @@ const PreprocessingStation = () => {
     "": [" "],
     "Regional Lot": ["Pulped Natural", "Washed"],
     "Micro Lot": ["Natural", "Washed", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Honey", "CM Natural", "CM Washed", "CM Honey"],
-    "Experimental Lot": ["CM Natural", "CM Washed", "CM Honey"],
+    "Experimental Lot": ["CM Natural", "CM Washed", "CM Honey", "Washed"],
     "Commercial Lot": ["Washed", "Natural"],
   };
 
