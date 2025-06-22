@@ -54,13 +54,12 @@ const PreprocessingStation = () => {
   const [producerFilter, setProducerFilter] = useState('All');
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
-  // New state for loading
   const [isFinishing, setIsFinishing] = useState(false);
 
   const fetchAvailableWeight = async (batchNumber, totalWeight) => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`, {
         signal: controller.signal,
       });
@@ -228,11 +227,11 @@ const PreprocessingStation = () => {
   const handleFinishBatch = async (batchNumber) => {
     setIsFinishing(true);
     try {
-      console.log(`Attempting to mark batch ${batchNumber} as complete`);
+      console.log(`Attempting to mark batch ${batchNumber} as complete with PUT request`);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}/finish`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
       });
@@ -241,8 +240,10 @@ const PreprocessingStation = () => {
         let errorData = {};
         try {
           errorData = await response.json();
+          console.log('Error response from backend:', errorData);
         } catch (e) {
           console.error('Failed to parse error response:', e);
+          errorData = { error: `HTTP error ${response.status}`, details: 'No response body' };
         }
         const errorMessage = errorData.error || `HTTP error ${response.status}`;
         const errorDetails = errorData.details || 'No additional details provided';
