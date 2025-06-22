@@ -5,9 +5,10 @@ import { useSession } from "next-auth/react";
 import {
   Button, Typography, Snackbar, Alert, Grid, Card, CardContent, CircularProgress, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel,
-  Table, TableBody, TableCell, TableHead, TableRow, Checkbox
+  Table, TableBody, TableCell, TableHead, TableRow, Checkbox, Box, InputAdornment
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import SearchIcon from '@mui/icons-material/Search';
 
 // Simple debounce utility
 const debounce = (func, wait) => {
@@ -41,7 +42,8 @@ class ErrorBoundary extends React.Component {
 
 const WetmillStation = () => {
   const { data: session, status } = useSession();
-  const [preprocessingData, setPreprocessingData] = useState([]);
+  const [notScannedBatches, setNotScannedBatches] = useState([]);
+  const [processedBatches, setProcessedBatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -57,6 +59,8 @@ const WetmillStation = () => {
   const [selectedWeightIds, setSelectedWeightIds] = useState([]);
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
   const [deletedWeights, setDeletedWeights] = useState([]);
+  const [notScannedFilter, setNotScannedFilter] = useState('');
+  const [processedFilter, setProcessedFilter] = useState('');
   const isFetchingRef = useRef(false); // Prevent concurrent fetches
 
   const fetchOrderBook = useCallback(async () => {
@@ -86,6 +90,10 @@ const WetmillStation = () => {
         .filter(batch => batch && batch.batchNumber && typeof batch.batchNumber === 'string')
         .map(batch => batch.batchNumber);
 
+      // Debug: Log batch counts
+      console.log('QC Batches:', qcData.length, 'Wetmill Entries:', wetmillData.length, 'Drying Entries:', dryingData.length);
+      console.log('Batch Numbers:', batchNumbers);
+
       let weightsResult = [];
       if (batchNumbers.length > 0) {
         const weightsResponse = await fetch(
@@ -106,6 +114,7 @@ const WetmillStation = () => {
 
       const today = new Date();
       const formattedData = qcData
+        .filter(batch => batch && batch.batchNumber && typeof batch.batchNumber === 'string')
         .map(batch => {
           const receivingDate = new Date(batch.receivingDate);
           const sla = isNaN(receivingDate)
@@ -125,6 +134,11 @@ const WetmillStation = () => {
                 ? 'Exited Wet Mill'
                 : 'Entered Wet Mill'
               : 'Not Scanned';
+
+          // Debug: Log status for each batch
+          if (['Exited Wet Mill', 'In Drying'].includes(status)) {
+            console.log(`Batch ${batch.batchNumber}: Status=${status}, WetmillEntry=${!!latestWetmillEntry}, DryingEntry=${!!latestDryingEntry}`);
+          }
 
           return {
             ...batch,
@@ -153,7 +167,15 @@ const WetmillStation = () => {
           return 0;
         });
 
-      setPreprocessingData(formattedData);
+      // Split into not scanned and processed batches
+      const notScanned = formattedData.filter(batch => batch.status === 'Not Scanned');
+      const processed = formattedData.filter(batch => ['Entered Wet Mill', 'Exited Wet Mill', 'In Drying'].includes(batch.status));
+
+      // Debug: Log split counts
+      console.log('Not Scanned Batches:', notScanned.length, 'Processed Batches:', processed.length);
+
+      setNotScannedBatches(notScanned);
+      setProcessedBatches(processed);
     } catch (error) {
       console.error('Error fetching order book data:', error);
       setSnackbarMessage(error.message || 'Error fetching data. Please try again.');
@@ -488,6 +510,22 @@ const WetmillStation = () => {
     { field: 'preprocessing_notes', headerName: 'Preprocessing Notes', width: 200 },
   ], [handleWeightClick]);
 
+  const filteredNotScannedBatches = useMemo(() => 
+    notScannedBatches.filter(batch => 
+      batch.batchNumber.toLowerCase().includes(notScannedFilter.toLowerCase()) ||
+      batch.farmerName?.toLowerCase().includes(notScannedFilter.toLowerCase())
+    ),
+    [notScannedBatches, notScannedFilter]
+  );
+
+  const filteredProcessedBatches = useMemo(() => 
+    processedBatches.filter(batch => 
+      batch.batchNumber.toLowerCase().includes(processedFilter.toLowerCase()) ||
+      batch.farmerName?.toLowerCase().includes(processedFilter.toLowerCase())
+    ),
+    [processedBatches, processedFilter]
+  );
+
   if (status === 'loading') return <p>Loading...</p>;
 
   if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
@@ -511,26 +549,84 @@ const WetmillStation = () => {
               >
                 {isLoading ? 'Refreshing...' : 'Refresh Data'}
               </Button>
-              <div style={{ height: 600, width: '100%' }}>
-                <DataGrid
-                  rows={preprocessingData}
-                  columns={columns}
-                  pageSizeOptions={[5, 10, 20]}
-                  disableRowSelectionOnClick
-                  getRowId={row => row.batchNumber}
-                  slots={{ toolbar: GridToolbar }}
-                  sx={{
-                    maxHeight: 600,
-                    border: '1px solid rgba(0,0,0,0.12)',
-                    '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
-                  }}
-                  rowHeight={35}
-                  pagination
-                  initialState={{
-                    pagination: { paginationModel: { pageSize: 5 } },
+
+              {/* Not Scanned Batches Grid */}
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom>Not Scanned Batches</Typography>
+                <TextField
+                  label="Search by Batch Number or Farmer Name"
+                  value={notScannedFilter}
+                  onChange={e => setNotScannedFilter(e.target.value)}
+                  fullWidth
+                  margin="normal"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
                   }}
                 />
-              </div>
+                <div style={{ height: 400, width: '100%' }}>
+                  <DataGrid
+                    rows={filteredNotScannedBatches}
+                    columns={columns}
+                    pageSizeOptions={[5, 10, 20]}
+                    disableRowSelectionOnClick
+                    getRowId={row => row.batchNumber}
+                    slots={{ toolbar: GridToolbar }}
+                    sx={{
+                      maxHeight: 400,
+                      border: '1px solid rgba(0,0,0,0.12)',
+                      '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                    }}
+                    rowHeight={35}
+                    pagination
+                    initialState={{
+                      pagination: { paginationModel: { pageSize: 5 } },
+                    }}
+                  />
+                </div>
+              </Box>
+
+              {/* Processed Batches Grid */}
+              <Box>
+                <Typography variant="h6" gutterBottom>Processed Batches</Typography>
+                <TextField
+                  label="Search by Batch Number or Farmer Name"
+                  value={processedFilter}
+                  onChange={e => setProcessedFilter(e.target.value)}
+                  fullWidth
+                  margin="normal"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <div style={{ height: 400, width: '100%' }}>
+                  <DataGrid
+                    rows={filteredProcessedBatches}
+                    columns={columns}
+                    pageSizeOptions={[5, 10, 20]}
+                    disableRowSelectionOnClick
+                    getRowId={row => row.batchNumber}
+                    slots={{ toolbar: GridToolbar }}
+                    sx={{
+                      maxHeight: 400,
+                      border: '1px solid rgba(0,0,0,0.12)',
+                      '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                    }}
+                    rowHeight={35}
+                    pagination
+                    initialState={{
+                      pagination: { paginationModel: { pageSize: 5 } },
+                    }}
+                  />
+                </div>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
