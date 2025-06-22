@@ -293,7 +293,7 @@ const PreprocessingStation = () => {
       const processedWeights = await processedResponse.json();
 
       const historyData = batches.map((batch) => {
-        const processedLogs = processedWeights.filter(log => log.batchNumber === batch.batchNumber);
+        const processedLogs = processedWeights.allRows.filter(log => log.batchNumber === batch.batchNumber);
         const totalProcessedWeight = processedLogs.reduce((acc, log) => acc + parseFloat(log.weightProcessed || 0), 0);
         const weightAvailable = batch.weight - totalProcessedWeight;
         return {
@@ -417,8 +417,24 @@ const PreprocessingStation = () => {
       clearTimeout(timeoutId);
       const qcResult = await qcResponse.json();
       const preprocessingResult = await preprocessingResponse.json();
+      console.log('QC response:', qcResult);
+      console.log('Preprocessing response:', preprocessingResult);
+
       const allRows = qcResult.allRows || [];
       const preprocessingRows = preprocessingResult.allRows || preprocessingResult || [];
+
+      // Create a map of finished status from preprocessing data
+      const finishedStatusMap = new Map();
+      preprocessingRows.forEach(row => {
+        const batchNumber = row.batchNumber.toLowerCase();
+        // Aggregate finished status using logical OR
+        if (!finishedStatusMap.has(batchNumber)) {
+          finishedStatusMap.set(batchNumber, row.finished || false);
+        } else {
+          finishedStatusMap.set(batchNumber, finishedStatusMap.get(batchNumber) || row.finished);
+        }
+      });
+      console.log('Finished status map:', Array.from(finishedStatusMap.entries()));
 
       const preprocessingMap = new Map();
       preprocessingRows.forEach(row => {
@@ -437,6 +453,7 @@ const PreprocessingStation = () => {
             productLine: row.productLine,
             quality: row.quality,
             processingDate: row.processingDate,
+            finished: row.finished || false,
           });
         }
       });
@@ -481,7 +498,7 @@ const PreprocessingStation = () => {
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
           preprocessing_notes: preprocessingRow.notes || '',
-          finished: batch.finished || false,
+          finished: finishedStatusMap.get(batch.batchNumber.toLowerCase()) || batch.finished || false,
           sla,
           overallQuality: batch.overallQuality,
           receivingDate: batch.receivingDate,
@@ -511,7 +528,7 @@ const PreprocessingStation = () => {
             ripeness: batch.ripeness,
             color: batch.color,
             foreignMatter: batch.foreignMatter,
-            finished: batch.finished || false,
+            finished: finishedStatusMap.get(batch.batchNumber.toLowerCase()) || batch.finished || false,
           });
         }
       });
@@ -528,6 +545,7 @@ const PreprocessingStation = () => {
           return 0;
         });
 
+      console.log('Unprocessed batches:', unprocessedBatches);
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
     } catch (error) {
@@ -638,7 +656,7 @@ const PreprocessingStation = () => {
     { field: 'productLine', headerName: 'Product Line', width: 150, sortable: true },
     { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
-    { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
+    { field: 'weight', headerName: 'Total Weight (kg)', weight: 180, sortable: true },
     { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
