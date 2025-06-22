@@ -492,6 +492,7 @@ const WetmillStation = () => {
           color="info"
           size="small"
           onClick={() => handleWeightClick(row)}
+          disabled={row.status === 'Not Scanned'}
         >
           Track Weight
         </Button>
@@ -538,7 +539,7 @@ const WetmillStation = () => {
         <Grid item xs={12}>
           <Card variant="outlined">
             <CardContent>
-              <Typography variant="h5" gutterBottom>Processing Order Book</Typography>
+              <Typography variant="h5" gutterBottom>Wet Mill Order Book</Typography>
               <Button
                 variant="contained"
                 color="primary"
@@ -567,23 +568,23 @@ const WetmillStation = () => {
                     ),
                   }}
                 />
-                <div style={{ height: 400, width: '100%' }}>
+                <div style={{ height: 600, width: '100%' }}>
                   <DataGrid
                     rows={filteredNotScannedBatches}
                     columns={columns}
-                    pageSizeOptions={[5, 10, 20]}
+                    pageSizeOptions={[10, 50, 100]}
                     disableRowSelectionOnClick
                     getRowId={row => row.batchNumber}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
-                      maxHeight: 400,
+                      maxHeight: 600,
                       border: '1px solid rgba(0,0,0,0.12)',
                       '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
                     }}
                     rowHeight={35}
                     pagination
                     initialState={{
-                      pagination: { paginationModel: { pageSize: 5 } },
+                      pagination: { paginationModel: { pageSize: 50 } },
                     }}
                   />
                 </div>
@@ -606,23 +607,23 @@ const WetmillStation = () => {
                     ),
                   }}
                 />
-                <div style={{ height: 400, width: '100%' }}>
+                <div style={{ height: 600, width: '100%' }}>
                   <DataGrid
                     rows={filteredProcessedBatches}
                     columns={columns}
-                    pageSizeOptions={[5, 10, 20]}
+                    pageSizeOptions={[10, 50, 100]}
                     disableRowSelectionOnClick
                     getRowId={row => row.batchNumber}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
-                      maxHeight: 400,
+                      maxHeight: 600,
                       border: '1px solid rgba(0,0,0,0.12)',
                       '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
                     }}
                     rowHeight={35}
                     pagination
                     initialState={{
-                      pagination: { paginationModel: { pageSize: 5 } },
+                      pagination: { paginationModel: { pageSize: 50 } },
                     }}
                   />
                 </div>
@@ -812,10 +813,11 @@ const WetmillStation = () => {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
           <Alert
-            severity={snackbarSeverity}
+            severity="error"
             sx={{ width: '100%' }}
             action={deletedWeights.length > 0 ? (
-              <Button color="inherit" size="small" onClick={handleUndoDelete}>
+              <Button color="primary" size="small"
+                onClick={handleUndoDelete}>
                 Undo
               </Button>
             ) : null}
