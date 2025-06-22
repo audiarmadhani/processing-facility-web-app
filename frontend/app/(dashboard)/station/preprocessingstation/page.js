@@ -331,9 +331,24 @@ const PreprocessingStation = () => {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
       const result = await response.json();
       const allRows = result.allRows || [];
-
+  
+      // Deduplicate rows by batchNumber and processingType, keeping the latest notes
+      const rowMap = new Map();
+      allRows.forEach(batch => {
+        const key = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
+        const existing = rowMap.get(key);
+        const batchDate = new Date(batch.lastProcessingDate || batch.startProcessingDate || '1970-01-01');
+        const existingDate = existing ? new Date(existing.lastProcessingDate || existing.startProcessingDate || '1970-01-01') : new Date('1970-01-01');
+  
+        if (!existing || batchDate > existingDate) {
+          rowMap.set(key, batch);
+        }
+      });
+  
+      const dedupedRows = Array.from(rowMap.values());
+  
       const today = new Date();
-      const formattedData = allRows.map(batch => {
+      const formattedData = dedupedRows.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
         let sla = 'N/A';
         if (!isNaN(receivingDate)) {
@@ -341,18 +356,35 @@ const PreprocessingStation = () => {
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
         return {
-          ...batch,
           id: `${batch.batchNumber}-${batch.processingType || 'unknown'}`,
-          sla,
+          batchNumber: batch.batchNumber,
+          type: batch.type,
+          producer: batch.producer,
+          productLine: batch.productLine,
+          processingType: batch.processingType,
+          quality: batch.quality,
+          weight: parseFloat(batch.weight || 0),
+          processedWeight: parseFloat(batch.processedWeight || 0),
+          availableWeight: parseFloat(batch.availableWeight || 0),
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
+          preprocessing_notes: batch.preprocessing_notes || '',
           finished: batch.finished || false,
+          sla,
+          overallQuality: batch.overallQuality,
+          receivingDate: batch.receivingDate,
+          qcDate: batch.qcDate,
+          cherryScore: batch.cherryScore,
+          cherryGroup: batch.cherryGroup,
+          ripeness: batch.ripeness,
+          color: batch.color,
+          foreignMatter: batch.foreignMatter,
         };
       });
-
+  
       // Aggregate unprocessed batches by batchNumber
       const batchMap = new Map();
-      allRows.forEach(batch => {
+      dedupedRows.forEach(batch => {
         const key = batch.batchNumber;
         if (!batchMap.has(key)) {
           batchMap.set(key, {
@@ -370,12 +402,9 @@ const PreprocessingStation = () => {
             foreignMatter: batch.foreignMatter,
             finished: batch.finished || false,
           });
-        } else {
-          const existing = batchMap.get(key);
-          existing.availableWeight += parseFloat(batch.availableWeight || 0);
         }
       });
-
+  
       const unprocessedBatches = Array.from(batchMap.values())
         .filter(batch => parseFloat(batch.availableWeight) > 0 && !batch.finished)
         .sort((a, b) => {
@@ -387,7 +416,7 @@ const PreprocessingStation = () => {
           if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
           return 0;
         });
-
+  
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
     } catch (error) {
@@ -457,17 +486,8 @@ const PreprocessingStation = () => {
 
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'type', headerName: 'Type', width: 150, sortable: true },
+    { field: 'type', headerName: 'Type', width: 130, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
-    { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
-    { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
-    { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
-    { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
-    { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
-    { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
-    { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
-    { field: 'color', headerName: 'Color', width: 150, sortable: true },
-    { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
     {
       field: 'action',
       headerName: 'Action',
@@ -485,6 +505,15 @@ const PreprocessingStation = () => {
         </Button>
       ),
     },
+    { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
+    { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
+    { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
+    { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
+    { field: 'cherryScore', headerName: 'Cherry Score', width: 150, sortable: true },
+    { field: 'cherryGroup', headerName: 'Cherry Group', width: 150, sortable: true },
+    { field: 'ripeness', headerName: 'Ripeness', width: 150, sortable: true },
+    { field: 'color', headerName: 'Color', width: 150, sortable: true },
+    { field: 'foreignMatter', headerName: 'Foreign Matter', width: 150, sortable: true },
   ];
 
   const columns = [
@@ -510,9 +539,9 @@ const PreprocessingStation = () => {
   ];
 
   const filteredPreprocessingData = producerFilter === 'All'
-    ? preprocessingData
-    : preprocessingData.filter(row => row.producer === producerFilter);
-
+    ? preprocessingData.filter(row => parseFloat(row.processedWeight) > 0)
+    : preprocessingData.filter(row => row.producer === producerFilter && parseFloat(row.processedWeight) > 0);
+    
   if (status === 'loading') {
     return <p>Loading...</p>;
   }
@@ -852,7 +881,7 @@ const PreprocessingStation = () => {
 
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom style={{ marginBottom: '10px' }}>
               Processing Order Book
             </Typography>
             <FormControl sx={{ mb: 2, minWidth: 120 }}>
