@@ -42,8 +42,8 @@ class ErrorBoundary extends React.Component {
 
 const WetmillStation = () => {
   const { data: session, status } = useSession();
-  const [notScannedBatches, setNotScannedBatches] = useState([]);
-  const [processedBatches, setProcessedBatches] = useState([]);
+  const [unprocessedAndInProgressBatches, setUnprocessedAndInProgressBatches] = useState([]);
+  const [completedWetMillBatches, setCompletedWetMillBatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -59,8 +59,8 @@ const WetmillStation = () => {
   const [selectedWeightIds, setSelectedWeightIds] = useState([]);
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
   const [deletedWeights, setDeletedWeights] = useState([]);
-  const [notScannedFilter, setNotScannedFilter] = useState('');
-  const [processedFilter, setProcessedFilter] = useState('');
+  const [unprocessedFilter, setUnprocessedFilter] = useState('');
+  const [completedFilter, setCompletedFilter] = useState('');
   const isFetchingRef = useRef(false); // Prevent concurrent fetches
 
   const fetchOrderBook = useCallback(async () => {
@@ -167,15 +167,19 @@ const WetmillStation = () => {
           return 0;
         });
 
-      // Split into not scanned and processed batches
-      const notScanned = formattedData.filter(batch => batch.status === 'Not Scanned');
-      const processed = formattedData.filter(batch => ['Entered Wet Mill', 'Exited Wet Mill', 'In Drying'].includes(batch.status));
+      // Split into unprocessed/in-progress and completed wet mill batches
+      const unprocessedAndInProgress = formattedData.filter(batch => 
+        batch.status === 'Not Scanned' || batch.status === 'Entered Wet Mill'
+      );
+      const completedWetMill = formattedData.filter(batch => 
+        batch.status === 'Exited Wet Mill' || batch.status === 'In Drying'
+      );
 
       // Debug: Log split counts
-      console.log('Not Scanned Batches:', notScanned.length, 'Processed Batches:', processed.length);
+      console.log('Unprocessed and In-Progress Batches:', unprocessedAndInProgress.length, 'Completed Wet Mill Batches:', completedWetMill.length);
 
-      setNotScannedBatches(notScanned);
-      setProcessedBatches(processed);
+      setUnprocessedAndInProgressBatches(unprocessedAndInProgress);
+      setCompletedWetMillBatches(completedWetMill);
     } catch (error) {
       console.error('Error fetching order book data:', error);
       setSnackbarMessage(error.message || 'Error fetching data. Please try again.');
@@ -511,20 +515,20 @@ const WetmillStation = () => {
     { field: 'preprocessing_notes', headerName: 'Preprocessing Notes', width: 200 },
   ], [handleWeightClick]);
 
-  const filteredNotScannedBatches = useMemo(() => 
-    notScannedBatches.filter(batch => 
-      batch.batchNumber.toLowerCase().includes(notScannedFilter.toLowerCase()) ||
-      batch.farmerName?.toLowerCase().includes(notScannedFilter.toLowerCase())
+  const filteredUnprocessedAndInProgressBatches = useMemo(() => 
+    unprocessedAndInProgressBatches.filter(batch => 
+      batch.batchNumber.toLowerCase().includes(unprocessedFilter.toLowerCase()) ||
+      batch.farmerName?.toLowerCase().includes(unprocessedFilter.toLowerCase())
     ),
-    [notScannedBatches, notScannedFilter]
+    [unprocessedAndInProgressBatches, unprocessedFilter]
   );
 
-  const filteredProcessedBatches = useMemo(() => 
-    processedBatches.filter(batch => 
-      batch.batchNumber.toLowerCase().includes(processedFilter.toLowerCase()) ||
-      batch.farmerName?.toLowerCase().includes(processedFilter.toLowerCase())
+  const filteredCompletedWetMillBatches = useMemo(() => 
+    completedWetMillBatches.filter(batch => 
+      batch.batchNumber.toLowerCase().includes(completedFilter.toLowerCase()) ||
+      batch.farmerName?.toLowerCase().includes(completedFilter.toLowerCase())
     ),
-    [processedBatches, processedFilter]
+    [completedWetMillBatches, completedFilter]
   );
 
   if (status === 'loading') return <p>Loading...</p>;
@@ -551,13 +555,13 @@ const WetmillStation = () => {
                 {isLoading ? 'Refreshing...' : 'Refresh Data'}
               </Button>
 
-              {/* Not Scanned Batches Grid */}
+              {/* Unprocessed and In-Progress Batches Grid */}
               <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" gutterBottom>Not Scanned Batches</Typography>
+                <Typography variant="h6" gutterBottom>Unprocessed and In-Progress Batches</Typography>
                 <TextField
                   label="Search by Batch Number or Farmer Name"
-                  value={notScannedFilter}
-                  onChange={e => setNotScannedFilter(e.target.value)}
+                  value={unprocessedFilter}
+                  onChange={e => setUnprocessedFilter(e.target.value)}
                   fullWidth
                   margin="normal"
                   InputProps={{
@@ -570,7 +574,7 @@ const WetmillStation = () => {
                 />
                 <div style={{ height: 600, width: '100%' }}>
                   <DataGrid
-                    rows={filteredNotScannedBatches}
+                    rows={filteredUnprocessedAndInProgressBatches}
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
                     disableRowSelectionOnClick
@@ -590,13 +594,13 @@ const WetmillStation = () => {
                 </div>
               </Box>
 
-              {/* Processed Batches Grid */}
+              {/* Completed Wet Mill Batches Grid */}
               <Box>
-                <Typography variant="h6" gutterBottom>Processed Batches</Typography>
+                <Typography variant="h6" gutterBottom>Completed Wet Mill Batches</Typography>
                 <TextField
                   label="Search by Batch Number or Farmer Name"
-                  value={processedFilter}
-                  onChange={e => setProcessedFilter(e.target.value)}
+                  value={completedFilter}
+                  onChange={e => setCompletedFilter(e.target.value)}
                   fullWidth
                   margin="normal"
                   InputProps={{
@@ -609,7 +613,7 @@ const WetmillStation = () => {
                 />
                 <div style={{ height: 600, width: '100%' }}>
                   <DataGrid
-                    rows={filteredProcessedBatches}
+                    rows={filteredCompletedWetMillBatches}
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
                     disableRowSelectionOnClick
@@ -813,11 +817,10 @@ const WetmillStation = () => {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
           <Alert
-            severity="error"
+            severity={snackbarSeverity}
             sx={{ width: '100%' }}
             action={deletedWeights.length > 0 ? (
-              <Button color="primary" size="small"
-                onClick={handleUndoDelete}>
+              <Button color="inherit" size="small" onClick={handleUndoDelete}>
                 Undo
               </Button>
             ) : null}
