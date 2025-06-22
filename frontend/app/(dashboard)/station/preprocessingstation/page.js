@@ -328,24 +328,53 @@ const PreprocessingStation = () => {
 
   const fetchPreprocessingData = async () => {
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
-      const result = await response.json();
-      const allRows = result.allRows || [];
+      // Fetch data from both /api/qc and /api/preprocessing
+      const [qcResponse, preprocessingResponse] = await Promise.all([
+        fetch('https://processing-facility-backend.onrender.com/api/qc'),
+        fetch('https://processing-facility-backend.onrender.com/api/preprocessing'),
+      ]);
+      const qcResult = await qcResponse.json();
+      const preprocessingResult = await preprocessingResponse.json();
+      const allRows = qcResult.allRows || [];
+      const preprocessingRows = preprocessingResult.allRows || preprocessingResult || [];
   
-      // Deduplicate rows by batchNumber and processingType, keeping the latest notes
-      const rowMap = new Map();
+      // Create a Map of PreprocessingData by batchNumber-processingType for accurate notes
+      const preprocessingMap = new Map();
+      preprocessingRows.forEach(row => {
+        const key = `${row.batchNumber}-${row.processingType || 'unknown'}`;
+        const existing = preprocessingMap.get(key);
+        const rowDate = new Date(row.processingDate || row.createdAt || '1970-01-01');
+        const existingDate = existing ? new Date(existing.processingDate || existing.createdAt || '1970-01-01') : new Date('1970-01-01');
+  
+        // Keep the latest row if duplicates exist
+        if (!existing || rowDate > existingDate) {
+          preprocessingMap.set(key, {
+            batchNumber: row.batchNumber,
+            processingType: row.processingType,
+            notes: row.notes || '',
+            weightProcessed: parseFloat(row.weightProcessed || 0),
+            producer: row.producer,
+            productLine: row.productLine,
+            quality: row.quality,
+            processingDate: row.processingDate,
+          });
+        }
+      });
+  
+      // Deduplicate /api/qc rows by batchNumber-processingType
+      const qcRowMap = new Map();
       allRows.forEach(batch => {
         const key = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
-        const existing = rowMap.get(key);
+        const existing = qcRowMap.get(key);
         const batchDate = new Date(batch.lastProcessingDate || batch.startProcessingDate || '1970-01-01');
         const existingDate = existing ? new Date(existing.lastProcessingDate || existing.startProcessingDate || '1970-01-01') : new Date('1970-01-01');
   
         if (!existing || batchDate > existingDate) {
-          rowMap.set(key, batch);
+          qcRowMap.set(key, batch);
         }
       });
   
-      const dedupedRows = Array.from(rowMap.values());
+      const dedupedRows = Array.from(qcRowMap.values());
   
       const today = new Date();
       const formattedData = dedupedRows.map(batch => {
@@ -355,20 +384,25 @@ const PreprocessingStation = () => {
           const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
+  
+        // Get correct notes from preprocessingMap
+        const preprocessingKey = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
+        const preprocessingRow = preprocessingMap.get(preprocessingKey) || {};
+  
         return {
           id: `${batch.batchNumber}-${batch.processingType || 'unknown'}`,
           batchNumber: batch.batchNumber,
           type: batch.type,
-          producer: batch.producer,
-          productLine: batch.productLine,
-          processingType: batch.processingType,
-          quality: batch.quality,
+          producer: batch.producer || preprocessingRow.producer || 'Unknown',
+          productLine: batch.productLine || preprocessingRow.productLine || 'Unknown',
+          processingType: batch.processingType || 'unknown',
+          quality: batch.quality || preprocessingRow.quality || 'Unknown',
           weight: parseFloat(batch.weight || 0),
-          processedWeight: parseFloat(batch.processedWeight || 0),
+          processedWeight: parseFloat(batch.processedWeight || preprocessingRow.weightProcessed || 0),
           availableWeight: parseFloat(batch.availableWeight || 0),
           startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
           lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
-          preprocessing_notes: batch.preprocessing_notes || '',
+          preprocessing_notes: preprocessingRow.notes || '',
           finished: batch.finished || false,
           sla,
           overallQuality: batch.overallQuality,
@@ -423,6 +457,10 @@ const PreprocessingStation = () => {
       console.error('Error fetching preprocessing data:', error);
     }
   };
+
+  const filteredPreprocessingData = producerFilter === 'All'
+  ? preprocessingData.filter(row => parseFloat(row.processedWeight) > 0)
+  : preprocessingData.filter(row => row.producer === producerFilter && parseFloat(row.processedWeight) > 0);
 
   useEffect(() => {
     fetchPreprocessingData();
@@ -538,10 +576,6 @@ const PreprocessingStation = () => {
     },
   ];
 
-  const filteredPreprocessingData = producerFilter === 'All'
-    ? preprocessingData.filter(row => parseFloat(row.processedWeight) > 0)
-    : preprocessingData.filter(row => row.producer === producerFilter && parseFloat(row.processedWeight) > 0);
-    
   if (status === 'loading') {
     return <p>Loading...</p>;
   }
@@ -881,10 +915,10 @@ const PreprocessingStation = () => {
 
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom style={{ marginBottom: '10px' }}>
+            <Typography variant="h5" gutterBottom>
               Processing Order Book
             </Typography>
-            <FormControl sx={{ mb: 2, minWidth: 120 }}>
+            <FormControl sx={{ mb: 2, mt: 2, minWidth: 120 }}>
               <InputLabel id="producer-filter-label">Producer</InputLabel>
               <Select
                 labelId="producer-filter-label"
