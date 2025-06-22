@@ -52,13 +52,19 @@ const PreprocessingStation = () => {
   const [quality, setQuality] = useState('');
   const [notes, setNotes] = useState('');
   const [producerFilter, setProducerFilter] = useState('All');
-  // New state for confirmation dialog
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
+  // New state for loading
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const fetchAvailableWeight = async (batchNumber, totalWeight) => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`Failed to fetch preprocessing data: ${response.status}`);
       const preprocessingResponse = await response.json();
       if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalWeightProcessed))) {
@@ -88,7 +94,12 @@ const PreprocessingStation = () => {
 
   const fetchBatchData = async (batchNumber) => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`Failed to fetch receiving data: ${response.status}`);
       const dataArray = await response.json();
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
@@ -119,14 +130,24 @@ const PreprocessingStation = () => {
 
   const handleRfidScan = async () => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/Warehouse_Exit`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/Warehouse_Exit`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`Failed to fetch RFID: ${response.status}`);
       const data = await response.json();
 
       if (data.rfid) {
         setRfid(data.rfid);
         setRfidTag(data.rfid);
-        const receivingResponse = await fetch(`https://processing-facility-backend.onrender.com/api/receivingrfid/${data.rfid}`);
+        const controller2 = new AbortController();
+        const timeoutId2 = setTimeout(() => controller2.abort(), 10000);
+        const receivingResponse = await fetch(`https://processing-facility-backend.onrender.com/api/receivingrfid/${data.rfid}`, {
+          signal: controller2.signal,
+        });
+        clearTimeout(timeoutId2);
         if (!receivingResponse.ok) throw new Error(`Failed to fetch receiving data: ${receivingResponse.status}`);
         const receivingData = await receivingResponse.json();
 
@@ -170,7 +191,13 @@ const PreprocessingStation = () => {
 
   const clearRfidData = async (scannedAt) => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/${scannedAt}`, { method: 'DELETE' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/${scannedAt}`, {
+        method: 'DELETE',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`Failed to clear RFID Data: ${response.status}`);
     } catch (error) {
       console.error("Error clearing RFID Data:", error);
@@ -199,37 +226,49 @@ const PreprocessingStation = () => {
   };
 
   const handleFinishBatch = async (batchNumber) => {
+    setIsFinishing(true);
     try {
       console.log(`Attempting to mark batch ${batchNumber} as complete`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}/finish`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to mark batch as complete: ${response.status} - ${errorData.error || 'Unknown error'}`);
+        let errorData = {};
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          console.error('Failed to parse error response:', e);
+        }
+        const errorMessage = errorData.error || `HTTP error ${response.status}`;
+        const errorDetails = errorData.details || 'No additional details provided';
+        throw new Error(`${errorMessage}: ${errorDetails}`);
       }
       const result = await response.json();
       console.log(`Batch ${batchNumber} marked as complete:`, result);
-      setSnackbarMessage(`Batch ${batchNumber} marked as complete successfully!`);
+      setSnackbarMessage(result.message || `Batch ${batchNumber} marked as complete successfully!`);
       setSnackbarSeverity('success');
-      await fetchPreprocessingData(); // Refresh DataGrids
+      await fetchPreprocessingData();
     } catch (error) {
       console.error('Error in handleFinishBatch:', error);
-      handleError(`Failed to mark batch ${batchNumber} as complete: ${error.message}`, error);
+      setSnackbarMessage(`Failed to mark batch ${batchNumber} as complete: ${error.message}`);
+      setSnackbarSeverity('error');
     } finally {
+      setIsFinishing(false);
       setOpenSnackbar(true);
-      setOpenConfirmDialog(false); // Close dialog
+      setOpenConfirmDialog(false);
     }
   };
 
-  // New function to open confirmation dialog
   const openFinishConfirmation = (batchNumber) => {
     setSelectedBatchNumber(batchNumber);
     setOpenConfirmDialog(true);
   };
 
-  // New function to close confirmation dialog
   const handleCancelFinish = () => {
     setOpenConfirmDialog(false);
     setSelectedBatchNumber('');
@@ -237,9 +276,19 @@ const PreprocessingStation = () => {
 
   const fetchWeightHistory = async () => {
     try {
-      const batchesResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const batchesResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving", {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       const batches = await batchesResponse.json();
-      const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing");
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), 10000);
+      const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing", {
+        signal: controller2.signal,
+      });
+      clearTimeout(timeoutId2);
       const processedWeights = await processedResponse.json();
 
       const historyData = batches.map((batch) => {
@@ -303,11 +352,15 @@ const PreprocessingStation = () => {
     };
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preprocessingData),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(`Failed to start processing: ${errorData.error || 'Unknown error'}`);
@@ -354,10 +407,13 @@ const PreprocessingStation = () => {
 
   const fetchPreprocessingData = async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const [qcResponse, preprocessingResponse] = await Promise.all([
-        fetch('https://processing-facility-backend.onrender.com/api/qc'),
-        fetch('https://processing-facility-backend.onrender.com/api/preprocessing'),
+        fetch('https://processing-facility-backend.onrender.com/api/qc', { signal: controller.signal }),
+        fetch('https://processing-facility-backend.onrender.com/api/preprocessing', { signal: controller.signal }),
       ]);
+      clearTimeout(timeoutId);
       const qcResult = await qcResponse.json();
       const preprocessingResult = await preprocessingResponse.json();
       const allRows = qcResult.allRows || [];
@@ -557,7 +613,7 @@ const PreprocessingStation = () => {
           color="warning"
           size="small"
           onClick={() => openFinishConfirmation(row.batchNumber)}
-          disabled={row.finished}
+          disabled={row.finished || parseFloat(row.availableWeight) <= 0}
         >
           Mark as Complete
         </Button>
@@ -901,7 +957,6 @@ const PreprocessingStation = () => {
               </DialogActions>
             </Dialog>
 
-            {/* New Confirmation Dialog */}
             <Dialog
               open={openConfirmDialog}
               onClose={handleCancelFinish}
@@ -913,15 +968,16 @@ const PreprocessingStation = () => {
                 </Typography>
               </DialogContent>
               <DialogActions>
-                <Button onClick={handleCancelFinish} color="primary">
+                <Button onClick={handleCancelFinish} color="primary" disabled={isFinishing}>
                   Cancel
                 </Button>
                 <Button
                   onClick={() => handleFinishBatch(selectedBatchNumber)}
                   color="warning"
                   variant="contained"
+                  disabled={isFinishing}
                 >
-                  Confirm
+                  {isFinishing ? 'Processing...' : 'Confirm'}
                 </Button>
               </DialogActions>
             </Dialog>
