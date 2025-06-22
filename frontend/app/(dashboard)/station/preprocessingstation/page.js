@@ -52,11 +52,14 @@ const PreprocessingStation = () => {
   const [quality, setQuality] = useState('');
   const [notes, setNotes] = useState('');
   const [producerFilter, setProducerFilter] = useState('All');
+  // New state for confirmation dialog
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
 
   const fetchAvailableWeight = async (batchNumber, totalWeight) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`);
-      if (!response.ok) throw new Error('Failed to fetch preprocessing data');
+      if (!response.ok) throw new Error(`Failed to fetch preprocessing data: ${response.status}`);
       const preprocessingResponse = await response.json();
       if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalWeightProcessed))) {
         const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed);
@@ -86,7 +89,7 @@ const PreprocessingStation = () => {
   const fetchBatchData = async (batchNumber) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
-      if (!response.ok) throw new Error('Failed to fetch receiving data');
+      if (!response.ok) throw new Error(`Failed to fetch receiving data: ${response.status}`);
       const dataArray = await response.json();
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
       const data = dataArray[0];
@@ -101,7 +104,7 @@ const PreprocessingStation = () => {
       setTotalProcessedWeight(totalProcessedWeight);
 
       if (finished) {
-        setSnackbarMessage(`Batch ${batchNumber} is already marked as finished.`);
+        setSnackbarMessage(`Batch ${batchNumber} is already marked as complete.`);
         setSnackbarSeverity('warning');
       } else {
         setSnackbarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
@@ -140,7 +143,7 @@ const PreprocessingStation = () => {
           setTotalProcessedWeight(totalProcessedWeight);
 
           if (finished) {
-            setSnackbarMessage(`Batch ${batchData.batchNumber} is already marked as finished.`);
+            setSnackbarMessage(`Batch ${batchData.batchNumber} is already marked as complete.`);
             setSnackbarSeverity('warning');
           } else {
             setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
@@ -197,19 +200,39 @@ const PreprocessingStation = () => {
 
   const handleFinishBatch = async (batchNumber) => {
     try {
+      console.log(`Attempting to mark batch ${batchNumber} as complete`);
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}/finish`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (!response.ok) throw new Error('Failed to mark batch as finished');
-      setSnackbarMessage(`Batch ${batchNumber} marked as finished successfully!`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to mark batch as complete: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      }
+      const result = await response.json();
+      console.log(`Batch ${batchNumber} marked as complete:`, result);
+      setSnackbarMessage(`Batch ${batchNumber} marked as complete successfully!`);
       setSnackbarSeverity('success');
-      await fetchPreprocessingData();
+      await fetchPreprocessingData(); // Refresh DataGrids
     } catch (error) {
-      handleError('Failed to mark batch as finished. Please try again.', error);
+      console.error('Error in handleFinishBatch:', error);
+      handleError(`Failed to mark batch ${batchNumber} as complete: ${error.message}`, error);
     } finally {
       setOpenSnackbar(true);
+      setOpenConfirmDialog(false); // Close dialog
     }
+  };
+
+  // New function to open confirmation dialog
+  const openFinishConfirmation = (batchNumber) => {
+    setSelectedBatchNumber(batchNumber);
+    setOpenConfirmDialog(true);
+  };
+
+  // New function to close confirmation dialog
+  const handleCancelFinish = () => {
+    setOpenConfirmDialog(false);
+    setSelectedBatchNumber('');
   };
 
   const fetchWeightHistory = async () => {
@@ -285,7 +308,10 @@ const PreprocessingStation = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preprocessingData),
       });
-      if (!response.ok) throw new Error('Failed to start processing');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to start processing: ${errorData.error || 'Unknown error'}`);
+      }
       setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedWeightProcessed} kg!`);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
@@ -328,7 +354,6 @@ const PreprocessingStation = () => {
 
   const fetchPreprocessingData = async () => {
     try {
-      // Fetch data from both /api/qc and /api/preprocessing
       const [qcResponse, preprocessingResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
         fetch('https://processing-facility-backend.onrender.com/api/preprocessing'),
@@ -337,16 +362,14 @@ const PreprocessingStation = () => {
       const preprocessingResult = await preprocessingResponse.json();
       const allRows = qcResult.allRows || [];
       const preprocessingRows = preprocessingResult.allRows || preprocessingResult || [];
-  
-      // Create a Map of PreprocessingData by batchNumber-processingType for accurate notes
+
       const preprocessingMap = new Map();
       preprocessingRows.forEach(row => {
         const key = `${row.batchNumber}-${row.processingType || 'unknown'}`;
         const existing = preprocessingMap.get(key);
         const rowDate = new Date(row.processingDate || row.createdAt || '1970-01-01');
         const existingDate = existing ? new Date(existing.processingDate || existing.createdAt || '1970-01-01') : new Date('1970-01-01');
-  
-        // Keep the latest row if duplicates exist
+
         if (!existing || rowDate > existingDate) {
           preprocessingMap.set(key, {
             batchNumber: row.batchNumber,
@@ -360,22 +383,21 @@ const PreprocessingStation = () => {
           });
         }
       });
-  
-      // Deduplicate /api/qc rows by batchNumber-processingType
+
       const qcRowMap = new Map();
       allRows.forEach(batch => {
         const key = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
         const existing = qcRowMap.get(key);
         const batchDate = new Date(batch.lastProcessingDate || batch.startProcessingDate || '1970-01-01');
         const existingDate = existing ? new Date(existing.lastProcessingDate || existing.startProcessingDate || '1970-01-01') : new Date('1970-01-01');
-  
+
         if (!existing || batchDate > existingDate) {
           qcRowMap.set(key, batch);
         }
       });
-  
+
       const dedupedRows = Array.from(qcRowMap.values());
-  
+
       const today = new Date();
       const formattedData = dedupedRows.map(batch => {
         const receivingDate = new Date(batch.receivingDate);
@@ -384,11 +406,10 @@ const PreprocessingStation = () => {
           const diffTime = Math.abs(today - receivingDate);
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
-  
-        // Get correct notes from preprocessingMap
+
         const preprocessingKey = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
         const preprocessingRow = preprocessingMap.get(preprocessingKey) || {};
-  
+
         return {
           id: `${batch.batchNumber}-${batch.processingType || 'unknown'}`,
           batchNumber: batch.batchNumber,
@@ -415,8 +436,7 @@ const PreprocessingStation = () => {
           foreignMatter: batch.foreignMatter,
         };
       });
-  
-      // Aggregate unprocessed batches by batchNumber
+
       const batchMap = new Map();
       dedupedRows.forEach(batch => {
         const key = batch.batchNumber;
@@ -438,7 +458,7 @@ const PreprocessingStation = () => {
           });
         }
       });
-  
+
       const unprocessedBatches = Array.from(batchMap.values())
         .filter(batch => parseFloat(batch.availableWeight) > 0 && !batch.finished)
         .sort((a, b) => {
@@ -450,7 +470,7 @@ const PreprocessingStation = () => {
           if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
           return 0;
         });
-  
+
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
     } catch (error) {
@@ -459,8 +479,8 @@ const PreprocessingStation = () => {
   };
 
   const filteredPreprocessingData = producerFilter === 'All'
-  ? preprocessingData.filter(row => parseFloat(row.processedWeight) > 0)
-  : preprocessingData.filter(row => row.producer === producerFilter && parseFloat(row.processedWeight) > 0);
+    ? preprocessingData.filter(row => parseFloat(row.processedWeight) > 0)
+    : preprocessingData.filter(row => row.producer === producerFilter && parseFloat(row.processedWeight) > 0);
 
   useEffect(() => {
     fetchPreprocessingData();
@@ -536,10 +556,10 @@ const PreprocessingStation = () => {
           variant="contained"
           color="warning"
           size="small"
-          onClick={() => handleFinishBatch(row.batchNumber)}
+          onClick={() => openFinishConfirmation(row.batchNumber)}
           disabled={row.finished}
         >
-          Finish
+          Mark as Complete
         </Button>
       ),
     },
@@ -877,6 +897,31 @@ const PreprocessingStation = () => {
               <DialogActions>
                 <Button onClick={handleCloseHistory} color="primary">
                   Close
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* New Confirmation Dialog */}
+            <Dialog
+              open={openConfirmDialog}
+              onClose={handleCancelFinish}
+            >
+              <DialogTitle>Confirm Mark as Complete</DialogTitle>
+              <DialogContent>
+                <Typography>
+                  Are you sure you want to mark batch {selectedBatchNumber} as complete? This action cannot be undone.
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCancelFinish} color="primary">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleFinishBatch(selectedBatchNumber)}
+                  color="warning"
+                  variant="contained"
+                >
+                  Confirm
                 </Button>
               </DialogActions>
             </Dialog>
