@@ -848,8 +848,8 @@ const DryingStation = () => {
 
   const envChartData = useMemo(() => ({
     labels: historicalEnvData.map(d => {
-      // Offset recordedAt by +8 hours for WITA (UTC+8)
-      const date = new Date(d.recordedAt);
+      // Offset recorded_at by +8 hours for WITA (UTC+8)
+      const date = new Date(d.recorded_at);
       date.setHours(date.getHours() + 8);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     }),

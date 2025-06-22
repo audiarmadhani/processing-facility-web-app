@@ -624,7 +624,7 @@ const PreprocessingStation = () => {
     {
       field: 'action',
       headerName: 'Action',
-      width: 150,
+      width: 180,
       sortable: false,
       renderCell: ({ row }) => (
         <Button
