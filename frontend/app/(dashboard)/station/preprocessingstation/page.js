@@ -689,7 +689,7 @@ const PreprocessingStation = () => {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-              Preprocessing Station
+              Processing Station
             </Typography>
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2} alignItems="center">
