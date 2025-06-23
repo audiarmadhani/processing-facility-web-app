@@ -209,7 +209,7 @@ const WetmillStation = () => {
   }, []);
 
   const handleAddOrUpdateBagWeight = useCallback(async () => {
-    if (!newBagWeight || isNaN(newBagWeight) || batchBagWeight <= 0) {
+    if (!newBagWeight || isNaN(newBagWeight) || newBagWeight <= 0) {
       setSnackbarMessage('Please enter a valid weight measurement (positive number).');
       setSnackbarSeverity('error message');
       setOpenSnackbar('error');
