@@ -713,7 +713,7 @@ const WetmillStation = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Processing Type</TableCell>
-                  <TableCell>Total Weight After Wet Mill (kg)</TableCell>
+                  <TableCell align="right">Weight After Wet Mill (kg)</TableCell>
                   <TableCell>Lot Number</TableCell>
                   <TableCell>Reference Number</TableCell>
                 </TableRow>
