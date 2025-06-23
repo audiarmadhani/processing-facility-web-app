@@ -90,10 +90,6 @@ const WetmillStation = () => {
         .filter(batch => batch && batch.batchNumber && typeof batch.batchNumber === 'string')
         .map(batch => batch.batchNumber);
 
-      // Debug: Log batch counts
-      console.log('QC Batches:', qcData.length, 'Wetmill Entries:', wetmillData.length, 'Drying Entries:', dryingData.length);
-      console.log('Batch Numbers:', batchNumbers);
-
       let weightsResult = [];
       if (batchNumbers.length > 0) {
         const weightsResponse = await fetch(
@@ -135,11 +131,6 @@ const WetmillStation = () => {
                 : 'Entered Wet Mill'
               : 'Not Scanned';
 
-          // Debug: Log status for each batch
-          if (['Exited Wet Mill', 'In Drying'].includes(status)) {
-            console.log(`Batch ${batch.batchNumber}: Status=${status}, WetmillEntry=${!!latestWetmillEntry}, DryingEntry=${!!latestDryingEntry}`);
-          }
-
           return {
             ...batch,
             sla,
@@ -147,6 +138,8 @@ const WetmillStation = () => {
             startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
             lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
             weight: batchWeights[batch.batchNumber] ? batchWeights[batch.batchNumber].total.toFixed(2) : 'N/A',
+            lotNumbers: latestWetmillEntry?.lotNumbers || ['N/A'],
+            referenceNumbers: latestWetmillEntry?.referenceNumbers || ['N/A'],
           };
         })
         .sort((a, b) => {
@@ -167,16 +160,12 @@ const WetmillStation = () => {
           return 0;
         });
 
-      // Split into unprocessed/in-progress and completed wet mill batches
       const unprocessedAndInProgress = formattedData.filter(batch => 
         batch.status === 'Not Scanned' || batch.status === 'Entered Wet Mill'
       );
       const completedWetMill = formattedData.filter(batch => 
         batch.status === 'Exited Wet Mill' || batch.status === 'In Drying'
       );
-
-      // Debug: Log split counts
-      console.log('Unprocessed and In-Progress Batches:', unprocessedAndInProgress.length, 'Completed Wet Mill Batches:', completedWetMill.length);
 
       setUnprocessedAndInProgressBatches(unprocessedAndInProgress);
       setCompletedWetMillBatches(completedWetMill);
@@ -268,7 +257,7 @@ const WetmillStation = () => {
         });
         if (!response.ok) throw new Error('Failed to update weight measurement');
         const result = await response.json();
-        setWeightMeasurements(weightMeasurements.map(m => m.id === editingWeightId ? result.measurement : m));
+        setWeightMeasurements(weightMeasurements.map(m => m.id === editingWeightId ? { ...result.measurement, lotNumbers: m.lotNumbers, referenceNumbers: m.referenceNumbers } : m));
         setSnackbarMessage(`Bag ${newBagNumber} weight updated successfully`);
         setSnackbarSeverity('success');
         setEditingWeightId(null);
@@ -287,7 +276,7 @@ const WetmillStation = () => {
         });
         if (!response.ok) throw new Error('Failed to save weight measurement');
         const result = await response.json();
-        setWeightMeasurements([...weightMeasurements, result.measurement]);
+        setWeightMeasurements([...weightMeasurements, { ...result.measurement, lotNumbers: selectedBatch.lotNumbers, referenceNumbers: selectedBatch.referenceNumbers }]);
         setNewBagNumber(newBagNumber + 1);
         setSnackbarMessage(`Bag ${newBagNumber} weight added successfully`);
         setSnackbarSeverity('success');
@@ -356,7 +345,7 @@ const WetmillStation = () => {
         });
         if (!response.ok) throw new Error('Failed to restore weight measurement');
         const result = await response.json();
-        restoredWeights.push(result.measurement);
+        restoredWeights.push({ ...result.measurement, lotNumbers: weight.lotNumbers, referenceNumbers: weight.referenceNumbers });
       }
       setWeightMeasurements([...weightMeasurements, ...restoredWeights]);
       setDeletedWeights([]);
@@ -512,6 +501,18 @@ const WetmillStation = () => {
     { field: 'productLine', headerName: 'Product Line', width: 180 },
     { field: 'processingType', headerName: 'Processing Type', width: 220 },
     { field: 'quality', headerName: 'Quality', width: 130 },
+    { 
+      field: 'lotNumbers', 
+      headerName: 'Lot Numbers', 
+      width: 200, 
+      renderCell: ({ value }) => value.join(', ') || 'N/A' 
+    },
+    { 
+      field: 'referenceNumbers', 
+      headerName: 'Reference Numbers', 
+      width: 200, 
+      renderCell: ({ value }) => value.join(', ') || 'N/A' 
+    },
     { field: 'preprocessing_notes', headerName: 'Preprocessing Notes', width: 200 },
   ], [handleWeightClick]);
 
@@ -701,9 +702,13 @@ const WetmillStation = () => {
                 ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
                 : null;
               const total = totalWeights[latestDate]?.[type] || 0;
+              const lotNumbers = weightMeasurements.find(m => m.processingType === type)?.lotNumbers || ['N/A'];
+              const referenceNumbers = weightMeasurements.find(m => m.processingType === type)?.referenceNumbers || ['N/A'];
               return (
                 <div key={type}>
-                  <Typography variant="subtitle1" gutterBottom>{type} Total: {total.toFixed(2)} kg</Typography>
+                  <Typography variant="subtitle1" gutterBottom>
+                    {type} Total: {total.toFixed(2)} kg | Lot Numbers: {lotNumbers.join(', ')} | Reference Numbers: {referenceNumbers.join(', ')}
+                  </Typography>
                 </div>
               );
             })}
