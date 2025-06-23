@@ -639,84 +639,108 @@ const WetmillStation = () => {
           </Card>
         </Grid>
 
-        <Dialog open={openWeightDialog} onClose={handleCloseWeightDialog} maxWidth="md" contentType="dialog">
+        <Dialog open={openWeightDialog} onClose={handleCloseWeightDialog} maxWidth="md" fullWidth>
           <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber}</DialogTitle>
           <DialogContent>
-            <Typography variant="h6" gutterBottom>{editingWeightId ? 'Edit Bag Weight' : 'Add Bag Weight'}</Typography>
-            <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
-              <Grid item xs={3}>
-                <FormControl fullWidth>
-                  <InputLabel id="processing-type-label">Processing Type</InputLabel>
-                  <Select
-                    labelId="processing-type-label"
-                    value={newProcessingType}
-                    onChange={e => handleProcessingTypeChange(e.target.value)}
-                    label="Processing Type"
-                    disabled={editingWeightId !== null}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {editingWeightId ? 'Edit Bag Weight' : 'Add Bag Weight'}
+              </Typography>
+              <Grid container spacing={1} alignItems="center">
+                <Grid item xs={4}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="processing-type-label">Processing Type</InputLabel>
+                    <Select
+                      labelId="processing-type-label"
+                      value={newProcessingType}
+                      onChange={e => handleProcessingTypeChange(e.target.value)}
+                      label="Processing Type"
+                      disabled={editingWeightId !== null}
+                    >
+                      {processingTypes.map(type => (
+                        <MenuItem key={type} value={type}>{type}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={2}>
+                  <TextField
+                    label="Bag Number"
+                    value={newBagNumber}
+                    InputProps={{ readOnly: true }}
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <TextField
+                    label="Weight (kg)"
+                    value={newBagWeight}
+                    onChange={e => setNewBagWeight(e.target.value)}
+                    type="number"
+                    size="small"
+                    fullWidth
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                </Grid>
+                <Grid item xs={2}>
+                  <TextField
+                    label="Date"
+                    type="date"
+                    value={newWeightDate}
+                    onChange={e => setNewWeightDate(e.target.value)}
+                    size="small"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleAddOrUpdateBagWeight}
+                    fullWidth
+                    size="small"
                   >
-                    {processingTypes.map(type => (
-                      <MenuItem key={type} value={type}>{type}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    {editingWeightId ? 'Update' : 'Add'}
+                  </Button>
+                </Grid>
               </Grid>
-              <Grid item xs={2}>
-                <Typography variant="body1" sx={{ mt: 2 }}>
-                  Bag Number: {newBagNumber}
-                </Typography>
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  label="Weight (kg)"
-                  value={newBagWeight}
-                  onChange={e => setNewBagWeight(e.target.value)}
-                  type="number"
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.01 }}
-                />
-              </Grid>
-              <Grid item xs={2}>
-                <TextField
-                  label="Measurement Date"
-                  type="date"
-                  value={newWeightDate}
-                  onChange={e => setNewWeightDate(e.target.value)}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={2}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddOrUpdateBagWeight}
-                  fullWidth
-                  sx={{ height: '100%' }}
-                >
-                  {editingWeightId ? 'Update' : 'Add'} Bag
-                </Button>
-              </Grid>
-            </Grid>
+            </Box>
 
-            {processingTypes.map(type => {
-              const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
-              const latestDate = typeMeasurements.length > 0 
-                ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
-                : null;
-              const total = totalWeights[latestDate]?.[type] || 0;
-              const lotEntry = selectedBatch?.lotMapping?.find(m => m.processingType === type);
-              const lotNumber = lotEntry?.lotNumber || 'N/A';
-              const referenceNumber = lotEntry?.referenceNumber || 'N/A';
-              return (
-                <div key={type}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    {type} Total: {total.toFixed(2)} kg | Lot Number: {lotNumber} | Reference Number: {referenceNumber}
-                  </Typography>
-                </div>
-              );
-            })}
+            <Typography variant="h6" gutterBottom>Batch Summary</Typography>
+            <Table size="small" sx={{ mb: 2 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Processing Type</TableCell>
+                  <TableCell align="right">Total Weight (kg)</TableCell>
+                  <TableCell>Lot Number</TableCell>
+                  <TableCell>Reference Number</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {processingTypes.map(type => {
+                  const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
+                  const latestDate = typeMeasurements.length > 0 
+                    ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
+                    : null;
+                  const total = totalWeights[latestDate]?.[type] || 0;
+                  const lotEntry = selectedBatch?.lotMapping?.find(m => m.processingType === type);
+                  const lotNumber = lotEntry?.lotNumber || 'N/A';
+                  const referenceNumber = lotEntry?.referenceNumber || 'N/A';
+                  return (
+                    <TableRow key={type}>
+                      <TableCell>{type}</TableCell>
+                      <TableCell align="right">{total.toFixed(2)}</TableCell>
+                      <TableCell>{lotNumber}</TableCell>
+                      <TableCell>{referenceNumber}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
 
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Weight History</Typography>
+            <Typography variant="h6" gutterBottom>Weight History</Typography>
             <Button
               variant="contained"
               color="error"
@@ -726,7 +750,7 @@ const WetmillStation = () => {
             >
               Delete Selected
             </Button>
-            <Table>
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell padding="checkbox">
@@ -738,7 +762,7 @@ const WetmillStation = () => {
                   <TableCell>Date</TableCell>
                   <TableCell>Processing Type</TableCell>
                   <TableCell>Bag Number</TableCell>
-                  <TableCell>Weight (kg)</TableCell>
+                  <TableCell align="right">Weight (kg)</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -756,10 +780,10 @@ const WetmillStation = () => {
                           onChange={() => handleSelectWeight(m.id)}
                         />
                       </TableCell>
-                      <TableCell>{new Date(m.measurement_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(m.measurement_date).toLocaleDateString('en-US', { timeZone: 'Asia/Jakarta' })}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
                       <TableCell>{m.bagNumber}</TableCell>
-                      <TableCell>{m.weight.toFixed(2)}</TableCell>
+                      <TableCell align="right">{m.weight.toFixed(2)}</TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
