@@ -674,7 +674,7 @@ const WetmillStation = () => {
                 </Grid>
                 <Grid item xs={3}>
                   <TextField
-                    label="Weight (kg)"
+                    label="Weight After Wet Mill (kg)"
                     value={newBagWeight}
                     onChange={e => setNewBagWeight(e.target.value)}
                     type="number"
@@ -713,7 +713,7 @@ const WetmillStation = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Processing Type</TableCell>
-                  <TableCell align="right">Total Weight (kg)</TableCell>
+                  <TableCell>Total Weight After Wet Mill (kg)</TableCell>
                   <TableCell>Lot Number</TableCell>
                   <TableCell>Reference Number</TableCell>
                 </TableRow>
@@ -762,7 +762,7 @@ const WetmillStation = () => {
                   <TableCell>Date</TableCell>
                   <TableCell>Processing Type</TableCell>
                   <TableCell>Bag Number</TableCell>
-                  <TableCell align="right">Weight (kg)</TableCell>
+                  <TableCell align="right">Weight After Wet Mill (kg)</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
