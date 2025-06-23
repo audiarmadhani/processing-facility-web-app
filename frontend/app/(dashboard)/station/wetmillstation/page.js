@@ -186,18 +186,22 @@ const WetmillStation = () => {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/wetmill-weight-measurements/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to retrieve weight measurements.');
       const data = await response.json();
-      // Filter out measurements with invalid measurement_date
+      // Filter out measurements with invalid measurement_date or weight
       const validMeasurements = data.filter(m => {
         const date = new Date(m.measurement_date);
-        if (isNaN(date.getTime())) {
+        const isValidDate = !isNaN(date.getTime());
+        const isValidWeight = typeof m.weight === 'number' && !isNaN(m.weight) && m.weight >= 0;
+        if (!isValidDate) {
           console.warn(`Invalid measurement_date in measurement ID ${m.id}: ${m.measurement_date}`);
-          return false;
         }
-        return true;
+        if (!isValidWeight) {
+          console.warn(`Invalid weight in measurement ID ${m.id}: ${m.weight}`);
+        }
+        return isValidDate && isValidWeight;
       });
       setWeightMeasurements(validMeasurements);
       if (data.length !== validMeasurements.length) {
-        setSnackbarMessage('Some weight measurements were skipped due to invalid dates.');
+        setSnackbarMessage('Some weight measurements were skipped due to invalid dates or weights.');
         setSnackbarSeverity('warning');
         setOpenSnackbar(true);
       }
@@ -701,7 +705,7 @@ const WetmillStation = () => {
                 </Grid>
                 <Grid item xs={3}>
                   <TextField
-                    label="Weight After Wet Mill (kg)"
+                    label="Weight (kg)"
                     value={newBagWeight}
                     onChange={e => setNewBagWeight(e.target.value)}
                     type="number"
@@ -740,7 +744,7 @@ const WetmillStation = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Processing Type</TableCell>
-                  <TableCell align="right">Weight After Wet Mill (kg)</TableCell>
+                  <TableCell align="right">Total Weight (kg)</TableCell>
                   <TableCell>Lot Number</TableCell>
                   <TableCell>Reference Number</TableCell>
                 </TableRow>
@@ -752,15 +756,12 @@ const WetmillStation = () => {
                     ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
                     : null;
                   const total = totalWeights[latestDate]?.[type] || 0;
-                  const lotEntry = selectedBatch?.lotMapping?.find(m => m.processingType === type);
-                  const lotNumber = lotEntry?.lotNumber || 'N/A';
-                  const referenceNumber = lotEntry?.referenceNumber || 'N/A';
                   return (
                     <TableRow key={type}>
                       <TableCell>{type}</TableCell>
-                      <TableCell align="right">{total.toFixed(2)}</TableCell>
-                      <TableCell>{lotNumber}</TableCell>
-                      <TableCell>{referenceNumber}</TableCell>
+                      <TableCell align="right">{typeof total === 'number' && !isNaN(total) ? total.toFixed(2) : 'N/A'}</TableCell>
+                      <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.lotNumber || 'N/A'}</TableCell>
+                      <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.referenceNumber || 'N/A'}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -789,7 +790,7 @@ const WetmillStation = () => {
                   <TableCell>Date</TableCell>
                   <TableCell>Processing Type</TableCell>
                   <TableCell>Bag Number</TableCell>
-                  <TableCell align="right">Weight After Wet Mill (kg)</TableCell>
+                  <TableCell align="right">Weight (kg)</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
