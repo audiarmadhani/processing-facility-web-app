@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import {
   TextField,
@@ -23,8 +23,9 @@ import {
   OutlinedInput,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api';
 
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
@@ -32,6 +33,8 @@ const PreprocessingStation = () => {
   const [rfidTag, setRfidTag] = useState('');
   const [weightProcessed, setWeightProcessed] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
+  const [lotNumber, setLotNumber] = useState('N/A'); // Initialize as N/A
+  const [referenceNumber, setReferenceNumber] = useState('N/A'); // Initialize as N/A
   const [weightAvailable, setWeightAvailable] = useState(0);
   const [totalProcessedWeight, setTotalProcessedWeight] = useState(0);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -56,60 +59,56 @@ const PreprocessingStation = () => {
   const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
 
-  const fetchAvailableWeight = async (batchNumber, totalWeight) => {
+  const fetchAvailableWeight = useCallback(async (batchNumber, totalWeight) => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}`, {
-        signal: controller.signal,
+      const response = await axios.get(`${API_BASE_URL}/preprocessing/${batchNumber}`, {
+        timeout: 10000,
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`Failed to fetch preprocessing data: ${response.status}`);
-      const preprocessingResponse = await response.json();
-      if (preprocessingResponse && !isNaN(parseFloat(preprocessingResponse.totalWeightProcessed))) {
-        const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed);
-        const weightAvailable = totalWeight - totalProcessedWeight;
-        return {
-          weightAvailable,
-          totalProcessedWeight,
-          finished: preprocessingResponse.finished || false
-        };
-      } else {
-        return {
-          weightAvailable: totalWeight,
-          totalProcessedWeight: 0,
-          finished: false
-        };
-      }
+      const preprocessingResponse = response.data;
+      const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed || 0);
+      const weightAvailable = totalWeight - totalProcessedWeight;
+      const latestRecord = preprocessingResponse.preprocessingData?.length > 0 
+        ? preprocessingResponse.preprocessingData.sort((a, b) => 
+            new Date(b.processingDate) - new Date(a.processingDate))[0]
+        : null;
+
+      return {
+        weightAvailable,
+        totalProcessedWeight,
+        finished: preprocessingResponse.finished || false,
+        lotNumber: latestRecord?.lotNumber || 'N/A',
+        referenceNumber: latestRecord?.referenceNumber || 'N/A',
+      };
     } catch (error) {
       console.error('Error fetching available weight:', error);
       return {
         weightAvailable: totalWeight,
         totalProcessedWeight: 0,
-        finished: false
+        finished: false,
+        lotNumber: 'N/A',
+        referenceNumber: 'N/A',
       };
     }
-  };
+  }, []);
 
-  const fetchBatchData = async (batchNumber) => {
+  const fetchBatchData = useCallback(async (batchNumber) => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`, {
-        signal: controller.signal,
+      const response = await axios.get(`${API_BASE_URL}/receiving/${batchNumber}`, {
+        timeout: 10000,
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`Failed to fetch receiving data: ${response.status}`);
-      const dataArray = await response.json();
+      const dataArray = response.data;
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
       const data = dataArray[0];
-      const { weightAvailable, totalProcessedWeight, finished } = await fetchAvailableWeight(batchNumber, data.weight);
+      const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
+        await fetchAvailableWeight(batchNumber, data.weight);
 
-      setFarmerName(data.farmerName);
-      setReceivingDate(data.receivingDateTrunc);
-      setQCDate(data.qcDateTrunc);
-      setTotalWeight(data.weight);
-      setTotalBags(data.totalBags);
+      setFarmerName(data.farmerName || '');
+      setReceivingDate(data.receivingDateTrunc || '');
+      setQCDate(data.qcDateTrunc || '');
+      setTotalWeight(data.weight || '');
+      setTotalBags(data.totalBags || '');
+      setLotNumber(lotNumber);
+      setReferenceNumber(referenceNumber);
       setWeightAvailable(weightAvailable);
       setTotalProcessedWeight(totalProcessedWeight);
 
@@ -125,42 +124,37 @@ const PreprocessingStation = () => {
     } finally {
       setOpenSnackbar(true);
     }
-  };
+  }, [fetchAvailableWeight]);
 
-  const handleRfidScan = async () => {
+  const handleRfidScan = useCallback(async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/Warehouse_Exit`, {
-        signal: controller.signal,
+      const response = await axios.get(`${API_BASE_URL}/get-rfid/Warehouse_Exit`, {
+        timeout: 10000,
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`Failed to fetch RFID: ${response.status}`);
-      const data = await response.json();
+      const data = response.data;
 
       if (data.rfid) {
         setRfid(data.rfid);
         setRfidTag(data.rfid);
-        const controller2 = new AbortController();
-        const timeoutId2 = setTimeout(() => controller2.abort(), 10000);
-        const receivingResponse = await fetch(`https://processing-facility-backend.onrender.com/api/receivingrfid/${data.rfid}`, {
-          signal: controller2.signal,
+        const receivingResponse = await axios.get(`${API_BASE_URL}/receivingrfid/${data.rfid}`, {
+          timeout: 10000,
         });
-        clearTimeout(timeoutId2);
-        if (!receivingResponse.ok) throw new Error(`Failed to fetch receiving data: ${receivingResponse.status}`);
-        const receivingData = await receivingResponse.json();
+        const receivingData = receivingResponse.data;
 
         if (receivingData && receivingData.length > 0) {
           const batchData = receivingData[0];
           setBatchNumber(batchData.batchNumber);
-          setFarmerName(batchData.farmerName);
+          setFarmerName(batchData.farmerName || '');
           setReceivingDate(batchData.receivingDateTrunc || '');
           setQCDate(batchData.qcDateTrunc || '');
           setTotalWeight(batchData.weight || '');
           setTotalBags(batchData.totalBags || '');
-          const { weightAvailable, totalProcessedWeight, finished } = await fetchAvailableWeight(batchData.batchNumber, batchData.weight);
+          const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
+            await fetchAvailableWeight(batchData.batchNumber, batchData.weight);
           setWeightAvailable(weightAvailable);
           setTotalProcessedWeight(totalProcessedWeight);
+          setLotNumber(lotNumber);
+          setReferenceNumber(referenceNumber);
 
           if (finished) {
             setSnackbarMessage(`Batch ${batchData.batchNumber} is already marked as complete.`);
@@ -180,24 +174,17 @@ const PreprocessingStation = () => {
         setSnackbarSeverity('warning');
       }
     } catch (error) {
-      console.error('Error fetching batch number or receiving data:', error);
-      setSnackbarMessage('Error retrieving data. Please try again.');
-      setSnackbarSeverity('error');
+      handleError('Error retrieving data. Please try again.', error);
     } finally {
       setOpenSnackbar(true);
     }
-  };
+  }, [fetchAvailableWeight]);
 
   const clearRfidData = async (scannedAt) => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/${scannedAt}`, {
-        method: 'DELETE',
-        signal: controller.signal,
+      await axios.delete(`${API_BASE_URL}/clear-rfid/${scannedAt}`, {
+        timeout: 10000,
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`Failed to clear RFID Data: ${response.status}`);
     } catch (error) {
       console.error("Error clearing RFID Data:", error);
     }
@@ -227,40 +214,20 @@ const PreprocessingStation = () => {
   const handleFinishBatch = async (batchNumber) => {
     setIsFinishing(true);
     try {
-      console.log(`Attempting to mark batch ${batchNumber} as complete with PUT request`);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/preprocessing/${batchNumber}/finish`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
+      const response = await axios.put(`${API_BASE_URL}/preprocessing/${batchNumber}/finish`, { createdBy: session.user.name }, {
+        timeout: 10000,
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        let errorData = {};
-        try {
-          errorData = await response.json();
-          console.log('Error response from backend:', errorData);
-        } catch (e) {
-          console.error('Failed to parse error response:', e);
-          errorData = { error: `HTTP error ${response.status}`, details: 'No response body' };
-        }
-        const errorMessage = errorData.error || `HTTP error ${response.status}`;
-        const errorDetails = errorData.details || 'No additional details provided';
-        throw new Error(`${errorMessage}: ${errorDetails}`);
-      }
-      const result = await response.json();
-      console.log(`Batch ${batchNumber} marked as complete:`, result);
-      setSnackbarMessage(result.message || `Batch ${batchNumber} marked as complete successfully!`);
+      setSnackbarMessage(response.data.message || `Batch ${batchNumber} marked as complete successfully!`);
       setSnackbarSeverity('success');
       await fetchPreprocessingData();
+      if (batchNumber === batchNumber.trim()) {
+        resetForm();
+      }
     } catch (error) {
-      console.error('Error in handleFinishBatch:', error);
-      setSnackbarMessage(`Failed to mark batch ${batchNumber} as complete: ${error.message}`);
-      setSnackbarSeverity('error');
+      const errorMessage = error.response?.data?.error || `Failed to mark batch ${batchNumber} as complete: ${error.message}`;
+      handleError(errorMessage, error);
     } finally {
       setIsFinishing(false);
-      setOpenSnackbar(true);
       setOpenConfirmDialog(false);
     }
   };
@@ -277,36 +244,32 @@ const PreprocessingStation = () => {
 
   const fetchWeightHistory = async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const batchesResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving", {
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      const batches = await batchesResponse.json();
-      const controller2 = new AbortController();
-      const timeoutId2 = setTimeout(() => controller2.abort(), 10000);
-      const processedResponse = await fetch("https://processing-facility-backend.onrender.com/api/preprocessing", {
-        signal: controller2.signal,
-      });
-      clearTimeout(timeoutId2);
-      const processedWeights = await processedResponse.json();
+      const [batchesResponse, processedResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/receiving`, { timeout: 10000 }),
+        axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 10000 }),
+      ]);
+      const batches = batchesResponse.data;
+      const processedWeights = processedResponse.data.allRows || processedResponse.data;
 
       const historyData = batches.map((batch) => {
-        const processedLogs = processedWeights.allRows.filter(log => log.batchNumber === batch.batchNumber);
+        const processedLogs = processedWeights.filter(log => log.batchNumber.toLowerCase() === batch.batchNumber.toLowerCase());
         const totalProcessedWeight = processedLogs.reduce((acc, log) => acc + parseFloat(log.weightProcessed || 0), 0);
-        const weightAvailable = batch.weight - totalProcessedWeight;
+        const weightAvailable = parseFloat(batch.weight || 0) - totalProcessedWeight;
         return {
           batchNumber: batch.batchNumber,
-          totalWeight: batch.weight,
-          totalProcessedWeight: totalProcessedWeight,
-          weightAvailable: weightAvailable,
+          lotNumber: processedLogs.length > 0 ? processedLogs[processedLogs.length - 1].lotNumber || 'N/A' : 'N/A',
+          referenceNumber: processedLogs.length > 0 ? processedLogs[processedLogs.length - 1].referenceNumber || 'N/A' : 'N/A',
+          totalWeight: parseFloat(batch.weight || 0),
+          totalProcessedWeight,
+          weightAvailable,
           finished: processedLogs.length > 0 ? processedLogs[0].finished : false,
           processedLogs: processedLogs.map(log => ({
             processingDate: log.processingDate,
             weightProcessed: parseFloat(log.weightProcessed || 0),
             processingType: log.processingType,
             notes: log.notes,
+            lotNumber: log.lotNumber || 'N/A',
+            referenceNumber: log.referenceNumber || 'N/A',
           })),
         };
       });
@@ -314,7 +277,7 @@ const PreprocessingStation = () => {
       setWeightHistory(historyData);
       setOpenHistory(true);
     } catch (error) {
-      console.error("Error fetching weight history:", error);
+      handleError("Error fetching weight history.", error);
     }
   };
 
@@ -341,6 +304,13 @@ const PreprocessingStation = () => {
       return;
     }
 
+    if (!producer || !productLine || !processingType || !quality) {
+      setSnackbarMessage('Please select all required fields: Producer, Product Line, Processing Type, and Quality.');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
+    }
+
     const preprocessingData = {
       batchNumber: trimmedBatchNumber,
       weightProcessed: trimmedWeightProcessed,
@@ -353,20 +323,13 @@ const PreprocessingStation = () => {
     };
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/preprocessing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(preprocessingData),
-        signal: controller.signal,
+      const response = await axios.post(`${API_BASE_URL}/preprocessing`, preprocessingData, {
+        timeout: 10000,
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to start processing: ${errorData.error || 'Unknown error'}`);
-      }
-      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedWeightProcessed} kg!`);
+      const { lotNumber, referenceNumber } = response.data.preprocessingData[0];
+      setLotNumber(lotNumber || 'N/A');
+      setReferenceNumber(referenceNumber || 'N/A');
+      setSnackbarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${trimmedWeightProcessed} kg! Lot Number: ${lotNumber || 'N/A'}`);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
       await fetchPreprocessingData();
@@ -388,6 +351,8 @@ const PreprocessingStation = () => {
     setRfidTag('');
     setWeightProcessed('');
     setBatchNumber('');
+    setLotNumber('N/A');
+    setReferenceNumber('N/A');
     setWeightAvailable(0);
     setTotalProcessedWeight(0);
     setFarmerName('');
@@ -406,38 +371,23 @@ const PreprocessingStation = () => {
     setOpenHistory(false);
   };
 
-  const fetchPreprocessingData = async () => {
+  const fetchPreprocessingData = useCallback(async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const [qcResponse, preprocessingResponse] = await Promise.all([
-        fetch('https://processing-facility-backend.onrender.com/api/qc', { signal: controller.signal }),
-        fetch('https://processing-facility-backend.onrender.com/api/preprocessing', { signal: controller.signal }),
+        axios.get(`${API_BASE_URL}/qc`, { timeout: 10000 }),
+        axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 10000 }),
       ]);
-      clearTimeout(timeoutId);
-      const qcResult = await qcResponse.json();
-      const preprocessingResult = await preprocessingResponse.json();
-      console.log('QC response:', qcResult);
-      console.log('Preprocessing response:', preprocessingResult);
+      const qcResult = qcResponse.data.allRows || [];
+      const preprocessingResult = preprocessingResponse.data.allRows || preprocessingResponse.data;
 
-      const allRows = qcResult.allRows || [];
-      const preprocessingRows = preprocessingResult.allRows || preprocessingResult || [];
-
-      // Create a map of finished status from preprocessing data
       const finishedStatusMap = new Map();
-      preprocessingRows.forEach(row => {
+      preprocessingResult.forEach(row => {
         const batchNumber = row.batchNumber.toLowerCase();
-        // Aggregate finished status using logical OR
-        if (!finishedStatusMap.has(batchNumber)) {
-          finishedStatusMap.set(batchNumber, row.finished || false);
-        } else {
-          finishedStatusMap.set(batchNumber, finishedStatusMap.get(batchNumber) || row.finished);
-        }
+        finishedStatusMap.set(batchNumber, finishedStatusMap.get(batchNumber) || row.finished || false);
       });
-      console.log('Finished status map:', Array.from(finishedStatusMap.entries()));
 
       const preprocessingMap = new Map();
-      preprocessingRows.forEach(row => {
+      preprocessingResult.forEach(row => {
         const key = `${row.batchNumber}-${row.processingType || 'unknown'}`;
         const existing = preprocessingMap.get(key);
         const rowDate = new Date(row.processingDate || row.createdAt || '1970-01-01');
@@ -446,6 +396,8 @@ const PreprocessingStation = () => {
         if (!existing || rowDate > existingDate) {
           preprocessingMap.set(key, {
             batchNumber: row.batchNumber,
+            lotNumber: row.lotNumber || 'N/A',
+            referenceNumber: row.referenceNumber || 'N/A',
             processingType: row.processingType,
             notes: row.notes || '',
             weightProcessed: parseFloat(row.weightProcessed || 0),
@@ -459,7 +411,7 @@ const PreprocessingStation = () => {
       });
 
       const qcRowMap = new Map();
-      allRows.forEach(batch => {
+      qcResult.forEach(batch => {
         const key = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
         const existing = qcRowMap.get(key);
         const batchDate = new Date(batch.lastProcessingDate || batch.startProcessingDate || '1970-01-01');
@@ -487,6 +439,8 @@ const PreprocessingStation = () => {
         return {
           id: `${batch.batchNumber}-${batch.processingType || 'unknown'}`,
           batchNumber: batch.batchNumber,
+          lotNumber: preprocessingRow.lotNumber || 'N/A',
+          referenceNumber: preprocessingRow.referenceNumber || 'N/A',
           type: batch.type,
           producer: batch.producer || preprocessingRow.producer || 'Unknown',
           productLine: batch.productLine || preprocessingRow.productLine || 'Unknown',
@@ -514,9 +468,13 @@ const PreprocessingStation = () => {
       const batchMap = new Map();
       dedupedRows.forEach(batch => {
         const key = batch.batchNumber;
+        const preprocessingKey = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
+        const preprocessingRow = preprocessingMap.get(preprocessingKey) || {};
         if (!batchMap.has(key)) {
           batchMap.set(key, {
             batchNumber: batch.batchNumber,
+            lotNumber: preprocessingRow.lotNumber || 'N/A',
+            referenceNumber: preprocessingRow.referenceNumber || 'N/A',
             type: batch.type,
             overallQuality: batch.overallQuality,
             weight: parseFloat(batch.weight || 0),
@@ -545,13 +503,12 @@ const PreprocessingStation = () => {
           return 0;
         });
 
-      console.log('Unprocessed batches:', unprocessedBatches);
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
     } catch (error) {
-      console.error('Error fetching preprocessing data:', error);
+      handleError('Error fetching preprocessing data.', error);
     }
-  };
+  }, []);
 
   const filteredPreprocessingData = producerFilter === 'All'
     ? preprocessingData.filter(row => parseFloat(row.processedWeight) > 0)
@@ -559,7 +516,7 @@ const PreprocessingStation = () => {
 
   useEffect(() => {
     fetchPreprocessingData();
-  }, []);
+  }, [fetchPreprocessingData]);
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -574,29 +531,36 @@ const PreprocessingStation = () => {
 
   const producerOptions = {
     "": [" "],
-    HQ: ["Regional Lot", "Micro Lot", "Experimental Lot"],
+    HQ: ["Regional Lot", "Micro Lot", "Experimental Lot", "Competition Lot"],
     BTM: ["Commercial Lot"],
   };
 
   const productLineOptions = {
     "": [" "],
-    "Regional Lot": ["Pulped Natural", "Washed"],
-    "Micro Lot": ["Natural", "Washed", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Honey", "CM Natural", "CM Washed", "CM Honey"],
-    "Experimental Lot": ["CM Natural", "CM Washed", "CM Honey", "Washed"],
-    "Commercial Lot": ["Washed", "Natural"],
+    "Regional Lot": ["Natural", "Washed", "Pulped Natural"],
+    "Micro Lot": ["Natural", "Washed", "Pulped Natural", "CM Natural", "CM Washed", "CM Pulped Natural", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural", "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural", "O2 Natural", "O2 Washed", "O2 Pulped Natural"],
+    "Experimental Lot": ["CM Natural", "CM Washed", "CM Pulped Natural", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural", "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural", "O2 Natural", "O2 Washed", "O2 Pulped Natural"],
+    "Competition Lot": ["CM Natural", "CM Washed", "CM Pulped Natural", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural", "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural", "O2 Natural", "O2 Washed", "O2 Pulped Natural"],
+    "Commercial Lot": ["Natural", "Washed"],
   };
 
   const processingTypeOptions = {
     "": [" "],
-    "Pulped Natural": ["Specialty"],
-    "Washed": ["Specialty", "G1", "G2", "G3", "G4"],
     "Natural": ["Specialty", "G1", "G2", "G3", "G4"],
-    "Anaerobic Natural": ["Specialty"],
-    "Anaerobic Washed": ["Specialty"],
-    "Anaerobic Honey": ["Specialty"],
+    "Washed": ["Specialty", "G1", "G2", "G3", "G4"],
+    "Pulped Natural": ["Specialty"],
     "CM Natural": ["Specialty"],
     "CM Washed": ["Specialty"],
-    "CM Honey": ["Specialty"],
+    "CM Pulped Natural": ["Specialty"],
+    "Anaerobic Natural": ["Specialty"],
+    "Anaerobic Washed": ["Specialty"],
+    "Anaerobic Pulped Natural": ["Specialty"],
+    "Aerobic Natural": ["Specialty"],
+    "Aerobic Washed": ["Specialty"],
+    "Aerobic Pulped Natural": ["Specialty"],
+    "O2 Natural": ["Specialty"],
+    "O2 Washed": ["Specialty"],
+    "O2 Pulped Natural": ["Specialty"],
   };
 
   useEffect(() => {
@@ -619,6 +583,8 @@ const PreprocessingStation = () => {
 
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
+    { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 130, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
     {
@@ -651,12 +617,14 @@ const PreprocessingStation = () => {
 
   const columns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
+    { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 100, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
     { field: 'productLine', headerName: 'Product Line', width: 150, sortable: true },
     { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
-    { field: 'weight', headerName: 'Total Weight (kg)', weight: 180, sortable: true },
+    { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
     { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
@@ -672,7 +640,7 @@ const PreprocessingStation = () => {
   ];
 
   if (status === 'loading') {
-    return <p>Loading...</p>;
+    return <Typography>Loading...</Typography>;
   }
 
   if (!session?.user || !['admin', 'manager', 'preprocessing'].includes(session.user.role)) {
@@ -730,6 +698,24 @@ const PreprocessingStation = () => {
                   <TextField
                     label="Farmer Name"
                     value={farmerName || ''}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    margin="normal"
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Lot Number"
+                    value={lotNumber}
+                    InputProps={{ readOnly: true }}
+                    fullWidth
+                    margin="normal"
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Reference Number"
+                    value={referenceNumber}
                     InputProps={{ readOnly: true }}
                     fullWidth
                     margin="normal"
@@ -946,6 +932,8 @@ const PreprocessingStation = () => {
                   weightHistory.map((history, index) => (
                     <div key={index} style={{ marginBottom: '16px' }}>
                       <Typography variant="h6">Batch: {history.batchNumber}</Typography>
+                      <Typography>Lot Number: {history.lotNumber}</Typography>
+                      <Typography>Reference Number: {history.referenceNumber}</Typography>
                       <Typography>Total Weight: {history.totalWeight} kg</Typography>
                       <Typography>Processed Weight: {history.totalProcessedWeight} kg</Typography>
                       <Typography>Available Weight: {history.weightAvailable} kg</Typography>
@@ -960,6 +948,8 @@ const PreprocessingStation = () => {
                             <Typography>Processing Date: {new Date(log.processingDate).toISOString().slice(0, 10)}</Typography>
                             <Typography>Weight Processed: {log.weightProcessed} kg</Typography>
                             <Typography>Processing Type: {log.processingType}</Typography>
+                            <Typography>Lot Number: {log.lotNumber}</Typography>
+                            <Typography>Reference Number: {log.referenceNumber}</Typography>
                             {log.notes && <Typography>Notes: {log.notes}</Typography>}
                             <Divider style={{ margin: '4px 0' }} />
                           </div>
