@@ -702,8 +702,8 @@ const WetmillStation = () => {
                 ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
                 : null;
               const total = totalWeights[latestDate]?.[type] || 0;
-              const lotNumbers = weightMeasurements.find(m => m.processingType === type)?.lotNumbers || ['N/A'];
-              const referenceNumbers = weightMeasurements.find(m => m.processingType === type)?.referenceNumbers || ['N/A'];
+              const lotNumbers = selectedBatch?.lotNumbers || ['N/A'];
+              const referenceNumbers = selectedBatch?.referenceNumbers || ['N/A'];
               return (
                 <div key={type}>
                   <Typography variant="subtitle1" gutterBottom>
