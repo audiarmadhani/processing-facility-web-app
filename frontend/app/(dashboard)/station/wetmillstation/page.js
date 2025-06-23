@@ -206,7 +206,7 @@ const WetmillStation = () => {
       setOpenSnackbar(true);
       setNewBagNumber(1);
     }
-  }, [batchNumber, processingType]);
+  }, []);
 
   const handleAddOrUpdateBagWeight = useCallback(async () => {
     if (!newBagWeight || isNaN(newBagWeight) || batchBagWeight <= 0) {
