@@ -186,7 +186,21 @@ const WetmillStation = () => {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/wetmill-weight-measurements/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to retrieve weight measurements.');
       const data = await response.json();
-      setWeightMeasurements(data);
+      // Filter out measurements with invalid measurement_date
+      const validMeasurements = data.filter(m => {
+        const date = new Date(m.measurement_date);
+        if (isNaN(date.getTime())) {
+          console.warn(`Invalid measurement_date in measurement ID ${m.id}: ${m.measurement_date}`);
+          return false;
+        }
+        return true;
+      });
+      setWeightMeasurements(validMeasurements);
+      if (data.length !== validMeasurements.length) {
+        setSnackbarMessage('Some weight measurements were skipped due to invalid dates.');
+        setSnackbarSeverity('warning');
+        setOpenSnackbar(true);
+      }
     } catch (err) {
       setSnackbarMessage(err.message || 'Failed to retrieve weight measurements.');
       setSnackbarSeverity('error');
@@ -211,8 +225,8 @@ const WetmillStation = () => {
   const handleAddOrUpdateBagWeight = useCallback(async () => {
     if (!newBagWeight || isNaN(newBagWeight) || newBagWeight <= 0) {
       setSnackbarMessage('Please enter a valid weight measurement (positive number).');
-      setSnackbarSeverity('error message');
-      setOpenSnackbar('error');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
       return;
     }
     if (!newProcessingType) {
@@ -227,25 +241,32 @@ const WetmillStation = () => {
       setOpenSnackbar(true);
       return;
     }
-
+  
     const selectedDate = new Date(newWeightDate);
+    if (isNaN(selectedDate.getTime())) {
+      setSnackbarMessage('Invalid measurement date selected.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+  
     const startProcessingDate = selectedBatch?.startProcessingDate !== 'N/A' ? new Date(selectedBatch.startProcessingDate) : null;
     const now = new Date();
-
+  
     if (selectedDate > now) {
       setSnackbarMessage('Measurement date cannot be in the future.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
-
+  
     if (startProcessingDate && selectedDate < startProcessingDate) {
       setSnackbarMessage('Measurement date cannot be before the start processing date.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
-
+  
     try {
       if (editingWeightId) {
         const payload = {
@@ -284,6 +305,7 @@ const WetmillStation = () => {
         setSnackbarSeverity('success');
       }
       setNewBagWeight('');
+      // Ensure newWeightDate is a valid ISO date string
       setNewWeightDate(new Date().toISOString().slice(0, 10));
       await fetchOrderBook(); // Refresh data to update weights
     } catch (error) {
@@ -443,10 +465,15 @@ const WetmillStation = () => {
   const getTotalWeights = useCallback(() => {
     const totals = {};
     weightMeasurements.forEach(m => {
-      const date = new Date(m.measurement_date).toISOString().slice(0, 10);
-      if (!totals[date]) totals[date] = {};
-      if (!totals[date][m.processingType]) totals[date][m.processingType] = 0;
-      totals[date][m.processingType] += m.weight;
+      const date = new Date(m.measurement_date);
+      if (isNaN(date.getTime())) {
+        console.warn(`Skipping invalid measurement_date: ${m.measurement_date}`);
+        return;
+      }
+      const dateKey = date.toISOString().slice(0, 10);
+      if (!totals[dateKey]) totals[dateKey] = {};
+      if (!totals[dateKey][m.processingType]) totals[dateKey][m.processingType] = 0;
+      totals[dateKey][m.processingType] += m.weight;
     });
     return totals;
   }, [weightMeasurements]);
