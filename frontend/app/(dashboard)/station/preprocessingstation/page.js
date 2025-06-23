@@ -583,8 +583,8 @@ const PreprocessingStation = () => {
 
   const unprocessedColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
-    { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
-    { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
+    // { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
+    // { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 130, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
     {

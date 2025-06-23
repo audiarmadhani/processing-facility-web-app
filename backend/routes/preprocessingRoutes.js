@@ -443,22 +443,19 @@ router.put('/preprocessing/:batchNumber/finish', async (req, res) => {
 router.get('/preprocessing', async (req, res) => {
   try {
     const [allRows] = await sequelize.query(
-      `SELECT a.*, DATE("processingDate") AS "processingDateTrunc" 
-       FROM "PreprocessingData" a`,
-      { type: sequelize.QueryTypes.SELECT }
+      `SELECT a.*, DATE("processingDate") "processingDateTrunc" 
+       FROM "PreprocessingData" a`
     );
 
     const [latestRows] = await sequelize.query(
-      `SELECT a.*, DATE("processingDate") AS "processingDateTrunc" 
+      `SELECT a.*, DATE("processingDate") "processingDateTrunc" 
        FROM "PreprocessingData" a 
-       ORDER BY a."processingDate" DESC LIMIT 1`,
-      { type: sequelize.QueryTypes.SELECT }
+       ORDER BY a."processingDate" DESC LIMIT 1`
     );
 
-    logger.info('Fetched preprocessing data successfully', { user: req.body.createdBy || 'unknown' });
     res.json({ latestRows, allRows });
   } catch (err) {
-    logger.error('Error fetching preprocessing data', { error: err.message, stack: err.stack, user: req.body.createdBy || 'unknown' });
+    console.error('Error fetching preprocessing data:', err);
     res.status(500).json({ message: 'Failed to fetch preprocessing data.' });
   }
 });
