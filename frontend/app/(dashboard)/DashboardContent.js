@@ -360,17 +360,17 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
                               field: 'cherryEstimate', 
                               headerName: 'Cherry Estimate (kg)', 
-                              width: 150,
+                              width: 180,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -380,17 +380,17 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
-                              field: 'currentcherrytotal', 
+                              field: 'currentCherryTotal', 
                               headerName: 'Current Cherry Total (kg)', 
                               width: 200,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -400,7 +400,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
@@ -755,7 +755,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -765,7 +765,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -775,7 +775,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -785,7 +785,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -795,7 +795,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
@@ -806,7 +806,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
@@ -1244,7 +1244,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -1254,7 +1254,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -1264,7 +1264,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -1274,7 +1274,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                             },
                             { 
@@ -1284,7 +1284,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
@@ -1295,7 +1295,7 @@ function Dashboard() {
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
