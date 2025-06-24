@@ -556,7 +556,7 @@ function Dashboard() {
                 </Card>
               </Grid> */}
 
-              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -567,94 +567,115 @@ function Dashboard() {
                         <CircularProgress />
                       </Box>
                     ) : (
-                      <DataGrid
-                        rows={arabicaTargets}
-                        columns={[
-                          { 
-                            field: 'processingType', 
-                            headerName: 'Processing Type', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100
-                          },
-                          { 
-                            field: 'cherryNow', 
-                            headerName: 'Cherry Now (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'projectedGB', 
-                            headerName: 'Projected GB (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'cherryTarget', 
-                            headerName: 'Cherry Target (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'gbTarget', 
-                            headerName: 'GB Target (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'cherryDeficit', 
-                            headerName: 'Cherry Deficit (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A',
-                            cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
-                          },
-                          { 
-                            field: 'cherryperdTarget', 
-                            headerName: 'Cherry/Day (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                        ]}
-                        pageSizeOptions={[5]}
-                        slots={{ toolbar: GridToolbar }}
-                        sx={{
-                          height: '80%',
-                          border: '1px solid rgba(0,0,0,0.12)',
-                          '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
-                          '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
-                          '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
-                          '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
-                        }}
-                        rowHeight={32}
-                        disableRowSelectionOnClick
-                        initialState={{
-                          pagination: { paginationModel: { pageSize: 5 } },
-                          sorting: {
-                            sortModel: [{ field: 'processingType', sort: 'asc' }],
-                          },
-                        }}
-                        localeText={{
-                          noRowsLabel: 'No data available for Arabica targets'
-                        }}
-                      />
+                      <>
+                        {console.log('DataGrid rows:', arabicaTargets)} {/* Debug log */}
+                        <DataGrid
+                          rows={arabicaTargets}
+                          columns={[
+                            { 
+                              field: 'processingType', 
+                              headerName: 'Processing Type', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100
+                            },
+                            { 
+                              field: 'cherryNow', 
+                              headerName: 'Cherry Now (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryNow value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'projectedGB', 
+                              headerName: 'Projected GB (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('projectedGB value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'cherryTarget', 
+                              headerName: 'Cherry Target (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryTarget value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'gbTarget', 
+                              headerName: 'GB Target (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('gbTarget value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'cherryDeficit', 
+                              headerName: 'Cherry Deficit (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryDeficit value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              },
+                              cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
+                            },
+                            { 
+                              field: 'cherryperdTarget', 
+                              headerName: 'Cherry/Day (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryperdTarget value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                          ]}
+                          pageSizeOptions={[5]}
+                          slots={{ toolbar: GridToolbar }}
+                          sx={{
+                            height: '80%',
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                            '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
+                            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                            '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                          }}
+                          rowHeight={32}
+                          disableRowSelectionOnClick
+                          initialState={{
+                            pagination: { paginationModel: { pageSize: 5 } },
+                            sorting: {
+                              sortModel: [{ field: 'processingType', sort: 'asc' }],
+                            },
+                          }}
+                          localeText={{
+                            noRowsLabel: 'No data available for Arabica targets'
+                          }}
+                        />
+                      </>
                     )}
                   </CardContent>
                 </Card>
@@ -1034,7 +1055,7 @@ function Dashboard() {
                 </Card>
               </Grid> */}
 
-              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1045,94 +1066,115 @@ function Dashboard() {
                         <CircularProgress />
                       </Box>
                     ) : (
-                      <DataGrid
-                        rows={robustaTargets}
-                        columns={[
-                          { 
-                            field: 'processingType', 
-                            headerName: 'Processing Type', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100
-                          },
-                          { 
-                            field: 'cherryNow', 
-                            headerName: 'Cherry Now (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'projectedGB', 
-                            headerName: 'Projected GB (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'cherryTarget', 
-                            headerName: 'Cherry Target (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'gbTarget', 
-                            headerName: 'GB Target (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                          { 
-                            field: 'cherryDeficit', 
-                            headerName: 'Cherry Deficit (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A',
-                            cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
-                          },
-                          { 
-                            field: 'cherryperdTarget', 
-                            headerName: 'Cherry/Day (kg)', 
-                            width: 110,
-                            flex: 1,
-                            minWidth: 100,
-                            type: 'number',
-                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
-                          },
-                        ]}
-                        pageSizeOptions={[5]}
-                        slots={{ toolbar: GridToolbar }}
-                        sx={{
-                          height: '80%',
-                          border: '1px solid rgba(0,0,0,0.12)',
-                          '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
-                          '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
-                          '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
-                          '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
-                        }}
-                        rowHeight={32}
-                        disableRowSelectionOnClick
-                        initialState={{
-                          pagination: { paginationModel: { pageSize: 5 } },
-                          sorting: {
-                            sortModel: [{ field: 'processingType', sort: 'asc' }],
-                          },
-                        }}
-                        localeText={{
-                          noRowsLabel: 'No data available for Robusta targets'
-                        }}
-                      />
+                      <>
+                        {console.log('DataGrid rows:', robustaTargets)} {/* Debug log */}
+                        <DataGrid
+                          rows={robustaTargets}
+                          columns={[
+                            { 
+                              field: 'processingType', 
+                              headerName: 'Processing Type', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100
+                            },
+                            { 
+                              field: 'cherryNow', 
+                              headerName: 'Cherry Now (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryNow value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'projectedGB', 
+                              headerName: 'Projected GB (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('projectedGB value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'cherryTarget', 
+                              headerName: 'Cherry Target (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryTarget value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'gbTarget', 
+                              headerName: 'GB Target (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('gbTarget value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                            { 
+                              field: 'cherryDeficit', 
+                              headerName: 'Cherry Deficit (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryDeficit value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              },
+                              cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
+                            },
+                            { 
+                              field: 'cherryperdTarget', 
+                              headerName: 'Cherry/Day (kg)', 
+                              width: 110,
+                              flex: 1,
+                              minWidth: 100,
+                              type: 'number',
+                              valueFormatter: ({ value }) => {
+                                console.log('cherryperdTarget value:', value); // Debug log
+                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
+                              }
+                            },
+                          ]}
+                          pageSizeOptions={[5]}
+                          slots={{ toolbar: GridToolbar }}
+                          sx={{
+                            height: '80%',
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                            '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
+                            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                            '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                          }}
+                          rowHeight={32}
+                          disableRowSelectionOnClick
+                          initialState={{
+                            pagination: { paginationModel: { pageSize: 5 } },
+                            sorting: {
+                              sortModel: [{ field: 'processingType', sort: 'asc' }],
+                            },
+                          }}
+                          localeText={{
+                            noRowsLabel: 'No data available for Robusta targets'
+                          }}
+                        />
+                      </>
                     )}
                   </CardContent>
                 </Card>
