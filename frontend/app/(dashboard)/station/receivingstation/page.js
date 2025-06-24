@@ -22,6 +22,7 @@ import {
   Box
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import dayjs from 'dayjs';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
@@ -360,7 +361,13 @@ function ReceivingStation() {
 
   const cherryColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-    { field: 'receivingDateTrunc', headerName: 'Received Date', width: 160, sortable: true },
+    { 
+      field: 'receivingDate', 
+      headerName: 'Received Date', 
+      width: 180, 
+      sortable: true,
+      valueFormatter: (value) => value ? dayjs(value).format('DD-MM-YYYY HH:mm:ss') : 'N/A'
+    },
     { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
     { field: 'broker', headerName: 'Broker Name', width: 180, sortable: true },
     {
@@ -388,7 +395,13 @@ function ReceivingStation() {
 
   const greenBeanColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
-    { field: 'receivingDateTrunc', headerName: 'Received Date', width: 160, sortable: true },
+    { 
+      field: 'receivingDate', 
+      headerName: 'Received Date', 
+      width: 180, 
+      sortable: true,
+      valueFormatter: (value) => value ? dayjs(value).format('DD-MM-YYYY HH:mm:ss') : 'N/A'
+    },
     { field: 'farmerName', headerName: 'Farmer Name', width: 180, sortable: true },
     { field: 'broker', headerName: 'Broker Name', width: 180, sortable: true },
     {
@@ -589,10 +602,9 @@ function ReceivingStation() {
                   <DataGrid
                     rows={cherryData}
                     columns={cherryColumns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
+                    pageSizeOptions={[5, 10, 20]}
                     disableSelectionOnClick
-                    sortingOrder={["asc", "desc"]}
+                    sortingOrder={["desc", "asc"]}
                     slots={{ toolbar: GridToolbar }}
                     autosizeOnMount
                     autosizeOptions={{
@@ -626,7 +638,7 @@ function ReceivingStation() {
                         value={selectedFarmerDetails}
                         onChange={handleFarmerChange}
                         renderInput={(params) => (
-                          <TextField {...params} label="Farmer Name" required fullWidth />
+                          <TextField {...params(params)} label="Farmer Name" required fullWidth />
                         )}
                       />
                     </Grid>
@@ -757,7 +769,7 @@ function ReceivingStation() {
                           value={weight}
                           onChange={(e) => handleBagWeightChange(index, e.target.value)}
                           fullWidth
-                          inputProps={{ step: 0.1, min: 0 }}
+                          inputProps={{ step: '0.1', min: '0' }}
                         />
                       </Grid>
                     ))}
@@ -784,16 +796,15 @@ function ReceivingStation() {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h5" gutterBottom>
-                  Green Bean Receiving Data
+                  Green Bean Data
                 </Typography>
                 <div style={{ height: 800, width: "100%" }}>
-                  <DataGrid
+                  <DataGrid 
                     rows={greenBeanData}
                     columns={greenBeanColumns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
+                    pageSizeOptions={[5, 10, 20]}
                     disableSelectionOnClick
-                    sortingOrder={["asc", "desc"]}
+                    sortingOrder={["desc", "asc"]}
                     slots={{ toolbar: GridToolbar }}
                     autosizeOnMount
                     autosizeOptions={{
