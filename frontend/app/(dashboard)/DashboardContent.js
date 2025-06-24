@@ -384,7 +384,7 @@ function Dashboard() {
                                   : 'N/A',
                             },
                             { 
-                              field: 'currentCherryTotal', 
+                              field: 'currentcherrytotal', 
                               headerName: 'Current Cherry Total (kg)', 
                               width: 200,
                               type: 'number',
