@@ -74,6 +74,7 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [arabicaTargets, setArabicaTargets] = useState([]);
   const [robustaTargets, setRobustaTargets] = useState([]);
+  const [landTargets, setLandTargets] = useState([]);
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
@@ -191,6 +192,46 @@ function Dashboard() {
     }
   }, []);
 
+  // Fetch Arabica targets
+  const fetchLandTargets = useCallback(async () => {
+    console.log('Starting fetchLandTargets');
+    setIsLoadingTargets(true);
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/land-targets');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Raw API response:', data);
+      if (!data.landTarget || !Array.isArray(data.landTarget)) {
+        throw new Error('Invalid response format: landTarget array not found');
+      }
+      const formattedData = data.landTarget.map((row, index) => {
+        const formattedRow = {
+          id: index,
+          farmerName: row.farmerName,
+          brokerName: row.brokerName || null,
+          contractValue: parseFloat(row.contractValue) || null,
+          cherryEstimate: parseFloat(row.cherryEstimate) || null,
+          gbEstimate: parseFloat(row.gbEstimate) || null,
+          currentCherryTotal: parseFloat(row.currentCherryTotal) || null,
+          difference: parseFloat(row.difference) || null,
+        };
+        console.log('Formatted row:', formattedRow);
+        return formattedRow;
+      });
+      console.log('Setting landTargets:', formattedData);
+      setLandTargets(formattedData);
+    } catch (err) {
+      console.error('Error fetching land targets:', err);
+      setError(err.message || 'Failed to fetch land targets');
+      setOpenSnackbar(true);
+      setLandTargets([]); // Reset to empty array on error
+    } finally {
+      setIsLoadingTargets(false);
+    }
+  }, []);
+
   // Fetch metrics and targets
   useEffect(() => {
     const fetchData = async () => {
@@ -221,10 +262,11 @@ function Dashboard() {
       await fetchData();
       await fetchArabicaTargets();
       await fetchRobustaTargets();
+      await fetchLandTargets();
     };
 
     fetchAllData();
-  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets]);
+  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets]);
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
@@ -280,6 +322,116 @@ function Dashboard() {
           {/* Arabica Section */}
           <Grid item xs={12} md={12}>
             <Grid container spacing={3}>
+
+              {/* Land Target Achievement */}
+              <Grid item xs={12} md={12} sx={{ height: { xs: '500px', sm: '500px', md: '500px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Land Target Achievement
+                    </Typography>
+                    {isLoadingTargets ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : landTargets.length === 0 ? (
+                      <Typography variant="body1" color="error">
+                        No Land target data available. Please try again later.
+                      </Typography>
+                    ) : (
+                      <>
+                        <DataGrid
+                          rows={landTargets}
+                          columns={[
+                            { 
+                              field: 'farmerName', 
+                              headerName: 'Farmer Name', 
+                              width: 180,
+                            },
+                            { 
+                              field: 'brokerName', 
+                              headerName: 'Broker Name', 
+                              width: 180,
+                            },
+                            { 
+                              field: 'contractValue', 
+                              headerName: 'Contract Value (Rp)', 
+                              width: 200,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'cherryEstimate', 
+                              headerName: 'Cherry Estimate (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'gbEstimate', 
+                              headerName: 'GB Estimate (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'currentCherryTotal', 
+                              headerName: 'Current Cherry Total (kg)', 
+                              width: 200,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'difference', 
+                              headerName: 'Deficit (kg)', 
+                              width: 250,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
+                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
+                            },
+                          ]}
+                          pageSizeOptions={[5]}
+                          slots={{ toolbar: GridToolbar }}
+                          sx={{
+                            height: '80%',
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                            '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
+                            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                            '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                          }}
+                          rowHeight={32}
+                          disableRowSelectionOnClick
+                          initialState={{
+                            pagination: { paginationModel: { pageSize: 20 } },
+                            sorting: {
+                              sortModel: [{ field: 'processingType', sort: 'asc' }],
+                            },
+                          }}
+                          localeText={{
+                            noRowsLabel: 'No data available for Arabica targets'
+                          }}
+                        />
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
                 
               {/* Total Arabica Weight */}
               <Grid item xs={12} md={2.4} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
@@ -572,7 +724,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -650,12 +802,13 @@ function Dashboard() {
                             { 
                               field: 'cherryperdTarget', 
                               headerName: 'Cherry/Day Target (kg)', 
-                              width: 150,
+                              width: 250,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
                                   ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
                                   : 'N/A',
+                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                           ]}
                           pageSizeOptions={[5]}
@@ -1061,7 +1214,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Robusta Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1139,12 +1292,13 @@ function Dashboard() {
                             { 
                               field: 'cherryperdTarget', 
                               headerName: 'Cherry/Day Target (kg)', 
-                              width: 150,
+                              width: 250,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
                                   ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
                                   : 'N/A',
+                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                           ]}
                           pageSizeOptions={[5]}
