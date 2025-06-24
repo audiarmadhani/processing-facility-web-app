@@ -43,8 +43,8 @@ import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
-import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
-import RobustaSankeyChart from './charts/RobustaSankeyChart';
+// import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
+// import RobustaSankeyChart from './charts/RobustaSankeyChart';
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
@@ -324,14 +324,14 @@ function Dashboard() {
             <Grid container spacing={3}>
 
               {/* Land Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '500px', sm: '500px', md: '500px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
                       Land Target Achievement
                     </Typography>
                     {isLoadingTargets ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                         <CircularProgress />
                       </Box>
                     ) : landTargets.length === 0 ? (
@@ -346,12 +346,12 @@ function Dashboard() {
                             { 
                               field: 'farmerName', 
                               headerName: 'Farmer Name', 
-                              width: 180,
+                              width: 160,
                             },
                             { 
                               field: 'brokerName', 
                               headerName: 'Broker Name', 
-                              width: 180,
+                              width: 150,
                             },
                             { 
                               field: 'contractValue', 
@@ -384,7 +384,7 @@ function Dashboard() {
                                   : 'N/A',
                             },
                             { 
-                              field: 'currentCherryTotal', 
+                              field: 'currentcherrytotal', 
                               headerName: 'Current Cherry Total (kg)', 
                               width: 200,
                               type: 'number',
@@ -396,7 +396,7 @@ function Dashboard() {
                             { 
                               field: 'difference', 
                               headerName: 'Deficit (kg)', 
-                              width: 250,
+                              width: 200,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
@@ -724,7 +724,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -876,7 +876,7 @@ function Dashboard() {
               </Grid>
 
               {/* Arabica Sankey Chart */}
-              <Grid 
+              {/* <Grid 
                 item 
                 xs={12} 
                 md={12} 
@@ -895,11 +895,10 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Arabica Sankey Chart
                     </Typography>
-                    {/* Pass height as a prop */}
                     <ArabicaSankeyChart height="100%" />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Arabica TradingView Chart */}
               {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
@@ -1214,7 +1213,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Robusta Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1366,7 +1365,7 @@ function Dashboard() {
               </Grid>
 
               {/* Robusta Sankey Chart */}
-              <Grid 
+              {/* <Grid 
                 item 
                 xs={12} 
                 md={12} 
@@ -1385,11 +1384,10 @@ function Dashboard() {
                     <Typography variant="h6" gutterBottom>
                       Robusta Sankey Chart
                     </Typography>
-                    {/* Pass height as a prop */}
                     <RobustaSankeyChart height="100%" />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Robusta TradingView Chart */}
               {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
