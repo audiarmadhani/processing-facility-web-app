@@ -588,12 +588,6 @@ function Dashboard() {
                       </Typography>
                     ) : (
                       <>
-                        {/* Debug: Display raw arabicaTargets data */}
-                        <Box sx={{ marginBottom: 2, maxHeight: '100px', overflow: 'auto' }}>
-                          <Typography variant="caption">Raw Arabica Targets Data:</Typography>
-                          <pre>{JSON.stringify(arabicaTargets, null, 2)}</pre>
-                        </Box>
-                        {console.log('DataGrid rows:', arabicaTargets)}
                         <DataGrid
                           rows={arabicaTargets}
                           columns={[
@@ -601,87 +595,37 @@ function Dashboard() {
                               field: 'processingType', 
                               headerName: 'Processing Type', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100
                             },
                             { 
                               field: 'cherryNow', 
                               headerName: 'Cherry Now (kg)', 
                               width: 110,
-                              // flex: 1,
-                              // minWidth: 100,
-                              // type: 'number',
-                              // valueGetter: ({ row }) => (row ? row.cherryNow : null),
-                              // valueFormatter: (value) => {
-                              //   console.log('cherryNow value:', value);
-                              //   return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              // }
                             },
                             { 
                               field: 'projectedGB', 
                               headerName: 'Projected GB (kg)', 
                               width: 110,
-                              // flex: 1,
-                              // minWidth: 100,
-                              // type: 'number',
-                              // valueGetter: ({ row }) => (row ? row.projectedGB : null),
-                              // valueFormatter: (value) => {
-                              //   console.log('projectedGB value:', value);
-                              //   return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              // }
                             },
                             { 
                               field: 'cherryTarget', 
                               headerName: 'Cherry Target (kg)', 
                               width: 110,
-                              // flex: 1,
-                              // minWidth: 100,
-                              // type: 'number',
-                              // valueGetter: ({ row }) => (row ? row.cherryTarget : null),
-                              // valueFormatter: (value) => {
-                              //   console.log('cherryTarget value:', value);
-                              //   return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              // }
                             },
                             { 
                               field: 'gbTarget', 
                               headerName: 'GB Target (kg)', 
                               width: 110,
-                              // flex: 1,
-                              // minWidth: 100,
-                              // type: 'number',
-                              // valueGetter: ({ row }) => (row ? row.gbTarget : null),
-                              // valueFormatter: (value) => {
-                              //   console.log('gbTarget value:', value);
-                              //   return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              // }
                             },
                             { 
                               field: 'cherryDeficit', 
                               headerName: 'Cherry Deficit (kg)', 
                               width: 110,
-                              // flex: 1,
-                              // minWidth: 100,
-                              // type: 'number',
-                              // valueGetter: ({ row }) => (row ? row.cherryDeficit : null),
-                              // valueFormatter: (value) => {
-                              //   console.log('cherryDeficit value:', value);
-                              //   return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              // },
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
                               headerName: 'Cherry/Day (kg)', 
                               width: 110,
-                              // flex: 1,
-                              // minWidth: 100,
-                              // type: 'number',
-                              // valueGetter: ({ row }) => (row ? row.cherryperdTarget : null),
-                              // valueFormatter: (value) => {
-                              //   console.log('cherryperdTarget value:', value);
-                              //   return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              // }
                             },
                           ]}
                           pageSizeOptions={[5]}
@@ -1116,87 +1060,37 @@ function Dashboard() {
                               field: 'processingType', 
                               headerName: 'Processing Type', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100
                             },
                             { 
                               field: 'cherryNow', 
                               headerName: 'Cherry Now (kg)', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100,
-                              type: 'number',
-                              valueGetter: ({ row }) => (row ? row.cherryNow : null),
-                              valueFormatter: (value) => {
-                                console.log('cherryNow value:', value);
-                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              }
                             },
                             { 
                               field: 'projectedGB', 
                               headerName: 'Projected GB (kg)', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100,
-                              type: 'number',
-                              valueGetter: ({ row }) => (row ? row.projectedGB : null),
-                              valueFormatter: (value) => {
-                                console.log('projectedGB value:', value);
-                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              }
                             },
                             { 
                               field: 'cherryTarget', 
                               headerName: 'Cherry Target (kg)', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100,
-                              type: 'number',
-                              valueGetter: ({ row }) => (row ? row.cherryTarget : null),
-                              valueFormatter: (value) => {
-                                console.log('cherryTarget value:', value);
-                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              }
                             },
                             { 
                               field: 'gbTarget', 
                               headerName: 'GB Target (kg)', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100,
-                              type: 'number',
-                              valueGetter: ({ row }) => (row ? row.gbTarget : null),
-                              valueFormatter: (value) => {
-                                console.log('gbTarget value:', value);
-                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              }
                             },
                             { 
                               field: 'cherryDeficit', 
                               headerName: 'Cherry Deficit (kg)', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100,
-                              type: 'number',
-                              valueGetter: ({ row }) => (row ? row.cherryDeficit : null),
-                              valueFormatter: (value) => {
-                                console.log('cherryDeficit value:', value);
-                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              },
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
                               headerName: 'Cherry/Day (kg)', 
                               width: 110,
-                              flex: 1,
-                              minWidth: 100,
-                              type: 'number',
-                              valueGetter: ({ row }) => (row ? row.cherryperdTarget : null),
-                              valueFormatter: (value) => {
-                                console.log('cherryperdTarget value:', value);
-                                return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
-                              }
                             },
                           ]}
                           pageSizeOptions={[5]}
