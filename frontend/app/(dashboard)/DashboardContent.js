@@ -73,6 +73,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [arabicaTargets, setArabicaTargets] = useState([]);
+  const [heqaTargets, setHeqaTargets] = useState([]);
   const [robustaTargets, setRobustaTargets] = useState([]);
   const [landTargets, setLandTargets] = useState([]);
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
@@ -147,6 +148,46 @@ function Dashboard() {
       setError(err.message || 'Failed to fetch Arabica targets');
       setOpenSnackbar(true);
       setArabicaTargets([]); // Reset to empty array on error
+    } finally {
+      setIsLoadingTargets(false);
+    }
+  }, []);
+
+  // Fetch Heqa targets
+  const fetchHeqaTargets = useCallback(async () => {
+    console.log('Starting fetchHeqaTargets');
+    setIsLoadingTargets(true);
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/heqa-targets');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Raw API response:', data);
+      if (!data.heqaTarget || !Array.isArray(data.heqaTarget)) {
+        throw new Error('Invalid response format: heqaTarget array not found');
+      }
+      const formattedData = data.heqaTarget.map((row, index) => {
+        const formattedRow = {
+          id: index,
+          productLine: row.productLine,
+          cherryNow: parseFloat(row.cherryNow) || null,
+          projectedGB: parseFloat(row.projectedGB) || null,
+          cherryTarget: parseFloat(row.cherryTarget) || null,
+          gbTarget: parseFloat(row.gbTarget) || null,
+          cherryDeficit: parseFloat(row.cherryDeficit) || null,
+          cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+        };
+        console.log('Formatted row:', formattedRow);
+        return formattedRow;
+      });
+      console.log('Setting heqaTargets:', formattedData);
+      setHeqaTargets(formattedData);
+    } catch (err) {
+      console.error('Error fetching Heqa targets:', err);
+      setError(err.message || 'Failed to fetch Heqa targets');
+      setOpenSnackbar(true);
+      setHeqaTargets([]); // Reset to empty array on error
     } finally {
       setIsLoadingTargets(false);
     }
@@ -263,10 +304,11 @@ function Dashboard() {
       await fetchArabicaTargets();
       await fetchRobustaTargets();
       await fetchLandTargets();
+      await fetchHeqaTargets();
     };
 
     fetchAllData();
-  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets]);
+  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets]);
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
@@ -831,6 +873,122 @@ function Dashboard() {
                           }}
                           localeText={{
                             noRowsLabel: 'No data available for Arabica targets'
+                          }}
+                        />
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Arabica Target Achievement */}
+              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      HEQA Target Achievement
+                    </Typography>
+                    {isLoadingTargets ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : heqaTargets.length === 0 ? (
+                      <Typography variant="body1" color="error">
+                        No HEQA target data available. Please try again later.
+                      </Typography>
+                    ) : (
+                      <>
+                        <DataGrid
+                          rows={heqaTargets}
+                          columns={[
+                            { 
+                              field: 'productLine', 
+                              headerName: 'Product Line', 
+                              width: 180,
+                            },
+                            { 
+                              field: 'cherryNow', 
+                              headerName: 'Cherry Now (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'projectedGB', 
+                              headerName: 'Projected GB (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'cherryTarget', 
+                              headerName: 'Cherry Target (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'gbTarget', 
+                              headerName: 'GB Target (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'cherryDeficit', 
+                              headerName: 'Cherry Deficit (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
+                            },
+                            { 
+                              field: 'cherryperdTarget', 
+                              headerName: 'Cherry/Day Target (kg)', 
+                              width: 250,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
+                            },
+                          ]}
+                          pageSizeOptions={[5]}
+                          slots={{ toolbar: GridToolbar }}
+                          sx={{
+                            height: '80%',
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                            '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
+                            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                            '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                          }}
+                          rowHeight={32}
+                          disableRowSelectionOnClick
+                          initialState={{
+                            pagination: { paginationModel: { pageSize: 5 } },
+                            sorting: {
+                              sortModel: [{ field: 'productLine', sort: 'asc' }],
+                            },
+                          }}
+                          localeText={{
+                            noRowsLabel: 'No data available for HEQA targets'
                           }}
                         />
                       </>
