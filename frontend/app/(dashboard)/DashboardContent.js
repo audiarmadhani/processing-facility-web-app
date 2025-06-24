@@ -612,7 +612,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryNow : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryNow value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -625,7 +625,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.projectedGB : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('projectedGB value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -638,7 +638,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryTarget : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -651,7 +651,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.gbTarget : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('gbTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -664,11 +664,11 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryDeficit : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryDeficit value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               },
-                              cellClassName: ({ value }) => (value != null && value < 0 ? 'negative-deficit' : '')
+                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
@@ -678,7 +678,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryperdTarget : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryperdTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -1097,6 +1097,10 @@ function Dashboard() {
                       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
                         <CircularProgress />
                       </Box>
+                    ) : robustaTargets.length === 0 ? (
+                      <Typography variant="body1" color="error">
+                        No Robusta target data available. Please try again later.
+                      </Typography>
                     ) : (
                       <>
                         {/* Debug: Display raw robustaTargets data */}
@@ -1123,7 +1127,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryNow : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryNow value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -1136,7 +1140,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.projectedGB : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('projectedGB value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -1149,7 +1153,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryTarget : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -1162,7 +1166,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.gbTarget : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('gbTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
@@ -1175,11 +1179,11 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryDeficit : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryDeficit value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               },
-                              cellClassName: ({ value }) => (value != null && value < 0 ? 'negative-deficit' : '')
+                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
@@ -1189,7 +1193,7 @@ function Dashboard() {
                               minWidth: 100,
                               type: 'number',
                               valueGetter: ({ row }) => (row ? row.cherryperdTarget : null),
-                              valueFormatter: ({ value }) => {
+                              valueFormatter: (value) => {
                                 console.log('cherryperdTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
