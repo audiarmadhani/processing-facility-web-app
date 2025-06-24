@@ -137,7 +137,7 @@ const WetmillStation = () => {
             status,
             startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
             lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
-            weight: batchWeights[batch.batchNumber] ? batchWeights[batch.batchNumber].total.toFixed(2) : 'N/A',
+            weight: batchWeights[batch.batchNumber] ? Number(batchWeights[batch.batchNumber].total).toFixed(2) : 'N/A',
             lotNumbers: latestWetmillEntry?.lotNumbers || ['N/A'],
             referenceNumbers: latestWetmillEntry?.referenceNumbers || ['N/A'],
             lotMapping: latestWetmillEntry?.lotMapping || [],
@@ -201,7 +201,8 @@ const WetmillStation = () => {
       });
       setWeightMeasurements(validMeasurements);
       if (data.length !== validMeasurements.length) {
-        setSnackbarMessage('Some weight measurements were skipped due to invalid dates or weights.');
+        const invalidCount = data.length - validMeasurements.length;
+        setSnackbarMessage(`Skipped ${invalidCount} weight measurement${invalidCount > 1 ? 's' : ''} due to invalid dates or weights.`);
         setSnackbarSeverity('warning');
         setOpenSnackbar(true);
       }
@@ -227,8 +228,12 @@ const WetmillStation = () => {
   }, []);
 
   const handleAddOrUpdateBagWeight = useCallback(async () => {
-    if (!newBagWeight || isNaN(newBagWeight) || newBagWeight <= 0) {
-      setSnackbarMessage('Please enter a valid weight measurement (positive number).');
+    // Normalize input: replace comma with dot and parse
+    const normalizedWeight = newBagWeight.replace(',', '.');
+    const weightValue = parseFloat(normalizedWeight);
+    
+    if (!newBagWeight || isNaN(weightValue) || weightValue <= 0) {
+      setSnackbarMessage('Please enter a valid weight measurement (positive number, e.g., 12.34 or 12,34).');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -274,7 +279,7 @@ const WetmillStation = () => {
     try {
       if (editingWeightId) {
         const payload = {
-          weight: parseFloat(newBagWeight),
+          weight: weightValue,
           measurement_date: newWeightDate,
         };
         const response = await fetch(`https://processing-facility-backend.onrender.com/api/wetmill-weight-measurement/${editingWeightId}`, {
@@ -293,7 +298,7 @@ const WetmillStation = () => {
           batchNumber: selectedBatch.batchNumber,
           processingType: newProcessingType,
           bagNumber: newBagNumber,
-          weight: parseFloat(newBagWeight),
+          weight: weightValue,
           measurement_date: newWeightDate,
         };
         const response = await fetch('https://processing-facility-backend.onrender.com/api/wetmill-weight-measurement', {
@@ -309,7 +314,6 @@ const WetmillStation = () => {
         setSnackbarSeverity('success');
       }
       setNewBagWeight('');
-      // Ensure newWeightDate is a valid ISO date string
       setNewWeightDate(new Date().toISOString().slice(0, 10));
       await fetchOrderBook(); // Refresh data to update weights
     } catch (error) {
@@ -453,6 +457,11 @@ const WetmillStation = () => {
     fetchOrderBook();
   }, 2000), [fetchOrderBook]);
 
+  const handleWeightInputChange = useCallback((e) => {
+    const value = e.target.value.replace(',', '.'); // Replace comma with dot
+    setNewBagWeight(value);
+  }, []);
+
   useEffect(() => {
     fetchOrderBook();
     const intervalId = setInterval(fetchOrderBook, 300000); // 5 minutes
@@ -477,7 +486,7 @@ const WetmillStation = () => {
       const dateKey = date.toISOString().slice(0, 10);
       if (!totals[dateKey]) totals[dateKey] = {};
       if (!totals[dateKey][m.processingType]) totals[dateKey][m.processingType] = 0;
-      totals[dateKey][m.processingType] += m.weight;
+      totals[dateKey][m.processingType] += Number(m.weight) || 0;
     });
     return totals;
   }, [weightMeasurements]);
@@ -560,7 +569,7 @@ const WetmillStation = () => {
   const filteredCompletedBatches = useMemo(() => 
     completedWetMillBatches.filter(batch => 
       batch.batchNumber.toLowerCase().includes(completedFilter.toLowerCase()) ||
-      batch.farmerName?.toLowerCase().includes(completedFilter.toLowerCase())
+      batch.farmerName?.toLowerCase().includes(unprocessedFilter.toLowerCase())
     ),
     [completedWetMillBatches, completedFilter]
   );
@@ -707,11 +716,12 @@ const WetmillStation = () => {
                   <TextField
                     label="Weight (kg)"
                     value={newBagWeight}
-                    onChange={e => setNewBagWeight(e.target.value)}
-                    type="number"
+                    onChange={handleWeightInputChange}
+                    type="text"
                     size="small"
                     fullWidth
-                    inputProps={{ min: 0, step: 0.01 }}
+                    inputProps={{ pattern: "[0-9]*[,.]?[0-9]+" }}
+                    placeholder="e.g., 12.34 or 12,34"
                   />
                 </Grid>
                 <Grid item xs={2}>
@@ -755,11 +765,11 @@ const WetmillStation = () => {
                   const latestDate = typeMeasurements.length > 0 
                     ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
                     : null;
-                  const total = totalWeights[latestDate]?.[type] || 0;
+                  const total = latestDate && totalWeights[latestDate]?.[type] ? totalWeights[latestDate][type] : 0;
                   return (
                     <TableRow key={type}>
                       <TableCell>{type}</TableCell>
-                      <TableCell align="right">{typeof total === 'number' && !isNaN(total) ? total.toFixed(2) : 'N/A'}</TableCell>
+                      <TableCell align="right">{Number(total).toFixed(2)}</TableCell>
                       <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.lotNumber || 'N/A'}</TableCell>
                       <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.referenceNumber || 'N/A'}</TableCell>
                     </TableRow>
@@ -808,10 +818,10 @@ const WetmillStation = () => {
                           onChange={() => handleSelectWeight(m.id)}
                         />
                       </TableCell>
-                      <TableCell>{new Date(m.measurement_date).toLocaleDateString('en-US', { timeZone: 'Asia/Jakarta' })}</TableCell>
+                      <TableCell>{new Date(m.measurement_date).toLocaleDateString('en-US', { timeZone: 'Asia/Makassar' })}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
                       <TableCell>{m.bagNumber}</TableCell>
-                      <TableCell align="right">{m.weight.toFixed(2)}</TableCell>
+                      <TableCell align="right">{Number(m.weight).toFixed(2)}</TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
@@ -854,7 +864,7 @@ const WetmillStation = () => {
               <Typography variant="body2" sx={{ mt: 2 }}>
                 Affected bags: {weightMeasurements
                   .filter(m => selectedWeightIds.includes(m.id))
-                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.weight.toFixed(2)} kg)`)
+                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${Number(m.weight).toFixed(2)} kg)`)
                   .join(', ')}
               </Typography>
             )}
