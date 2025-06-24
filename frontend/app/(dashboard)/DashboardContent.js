@@ -600,32 +600,62 @@ function Dashboard() {
                               field: 'cherryNow', 
                               headerName: 'Cherry Now (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'projectedGB', 
                               headerName: 'Projected GB (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'cherryTarget', 
                               headerName: 'Cherry Target (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'gbTarget', 
                               headerName: 'GB Target (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'cherryDeficit', 
                               headerName: 'Cherry Deficit (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
                               headerName: 'Cherry/Day Target (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                           ]}
                           pageSizeOptions={[5]}
@@ -1059,32 +1089,62 @@ function Dashboard() {
                               field: 'cherryNow', 
                               headerName: 'Cherry Now (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'projectedGB', 
                               headerName: 'Projected GB (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'cherryTarget', 
                               headerName: 'Cherry Target (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'gbTarget', 
                               headerName: 'GB Target (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                             { 
                               field: 'cherryDeficit', 
                               headerName: 'Cherry Deficit (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
                               headerName: 'Cherry/Day Target (kg)', 
                               width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) 
+                                  : 'N/A',
                             },
                           ]}
                           pageSizeOptions={[5]}
