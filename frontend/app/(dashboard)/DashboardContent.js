@@ -594,38 +594,38 @@ function Dashboard() {
                             { 
                               field: 'processingType', 
                               headerName: 'Processing Type', 
-                              width: 110,
+                              width: 180,
                             },
                             { 
                               field: 'cherryNow', 
                               headerName: 'Cherry Now (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'projectedGB', 
                               headerName: 'Projected GB (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'cherryTarget', 
                               headerName: 'Cherry Target (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'gbTarget', 
                               headerName: 'GB Target (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'cherryDeficit', 
                               headerName: 'Cherry Deficit (kg)', 
-                              width: 110,
+                              width: 150,
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
-                              headerName: 'Cherry/Day (kg)', 
-                              width: 110,
+                              headerName: 'Cherry/Day Target (kg)', 
+                              width: 150,
                             },
                           ]}
                           pageSizeOptions={[5]}
@@ -1053,38 +1053,38 @@ function Dashboard() {
                             { 
                               field: 'processingType', 
                               headerName: 'Processing Type', 
-                              width: 110,
+                              width: 180,
                             },
                             { 
                               field: 'cherryNow', 
                               headerName: 'Cherry Now (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'projectedGB', 
                               headerName: 'Projected GB (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'cherryTarget', 
                               headerName: 'Cherry Target (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'gbTarget', 
                               headerName: 'GB Target (kg)', 
-                              width: 110,
+                              width: 150,
                             },
                             { 
                               field: 'cherryDeficit', 
                               headerName: 'Cherry Deficit (kg)', 
-                              width: 110,
+                              width: 150,
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
-                              headerName: 'Cherry/Day (kg)', 
-                              width: 110,
+                              headerName: 'Cherry/Day Target (kg)', 
+                              width: 150,
                             },
                           ]}
                           pageSizeOptions={[5]}
