@@ -118,9 +118,26 @@ function Dashboard() {
     setIsLoadingTargets(true);
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/arabica-targets');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      setArabicaTargets(data.map((row, index) => ({ id: index, ...row }))); // Add unique id
+      // Extract arabicaTarget array and convert string numbers to floats
+      if (!data.arabicaTarget || !Array.isArray(data.arabicaTarget)) {
+        throw new Error('Invalid response format: arabicaTarget array not found');
+      }
+      const formattedData = data.arabicaTarget.map((row, index) => ({
+        id: index,
+        processingType: row.processingType,
+        cherryNow: parseFloat(row.cherryNow) || null,
+        projectedGB: parseFloat(row.projectedGB) || null,
+        cherryTarget: parseFloat(row.cherryTarget) || null,
+        gbTarget: parseFloat(row.gbTarget) || null,
+        cherryDeficit: parseFloat(row.cherryDeficit) || null,
+        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+      }));
+      setArabicaTargets(formattedData);
+      console.log('Formatted Arabica targets:', formattedData); // Debug log
     } catch (err) {
       console.error('Error fetching Arabica targets:', err);
       setError(err.message || 'Failed to fetch Arabica targets');
@@ -135,9 +152,26 @@ function Dashboard() {
     setIsLoadingTargets(true);
     try {
       const response = await fetch('https://processing-facility-backend.onrender.com/api/robusta-targets');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      setRobustaTargets(data.map((row, index) => ({ id: index, ...row }))); // Add unique id
+      // Extract robustaTarget array and convert string numbers to floats
+      if (!data.robustaTarget || !Array.isArray(data.robustaTarget)) {
+        throw new Error('Invalid response format: robustaTarget array not found');
+      }
+      const formattedData = data.robustaTarget.map((row, index) => ({
+        id: index,
+        processingType: row.processingType,
+        cherryNow: parseFloat(row.cherryNow) || null,
+        projectedGB: parseFloat(row.projectedGB) || null,
+        cherryTarget: parseFloat(row.cherryTarget) || null,
+        gbTarget: parseFloat(row.gbTarget) || null,
+        cherryDeficit: parseFloat(row.cherryDeficit) || null,
+        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+      }));
+      setRobustaTargets(formattedData);
+      console.log('Formatted Robusta targets:', formattedData); // Debug log
     } catch (err) {
       console.error('Error fetching Robusta targets:', err);
       setError(err.message || 'Failed to fetch Robusta targets');
