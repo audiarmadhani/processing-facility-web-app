@@ -19,11 +19,11 @@ import {
   Select, 
   MenuItem, 
   OutlinedInput,
-  Box, // Added Box import
-  Snackbar, // Added Snackbar import
-  Alert // Added Alert import
+  Box,
+  Snackbar,
+  Alert
 } from '@mui/material';
-import { DataGrid, GridToolbar } from '@mui/x-data-grid'; // Added DataGrid import
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
 import TotalBatchesChart from './charts/TotalBatchesChart';
 import TotalCostChart from './charts/TotalCostChart';
@@ -72,12 +72,10 @@ function Dashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [arabicaTargets, setArabicaTargets] = useState([]); // Added state for targets
-  const [robustaTargets, setRobustaTargets] = useState([]); // Added state for targets
-
-  const [isLoadingTargets, setIsLoadingTargets] = useState(false); // Added state for loading
-  const [openSnackbar, setOpenSnackbar] = useState(false); // Added state for snackbar
+  const [arabicaTargets, setArabicaTargets] = useState([]);
+  const [robustaTargets, setRobustaTargets] = useState([]);
+  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const formatWeight = (weight) => {
     if (weight >= 1e9) {
@@ -122,7 +120,6 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      // Extract arabicaTarget array and convert string numbers to floats
       if (!data.arabicaTarget || !Array.isArray(data.arabicaTarget)) {
         throw new Error('Invalid response format: arabicaTarget array not found');
       }
@@ -137,7 +134,7 @@ function Dashboard() {
         cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
       }));
       setArabicaTargets(formattedData);
-      console.log('Formatted Arabica targets:', formattedData); // Debug log
+      console.log('Formatted Arabica targets:', formattedData);
     } catch (err) {
       console.error('Error fetching Arabica targets:', err);
       setError(err.message || 'Failed to fetch Arabica targets');
@@ -156,7 +153,6 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      // Extract robustaTarget array and convert string numbers to floats
       if (!data.robustaTarget || !Array.isArray(data.robustaTarget)) {
         throw new Error('Invalid response format: robustaTarget array not found');
       }
@@ -171,7 +167,7 @@ function Dashboard() {
         cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
       }));
       setRobustaTargets(formattedData);
-      console.log('Formatted Robusta targets:', formattedData); // Debug log
+      console.log('Formatted Robusta targets:', formattedData);
     } catch (err) {
       console.error('Error fetching Robusta targets:', err);
       setError(err.message || 'Failed to fetch Robusta targets');
@@ -205,9 +201,13 @@ function Dashboard() {
       }
     };
 
-    fetchData();
-    fetchArabicaTargets(); // Fetch targets on mount
-    fetchRobustaTargets(); // Fetch targets on mount
+    const fetchAllData = async () => {
+      await fetchData();
+      await fetchArabicaTargets();
+      await fetchRobustaTargets();
+    };
+
+    fetchAllData();
   }, [timeframe, fetchArabicaTargets, fetchRobustaTargets]);
 
   const handleTimeframeChange = (event) => {
@@ -228,18 +228,17 @@ function Dashboard() {
   }
 
   if (!session?.user || !['admin', 'manager', 'staff', 'receiving'].includes(session.user.role)) {
-      return (
-        <Typography variant="h6">
-          Access Denied. You do not have permission to view this page.
-        </Typography>
-      );
-    }
+    return (
+      <Typography variant="h6">
+        Access Denied. You do not have permission to view this page.
+      </Typography>
+    );
+  }
   
   return (
     <div style={{ padding: '0px', flex: 1, border: 0, width: '100%', height: '100%', margin: 5 }}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Grid container spacing={3}>
-
           {/* Timeframe Selector */}
           <Grid item xs={6} md={2.4}>
             <FormControl fullWidth>
@@ -556,6 +555,7 @@ function Dashboard() {
                 </Card>
               </Grid> */}
 
+              {/* Arabica Target Achievement */}
               <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
@@ -568,7 +568,12 @@ function Dashboard() {
                       </Box>
                     ) : (
                       <>
-                        {console.log('DataGrid rows:', arabicaTargets)} {/* Debug log */}
+                        {/* Debug: Display raw arabicaTargets data */}
+                        <Box sx={{ marginBottom: 2, maxHeight: '100px', overflow: 'auto' }}>
+                          <Typography variant="caption">Raw Arabica Targets Data:</Typography>
+                          <pre>{JSON.stringify(arabicaTargets, null, 2)}</pre>
+                        </Box>
+                        {console.log('DataGrid rows:', arabicaTargets)}
                         <DataGrid
                           rows={arabicaTargets}
                           columns={[
@@ -586,8 +591,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryNow,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryNow value:', value); // Debug log
+                                console.log('cherryNow value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -598,8 +604,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.projectedGB,
                               valueFormatter: ({ value }) => {
-                                console.log('projectedGB value:', value); // Debug log
+                                console.log('projectedGB value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -610,8 +617,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryTarget,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryTarget value:', value); // Debug log
+                                console.log('cherryTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -622,8 +630,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.gbTarget,
                               valueFormatter: ({ value }) => {
-                                console.log('gbTarget value:', value); // Debug log
+                                console.log('gbTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -634,11 +643,12 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryDeficit,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryDeficit value:', value); // Debug log
+                                console.log('cherryDeficit value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               },
-                              cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
+                              cellClassName: ({ value }) => (value != null && value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
@@ -647,8 +657,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryperdTarget,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryperdTarget value:', value); // Debug log
+                                console.log('cherryperdTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -1055,6 +1066,7 @@ function Dashboard() {
                 </Card>
               </Grid> */}
 
+              {/* Robusta Target Achievement */}
               <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
@@ -1067,7 +1079,12 @@ function Dashboard() {
                       </Box>
                     ) : (
                       <>
-                        {console.log('DataGrid rows:', robustaTargets)} {/* Debug log */}
+                        {/* Debug: Display raw robustaTargets data */}
+                        <Box sx={{ marginBottom: 2, maxHeight: '100px', overflow: 'auto' }}>
+                          <Typography variant="caption">Raw Robusta Targets Data:</Typography>
+                          <pre>{JSON.stringify(robustaTargets, null, 2)}</pre>
+                        </Box>
+                        {console.log('DataGrid rows:', robustaTargets)}
                         <DataGrid
                           rows={robustaTargets}
                           columns={[
@@ -1085,8 +1102,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryNow,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryNow value:', value); // Debug log
+                                console.log('cherryNow value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -1097,8 +1115,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.projectedGB,
                               valueFormatter: ({ value }) => {
-                                console.log('projectedGB value:', value); // Debug log
+                                console.log('projectedGB value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -1109,8 +1128,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryTarget,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryTarget value:', value); // Debug log
+                                console.log('cherryTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -1121,8 +1141,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.gbTarget,
                               valueFormatter: ({ value }) => {
-                                console.log('gbTarget value:', value); // Debug log
+                                console.log('gbTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
@@ -1133,11 +1154,12 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryDeficit,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryDeficit value:', value); // Debug log
+                                console.log('cherryDeficit value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               },
-                              cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
+                              cellClassName: ({ value }) => (value != null && value < 0 ? 'negative-deficit' : '')
                             },
                             { 
                               field: 'cherryperdTarget', 
@@ -1146,8 +1168,9 @@ function Dashboard() {
                               flex: 1,
                               minWidth: 100,
                               type: 'number',
+                              valueGetter: ({ row }) => row.cherryperdTarget,
                               valueFormatter: ({ value }) => {
-                                console.log('cherryperdTarget value:', value); // Debug log
+                                console.log('cherryperdTarget value:', value);
                                 return value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A';
                               }
                             },
