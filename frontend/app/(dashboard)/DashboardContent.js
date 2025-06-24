@@ -214,7 +214,7 @@ function Dashboard() {
           contractValue: parseFloat(row.contractValue) || null,
           cherryEstimate: parseFloat(row.cherryEstimate) || null,
           gbEstimate: parseFloat(row.gbEstimate) || null,
-          currentCherryTotal: parseFloat(row.currentCherryTotal) || null,
+          currentcherrytotal: parseFloat(row.currentcherrytotal) || null,
           difference: parseFloat(row.difference) || null,
         };
         console.log('Formatted row:', formattedRow);
