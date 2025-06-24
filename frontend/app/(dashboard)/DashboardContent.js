@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { useSession } from "next-auth/react"; // Import useSession hook
+import React, { useEffect, useState, useCallback } from 'react';
+import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import { TextField } from '@mui/material'; // Import TextField
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'; // Import AdapterDayjs
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'; // Import LocalizationProvider
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'; // Import DatePicker
-import dayjs from 'dayjs'; // Install: npm install dayjs
+import { TextField } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { 
   Grid, 
   Card, 
@@ -18,42 +18,40 @@ import {
   InputLabel, 
   Select, 
   MenuItem, 
-  OutlinedInput
+  OutlinedInput,
+  Box, // Added Box import
+  Snackbar, // Added Snackbar import
+  Alert // Added Alert import
 } from '@mui/material';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid'; // Added DataGrid import
 
-import TotalBatchesChart from './charts/TotalBatchesChart'; // Adjust the path as necessary
-import TotalCostChart from './charts/TotalCostChart'; // Adjust the path as necessary
-import ArabicaWeightMoM from './charts/ArabicaWeightMoM'; // Adjust the path as necessary
-import RobustaWeightMoM from './charts/RobustaWeightMoM'; // Adjust the path as necessary
-import ArabicaCostMoM from './charts/ArabicaCostMoM'; // Adjust the path as necessary
-import RobustaCostMoM from './charts/RobustaCostMoM'; // Adjust the path as necessary
-import ArabicaAvgCostMoM from './charts/ArabicaAvgCostMoM'; // Adjust the path as necessary
-import RobustaAvgCostMoM from './charts/RobustaAvgCostMoM'; // Adjust the path as necessary
-import ArabicaProcessedMoM from './charts/ArabicaProcessedMoM'; // Adjust the path as necessary
-import RobustaProcessedMoM from './charts/RobustaProcessedMoM'; // Adjust the path as necessary
-import ArabicaProductionMoM from './charts/ArabicaProductionMoM'; // Adjust the path as necessary
-import RobustaProductionMoM from './charts/RobustaProductionMoM'; // Adjust the path as necessary
-import ArabicaCategoryChart from './charts/ArabicaCategoryChart'; // Adjust the path as necessary
-import RobustaCategoryChart from './charts/RobustaCategoryChart'; // Adjust the path as necessary
-// import ArabicaTVWidget from './charts/ArabicaTVChart'; // Adjust the path if necessary
-// import RobustaTVWidget from './charts/RobustaTVChart'; // Adjust the path if necessary
+import TotalBatchesChart from './charts/TotalBatchesChart';
+import TotalCostChart from './charts/TotalCostChart';
+import ArabicaWeightMoM from './charts/ArabicaWeightMoM';
+import RobustaWeightMoM from './charts/RobustaWeightMoM';
+import ArabicaCostMoM from './charts/ArabicaCostMoM';
+import RobustaCostMoM from './charts/RobustaCostMoM';
+import ArabicaAvgCostMoM from './charts/ArabicaAvgCostMoM';
+import RobustaAvgCostMoM from './charts/RobustaAvgCostMoM';
+import ArabicaProcessedMoM from './charts/ArabicaProcessedMoM';
+import RobustaProcessedMoM from './charts/RobustaProcessedMoM';
+import ArabicaProductionMoM from './charts/ArabicaProductionMoM';
+import RobustaProductionMoM from './charts/RobustaProductionMoM';
+import ArabicaCategoryChart from './charts/ArabicaCategoryChart';
+import RobustaCategoryChart from './charts/RobustaCategoryChart';
 import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
 import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
 import RobustaSankeyChart from './charts/RobustaSankeyChart';
-import ArabicaAchievementChart from './charts/ArabicaAchievement';
-import RobustaAchievementChart from './charts/RobustaAchievement';
-
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
-
 function Dashboard() {
   const { data: session } = useSession();
-  const userRole = session?.user?.role || "user"; // Default to "user" if role is missing
+  const userRole = session?.user?.role || "user";
 
   const [metrics, setMetrics] = useState({
     totalBatches: 0, 
@@ -73,32 +71,33 @@ function Dashboard() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // Define error state and setError function
+  const [error, setError] = useState(null);
+
+  const [arabicaTargets, setArabicaTargets] = useState([]); // Added state for targets
+  const [robustaTargets, setRobustaTargets] = useState([]); // Added state for targets
+
+  const [isLoadingTargets, setIsLoadingTargets] = useState(false); // Added state for loading
+  const [openSnackbar, setOpenSnackbar] = useState(false); // Added state for snackbar
 
   const formatWeight = (weight) => {
     if (weight >= 1e9) {
-      return `${(weight / 1e9).toFixed(2)} B`; // Format to billions
+      return `${(weight / 1e9).toFixed(2)} B`;
     } else if (weight >= 1e6) {
-      return `${(weight / 1e6).toFixed(2)} M`; // Format to millions
+      return `${(weight / 1e6).toFixed(2)} M`;
     } else if (weight >= 1e3) {
-      return `${(weight / 1e3).toFixed(2)} K`; // Format to thousands
+      return `${(weight / 1e3).toFixed(2)} K`;
     } else {
-      return `Rp ${new Intl.NumberFormat('de-DE').format(weight)} /kg`; // Format normally
+      return `Rp ${new Intl.NumberFormat('de-DE').format(weight)} /kg`;
     }
   };
 
-  const [data, setData] = useState(null);
   const [timeframe, setTimeframe] = useState('this_month');
-  const [dashboardData, setDashboardData] = useState(null);
 
-  // User-friendly labels for timeframes
   const timeframes = [
     { value: 'this_week', label: 'This Week' },
     { value: 'last_week', label: 'Last Week' },
-
     { value: 'this_month', label: 'This Month' },
     { value: 'last_month', label: 'Last Month' },
-
     { value: 'this_year', label: 'This Year' },
     { value: 'last_year', label: 'Last Year' },
   ];
@@ -112,14 +111,47 @@ function Dashboard() {
     last_year: 'Last Year',
   };
 
-  // Get the human-readable label for the selected timeframe
   const selectedRangeLabel = timeframeLabels[timeframe];
 
-  // Fetch metrics from the backend
+  // Fetch Arabica targets
+  const fetchArabicaTargets = useCallback(async () => {
+    setIsLoadingTargets(true);
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/arabica-targets');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setArabicaTargets(data.map((row, index) => ({ id: index, ...row }))); // Add unique id
+    } catch (err) {
+      console.error('Error fetching Arabica targets:', err);
+      setError(err.message || 'Failed to fetch Arabica targets');
+      setOpenSnackbar(true);
+    } finally {
+      setIsLoadingTargets(false);
+    }
+  }, []);
+
+  // Fetch Robusta targets
+  const fetchRobustaTargets = useCallback(async () => {
+    setIsLoadingTargets(true);
+    try {
+      const response = await fetch('https://processing-facility-backend.onrender.com/api/robusta-targets');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setRobustaTargets(data.map((row, index) => ({ id: index, ...row }))); // Add unique id
+    } catch (err) {
+      console.error('Error fetching Robusta targets:', err);
+      setError(err.message || 'Failed to fetch Robusta targets');
+      setOpenSnackbar(true);
+    } finally {
+      setIsLoadingTargets(false);
+    }
+  }, []);
+
+  // Fetch metrics and targets
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setError(null); // Clear any previous errors
+      setError(null);
 
       let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
 
@@ -128,32 +160,46 @@ function Dashboard() {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-
         const jsonData = await response.json();
         setMetrics(jsonData);
-        setDashboardData(response.data);
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching dashboard metrics:", err);
         setError(err.message);
+        setOpenSnackbar(true);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData(); // Call the async function
-  }, [timeframe]);
+    fetchData();
+    fetchArabicaTargets(); // Fetch targets on mount
+    fetchRobustaTargets(); // Fetch targets on mount
+  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets]);
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
   };
 
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    setError(null);
+  };
+
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
-      </div>
+      </Box>
     );
   }
+
+  if (!session?.user || !['admin', 'manager', 'staff', 'receiving'].includes(session.user.role)) {
+      return (
+        <Typography variant="h6">
+          Access Denied. You do not have permission to view this page.
+        </Typography>
+      );
+    }
   
   return (
     <div style={{ padding: '0px', flex: 1, border: 0, width: '100%', height: '100%', margin: 5 }}>
@@ -255,7 +301,7 @@ function Dashboard() {
                   <CardContent>
                     <Typography variant="body1">Average Arabica Cherry Cost</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                      Rp {new Intl.NumberFormat('de-DE').format(metrics.avgArabicaCost)} /kg
+                      {new Intl.NumberFormat('de-DE').format(metrics.avgArabicaCost)} /kg
                       {metrics.lastmonthAvgArabicaCost !== 0 && (
                         <Typography
                           variant="subtitle2"
@@ -452,7 +498,7 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Total Arabica Production Bar Chart */}
+              {/* Total Arabica Production Bar Chart
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
@@ -462,16 +508,120 @@ function Dashboard() {
                     <ArabicaCategoryChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
                       Arabica Target Achievement
                     </Typography>
                     <ArabicaAchievementChart timeframe={timeframe}/>
+                  </CardContent>
+                </Card>
+              </Grid> */}
+
+              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Target Achievement
+                    </Typography>
+                    {isLoadingTargets ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <DataGrid
+                        rows={arabicaTargets}
+                        columns={[
+                          { 
+                            field: 'processingType', 
+                            headerName: 'Processing Type', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100
+                          },
+                          { 
+                            field: 'cherryNow', 
+                            headerName: 'Cherry Now (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'projectedGB', 
+                            headerName: 'Projected GB (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'cherryTarget', 
+                            headerName: 'Cherry Target (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'gbTarget', 
+                            headerName: 'GB Target (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'cherryDeficit', 
+                            headerName: 'Cherry Deficit (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A',
+                            cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
+                          },
+                          { 
+                            field: 'cherryperdTarget', 
+                            headerName: 'Cherry/Day (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                        ]}
+                        pageSizeOptions={[5]}
+                        slots={{ toolbar: GridToolbar }}
+                        sx={{
+                          height: '80%',
+                          border: '1px solid rgba(0,0,0,0.12)',
+                          '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                          '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
+                          '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                          '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                        }}
+                        rowHeight={32}
+                        disableRowSelectionOnClick
+                        initialState={{
+                          pagination: { paginationModel: { pageSize: 5 } },
+                          sorting: {
+                            sortModel: [{ field: 'processingType', sort: 'asc' }],
+                          },
+                        }}
+                        localeText={{
+                          noRowsLabel: 'No data available for Arabica targets'
+                        }}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
@@ -629,7 +779,7 @@ function Dashboard() {
                   <CardContent>
                     <Typography variant="body1">Average Robusta Cherry Cost</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                      Rp {new Intl.NumberFormat('de-DE').format(metrics.avgRobustaCost)} /kg
+                      {new Intl.NumberFormat('de-DE').format(metrics.avgRobustaCost)} /kg
                       {metrics.lastmonthAvgRobustaCost !== 0 && (
                         <Typography
                           variant="subtitle2"
@@ -827,7 +977,7 @@ function Dashboard() {
               </Grid>
 
               {/* Total Robusta Production Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -836,16 +986,120 @@ function Dashboard() {
                     <RobustaCategoryChart timeframe={timeframe} />
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Robusta Target Achievement */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
+              {/* <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
                       Robusta Target Achievement
                     </Typography>
                     <RobustaAchievementChart timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid> */}
+
+              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Target Achievement
+                    </Typography>
+                    {isLoadingTargets ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <DataGrid
+                        rows={robustaTargets}
+                        columns={[
+                          { 
+                            field: 'processingType', 
+                            headerName: 'Processing Type', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100
+                          },
+                          { 
+                            field: 'cherryNow', 
+                            headerName: 'Cherry Now (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'projectedGB', 
+                            headerName: 'Projected GB (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'cherryTarget', 
+                            headerName: 'Cherry Target (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'gbTarget', 
+                            headerName: 'GB Target (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                          { 
+                            field: 'cherryDeficit', 
+                            headerName: 'Cherry Deficit (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A',
+                            cellClassName: (params) => params.value < 0 ? 'negative-deficit' : ''
+                          },
+                          { 
+                            field: 'cherryperdTarget', 
+                            headerName: 'Cherry/Day (kg)', 
+                            width: 110,
+                            flex: 1,
+                            minWidth: 100,
+                            type: 'number',
+                            valueFormatter: ({ value }) => value != null ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : 'N/A'
+                          },
+                        ]}
+                        pageSizeOptions={[5]}
+                        slots={{ toolbar: GridToolbar }}
+                        sx={{
+                          height: '80%',
+                          border: '1px solid rgba(0,0,0,0.12)',
+                          '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                          '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
+                          '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                          '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                        }}
+                        rowHeight={32}
+                        disableRowSelectionOnClick
+                        initialState={{
+                          pagination: { paginationModel: { pageSize: 5 } },
+                          sorting: {
+                            sortModel: [{ field: 'processingType', sort: 'asc' }],
+                          },
+                        }}
+                        localeText={{
+                          noRowsLabel: 'No data available for Robusta targets'
+                        }}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
