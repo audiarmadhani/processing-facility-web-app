@@ -1043,9 +1043,9 @@ const DryingStation = () => {
         <Dialog open={openWeightDialog} onClose={handleCloseWeightDialog} maxWidth="md" fullWidth>
           <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber}</DialogTitle>
           <DialogContent>
-            <Typography variant="h6" gutterBottom>{editingWeightId ? 'Edit Bag Weight' : 'Add Bag Weight'}</Typography>
+            <Typography variant="h6" gutterBottom>{editingWeightId ? 'Edit Weight Measurement' : 'Add Weight Measurement'}</Typography>
             <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
-              <Grid item xs={3}>
+              <Grid item xs={4}>
                 <FormControl fullWidth>
                   <InputLabel id="processing-type-label">Processing Type</InputLabel>
                   <Select
@@ -1061,12 +1061,7 @@ const DryingStation = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={2}>
-                <Typography variant="body1" sx={{ mt: 2 }}>
-                  Bag Number: {newBagNumber}
-                </Typography>
-              </Grid>
-              <Grid item xs={3}>
+              <Grid item xs={4}>
                 <TextField
                   label="Weight (kg)"
                   value={newBagWeight}
@@ -1076,7 +1071,7 @@ const DryingStation = () => {
                   inputProps={{ min: 0, step: 0.01 }}
                 />
               </Grid>
-              <Grid item xs={2}>
+              <Grid item xs={4}>
                 <TextField
                   label="Measurement Date"
                   type="date"
@@ -1086,15 +1081,17 @@ const DryingStation = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={2}>
+            </Grid>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              <Grid item xs={12}>
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={handleAddOrUpdateBagWeight}
                   fullWidth
-                  sx={{ height: '100%' }}
+                  disabled={!newProcessingType || !newBagWeight || !newWeightDate}
                 >
-                  {editingWeightId ? 'Update' : 'Add'} Bag
+                  {editingWeightId ? 'Update' : 'Add'} Weight
                 </Button>
               </Grid>
             </Grid>
@@ -1133,7 +1130,6 @@ const DryingStation = () => {
                   </TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell>Processing Type</TableCell>
-                  <TableCell>Bag Number</TableCell>
                   <TableCell>Weight (kg)</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
@@ -1141,7 +1137,7 @@ const DryingStation = () => {
               <TableBody>
                 {weightMeasurements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">No weight measurements recorded</TableCell>
+                    <TableCell colSpan={5} align="center">No weight measurements recorded</TableCell>
                   </TableRow>
                 ) : (
                   weightMeasurements.map(m => (
@@ -1154,8 +1150,7 @@ const DryingStation = () => {
                       </TableCell>
                       <TableCell>{new Date(m.measurement_date).toLocaleDateString()}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
-                      <TableCell>{m.bagNumber}</TableCell>
-                      <TableCell>{m.weight.toFixed(2)}</TableCell>
+                      <TableCell>{parseFloat(m.weight).toFixed(2)}</TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
