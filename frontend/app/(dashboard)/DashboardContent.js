@@ -572,7 +572,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1031,7 +1031,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Robusta Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1047,12 +1047,6 @@ function Dashboard() {
                       </Typography>
                     ) : (
                       <>
-                        {/* Debug: Display raw robustaTargets data */}
-                        <Box sx={{ marginBottom: 2, maxHeight: '100px', overflow: 'auto' }}>
-                          <Typography variant="caption">Raw Robusta Targets Data:</Typography>
-                          <pre>{JSON.stringify(robustaTargets, null, 2)}</pre>
-                        </Box>
-                        {console.log('DataGrid rows:', robustaTargets)}
                         <DataGrid
                           rows={robustaTargets}
                           columns={[
