@@ -436,7 +436,7 @@ const PreprocessingStation = () => {
         });
       });
 
-      // Calculate total processed weight per batch for available weight
+      // Calculate total processed weight per batch
       const batchProcessedWeight = new Map();
       preprocessingResult.forEach(row => {
         const batchNumber = row.batchNumber.toLowerCase();
@@ -451,11 +451,10 @@ const PreprocessingStation = () => {
         const totalWeight = parseFloat(receivingBatch.weight || 0).toFixed(2);
         const totalProcessedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0).toFixed(2);
         const availableWeightRaw = totalWeight - totalProcessedWeight;
-        // Handle small floating-point differences
         const availableWeight = Math.abs(availableWeightRaw) < 0.01 ? '0.00' : availableWeightRaw.toFixed(2);
 
         return {
-          id: `${row.id}-${row.batchNumber}`, // Unique ID for each preprocessing row
+          id: `${row.id}-${row.batchNumber}`,
           batchNumber: row.batchNumber,
           type: receivingBatch.type || 'N/A',
           producer: row.producer || 'N/A',
@@ -485,14 +484,59 @@ const PreprocessingStation = () => {
 
       // Unprocessed batches for the top DataGrid (Pending Processing)
       const batchAvailableWeight = new Map();
+
+      // Include batches from preprocessing data
       formattedData.forEach(row => {
         const batchNumber = row.batchNumber.toLowerCase();
         if (!row.finished && parseFloat(row.availableWeight) > 0) {
           batchAvailableWeight.set(batchNumber, {
             ...row,
-            id: row.batchNumber, // Use batchNumber for top DataGrid
+            id: row.batchNumber,
             processedWeight: parseFloat(batchProcessedWeight.get(batchNumber) || 0).toFixed(2),
           });
+        }
+      });
+
+      // Include receiving batches without preprocessing records
+      receivingData.forEach(batch => {
+        const batchNumberLower = batch.batchNumber.toLowerCase();
+        // Skip if already included from preprocessing or marked as finished
+        if (!batchAvailableWeight.has(batchNumberLower)) {
+          const totalWeight = parseFloat(batch.weight || 0);
+          const processedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0);
+          const availableWeightRaw = totalWeight - processedWeight;
+          const availableWeight = Math.abs(availableWeightRaw) < 0.01 ? '0.00' : availableWeightRaw.toFixed(2);
+          const isFinished = preprocessingResult.some(row => 
+            row.batchNumber.toLowerCase() === batchNumberLower && row.finished
+          );
+
+          if (parseFloat(availableWeight) > 0 && !isFinished) {
+            batchAvailableWeight.set(batchNumberLower, {
+              id: batch.batchNumber,
+              batchNumber: batch.batchNumber,
+              type: batch.type || 'N/A',
+              weight: totalWeight.toFixed(2),
+              totalProcessedWeight: processedWeight.toFixed(2),
+              availableWeight: availableWeight,
+              receivingDate: formatDate(batch.receivingDate),
+              qcDate: formatDate(batch.qcDate),
+              cherryScore: batch.cherryScore || 'N/A',
+              cherryGroup: batch.cherryGroup || 'N/A',
+              ripeness: batch.ripeness || 'N/A',
+              color: batch.color || 'N/A',
+              foreignMatter: batch.foreignMatter || 'N/A',
+              overallQuality: batch.overallQuality || 'N/A',
+              finished: false,
+              producer: 'N/A',
+              productLine: 'N/A',
+              processingType: 'N/A',
+              quality: 'N/A',
+              lotNumber: 'N/A',
+              referenceNumber: 'N/A',
+              startProcessingDate: 'N/A',
+              preprocessingNotes: 'N/A',
+            });
+          }
         }
       });
 
@@ -506,6 +550,7 @@ const PreprocessingStation = () => {
         return 0;
       });
 
+      console.log('Unprocessed Batches:', unprocessedBatches); // Debug log
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
     } catch (error) {
@@ -522,7 +567,6 @@ const PreprocessingStation = () => {
 
   useEffect(() => {
     fetchPreprocessingData();
-    // Remove cleanup to avoid resetting data on unmount
   }, [fetchPreprocessingData]);
 
   const ITEM_HEIGHT = 48;
