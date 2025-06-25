@@ -36,7 +36,7 @@ const PreprocessingStation = () => {
   const [batchNumber, setBatchNumber] = useState('');
   const [lotNumber, setLotNumber] = useState('N/A');
   const [referenceNumber, setReferenceNumber] = useState('N/A');
-
+  const [openHistory, setOpenHistory] = useState(false);
   const [weightAvailable, setWeight] = useState(0);
   const [totalProcessedWeight, setTotalProcessedWeight] = useState(0);
   const [farmerName, setFarmerName] = useState('');
