@@ -94,8 +94,8 @@ const PreprocessingStation = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/preprocessing/${batchNumber}`, { timeout: 15000 });
       const preprocessingResponse = response.data;
-      const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed || 0);
-      const weightAvailable = parseFloat(preprocessingResponse.weightAvailable || (totalWeight - totalProcessedWeight));
+      const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed || 0).toFixed(2);
+      const weightAvailable = parseFloat(preprocessingResponse.weightAvailable || (totalWeight - totalProcessedWeight)).toFixed(2);
 
       return {
         weightAvailable,
@@ -110,7 +110,7 @@ const PreprocessingStation = () => {
       setSnackBarSeverity('info');
       setOpenSnackBar(true);
       return {
-        weightAvailable: totalWeight,
+        weightAvailable: totalWeight.toFixed(2),
         totalProcessedWeight: 0,
         finished: false,
         lotNumber: 'N/A',
@@ -136,8 +136,8 @@ const PreprocessingStation = () => {
       setTotalBags(data.totalBags || '');
       setLotNumber(lotNumber);
       setReferenceNumber(referenceNumber);
-      setWeightAvailable(weightAvailable.toFixed(2));
-      setTotalProcessedWeight(totalProcessedWeight.toFixed(2));
+      setWeightAvailable(weightAvailable);
+      setTotalProcessedWeight(totalProcessedWeight);
 
       if (finished) {
         setSnackBarMessage(`Batch ${batchNumber} is already marked as complete.`);
@@ -175,8 +175,8 @@ const PreprocessingStation = () => {
           setTotalBags(batchData.totalBags || '');
           const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
             await fetchAvailableWeight(batchData.batchNumber, totalWeightNum);
-          setWeightAvailable(weightAvailable.toFixed(2));
-          setTotalProcessedWeight(totalProcessedWeight.toFixed(2));
+          setWeightAvailable(weightAvailable);
+          setTotalProcessedWeight(totalProcessedWeight);
           setLotNumber(lotNumber);
           setReferenceNumber(referenceNumber);
 
@@ -276,19 +276,19 @@ const PreprocessingStation = () => {
         const processedLogs = processedWeights.filter(log => 
           log.batchNumber.toLowerCase() === batch.batchNumber.toLowerCase());
         const totalProcessedWeight = processedLogs.reduce((acc, log) => 
-          acc + parseFloat(log.weightProcessed || 0), 0);
-        const weightAvailable = parseFloat(batch.weight || 0) - totalProcessedWeight;
+          acc + parseFloat(log.weightProcessed || 0), 0).toFixed(2);
+        const weightAvailable = (parseFloat(batch.weight || 0) - totalProcessedWeight).toFixed(2);
         return {
           batchNumber: batch.batchNumber,
           lotNumber: processedLogs.length > 0 ? processedLogs[processedLogs.length - 1].lotNumber || 'N/A' : 'N/A',
           referenceNumber: processedLogs.length > 0 ? processedLogs[processedLogs.length - 1].referenceNumber || 'N/A' : 'N/A',
-          totalWeight: parseFloat(batch.weight || 0),
+          totalWeight: parseFloat(batch.weight || 0).toFixed(2),
           totalProcessedWeight,
           weightAvailable,
           finished: processedLogs.length > 0 ? processedLogs[0].finished : false,
           processedLogs: processedLogs.map(log => ({
             processingDate: formatDate(log.processingDate),
-            weightProcessed: parseFloat(log.weightProcessed || 0),
+            weightProcessed: parseFloat(log.weightProcessed || 0).toFixed(2),
             processingType: log.processingType || 'N/A',
             notes: log.notes || '',
             lotNumber: log.lotNumber || 'N/A',
@@ -436,61 +436,42 @@ const PreprocessingStation = () => {
         });
       });
 
-      // Group preprocessing data by batch number
-      const batchMap = new Map();
+      // Calculate total processed weight per batch for available weight
+      const batchProcessedWeight = new Map();
       preprocessingResult.forEach(row => {
         const batchNumber = row.batchNumber.toLowerCase();
-        if (!batchMap.has(batchNumber)) {
-          batchMap.set(batchNumber, {
-            batchNumber: row.batchNumber,
-            processingTypes: new Set(),
-            lotNumbers: new Set(),
-            referenceNumbers: new Set(),
-            producers: new Set(),
-            productLines: new Set(),
-            qualities: new Set(),
-            processedWeight: 0,
-            processingDates: [],
-            notes: [],
-            finished: row.finished || false,
-          });
-        }
-        const batch = batchMap.get(batchNumber);
-        batch.processingTypes.add(row.processingType || 'N/A');
-        batch.lotNumbers.add(row.lotNumber || 'N/A');
-        batch.referenceNumbers.add(row.referenceNumber || 'N/A');
-        batch.producers.add(row.producer || 'N/A');
-        batch.productLines.add(row.productLine || 'N/A');
-        batch.qualities.add(row.quality || 'N/A');
-        batch.processedWeight += parseFloat(row.weightProcessed || 0);
-        batch.processingDates.push(formatDate(row.processingDate));
-        if (row.notes) batch.notes.push(row.notes);
-        batch.finished = batch.finished || row.finished; // If any row is finished, mark batch as finished
+        const weight = parseFloat(row.weightProcessed || 0);
+        batchProcessedWeight.set(batchNumber, (batchProcessedWeight.get(batchNumber) || 0) + weight);
       });
 
-      // Combine receiving and preprocessing data
-      const formattedData = Array.from(batchMap.entries()).map(([batchNumberLower, batch]) => {
+      // Create one row per preprocessing entry
+      const formattedData = preprocessingResult.map(row => {
+        const batchNumberLower = row.batchNumber.toLowerCase();
         const receivingBatch = receivingMap.get(batchNumberLower) || {};
-        const totalWeight = receivingBatch.weight || 0;
-        const availableWeight = totalWeight - batch.processedWeight;
+        const totalWeight = parseFloat(receivingBatch.weight || 0).toFixed(2);
+        const totalProcessedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0).toFixed(2);
+        const availableWeightRaw = totalWeight - totalProcessedWeight;
+        // Handle small floating-point differences
+        const availableWeight = Math.abs(availableWeightRaw) < 0.01 ? '0.00' : availableWeightRaw.toFixed(2);
 
         return {
-          id: batch.batchNumber,
-          batchNumber: batch.batchNumber,
+          id: `${row.id}-${row.batchNumber}`, // Unique ID for each preprocessing row
+          batchNumber: row.batchNumber,
           type: receivingBatch.type || 'N/A',
-          producer: Array.from(batch.producers).join(', '),
-          productLine: Array.from(batch.productLines).join(', '),
-          processingType: Array.from(batch.processingTypes).join(', '),
-          quality: Array.from(batch.qualities).join(', '),
-          lotNumber: Array.from(batch.lotNumbers).filter(n => n !== 'N/A').join(', ') || 'N/A',
-          referenceNumber: Array.from(batch.referenceNumbers).filter(n => n !== 'N/A').join(', ') || 'N/A',
+          producer: row.producer || 'N/A',
+          productLine: row.productLine || 'N/A',
+          processingType: row.processingType || 'N/A',
+          quality: row.quality || 'N/A',
+          lotNumber: row.lotNumber || 'N/A',
+          referenceNumber: row.referenceNumber || 'N/A',
           weight: totalWeight,
-          processedWeight: batch.processedWeight,
-          availableWeight: availableWeight > 0 ? availableWeight : 0,
-          startProcessingDate: batch.processingDates.length > 0 ? batch.processingDates[batch.processingDates.length - 1] : 'N/A',
-          lastProcessingDate: batch.processingDates[0] || 'N/A',
-          preprocessingNotes: batch.notes.join('; ') || 'N/A',
-          finished: batch.finished,
+          processedWeight: parseFloat(row.weightProcessed || 0).toFixed(2),
+          totalProcessedWeight: totalProcessedWeight,
+          availableWeight: availableWeight,
+          startProcessingDate: formatDate(row.processingDate),
+          lastProcessingDate: formatDate(row.processingDate),
+          preprocessingNotes: row.notes || 'N/A',
+          finished: row.finished || false,
           receivingDate: receivingBatch.receivingDate || 'N/A',
           qcDate: receivingBatch.qcDate || 'N/A',
           cherryScore: receivingBatch.cherryScore || 'N/A',
@@ -503,21 +484,27 @@ const PreprocessingStation = () => {
       });
 
       // Unprocessed batches for the top DataGrid (Pending Processing)
-      const unprocessedBatches = formattedData
-        .filter(batch => parseFloat(batch.availableWeight) > 0 && !batch.finished)
-        .map(batch => ({
-          ...batch,
-          id: batch.batchNumber,
-        }))
-        .sort((a, b) => {
-          if (a.type !== b.type) return a.type.localeCompare(b.type);
-          if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
-          if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
-          if (a.color !== b.color) return a.color.localeCompare(b.color);
-          if (a.foreignMatter !== b.foreignMatter) return a.foreignMatter.localeCompare(b.foreignMatter);
-          if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
-          return 0;
-        });
+      const batchAvailableWeight = new Map();
+      formattedData.forEach(row => {
+        const batchNumber = row.batchNumber.toLowerCase();
+        if (!row.finished && parseFloat(row.availableWeight) > 0) {
+          batchAvailableWeight.set(batchNumber, {
+            ...row,
+            id: row.batchNumber, // Use batchNumber for top DataGrid
+            processedWeight: parseFloat(batchProcessedWeight.get(batchNumber) || 0).toFixed(2),
+          });
+        }
+      });
+
+      const unprocessedBatches = Array.from(batchAvailableWeight.values()).sort((a, b) => {
+        if (a.type !== b.type) return a.type.localeCompare(b.type);
+        if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
+        if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
+        if (a.color !== b.color) return a.color.localeCompare(b.color);
+        if (a.foreignMatter !== b.foreignMatter) return a.foreignMatter.localeCompare(b.foreignMatter);
+        if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
+        return 0;
+      });
 
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
@@ -530,8 +517,8 @@ const PreprocessingStation = () => {
   }, []);
 
   const filteredPreprocessingData = producerFilter === 'All'
-    ? preprocessingData.filter(row => parseFloat(row.availableWeight) > 0)
-    : preprocessingData.filter(row => row.producer.includes(producerFilter) && parseFloat(row.availableWeight) > 0);
+    ? preprocessingData
+    : preprocessingData.filter(row => row.producer.includes(producerFilter));
 
   useEffect(() => {
     fetchPreprocessingData();
@@ -639,6 +626,7 @@ const PreprocessingStation = () => {
       ),
     },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
+    { field: 'totalProcessedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
     { field: 'receivingDate', headerName: 'Receiving Date', width: 180, sortable: true },
     { field: 'qcDate', headerName: 'QC Date', width: 180, sortable: true },
@@ -650,7 +638,14 @@ const PreprocessingStation = () => {
   ];
 
   const columns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
+    { 
+      field: 'batchNumber', 
+      headerName: 'Batch Number', 
+      width: 160, 
+      sortable: true,
+      groupable: true,
+      aggregable: false,
+    },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
     { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 100, sortable: true },
@@ -660,9 +655,9 @@ const PreprocessingStation = () => {
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
     { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
+    { field: 'totalProcessedWeight', headerName: 'Total Processed Weight (kg)', width: 180, sortable: true },
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
-    { field: 'startProcessingDate', headerName: 'Start Processing Date', width: 180, sortable: true },
-    { field: 'lastProcessingDate', headerName: 'Last Processing Date', width: 180, sortable: true },
+    { field: 'startProcessingDate', headerName: 'Processing Date', width: 180, sortable: true },
     { field: 'preprocessingNotes', headerName: 'Notes', width: 200, sortable: true },
     {
       field: 'finished',
@@ -1040,7 +1035,7 @@ const PreprocessingStation = () => {
                 pageSizeOptions={[5, 10, 20]}
                 disableRowSelectionOnClick
                 sortingOrder={['asc', 'desc']}
-                getRowId={(row) => row.batchNumber}
+                getRowId={(row) => row.id}
                 slots={{ toolbar: GridToolbar }}
                 autosizeOnMount
                 autosizeOptions={{
@@ -1090,6 +1085,13 @@ const PreprocessingStation = () => {
                   expand: true,
                 }}
                 rowHeight={35}
+                treeData
+                getTreeDataPath={(row) => [row.batchNumber, row.id]}
+                groupingColDef={{
+                  headerName: 'Batch Number',
+                  width: 160,
+                }}
+                defaultGroupingExpansionDepth={-1}
               />
             </Box>
           </CardContent>
