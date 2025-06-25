@@ -763,6 +763,8 @@ const PreprocessingStation = () => {
                     Get RFID Tag
                   </Button>
                 </Grid>
+              </Grid>
+              <Grid container spacing={2} alignItems="center">
                 <Grid item xs>
                   <TextField
                     label="Batch Number Lookup"
@@ -792,7 +794,7 @@ const PreprocessingStation = () => {
                     value={farmerName || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    margin="normal"
+                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -801,7 +803,7 @@ const PreprocessingStation = () => {
                     value={lotNumber}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    margin="normal"
+                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -810,7 +812,7 @@ const PreprocessingStation = () => {
                     value={referenceNumber}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    margin="normal"
+                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -819,7 +821,7 @@ const PreprocessingStation = () => {
                     value={receivingDate || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    margin="normal"
+                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -828,7 +830,7 @@ const PreprocessingStation = () => {
                     value={qcDate || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    margin="normal"
+                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -837,7 +839,7 @@ const PreprocessingStation = () => {
                     value={totalWeight || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    margin="normal"
+                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -846,7 +848,7 @@ const PreprocessingStation = () => {
                     value={totalBags || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    margin="normal"
+                    // margin="normal"
                   />
                 </Grid>
               </Grid>
