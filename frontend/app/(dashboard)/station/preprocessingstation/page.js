@@ -30,7 +30,7 @@ import axiosRetry from 'axios-retry';
 const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api';
 
 // Configure axios-retry
-axiosRetry(axios, { retries: 3, retryDelay: (retryCount) => retryCount * 1000 });
+axiosRetry(axios, { retries: 3, retryDelay: (retryCount) => retryCount * 2000 });
 
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
@@ -87,7 +87,7 @@ const PreprocessingStation = () => {
 
   const fetchAvailableWeight = useCallback(async (batchNumber, totalWeight) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/preprocessing/${batchNumber}`, { timeout: 10000 });
+      const response = await axios.get(`${API_BASE_URL}/preprocessing/${batchNumber}`, { timeout: 15000 });
       const preprocessingResponse = response.data;
       const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed || 0);
       const weightAvailable = parseFloat(preprocessingResponse.weightAvailable || (totalWeight - totalProcessedWeight));
@@ -116,7 +116,7 @@ const PreprocessingStation = () => {
 
   const fetchBatchData = useCallback(async (batchNumber) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/receiving/${batchNumber}`, { timeout: 10000 });
+      const response = await axios.get(`${API_BASE_URL}/receiving/${batchNumber}`, { timeout: 15000 });
       const dataArray = response.data;
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
       const data = dataArray[0];
@@ -150,13 +150,13 @@ const PreprocessingStation = () => {
 
   const handleRfidScan = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/get-rfid/Warehouse_Exit`, { timeout: 10000 });
+      const response = await axios.get(`${API_BASE_URL}/get-rfid/Warehouse_Exit`, { timeout: 15000 });
       const data = response.data;
 
       if (data.rfid) {
         setRfid(data.rfid);
         setRfidTag(data.rfid);
-        const receivingResponse = await axios.get(`${API_BASE_URL}/receivingrfid/${data.rfid}`, { timeout: 10000 });
+        const receivingResponse = await axios.get(`${API_BASE_URL}/receivingrfid/${data.rfid}`, { timeout: 15000 });
         const receivingData = receivingResponse.data;
 
         if (receivingData && receivingData.length > 0) {
@@ -199,7 +199,7 @@ const PreprocessingStation = () => {
 
   const clearRfidData = async (scannedAt) => {
     try {
-      await axios.delete(`${API_BASE_URL}/scanning-rfid/${scannedAt}`, { timeout: 10000 });
+      await axios.delete(`${API_BASE_URL}/scanning-rfid/${scannedAt}`, { timeout: 15000 });
     } catch (error) {
       console.error("Error clearing RFID data:", error);
     }
@@ -231,7 +231,7 @@ const PreprocessingStation = () => {
     try {
       const response = await axios.put(`${API_BASE_URL}/preprocessing/${batchNumber}/finish`, 
         { createdBy: session?.user?.name || 'Unknown' }, 
-        { timeout: 10000 }
+        { timeout: 15000 }
       );
       setSnackBarMessage(response.data.message || `Batch ${batchNumber} marked as complete successfully!`);
       setSnackBarSeverity('success');
@@ -261,8 +261,8 @@ const PreprocessingStation = () => {
   const fetchWeightHistory = async () => {
     try {
       const [batchesResponse, processedResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/receiving`, { timeout: 10000 }),
-        axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 10000 }),
+        axios.get(`${API_BASE_URL}/receiving`, { timeout: 15000 }),
+        axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
       ]);
       const batches = batchesResponse.data;
       const processedWeights = processedResponse.data.allRows || [];
@@ -341,8 +341,8 @@ const PreprocessingStation = () => {
     };
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/preprocessing`, preprocessingData, { timeout: 10000 });
-      const { lotNumber, referenceNumber } = response.data.preprocessingData[0];
+      const response = await axios.post(`${API_BASE_URL}/preprocessing`, preprocessingData, { timeout: 15000 });
+      const { lotNumber, referenceNumber } = response.data.preprocessingData[0] || {};
       setLotNumber(lotNumber || 'N/A');
       setReferenceNumber(referenceNumber || 'N/A');
       setSnackBarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${parsedWeight} kg. Lot Number: ${lotNumber || 'N/A'}`);
@@ -351,7 +351,10 @@ const PreprocessingStation = () => {
       await fetchPreprocessingData();
       resetForm();
     } catch (error) {
-      const errorMessage = error.response?.data?.error || `Failed to start preprocessing: ${error.message}`;
+      const errorMessage = error.response?.data?.error || 
+        error.response?.status === 502 
+          ? 'Server is temporarily unavailable. Please try again later.' 
+          : `Failed to start preprocessing: ${error.message}`;
       handleError(errorMessage, error);
     }
   };
@@ -388,112 +391,104 @@ const PreprocessingStation = () => {
 
   const fetchPreprocessingData = useCallback(async () => {
     try {
-      const [qcResponse, preprocessingResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/qc`, { timeout: 10000 }),
-        axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 10000 }),
+      const [receivingResponse, preprocessingResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/receiving`, { timeout: 15000 }),
+        axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
       ]);
-      const qcResult = qcResponse.data.allRows || [];
+      const receivingData = receivingResponse.data || [];
       const preprocessingResult = preprocessingResponse.data.allRows || [];
 
-      const finishedStatusMap = new Map();
-      preprocessingResult.forEach(row => {
-        finishedStatusMap.set(row.batchNumber.toLowerCase(), row.finished || false);
+      // Create a map of batch numbers to their receiving data
+      const receivingMap = new Map();
+      receivingData.forEach(batch => {
+        receivingMap.set(batch.batchNumber.toLowerCase(), {
+          batchNumber: batch.batchNumber,
+          type: batch.type || 'N/A',
+          weight: parseFloat(batch.weight || 0),
+          receivingDate: formatDate(batch.receivingDate),
+          qcDate: formatDate(batch.qcDate),
+          cherryScore: batch.cherryScore || 'N/A',
+          cherryGroup: batch.cherryGroup || 'N/A',
+          ripeness: batch.ripeness || 'N/A',
+          color: batch.color || 'N/A',
+          foreignMatter: batch.foreignMatter || 'N/A',
+          overallQuality: batch.overallQuality || 'N/A',
+        });
       });
 
-      const preprocessingMap = new Map();
+      // Group preprocessing data by batch number
+      const batchMap = new Map();
       preprocessingResult.forEach(row => {
-        const key = `${row.batchNumber}-${row.processingType || 'unknown'}`;
-        const existing = preprocessingMap.get(key);
-        const rowDate = new Date(row.processingDate || row.createdAt || '1970-01-01');
-        const existingDate = existing ? new Date(existing.processingDate || existing.createdAt || '1970-01-01') : null;
-
-        if (!existing || rowDate > existingDate) {
-          preprocessingMap.set(key, {
+        const batchNumber = row.batchNumber.toLowerCase();
+        if (!batchMap.has(batchNumber)) {
+          batchMap.set(batchNumber, {
             batchNumber: row.batchNumber,
-            lotNumber: row.lotNumber || 'N/A',
-            referenceNumber: row.referenceNumber || 'N/A',
-            processingType: row.processingType || 'N/A',
-            notes: row.notes || '',
-            weightProcessed: parseFloat(row.weightProcessed || 0),
-            producer: row.producer || 'N/A',
-            productLine: row.productLine || 'N/A',
-            quality: row.quality || 'N/A',
-            processingDate: formatDate(row.processingDate),
+            processingTypes: new Set(),
+            lotNumbers: new Set(),
+            referenceNumbers: new Set(),
+            producers: new Set(),
+            productLines: new Set(),
+            qualities: new Set(),
+            processedWeight: 0,
+            processingDates: [],
+            notes: [],
             finished: row.finished || false,
           });
         }
+        const batch = batchMap.get(batchNumber);
+        batch.processingTypes.add(row.processingType || 'N/A');
+        batch.lotNumbers.add(row.lotNumber || 'N/A');
+        batch.referenceNumbers.add(row.referenceNumber || 'N/A');
+        batch.producers.add(row.producer || 'N/A');
+        batch.productLines.add(row.productLine || 'N/A');
+        batch.qualities.add(row.quality || 'N/A');
+        batch.processedWeight += parseFloat(row.weightProcessed || 0);
+        batch.processingDates.push(formatDate(row.processingDate));
+        if (row.notes) batch.notes.push(row.notes);
+        batch.finished = batch.finished || row.finished; // If any row is finished, mark batch as finished
       });
 
-      const qcRowMap = new Map();
-      qcResult.forEach(batch => {
-        const key = `${batch.batchNumber}-${batch.processType || 'unknown'}`;
-        const existing = qcRowMap.get(key);
-        const batchDate = new Date(batch.lastProcessingDate || batch.startProcessingDate || '1970-01-01');
-        const existingDate = existing ? new Date(existing.lastProcessingDate || existing.startProcessingDate || '1970-01-01') : null;
-
-        if (!existing || batchDate > existingDate) {
-          qcRowMap.set(key, batch);
-        }
-      });
-
-      const dedupedRows = Array.from(qcRowMap.values());
-      const today = new Date();
-      const formattedData = dedupedRows.map(row => {
-        const receivingDate = new Date(row.receivingDate);
-        let sla = 'N/A';
-        if (!isNaN(receivingDate.getTime())) {
-          const diffTime = Math.abs(today.getTime() - receivingDate.getTime());
-          sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-
-        const preprocessingKey = `${row.batchNumber}-${row.processType || 'unknown'}`;
-        const preprocessingRow = preprocessingMap.get(preprocessingKey) || {};
+      // Combine receiving and preprocessing data
+      const formattedData = Array.from(batchMap.entries()).map(([batchNumberLower, batch]) => {
+        const receivingBatch = receivingMap.get(batchNumberLower) || {};
+        const totalWeight = receivingBatch.weight || 0;
+        const availableWeight = totalWeight - batch.processedWeight;
 
         return {
-          id: `${row.batchNumber}-${row.processType || 'unknown'}`,
-          ...row,
-          lotNumber: preprocessingRow.lotNumber || 'N/A',
-          referenceNumber: preprocessingRow.referenceNumber || 'N/A',
-          processedWeight: parseFloat(row.processedWeight || preprocessingRow.weightProcessed || 0),
-          availableWeight: parseFloat(row.availableWeight || 0),
-          startProcessingDate: formatDate(row.startProcessingDate),
-          lastProcessingDate: formatDate(row.lastProcessingDate),
-          preprocessingNotes: preprocessingRow.notes || '',
-          finished: finishedStatusMap.get(row.batchNumber.toLowerCase()) || row.finished || false,
-          sla,
-          receivingDate: formatDate(row.receivingDate),
-          qcDate: formatDate(row.qcDate),
+          id: batch.batchNumber,
+          batchNumber: batch.batchNumber,
+          type: receivingBatch.type || 'N/A',
+          producer: Array.from(batch.producers).join(', '),
+          productLine: Array.from(batch.productLines).join(', '),
+          processingType: Array.from(batch.processingTypes).join(', '),
+          quality: Array.from(batch.qualities).join(', '),
+          lotNumber: Array.from(batch.lotNumbers).filter(n => n !== 'N/A').join(', ') || 'N/A',
+          referenceNumber: Array.from(batch.referenceNumbers).filter(n => n !== 'N/A').join(', ') || 'N/A',
+          weight: totalWeight,
+          processedWeight: batch.processedWeight,
+          availableWeight: availableWeight > 0 ? availableWeight : 0,
+          startProcessingDate: batch.processingDates.length > 0 ? batch.processingDates[batch.processingDates.length - 1] : 'N/A',
+          lastProcessingDate: batch.processingDates[0] || 'N/A',
+          preprocessingNotes: batch.notes.join('; ') || 'N/A',
+          finished: batch.finished,
+          receivingDate: receivingBatch.receivingDate || 'N/A',
+          qcDate: receivingBatch.qcDate || 'N/A',
+          cherryScore: receivingBatch.cherryScore || 'N/A',
+          cherryGroup: receivingBatch.cherryGroup || 'N/A',
+          ripeness: receivingBatch.ripeness || 'N/A',
+          color: receivingBatch.color || 'N/A',
+          foreignMatter: receivingBatch.foreignMatter || 'N/A',
+          overallQuality: receivingBatch.overallQuality || 'N/A',
         };
       });
 
-      const batchMap = new Map();
-      dedupedRows.forEach(batch => {
-        const key = batch.batchNumber;
-        const preprocessingKey = `${batch.batchNumber}-${batch.processType || 'unknown'}`;
-        const preprocessingRow = preprocessingMap.get(preprocessingKey) || {};
-        if (!batchMap.has(key)) {
-          batchMap.set(key, {
-            batchNumber: batch.batchNumber,
-            lotNumber: preprocessingRow.lotNumber || 'N/A',
-            referenceNumber: preprocessingRow.referenceNumber || 'N/A',
-            type: batch.type || 'N/A',
-            overallQuality: batch.overallQuality || 'N/A',
-            weight: parseFloat(batch.weight || 0),
-            availableWeight: parseFloat(batch.availableWeight || 0),
-            receivingDate: formatDate(batch.receivingDate),
-            qcDate: formatDate(batch.qcDate),
-            cherryScore: batch.cherryScore || 'N/A',
-            cherryGroup: batch.cherryGroup || 'N/A',
-            ripeness: batch.ripeness || 'N/A',
-            color: batch.color || 'N/A',
-            foreignMatter: batch.foreignMatter || 'N/A',
-            finished: finishedStatusMap.get(batch.batchNumber.toLowerCase()) || batch.finished || false,
-          });
-        }
-      });
-
-      const unprocessedBatches = Array.from(batchMap.values())
+      // Unprocessed batches for the top DataGrid (Pending Processing)
+      const unprocessedBatches = formattedData
         .filter(batch => parseFloat(batch.availableWeight) > 0 && !batch.finished)
+        .map(batch => ({
+          ...batch,
+          id: batch.batchNumber,
+        }))
         .sort((a, b) => {
           if (a.type !== b.type) return a.type.localeCompare(b.type);
           if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
@@ -512,8 +507,8 @@ const PreprocessingStation = () => {
   }, []);
 
   const filteredPreprocessingData = producerFilter === 'All'
-    ? preprocessingData.filter(row => parseFloat(row.processedWeight) > 0)
-    : preprocessingData.filter(row => row.producer === producerFilter && parseFloat(row.processedWeight) > 0);
+    ? preprocessingData.filter(row => parseFloat(row.availableWeight) > 0)
+    : preprocessingData.filter(row => row.producer.includes(producerFilter) && parseFloat(row.availableWeight) > 0);
 
   useEffect(() => {
     fetchPreprocessingData();
@@ -637,7 +632,7 @@ const PreprocessingStation = () => {
     { field: 'type', headerName: 'Type', width: 100, sortable: true },
     { field: 'producer', headerName: 'Producer', width: 100, sortable: true },
     { field: 'productLine', headerName: 'Product Line', width: 150, sortable: true },
-    { field: 'processingType', headerName: 'Processing Type', width: 160, sortable: true },
+    { field: 'processingType', headerName: 'Processing Type', width: 200, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
     { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
