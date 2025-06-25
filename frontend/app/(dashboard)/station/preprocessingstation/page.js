@@ -64,6 +64,11 @@ const PreprocessingStation = () => {
   const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
 
+  // Debug re-renders
+  useEffect(() => {
+    console.log('PreprocessingStation component rendered');
+  });
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     try {
@@ -264,8 +269,8 @@ const PreprocessingStation = () => {
         axios.get(`${API_BASE_URL}/receiving`, { timeout: 15000 }),
         axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
       ]);
-      const batches = batchesResponse.data;
-      const processedWeights = processedResponse.data.allRows || [];
+      const batches = Array.isArray(batchesResponse.data.allRows) ? batchesResponse.data.allRows : [];
+      const processedWeights = Array.isArray(processedResponse.data.allRows) ? processedResponse.data.allRows : [];
 
       const historyData = batches.map((batch) => {
         const processedLogs = processedWeights.filter(log => 
@@ -390,20 +395,21 @@ const PreprocessingStation = () => {
   };
 
   const fetchPreprocessingData = useCallback(async () => {
+    console.log('fetchPreprocessingData called at', new Date().toISOString());
     try {
       const [receivingResponse, preprocessingResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/receiving`, { timeout: 15000 }),
         axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
       ]);
-  
-      // Ensure receivingData is an array
-      const receivingData = Array.isArray(receivingResponse.data)
-        ? receivingResponse.data
+
+      // Ensure receivingData is an array from allRows
+      const receivingData = Array.isArray(receivingResponse.data.allRows)
+        ? receivingResponse.data.allRows
         : [];
-      if (!Array.isArray(receivingResponse.data)) {
-        console.warn('Receiving data is not an array:', receivingResponse.data);
+      if (!Array.isArray(receivingResponse.data.allRows)) {
+        console.warn('Receiving data.allRows is not an array:', receivingResponse.data.allRows);
       }
-  
+
       // Ensure preprocessingResult is an array
       const preprocessingResult = Array.isArray(preprocessingResponse.data.allRows)
         ? preprocessingResponse.data.allRows
@@ -411,7 +417,7 @@ const PreprocessingStation = () => {
       if (!Array.isArray(preprocessingResponse.data.allRows)) {
         console.warn('Preprocessing allRows is not an array:', preprocessingResponse.data.allRows);
       }
-  
+
       // Create a map of batch numbers to their receiving data
       const receivingMap = new Map();
       receivingData.forEach(batch => {
@@ -429,7 +435,7 @@ const PreprocessingStation = () => {
           overallQuality: batch.overallQuality || 'N/A',
         });
       });
-  
+
       // Group preprocessing data by batch number
       const batchMap = new Map();
       preprocessingResult.forEach(row => {
@@ -461,13 +467,13 @@ const PreprocessingStation = () => {
         if (row.notes) batch.notes.push(row.notes);
         batch.finished = batch.finished || row.finished; // If any row is finished, mark batch as finished
       });
-  
+
       // Combine receiving and preprocessing data
       const formattedData = Array.from(batchMap.entries()).map(([batchNumberLower, batch]) => {
         const receivingBatch = receivingMap.get(batchNumberLower) || {};
         const totalWeight = receivingBatch.weight || 0;
         const availableWeight = totalWeight - batch.processedWeight;
-  
+
         return {
           id: batch.batchNumber,
           batchNumber: batch.batchNumber,
@@ -495,7 +501,7 @@ const PreprocessingStation = () => {
           overallQuality: receivingBatch.overallQuality || 'N/A',
         };
       });
-  
+
       // Unprocessed batches for the top DataGrid (Pending Processing)
       const unprocessedBatches = formattedData
         .filter(batch => parseFloat(batch.availableWeight) > 0 && !batch.finished)
@@ -512,7 +518,7 @@ const PreprocessingStation = () => {
           if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
           return 0;
         });
-  
+
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
     } catch (error) {
@@ -521,7 +527,7 @@ const PreprocessingStation = () => {
       setSnackBarSeverity('error');
       setOpenSnackBar(true);
     }
-  }, [formatDate, setSnackBarMessage, setSnackBarSeverity, setOpenSnackBar]);
+  }, []);
 
   const filteredPreprocessingData = producerFilter === 'All'
     ? preprocessingData.filter(row => parseFloat(row.availableWeight) > 0)
@@ -529,6 +535,7 @@ const PreprocessingStation = () => {
 
   useEffect(() => {
     fetchPreprocessingData();
+    // Remove cleanup to avoid resetting data on unmount
   }, [fetchPreprocessingData]);
 
   const ITEM_HEIGHT = 48;
