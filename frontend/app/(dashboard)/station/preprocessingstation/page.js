@@ -397,9 +397,10 @@ const PreprocessingStation = () => {
   const fetchPreprocessingData = useCallback(async () => {
     console.log('fetchPreprocessingData called at', new Date().toISOString());
     try {
-      const [receivingResponse, preprocessingResponse] = await Promise.all([
+      const [receivingResponse, preprocessingResponse, qcResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/receiving`, { timeout: 15000 }),
         axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
+        axios.get(`${API_BASE_URL}/qc`, { timeout: 15000 }),
       ]);
   
       // Ensure receivingData is an array from allRows
@@ -418,6 +419,14 @@ const PreprocessingStation = () => {
         console.warn('Preprocessing allRows is not an array:', preprocessingResponse.data.allRows);
       }
   
+      // Ensure qcData is an array from allRows
+      const qcData = Array.isArray(qcResponse.data.allRows)
+        ? qcResponse.data.allRows
+        : [];
+      if (!Array.isArray(qcResponse.data.allRows)) {
+        console.warn('QC data.allRows is not an array:', qcResponse.data.allRows);
+      }
+  
       // Create a map of batch numbers to their receiving data
       const receivingMap = new Map();
       receivingData.forEach(batch => {
@@ -426,14 +435,21 @@ const PreprocessingStation = () => {
           type: batch.type || 'N/A',
           weight: parseFloat(batch.weight || 0),
           receivingDate: formatDate(batch.receivingDate),
+          commodityType: batch.commodityType || 'N/A',
+        });
+      });
+  
+      // Create a map of batch numbers to their QC data
+      const qcMap = new Map();
+      qcData.forEach(batch => {
+        qcMap.set(batch.batchNumber.toLowerCase(), {
           qcDate: formatDate(batch.qcDate),
-          cherryScore: batch.cherryScore || 'N/A',
+          cherryScore: batch.cherryScore ? parseFloat(batch.cherryScore).toFixed(3) : 'N/A',
           cherryGroup: batch.cherryGroup || 'N/A',
           ripeness: batch.ripeness || 'N/A',
           color: batch.color || 'N/A',
           foreignMatter: batch.foreignMatter || 'N/A',
           overallQuality: batch.overallQuality || 'N/A',
-          commodityType: batch.commodityType || 'N/A', // Added to store commodityType
         });
       });
   
@@ -449,6 +465,7 @@ const PreprocessingStation = () => {
       const formattedData = preprocessingResult.map(row => {
         const batchNumberLower = row.batchNumber.toLowerCase();
         const receivingBatch = receivingMap.get(batchNumberLower) || {};
+        const qcBatch = qcMap.get(batchNumberLower) || {};
         const totalWeight = parseFloat(receivingBatch.weight || 0).toFixed(2);
         const totalProcessedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0).toFixed(2);
         const availableWeightRaw = totalWeight - totalProcessedWeight;
@@ -473,13 +490,13 @@ const PreprocessingStation = () => {
           preprocessingNotes: row.notes || 'N/A',
           finished: row.finished || false,
           receivingDate: receivingBatch.receivingDate || 'N/A',
-          qcDate: receivingBatch.qcDate || 'N/A',
-          cherryScore: receivingBatch.cherryScore || 'N/A',
-          cherryGroup: receivingBatch.cherryGroup || 'N/A',
-          ripeness: receivingBatch.ripeness || 'N/A',
-          color: receivingBatch.color || 'N/A',
-          foreignMatter: receivingBatch.foreignMatter || 'N/A',
-          overallQuality: receivingBatch.overallQuality || 'N/A',
+          qcDate: qcBatch.qcDate || 'N/A',
+          cherryScore: qcBatch.cherryScore || 'N/A',
+          cherryGroup: qcBatch.cherryGroup || 'N/A',
+          ripeness: qcBatch.ripeness || 'N/A',
+          color: qcBatch.color || 'N/A',
+          foreignMatter: qcBatch.foreignMatter || 'N/A',
+          overallQuality: qcBatch.overallQuality || 'N/A',
         };
       });
   
@@ -510,6 +527,7 @@ const PreprocessingStation = () => {
           const isFinished = preprocessingResult.some(row => 
             row.batchNumber.toLowerCase() === batchNumberLower && row.finished
           );
+          const qcBatch = qcMap.get(batchNumberLower) || {};
   
           if (parseFloat(availableWeight) > 0 && !isFinished) {
             batchAvailableWeight.set(batchNumberLower, {
@@ -520,13 +538,13 @@ const PreprocessingStation = () => {
               totalProcessedWeight: processedWeight.toFixed(2),
               availableWeight: availableWeight,
               receivingDate: formatDate(batch.receivingDate),
-              qcDate: formatDate(batch.qcDate),
-              cherryScore: batch.cherryScore || 'N/A',
-              cherryGroup: batch.cherryGroup || 'N/A',
-              ripeness: batch.ripeness || 'N/A',
-              color: batch.color || 'N/A',
-              foreignMatter: batch.foreignMatter || 'N/A',
-              overallQuality: batch.overallQuality || 'N/A',
+              qcDate: qcBatch.qcDate || 'N/A',
+              cherryScore: qcBatch.cherryScore || 'N/A',
+              cherryGroup: qcBatch.cherryGroup || 'N/A',
+              ripeness: qcBatch.ripeness || 'N/A',
+              color: qcBatch.color || 'N/A',
+              foreignMatter: qcBatch.foreignMatter || 'N/A',
+              overallQuality: qcBatch.overallQuality || 'N/A',
               finished: false,
               producer: 'N/A',
               productLine: 'N/A',
