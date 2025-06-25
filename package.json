@@ -23,6 +23,7 @@
     "@mui/material": "^6.4.2",
     "@mui/x-date-pickers": "^7.26.0",
     "axios": "^1.7.9",
+    "axios-retry": "^4.5.0",
     "chart.js": "^4.4.8",
     "chartjs": "^0.3.24",
     "chartjs-adapter-date-fns": "^3.0.0",

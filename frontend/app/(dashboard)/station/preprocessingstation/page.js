@@ -25,8 +25,12 @@ import {
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
 
 const API_BASE_URL = 'https://processing-facility-backend.onrender.com/api';
+
+// Configure axios-retry
+axiosRetry(axios, { retries: 3, retryDelay: (retryCount) => retryCount * 1000 });
 
 const PreprocessingStation = () => {
   const { data: session, status } = useSession();
@@ -37,8 +41,8 @@ const PreprocessingStation = () => {
   const [lotNumber, setLotNumber] = useState('N/A');
   const [referenceNumber, setReferenceNumber] = useState('N/A');
   const [openHistory, setOpenHistory] = useState(false);
-  const [weightAvailable, setWeight] = useState(0);
-  const [totalProcessedWeight, setTotalProcessedWeight] = useState(0);
+  const [weightAvailable, setWeightAvailable] = useState('0.00');
+  const [totalProcessedWeight, setTotalProcessedWeight] = useState('0.00');
   const [farmerName, setFarmerName] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
   const [qcDate, setQCDate] = useState('');
@@ -64,7 +68,7 @@ const PreprocessingStation = () => {
     if (!dateStr) return '';
     try {
       const date = new Date(dateStr);
-      if (isNaN(date)) return '';
+      if (isNaN(date.getTime())) return '';
       return date.toISOString().slice(0, 10); // YYYY-MM-DD
     } catch {
       return '';
@@ -73,9 +77,7 @@ const PreprocessingStation = () => {
 
   const parseWeightInput = (value) => {
     if (!value) return '';
-    // Replace commas with periods and remove non-numeric characters except period
     const cleaned = value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
-    // Ensure only one period
     const parts = cleaned.split('.');
     if (parts.length > 2) {
       return parts[0] + '.' + parts.slice(1).join('');
@@ -85,30 +87,22 @@ const PreprocessingStation = () => {
 
   const fetchAvailableWeight = useCallback(async (batchNumber, totalWeight) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/preprocessing/${batchNumber}`, {
-        timeout: 10000,
-        retry: 3,
-        retryDelay: 1000,
-      });
+      const response = await axios.get(`${API_BASE_URL}/preprocessing/${batchNumber}`, { timeout: 10000 });
       const preprocessingResponse = response.data;
       const totalProcessedWeight = parseFloat(preprocessingResponse.totalWeightProcessed || 0);
-      const weightAvailable = totalWeight - totalProcessedWeight;
-      const latestRecord = preprocessingResponse.preprocessingData?.length > 0 
-        ? preprocessingResponse.preprocessingData.sort((a, b) => 
-            new Date(b.processingDate) - new Date(a.processingDate))[0]
-        : null;
+      const weightAvailable = parseFloat(preprocessingResponse.weightAvailable || (totalWeight - totalProcessedWeight));
 
       return {
         weightAvailable,
         totalProcessedWeight,
         finished: preprocessingResponse.finished || false,
-        lotNumber: latestRecord?.lotNumber || 'N/A',
-        referenceNumber: latestRecord?.referenceNumber || 'N/A',
+        lotNumber: preprocessingResponse.lotNumber || 'N/A',
+        referenceNumber: preprocessingResponse.referenceNumber || 'N/A',
       };
     } catch (error) {
       console.error('Error fetching available weight:', error);
-      setSnackBarMessage(error.response?.data?.error || 'Failed to fetch preprocessing data');
-      setSnackBarSeverity('error');
+      setSnackBarMessage(error.response?.data?.error || 'No preprocessing data found; using total weight.');
+      setSnackBarSeverity('info');
       setOpenSnackBar(true);
       return {
         weightAvailable: totalWeight,
@@ -122,19 +116,18 @@ const PreprocessingStation = () => {
 
   const fetchBatchData = useCallback(async (batchNumber) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/receiving/${batchNumber}`, {
-        timeout: 10000,
-      });
+      const response = await axios.get(`${API_BASE_URL}/receiving/${batchNumber}`, { timeout: 10000 });
       const dataArray = response.data;
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
       const data = dataArray[0];
+      const totalWeightNum = parseFloat(data.weight || 0);
       const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
-        await fetchAvailableWeight(batchNumber, parseFloat(data.weight || 0));
+        await fetchAvailableWeight(batchNumber, totalWeightNum);
 
       setFarmerName(data.farmerName || '');
       setReceivingDate(formatDate(data.receivingDate));
       setQCDate(formatDate(data.qcDate));
-      setTotalWeight(parseFloat(data.weight || 0).toFixed(2));
+      setTotalWeight(totalWeightNum.toFixed(2));
       setTotalBags(data.totalBags || '');
       setLotNumber(lotNumber);
       setReferenceNumber(referenceNumber);
@@ -157,30 +150,27 @@ const PreprocessingStation = () => {
 
   const handleRfidScan = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/get-rfid/Warehouse_Exit`, {
-        timeout: 10000,
-      });
+      const response = await axios.get(`${API_BASE_URL}/get-rfid/Warehouse_Exit`, { timeout: 10000 });
       const data = response.data;
 
       if (data.rfid) {
         setRfid(data.rfid);
         setRfidTag(data.rfid);
-        const receivingResponse = await axios.get(`${API_BASE_URL}/receivingrfid/${data.rfid}`, {
-          timeout: 10000,
-        });
+        const receivingResponse = await axios.get(`${API_BASE_URL}/receivingrfid/${data.rfid}`, { timeout: 10000 });
         const receivingData = receivingResponse.data;
 
         if (receivingData && receivingData.length > 0) {
           const batchData = receivingData[0];
+          const totalWeightNum = parseFloat(batchData.weight || 0);
           setBatchNumber(batchData.batchNumber);
           setFarmerName(batchData.farmerName || '');
           setReceivingDate(formatDate(batchData.receivingDate));
           setQCDate(formatDate(batchData.qcDate));
-          setTotalWeight(parseFloat(batchData.weight || 0).toFixed(2));
+          setTotalWeight(totalWeightNum.toFixed(2));
           setTotalBags(batchData.totalBags || '');
-          const { weightProcessed: availableWeight, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
-            await fetchAvailableWeight(batchData.batchNumber, parseFloat(batchData.weight || 0));
-          setWeightAvailable(availableWeight.toFixed(2));
+          const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
+            await fetchAvailableWeight(batchData.batchNumber, totalWeightNum);
+          setWeightAvailable(weightAvailable.toFixed(2));
           setTotalProcessedWeight(totalProcessedWeight.toFixed(2));
           setLotNumber(lotNumber);
           setReferenceNumber(referenceNumber);
@@ -189,7 +179,7 @@ const PreprocessingStation = () => {
             setSnackBarMessage(`Batch ${batchData.batchNumber} is already marked as complete.`);
             setSnackBarSeverity('warning');
           } else {
-            setSnackBarMessage(`Data processed for batch ${batchData.batchNumber} retrieved successfully!`);
+            setSnackBarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
             setSnackBarSeverity('success');
           }
 
@@ -209,17 +199,15 @@ const PreprocessingStation = () => {
 
   const clearRfidData = async (scannedAt) => {
     try {
-      await axios.delete(`${API_BASE_URL}/clear-rfid/${scannedAt}`, {
-        timeout: 10000,
-      });
+      await axios.delete(`${API_BASE_URL}/scanning-rfid/${scannedAt}`, { timeout: 10000 });
     } catch (error) {
-      console.error("Error clearing RFID Data:", error);
+      console.error("Error clearing RFID data:", error);
     }
   };
 
   const handleAllWeight = () => {
-    if (weightAvailable > 0) {
-      setWeightProcessed(weightAvailable.toString());
+    if (parseFloat(weightAvailable) > 0) {
+      setWeightProcessed(weightAvailable);
     } else {
       setWeightProcessed('');
       setSnackBarMessage('No weight available to process.');
@@ -242,7 +230,7 @@ const PreprocessingStation = () => {
     setIsFinishing(true);
     try {
       const response = await axios.put(`${API_BASE_URL}/preprocessing/${batchNumber}/finish`, 
-        { createdBy: session.user.name }, 
+        { createdBy: session?.user?.name || 'Unknown' }, 
         { timeout: 10000 }
       );
       setSnackBarMessage(response.data.message || `Batch ${batchNumber} marked as complete successfully!`);
@@ -296,8 +284,8 @@ const PreprocessingStation = () => {
           processedLogs: processedLogs.map(log => ({
             processingDate: formatDate(log.processingDate),
             weightProcessed: parseFloat(log.weightProcessed || 0),
-            processingType: log.processingType,
-            notes: log.notes,
+            processingType: log.processingType || 'N/A',
+            notes: log.notes || '',
             lotNumber: log.lotNumber || 'N/A',
             referenceNumber: log.referenceNumber || 'N/A',
           })),
@@ -348,14 +336,12 @@ const PreprocessingStation = () => {
       productLine,
       processingType,
       quality,
-      createdBy: session.user.name,
+      createdBy: session?.user?.name || 'Unknown',
       notes: notes.trim() || null,
     };
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/preprocessing`, preprocessingData, {
-        timeout: 10000,
-      });
+      const response = await axios.post(`${API_BASE_URL}/preprocessing`, preprocessingData, { timeout: 10000 });
       const { lotNumber, referenceNumber } = response.data.preprocessingData[0];
       setLotNumber(lotNumber || 'N/A');
       setReferenceNumber(referenceNumber || 'N/A');
@@ -365,7 +351,7 @@ const PreprocessingStation = () => {
       await fetchPreprocessingData();
       resetForm();
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Failed to start preprocessing: ${error.message}';
+      const errorMessage = error.response?.data?.error || `Failed to start preprocessing: ${error.message}`;
       handleError(errorMessage, error);
     }
   };
@@ -384,8 +370,6 @@ const PreprocessingStation = () => {
     setBatchNumber('');
     setLotNumber('N/A');
     setReferenceNumber('N/A');
-    setWeightAvailable(0);
-    setTotalProcessedWeight(0);
     setFarmerName('');
     setReceivingDate('');
     setQCDate('');
@@ -413,8 +397,7 @@ const PreprocessingStation = () => {
 
       const finishedStatusMap = new Map();
       preprocessingResult.forEach(row => {
-        const batchNumber = row.batchNumber.toLowerCase();
-        finishedStatusMap.set(batchNumber, finishedStatusMap.get(batchNumber) || row.finished || false);
+        finishedStatusMap.set(row.batchNumber.toLowerCase(), row.finished || false);
       });
 
       const preprocessingMap = new Map();
@@ -429,12 +412,12 @@ const PreprocessingStation = () => {
             batchNumber: row.batchNumber,
             lotNumber: row.lotNumber || 'N/A',
             referenceNumber: row.referenceNumber || 'N/A',
-            processingType: row.processingType,
+            processingType: row.processingType || 'N/A',
             notes: row.notes || '',
             weightProcessed: parseFloat(row.weightProcessed || 0),
-            producer: row.producer,
-            productLine: row.productLine,
-            quality: row.quality,
+            producer: row.producer || 'N/A',
+            productLine: row.productLine || 'N/A',
+            quality: row.quality || 'N/A',
             processingDate: formatDate(row.processingDate),
             finished: row.finished || false,
           });
@@ -443,7 +426,7 @@ const PreprocessingStation = () => {
 
       const qcRowMap = new Map();
       qcResult.forEach(batch => {
-        const key = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
+        const key = `${batch.batchNumber}-${batch.processType || 'unknown'}`;
         const existing = qcRowMap.get(key);
         const batchDate = new Date(batch.lastProcessingDate || batch.startProcessingDate || '1970-01-01');
         const existingDate = existing ? new Date(existing.lastProcessingDate || existing.startProcessingDate || '1970-01-01') : null;
@@ -454,21 +437,20 @@ const PreprocessingStation = () => {
       });
 
       const dedupedRows = Array.from(qcRowMap.values());
-
       const today = new Date();
       const formattedData = dedupedRows.map(row => {
         const receivingDate = new Date(row.receivingDate);
         let sla = 'N/A';
-        if (!isNaN(receivingDate)) {
+        if (!isNaN(receivingDate.getTime())) {
           const diffTime = Math.abs(today.getTime() - receivingDate.getTime());
           sla = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
 
-        const preprocessingKey = `${row.batchNumber}-${row.processingType || 'unknown'}`;
+        const preprocessingKey = `${row.batchNumber}-${row.processType || 'unknown'}`;
         const preprocessingRow = preprocessingMap.get(preprocessingKey) || {};
 
         return {
-          id: `${row.batchNumber}-${row.processingType || 'unknown'}`,
+          id: `${row.batchNumber}-${row.processType || 'unknown'}`,
           ...row,
           lotNumber: preprocessingRow.lotNumber || 'N/A',
           referenceNumber: preprocessingRow.referenceNumber || 'N/A',
@@ -487,24 +469,24 @@ const PreprocessingStation = () => {
       const batchMap = new Map();
       dedupedRows.forEach(batch => {
         const key = batch.batchNumber;
-        const preprocessingKey = `${batch.batchNumber}-${batch.processingType || 'unknown'}`;
+        const preprocessingKey = `${batch.batchNumber}-${batch.processType || 'unknown'}`;
         const preprocessingRow = preprocessingMap.get(preprocessingKey) || {};
         if (!batchMap.has(key)) {
           batchMap.set(key, {
             batchNumber: batch.batchNumber,
             lotNumber: preprocessingRow.lotNumber || 'N/A',
             referenceNumber: preprocessingRow.referenceNumber || 'N/A',
-            type: batch.type,
-            overallQuality: batch.overallQuality,
+            type: batch.type || 'N/A',
+            overallQuality: batch.overallQuality || 'N/A',
             weight: parseFloat(batch.weight || 0),
             availableWeight: parseFloat(batch.availableWeight || 0),
             receivingDate: formatDate(batch.receivingDate),
             qcDate: formatDate(batch.qcDate),
-            cherryScore: batch.cherryScore,
-            cherryGroup: batch.cherryGroup,
-            ripeness: batch.ripeness,
-            color: batch.color,
-            foreignMatter: batch.foreignMatter,
+            cherryScore: batch.cherryScore || 'N/A',
+            cherryGroup: batch.cherryGroup || 'N/A',
+            ripeness: batch.ripeness || 'N/A',
+            color: batch.color || 'N/A',
+            foreignMatter: batch.foreignMatter || 'N/A',
             finished: finishedStatusMap.get(batch.batchNumber.toLowerCase()) || batch.finished || false,
           });
         }
@@ -549,22 +531,38 @@ const PreprocessingStation = () => {
   };
 
   const producerOptions = {
-    "": [" "],
+    "": [""],
     HQ: ["Regional Lot", "Micro Lot", "Experimental Lot", "Competition Lot"],
     BTM: ["Commercial Lot"],
   };
 
   const productLineOptions = {
-    "": [" "],
+    "": [""],
     "Regional Lot": ["Natural", "Washed", "Pulped Natural"],
-    "Micro Lot": ["Natural", "Washed", "Pulped Natural", "CM Natural", "CM Washed", "CM Pulped Natural", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural", "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural", "O2 Natural", "O2 Washed", "O2 Pulped Natural"],
-    "Experimental Lot": ["CM Natural", "CM Washed", "CM Pulped Natural", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural", "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural", "O2 Natural", "O2 Washed", "O2 Pulped Natural"],
-    "Competition Lot": ["CM Natural", "CM Washed", "CM Pulped Natural", "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural", "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural", "O2 Natural", "O2 Washed", "O2 Pulped Natural"],
+    "Micro Lot": [
+      "Natural", "Washed", "Pulped Natural",
+      "CM Natural", "CM Washed", "CM Pulped Natural",
+      "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
+      "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+    ],
+    "Experimental Lot": [
+      "CM Natural", "CM Washed", "CM Pulped Natural",
+      "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
+      "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+    ],
+    "Competition Lot": [
+      "CM Natural", "CM Washed", "CM Pulped Natural",
+      "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
+      "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+    ],
     "Commercial Lot": ["Natural", "Washed"],
   };
 
   const processingTypeOptions = {
-    "": [" "],
+    "": [""],
     "Natural": ["Specialty", "G1", "G2", "G3", "G4"],
     "Washed": ["Specialty", "G1", "G2", "G3", "G4"],
     "Pulped Natural": ["Specialty"],
