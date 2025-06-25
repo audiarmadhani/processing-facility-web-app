@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSession } from "next-auth/react";
 import {
-  Button, Typography, Snackbar, Alert, Grid, Card, CardContent, CircularProgress, Chip,
+  Button, Typography, Snackbar, Alert, Card, CardContent, CircularProgress, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel,
   Table, TableBody, TableCell, TableHead, TableRow, Checkbox
 } from '@mui/material';
@@ -71,7 +71,7 @@ const DryingStation = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [dryingData, setDryingData] = useState({});
-  const [noDataAreas, setNoDataAreas] = useState(new Set()); // Track areas with no data
+  const [noDataAreas, setNoDataAreas] = useState(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [areaLoading, setAreaLoading] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
@@ -95,7 +95,7 @@ const DryingStation = () => {
   const [selectedWeightIds, setSelectedWeightIds] = useState([]);
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
   const [deletedWeights, setDeletedWeights] = useState([]);
-  const isFetchingRef = useRef(false); // Prevent concurrent fetches
+  const isFetchingRef = useRef(false);
 
   const dryingAreas = useMemo(() => [
     "Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", 
@@ -110,6 +110,23 @@ const DryingStation = () => {
     "Drying Area 5": "GH_SENSOR_5",
     "Drying Room": "GH_SENSOR_6"
   }), []);
+
+  // Enhanced date validation and formatting
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return 'N/A';
+    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date detected:', dateString);
+      return 'N/A';
+    }
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
 
   const fetchAreaData = useCallback(async (area, forceRefresh = false) => {
     if (!forceRefresh && (dryingData[area]?.length > 0 || noDataAreas.has(area))) return;
@@ -157,7 +174,6 @@ const DryingStation = () => {
         weightsResult = await weightsResponse.json();
       }
   
-      // Parse weights as floats
       const batchWeights = {};
       weightsResult.forEach(({ batchNumber, total_weight, measurement_date }) => {
         if (batchNumber) {
@@ -174,11 +190,9 @@ const DryingStation = () => {
         .filter(batch => areaBatchNumbers.includes(batch.batchNumber))
         .map(batch => {
           const batchDryingData = dryingDataRaw.filter(data => 
-            data.batchNumber === batch.batchNumber && data.dryingArea === area
-          );
+            data.batchNumber === batch.batchNumber && data.dryingArea === area);
           const latestEntry = batchDryingData.sort((a, b) => 
-            new Date(b.created_at) - new Date(a.created_at)
-          )[0];
+            new Date(b.created_at) - new Date(a.created_at))[0];
   
           return {
             ...batch,
@@ -186,7 +200,7 @@ const DryingStation = () => {
             dryingArea: latestEntry?.dryingArea || 'N/A',
             startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
             endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-            weight: batchWeights[batch.batchNumber] ? parseFloat(batchWeights[batch.batchNumber].total).toFixed(2) : 'N/A',
+            weight: batchWeights[batch.batchNumber] ? parseFloat(batchWeights[batch.batchNumber].total).toFixed(2) : '0',
             type: batch.type || 'N/A',
             producer: batch.producer || 'N/A',
             productLine: batch.productLine || 'N/A',
@@ -247,28 +261,16 @@ const DryingStation = () => {
     }
   }, []);
 
-  // Utility function to Validate and Format Dates
-  const formatDateForDisplay = (dateString) => {
-    if (!dateString || typeof dateString !== 'string') return 'N/A';
-    const date = new Date(dateString);
-    return isNaN(date) ? 'Invalid Date' : date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  };
-
-  // Update in fetchWeightMeasurements to Normalize Dates
   const fetchWeightMeasurements = useCallback(async (batchNumber) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-weight-measurements/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch weight measurements');
       const data = await response.json();
-      // Normalize measurement_date to YYYY-MM-DD
+      console.log('Fetched weight measurements:', data);
       const parsedData = data.map(m => ({
         ...m,
         weight: parseFloat(m.weight) || 0,
-        measurement_date: m.measurement_date ? new Date(m.measurement_date).toISOString().slice(0, 10) : 'N/A',
+        measurement_date: m.measurement_date || 'N/A'
       }));
       setWeightMeasurements(parsedData);
     } catch (error) {
@@ -304,7 +306,6 @@ const DryingStation = () => {
     }
   }, []);
 
-  // Update in handleAddOrUpdateBagWeight for Robust Date Handling
   const handleAddOrUpdateBagWeight = useCallback(async () => {
     if (!newBagWeight || isNaN(newBagWeight) || parseFloat(newBagWeight) <= 0) {
       setSnackbarMessage('Enter a valid weight (positive number)');
@@ -329,7 +330,7 @@ const DryingStation = () => {
     const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
     const now = new Date();
 
-    if (isNaN(selectedDate)) {
+    if (isNaN(selectedDate.getTime())) {
       setSnackbarMessage('Invalid measurement date');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -363,14 +364,13 @@ const DryingStation = () => {
         });
         if (!response.ok) throw new Error('Failed to update weight measurement');
         const result = await response.json();
+        console.log('Updated weight measurement:', result);
         setWeightMeasurements(weightMeasurements.map(m =>
           m.id === editingWeightId
             ? {
                 ...result.measurement,
                 weight: parseFloat(result.measurement.weight) || 0,
-                measurement_date: result.measurement.measurement_date
-                  ? new Date(result.measurement.measurement_date).toISOString().slice(0, 10)
-                  : 'N/A',
+                measurement_date: result.measurement.measurement_date || 'N/A'
               }
             : m
         ));
@@ -392,12 +392,11 @@ const DryingStation = () => {
         });
         if (!response.ok) throw new Error('Failed to save weight measurement');
         const result = await response.json();
+        console.log('Added weight measurement:', result);
         const newMeasurement = {
           ...result.measurement,
           weight: parseFloat(result.measurement.weight) || 0,
-          measurement_date: result.measurement.measurement_date
-            ? new Date(result.measurement.measurement_date).toISOString().slice(0, 10)
-            : 'N/A',
+          measurement_date: result.measurement.measurement_date || 'N/A'
         };
         setWeightMeasurements([...weightMeasurements, newMeasurement]);
         setNewBagNumber(newBagNumber + 1);
@@ -408,6 +407,7 @@ const DryingStation = () => {
       setNewWeightDate(new Date().toISOString().slice(0, 10));
       await fetchAreaData(selectedBatch.dryingArea, true);
     } catch (error) {
+      console.error('Error saving weight measurement:', error);
       setSnackbarMessage(error.message || 'Failed to save weight measurement');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -428,7 +428,10 @@ const DryingStation = () => {
     setNewProcessingType(measurement.processingType);
     setNewBagNumber(measurement.bagNumber);
     setNewBagWeight(parseFloat(measurement.weight).toString());
-    setNewWeightDate(new Date(measurement.measurement_date).toISOString().slice(0, 10));
+    const date = measurement.measurement_date !== 'N/A' && !isNaN(new Date(measurement.measurement_date).getTime())
+      ? measurement.measurement_date
+      : new Date().toISOString().slice(0, 10);
+    setNewWeightDate(date);
   }, []);
 
   const handleDeleteBagWeights = useCallback(async () => {
@@ -448,7 +451,7 @@ const DryingStation = () => {
       setSnackbarMessage(result.message);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      await fetchAreaData(selectedBatch.dryingArea, true); // Force refresh affected area
+      await fetchAreaData(selectedBatch.dryingArea, true);
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to delete weight measurements');
       setSnackbarSeverity('error');
@@ -474,14 +477,17 @@ const DryingStation = () => {
         });
         if (!response.ok) throw new Error('Failed to restore weight measurement');
         const result = await response.json();
-        restoredWeights.push(result.measurement);
+        restoredWeights.push({
+          ...result.measurement,
+          measurement_date: result.measurement.measurement_date || 'N/A'
+        });
       }
       setWeightMeasurements([...weightMeasurements, ...restoredWeights]);
       setDeletedWeights([]);
       setSnackbarMessage('Weight measurements restored successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      await fetchAreaData(selectedBatch.dryingArea, true); // Force refresh affected area
+      await fetchAreaData(selectedBatch.dryingArea, true);
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to restore weight measurements');
       setSnackbarSeverity('error');
@@ -503,6 +509,13 @@ const DryingStation = () => {
     const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
     const now = new Date();
 
+    if (isNaN(selectedDate.getTime())) {
+      setSnackbarMessage('Invalid measurement date');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
     if (selectedDate > now) {
       setSnackbarMessage('Measurement date cannot be in the future');
       setSnackbarSeverity('error');
@@ -521,7 +534,7 @@ const DryingStation = () => {
       const payload = {
         batchNumber: selectedBatch.batchNumber,
         moisture: parseFloat(newMoisture),
-        measurement_date: selectedDate
+        measurement_date: measurementDate
       };
       const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-measurement', {
         method: 'POST',
@@ -573,7 +586,7 @@ const DryingStation = () => {
       setOpenMoveDialog(false);
       setNewDryingArea('');
       setSelectedBatch(null);
-      await fetchAreaData(newDryingArea, true); // Force refresh destination area
+      await fetchAreaData(newDryingArea, true);
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to move batch');
       setSnackbarSeverity('error');
@@ -588,7 +601,7 @@ const DryingStation = () => {
     setAreaLoading(dryingAreas.reduce((acc, area) => ({ ...acc, [area]: true }), {}));
 
     try {
-      await Promise.all(dryingAreas.map(area => fetchAreaData(area, true))); // Force refresh all areas
+      await Promise.all(dryingAreas.map(area => fetchAreaData(area, true)));
     } catch (error) {
       console.error('Error refreshing data:', error);
       setSnackbarMessage(error.message || 'Error refreshing data');
@@ -602,7 +615,6 @@ const DryingStation = () => {
   }, 2000), [dryingAreas, fetchAreaData]);
 
   useEffect(() => {
-    // Fetch data for all areas on mount
     if (!isFetchingRef.current) {
       isFetchingRef.current = true;
       setIsLoading(true);
@@ -893,7 +905,6 @@ const DryingStation = () => {
 
   const envChartData = useMemo(() => ({
     labels: historicalEnvData.map(d => {
-      // Offset recorded_at by +8 hours for WITA (UTC+8)
       const date = new Date(d.recorded_at);
       date.setHours(date.getHours() + 8);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -921,20 +932,18 @@ const DryingStation = () => {
       x: {
         type: 'time',
         time: {
-          // Custom parser to handle pre-offset labels (YYYY-MM-DD HH:mm in WITA)
           parser: (value) => {
             const [datePart, timePart] = value.split(' ');
             const [year, month, day] = datePart.split('-').map(Number);
             const [hours, minutes] = timePart.split(':').map(Number);
-            // Create date in UTC, assuming input is WITA (UTC+8), so subtract 8 hours
             const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 8, minutes));
             return utcDate;
           },
           unit: 'hour',
           displayFormats: {
-            hour: 'yyyy-MM-dd HH:mm' // Format for x-axis labels
+            hour: 'yyyy-MM-dd HH:mm'
           },
-          tooltipFormat: 'yyyy-MM-dd HH:mm' // Format for tooltips
+          tooltipFormat: 'yyyy-MM-dd HH:mm'
         },
         title: { display: true, text: 'Date and Time (WITA)' }
       },
@@ -950,10 +959,8 @@ const DryingStation = () => {
         mode: 'index', 
         intersect: false,
         callbacks: {
-          // Ensure tooltip shows WITA time
           title: (tooltipItems) => {
             const date = new Date(tooltipItems[0].parsed.x);
-            // Add 8 hours to convert UTC back to WITA
             date.setHours(date.getHours() + 8);
             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
           }
@@ -965,7 +972,9 @@ const DryingStation = () => {
   const getTotalWeights = useCallback(() => {
     const totals = {};
     weightMeasurements.forEach(m => {
-      const date = new Date(m.measurement_date).toISOString().slice(0, 10);
+      const date = m.measurement_date !== 'N/A' && !isNaN(new Date(m.measurement_date).getTime())
+        ? new Date(m.measurement_date).toISOString().slice(0, 10)
+        : 'N/A';
       if (!totals[date]) totals[date] = {};
       if (!totals[date][m.processingType]) totals[date][m.processingType] = 0;
       totals[date][m.processingType] += parseFloat(m.weight);
@@ -1144,15 +1153,15 @@ const DryingStation = () => {
             {processingTypes.map(type => {
               const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
               const latestDate = typeMeasurements.length > 0
-                ? formatDateForDisplay(
-                    Math.max(...typeMeasurements.map(m => new Date(m.measurement_date).getTime()))
-                  )
+                ? typeMeasurements.reduce((latest, m) => 
+                    m.measurement_date !== 'N/A' && (!latest || m.measurement_date > latest) 
+                      ? m.measurement_date : latest, null)
                 : null;
-              const total = totalWeights[latestDate]?.[type] || 0;
+              const total = latestDate && totalWeights[latestDate]?.[type] || 0;
               return (
                 <div key={type}>
                   <Typography variant="subtitle1" gutterBottom>
-                    {type} Total: {parseFloat(total).toFixed(2)} kg
+                    {type} Total: {parseFloat(total).toFixed(2)} kg {latestDate ? `(${formatDateForDisplay(latestDate)})` : ''}
                   </Typography>
                 </div>
               );
@@ -1186,7 +1195,7 @@ const DryingStation = () => {
               <TableBody>
                 {weightMeasurements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} align="center">No weight measurements recorded</TableCell>
+                    <TableCell colSpan={5} align="center">No weight measurements recorded.</TableCell>
                   </TableRow>
                 ) : (
                   weightMeasurements.map(m => (
@@ -1211,8 +1220,8 @@ const DryingStation = () => {
                         </Button>
                         <Button
                           variant="outlined"
-                          size="small"
                           color="error"
+                          size="small"
                           onClick={() => {
                             setSelectedWeightIds([m.id]);
                             setOpenDeleteConfirmDialog(true);
@@ -1232,10 +1241,10 @@ const DryingStation = () => {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={openDeleteConfirmDialog} onClose={handleCloseDeleteConfirmDialog} maxWidth="sm" fullWidth>
+        <Dialog open={openDeleteConfirmDialog} onClose={handleCloseDeleteConfirmDialog} maxWidth="xs" fullWidth>
           <DialogTitle>Confirm Deletion</DialogTitle>
           <DialogContent>
-            <Typography>
+            <Typography variant="body1">
               Are you sure you want to delete {selectedWeightIds.length} weight measurement{selectedWeightIds.length > 1 ? 's' : ''}?
             </Typography>
             {selectedWeightIds.length > 0 && (
