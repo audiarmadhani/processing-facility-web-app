@@ -247,15 +247,28 @@ const DryingStation = () => {
     }
   }, []);
 
+  // Utility function to Validate and Format Dates
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') return 'N/A';
+    const date = new Date(dateString);
+    return isNaN(date) ? 'Invalid Date' : date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  // Update in fetchWeightMeasurements to Normalize Dates
   const fetchWeightMeasurements = useCallback(async (batchNumber) => {
     try {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-weight-measurements/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch weight measurements');
       const data = await response.json();
-      // Ensure weights to floats
+      // Normalize measurement_date to YYYY-MM-DD
       const parsedData = data.map(m => ({
         ...m,
-        weight: parseFloat(m.weight) || 0, // Fallback to 0 if parsing fails
+        weight: parseFloat(m.weight) || 0,
+        measurement_date: m.measurement_date ? new Date(m.measurement_date).toISOString().slice(0, 10) : 'N/A',
       }));
       setWeightMeasurements(parsedData);
     } catch (error) {
@@ -291,6 +304,7 @@ const DryingStation = () => {
     }
   }, []);
 
+  // Update in handleAddOrUpdateBagWeight for Robust Date Handling
   const handleAddOrUpdateBagWeight = useCallback(async () => {
     if (!newBagWeight || isNaN(newBagWeight) || parseFloat(newBagWeight) <= 0) {
       setSnackbarMessage('Enter a valid weight (positive number)');
@@ -310,40 +324,57 @@ const DryingStation = () => {
       setOpenSnackbar(true);
       return;
     }
-  
+
     const selectedDate = new Date(newWeightDate);
     const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
     const now = new Date();
-  
+
+    if (isNaN(selectedDate)) {
+      setSnackbarMessage('Invalid measurement date');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
     if (selectedDate > now) {
       setSnackbarMessage('Measurement date cannot be in the future');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
-  
+
     if (startDryingDate && selectedDate < startDryingDate) {
       setSnackbarMessage('Measurement date cannot be before the start drying date');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
-  
+
     try {
       if (editingWeightId) {
         const payload = {
           weight: parseFloat(newBagWeight),
-          measurement_date: newWeightDate
+          measurement_date: newWeightDate,
         };
         const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-weight-measurement/${editingWeightId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
         if (!response.ok) throw new Error('Failed to update weight measurement');
         const result = await response.json();
-        setWeightMeasurements(weightMeasurements.map(m => m.id === editingWeightId ? { ...result.measurement, weight: parseFloat(result.measurement.weight) } : m));
-        setSnackbarMessage(`Weight measurement updated successfully`);
+        setWeightMeasurements(weightMeasurements.map(m =>
+          m.id === editingWeightId
+            ? {
+                ...result.measurement,
+                weight: parseFloat(result.measurement.weight) || 0,
+                measurement_date: result.measurement.measurement_date
+                  ? new Date(result.measurement.measurement_date).toISOString().slice(0, 10)
+                  : 'N/A',
+              }
+            : m
+        ));
+        setSnackbarMessage('Weight measurement updated successfully');
         setSnackbarSeverity('success');
         setEditingWeightId(null);
       } else {
@@ -352,18 +383,25 @@ const DryingStation = () => {
           processingType: newProcessingType,
           bagNumber: newBagNumber,
           weight: parseFloat(newBagWeight),
-          measurement_date: newWeightDate
+          measurement_date: newWeightDate,
         };
         const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurement', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
         if (!response.ok) throw new Error('Failed to save weight measurement');
         const result = await response.json();
-        setWeightMeasurements([...weightMeasurements, { ...result.measurement, weight: parseFloat(result.measurement.weight) }]);
+        const newMeasurement = {
+          ...result.measurement,
+          weight: parseFloat(result.measurement.weight) || 0,
+          measurement_date: result.measurement.measurement_date
+            ? new Date(result.measurement.measurement_date).toISOString().slice(0, 10)
+            : 'N/A',
+        };
+        setWeightMeasurements([...weightMeasurements, newMeasurement]);
         setNewBagNumber(newBagNumber + 1);
-        setSnackbarMessage(`Weight measurement added successfully`);
+        setSnackbarMessage('Weight measurement added successfully');
         setSnackbarSeverity('success');
       }
       setNewBagWeight('');
@@ -375,8 +413,14 @@ const DryingStation = () => {
       setOpenSnackbar(true);
     }
   }, [
-    newBagWeight, newProcessingType, newWeightDate, editingWeightId, newBagNumber,
-    selectedBatch, weightMeasurements, fetchAreaData
+    newBagWeight,
+    newProcessingType,
+    newWeightDate,
+    editingWeightId,
+    newBagNumber,
+    selectedBatch,
+    weightMeasurements,
+    fetchAreaData,
   ]);
 
   const handleEditBagWeight = useCallback((measurement) => {
@@ -1099,13 +1143,17 @@ const DryingStation = () => {
 
             {processingTypes.map(type => {
               const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
-              const latestDate = typeMeasurements.length > 0 
-                ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
+              const latestDate = typeMeasurements.length > 0
+                ? formatDateForDisplay(
+                    Math.max(...typeMeasurements.map(m => new Date(m.measurement_date).getTime()))
+                  )
                 : null;
               const total = totalWeights[latestDate]?.[type] || 0;
               return (
                 <div key={type}>
-                  <Typography variant="subtitle1" gutterBottom>{type} Total: {parseFloat(total).toFixed(2)} kg</Typography>
+                  <Typography variant="subtitle1" gutterBottom>
+                    {type} Total: {parseFloat(total).toFixed(2)} kg
+                  </Typography>
                 </div>
               );
             })}
@@ -1149,7 +1197,7 @@ const DryingStation = () => {
                           onChange={() => handleSelectWeight(m.id)}
                         />
                       </TableCell>
-                      <TableCell>{new Date(m.measurement_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{formatDateForDisplay(m.measurement_date)}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
                       <TableCell>{parseFloat(m.weight).toFixed(2)}</TableCell>
                       <TableCell>
