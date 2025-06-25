@@ -112,48 +112,42 @@ const DryingStation = () => {
   }), []);
 
   const fetchAreaData = useCallback(async (area, forceRefresh = false) => {
-    if (!forceRefresh && (dryingData[area]?.length > 0 || noDataAreas.has(area))) return; // Skip if data exists or area is empty
+    if (!forceRefresh && (dryingData[area]?.length > 0 || noDataAreas.has(area))) return;
     setAreaLoading(prev => ({ ...prev, [area]: true }));
-
+  
     try {
-      // Fetch drying data first to check if area has batches
       const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
       if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
       const dryingDataRaw = await dryingResponse.json();
-
-      // Get batch numbers for this area
+  
       const areaBatchNumbers = dryingDataRaw
         .filter(data => data.dryingArea === area && data.batchNumber)
         .map(data => data.batchNumber);
-
-      // If no batches, mark as no-data and skip further fetches
+  
       if (areaBatchNumbers.length === 0) {
         setNoDataAreas(prev => new Set(prev).add(area));
         setDryingData(prev => ({ ...prev, [area]: [] }));
         return;
       }
-
-      // Fetch remaining data only if there are batches
+  
       const [qcResponse, greenhouseResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
         fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest')
       ]);
-
+  
       if (!qcResponse.ok || !greenhouseResponse.ok) {
         throw new Error('Failed to fetch data from one or more endpoints');
       }
-
+  
       const [qcResult, greenhouseResult] = await Promise.all([
         qcResponse.json(),
         greenhouseResponse.json()
       ]);
-
-      // Filter valid qc data
+  
       const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 
         batch && batch.batchNumber && typeof batch.batchNumber === 'string'
       );
-
-      // Fetch weights only for relevant batches
+  
       let weightsResult = [];
       if (areaBatchNumbers.length > 0) {
         const weightsResponse = await fetch(
@@ -162,18 +156,20 @@ const DryingStation = () => {
         if (!weightsResponse.ok) throw new Error('Failed to fetch aggregated weights');
         weightsResult = await weightsResponse.json();
       }
-
-      // Create batch weights lookup
+  
+      // Parse weights as floats
       const batchWeights = {};
       weightsResult.forEach(({ batchNumber, total_weight, measurement_date }) => {
         if (batchNumber) {
-          batchWeights[batchNumber] = { total: total_weight, date: measurement_date };
+          batchWeights[batchNumber] = { 
+            total: parseFloat(total_weight) || 0, 
+            date: measurement_date 
+          };
         } else {
           console.warn('Skipping weight record with undefined batchNumber:', { total_weight, measurement_date });
         }
       });
-
-      // Format data for this area
+  
       const areaData = pendingPreprocessingData
         .filter(batch => areaBatchNumbers.includes(batch.batchNumber))
         .map(batch => {
@@ -183,14 +179,14 @@ const DryingStation = () => {
           const latestEntry = batchDryingData.sort((a, b) => 
             new Date(b.created_at) - new Date(a.created_at)
           )[0];
-
+  
           return {
             ...batch,
             status: latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying',
             dryingArea: latestEntry?.dryingArea || 'N/A',
             startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
             endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
-            weight: batchWeights[batch.batchNumber] ? batchWeights[batch.batchNumber].total.toFixed(2) : 'N/A',
+            weight: batchWeights[batch.batchNumber] ? parseFloat(batchWeights[batch.batchNumber].total).toFixed(2) : 'N/A',
             type: batch.type || 'N/A',
             producer: batch.producer || 'N/A',
             productLine: batch.productLine || 'N/A',
@@ -214,11 +210,11 @@ const DryingStation = () => {
           const typeB = typeOrder[b.type] ?? 2;
           return typeA - typeB;
         });
-
+  
       setDryingData(prev => ({ ...prev, [area]: areaData }));
       setNoDataAreas(prev => {
         const newSet = new Set(prev);
-        newSet.delete(area); // Remove from no-data if data was found
+        newSet.delete(area);
         return newSet;
       });
       setGreenhouseData(prev => ({
@@ -256,7 +252,12 @@ const DryingStation = () => {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/drying-weight-measurements/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to fetch weight measurements');
       const data = await response.json();
-      setWeightMeasurements(data);
+      // Ensure weights to floats
+      const parsedData = data.map(m => ({
+        ...m,
+        weight: parseFloat(m.weight) || 0, // Fallback to 0 if parsing fails
+      }));
+      setWeightMeasurements(parsedData);
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to fetch weight measurements');
       setSnackbarSeverity('error');
@@ -291,7 +292,7 @@ const DryingStation = () => {
   }, []);
 
   const handleAddOrUpdateBagWeight = useCallback(async () => {
-    if (!newBagWeight || isNaN(newBagWeight) || newBagWeight <= 0) {
+    if (!newBagWeight || isNaN(newBagWeight) || parseFloat(newBagWeight) <= 0) {
       setSnackbarMessage('Enter a valid weight (positive number)');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -309,25 +310,25 @@ const DryingStation = () => {
       setOpenSnackbar(true);
       return;
     }
-
+  
     const selectedDate = new Date(newWeightDate);
     const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
     const now = new Date();
-
+  
     if (selectedDate > now) {
       setSnackbarMessage('Measurement date cannot be in the future');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
-
+  
     if (startDryingDate && selectedDate < startDryingDate) {
       setSnackbarMessage('Measurement date cannot be before the start drying date');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
-
+  
     try {
       if (editingWeightId) {
         const payload = {
@@ -341,8 +342,8 @@ const DryingStation = () => {
         });
         if (!response.ok) throw new Error('Failed to update weight measurement');
         const result = await response.json();
-        setWeightMeasurements(weightMeasurements.map(m => m.id === editingWeightId ? result.measurement : m));
-        setSnackbarMessage(`Bag ${newBagNumber} weight updated successfully`);
+        setWeightMeasurements(weightMeasurements.map(m => m.id === editingWeightId ? { ...result.measurement, weight: parseFloat(result.measurement.weight) } : m));
+        setSnackbarMessage(`Weight measurement updated successfully`);
         setSnackbarSeverity('success');
         setEditingWeightId(null);
       } else {
@@ -360,14 +361,14 @@ const DryingStation = () => {
         });
         if (!response.ok) throw new Error('Failed to save weight measurement');
         const result = await response.json();
-        setWeightMeasurements([...weightMeasurements, result.measurement]);
+        setWeightMeasurements([...weightMeasurements, { ...result.measurement, weight: parseFloat(result.measurement.weight) }]);
         setNewBagNumber(newBagNumber + 1);
-        setSnackbarMessage(`Bag ${newBagNumber} weight added successfully`);
+        setSnackbarMessage(`Weight measurement added successfully`);
         setSnackbarSeverity('success');
       }
       setNewBagWeight('');
       setNewWeightDate(new Date().toISOString().slice(0, 10));
-      await fetchAreaData(selectedBatch.dryingArea, true); // Force refresh affected area
+      await fetchAreaData(selectedBatch.dryingArea, true);
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to save weight measurement');
       setSnackbarSeverity('error');
@@ -382,7 +383,7 @@ const DryingStation = () => {
     setEditingWeightId(measurement.id);
     setNewProcessingType(measurement.processingType);
     setNewBagNumber(measurement.bagNumber);
-    setNewBagWeight(measurement.weight.toString());
+    setNewBagWeight(parseFloat(measurement.weight).toString());
     setNewWeightDate(new Date(measurement.measurement_date).toISOString().slice(0, 10));
   }, []);
 
@@ -923,7 +924,7 @@ const DryingStation = () => {
       const date = new Date(m.measurement_date).toISOString().slice(0, 10);
       if (!totals[date]) totals[date] = {};
       if (!totals[date][m.processingType]) totals[date][m.processingType] = 0;
-      totals[date][m.processingType] += m.weight;
+      totals[date][m.processingType] += parseFloat(m.weight);
     });
     return totals;
   }, [weightMeasurements]);
@@ -1104,7 +1105,7 @@ const DryingStation = () => {
               const total = totalWeights[latestDate]?.[type] || 0;
               return (
                 <div key={type}>
-                  <Typography variant="subtitle1" gutterBottom>{type} Total: {total.toFixed(2)} kg</Typography>
+                  <Typography variant="subtitle1" gutterBottom>{type} Total: {parseFloat(total).toFixed(2)} kg</Typography>
                 </div>
               );
             })}
