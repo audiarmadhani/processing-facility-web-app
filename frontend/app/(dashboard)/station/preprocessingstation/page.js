@@ -401,7 +401,7 @@ const PreprocessingStation = () => {
         axios.get(`${API_BASE_URL}/receiving`, { timeout: 15000 }),
         axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
       ]);
-
+  
       // Ensure receivingData is an array from allRows
       const receivingData = Array.isArray(receivingResponse.data.allRows)
         ? receivingResponse.data.allRows
@@ -409,7 +409,7 @@ const PreprocessingStation = () => {
       if (!Array.isArray(receivingResponse.data.allRows)) {
         console.warn('Receiving data.allRows is not an array:', receivingResponse.data.allRows);
       }
-
+  
       // Ensure preprocessingResult is an array
       const preprocessingResult = Array.isArray(preprocessingResponse.data.allRows)
         ? preprocessingResponse.data.allRows
@@ -417,7 +417,7 @@ const PreprocessingStation = () => {
       if (!Array.isArray(preprocessingResponse.data.allRows)) {
         console.warn('Preprocessing allRows is not an array:', preprocessingResponse.data.allRows);
       }
-
+  
       // Create a map of batch numbers to their receiving data
       const receivingMap = new Map();
       receivingData.forEach(batch => {
@@ -433,9 +433,10 @@ const PreprocessingStation = () => {
           color: batch.color || 'N/A',
           foreignMatter: batch.foreignMatter || 'N/A',
           overallQuality: batch.overallQuality || 'N/A',
+          commodityType: batch.commodityType || 'N/A', // Added to store commodityType
         });
       });
-
+  
       // Calculate total processed weight per batch
       const batchProcessedWeight = new Map();
       preprocessingResult.forEach(row => {
@@ -443,7 +444,7 @@ const PreprocessingStation = () => {
         const weight = parseFloat(row.weightProcessed || 0);
         batchProcessedWeight.set(batchNumber, (batchProcessedWeight.get(batchNumber) || 0) + weight);
       });
-
+  
       // Create one row per preprocessing entry
       const formattedData = preprocessingResult.map(row => {
         const batchNumberLower = row.batchNumber.toLowerCase();
@@ -452,7 +453,7 @@ const PreprocessingStation = () => {
         const totalProcessedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0).toFixed(2);
         const availableWeightRaw = totalWeight - totalProcessedWeight;
         const availableWeight = Math.abs(availableWeightRaw) < 0.01 ? '0.00' : availableWeightRaw.toFixed(2);
-
+  
         return {
           id: `${row.id}-${row.batchNumber}`,
           batchNumber: row.batchNumber,
@@ -481,10 +482,10 @@ const PreprocessingStation = () => {
           overallQuality: receivingBatch.overallQuality || 'N/A',
         };
       });
-
+  
       // Unprocessed batches for the top DataGrid (Pending Processing)
       const batchAvailableWeight = new Map();
-
+  
       // Include batches from preprocessing data
       formattedData.forEach(row => {
         const batchNumber = row.batchNumber.toLowerCase();
@@ -496,12 +497,12 @@ const PreprocessingStation = () => {
           });
         }
       });
-
-      // Include receiving batches without preprocessing records
+  
+      // Include receiving batches without preprocessing records, excluding commodityType: "Green Bean"
       receivingData.forEach(batch => {
         const batchNumberLower = batch.batchNumber.toLowerCase();
-        // Skip if already included from preprocessing or marked as finished
-        if (!batchAvailableWeight.has(batchNumberLower)) {
+        // Skip if already included from preprocessing or marked as finished or commodityType is "Green Bean"
+        if (!batchAvailableWeight.has(batchNumberLower) && batch.commodityType !== 'Green Bean') {
           const totalWeight = parseFloat(batch.weight || 0);
           const processedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0);
           const availableWeightRaw = totalWeight - processedWeight;
@@ -509,7 +510,7 @@ const PreprocessingStation = () => {
           const isFinished = preprocessingResult.some(row => 
             row.batchNumber.toLowerCase() === batchNumberLower && row.finished
           );
-
+  
           if (parseFloat(availableWeight) > 0 && !isFinished) {
             batchAvailableWeight.set(batchNumberLower, {
               id: batch.batchNumber,
@@ -539,7 +540,7 @@ const PreprocessingStation = () => {
           }
         }
       });
-
+  
       const unprocessedBatches = Array.from(batchAvailableWeight.values()).sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
@@ -549,7 +550,7 @@ const PreprocessingStation = () => {
         if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
         return 0;
       });
-
+  
       console.log('Unprocessed Batches:', unprocessedBatches); // Debug log
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
