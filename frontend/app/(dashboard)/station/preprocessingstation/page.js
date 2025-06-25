@@ -758,7 +758,8 @@ const PreprocessingStation = () => {
                     variant="contained"
                     color="primary"
                     onClick={handleRfidScan}
-                    sx={{ mt: 1.5 }}
+                    // sx={{ mt: 1.5 }}
+                    // fullWidth
                   >
                     Get RFID Tag
                   </Button>
