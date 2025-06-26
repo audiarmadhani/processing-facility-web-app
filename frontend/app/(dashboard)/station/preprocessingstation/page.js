@@ -133,18 +133,15 @@ const PreprocessingStation = () => {
       const dataArray = response.data;
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
       const data = dataArray[0];
-      if (data.merged) {
-        throw new Error('Batch is already merged.');
-      }
       const totalWeightNum = parseFloat(data.weight || 0);
       const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber, mergedFrom } = 
         await fetchAvailableWeight(batchNumber, totalWeightNum);
 
-      setFarmerName(data.farmerName || '');
+      setFarmerName(data.farmerName || 'Multiple');
       setReceivingDate(formatDate(data.receivingDate));
       setQCDate(formatDate(data.qcDate));
       setTotalWeight(totalWeightNum.toFixed(2));
-      setTotalBags(data.totalBags || '');
+      setTotalBags(data.totalBags || 'N/A');
       setLotNumber(lotNumber);
       setReferenceNumber(referenceNumber);
       setWeightAvailable(weightAvailable);
@@ -180,31 +177,50 @@ const PreprocessingStation = () => {
 
         if (receivingData && receivingData.length > 0) {
           const batchData = receivingData[0];
+          let finalBatchNumber = batchData.batchNumber;
+          let mergedData = null;
+
+          // Check if the batch is merged
           if (batchData.merged) {
-            throw new Error('Batch is already merged.');
+            const mergeResponse = await axios.get(`${API_BASE_URL}/batch-merges/original/${batchData.batchNumber}`, { timeout: 15000 });
+            const mergeInfo = mergeResponse.data;
+            if (!mergeInfo || !mergeInfo.new_batch_number) {
+              throw new Error('Merged batch found, but no new batch number available.');
+            }
+            finalBatchNumber = mergeInfo.new_batch_number;
+
+            // Fetch merged batch data
+            const mergedResponse = await axios.get(`${API_BASE_URL}/receiving/${finalBatchNumber}`, { timeout: 15000 });
+            if (!mergedResponse.data.length) {
+              throw new Error('No data found for the merged batch.');
+            }
+            mergedData = mergedResponse.data[0];
+          } else {
+            mergedData = batchData;
           }
-          const totalWeightNum = parseFloat(batchData.weight || 0);
-          setBatchNumber(batchData.batchNumber);
-          setFarmerName(batchData.farmerName || '');
-          setReceivingDate(formatDate(batchData.receivingDate));
-          setQCDate(formatDate(batchData.qcDate));
+
+          const totalWeightNum = parseFloat(mergedData.weight || 0);
+          setBatchNumber(finalBatchNumber);
+          setFarmerName(mergedData.farmerName || 'Multiple');
+          setReceivingDate(formatDate(mergedData.receivingDate));
+          setQCDate(formatDate(mergedData.qcDate));
           setTotalWeight(totalWeightNum.toFixed(2));
-          setTotalBags(batchData.totalBags || '');
+          setTotalBags(mergedData.totalBags || 'N/A');
           const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber, mergedFrom } = 
-            await fetchAvailableWeight(batchData.batchNumber, totalWeightNum);
+            await fetchAvailableWeight(finalBatchNumber, totalWeightNum);
           setWeightAvailable(weightAvailable);
           setTotalProcessedWeight(totalProcessedWeight);
           setLotNumber(lotNumber);
           setReferenceNumber(referenceNumber);
 
           if (finished) {
-            setSnackBarMessage(`Batch ${batchData.batchNumber} is already marked as complete.`);
+            setSnackBarMessage(`Batch ${finalBatchNumber} is already marked as complete.`);
             setSnackBarSeverity('warning');
           } else if (mergedFrom.length > 0) {
-            setSnackBarMessage(`Data for merged batch ${batchData.batchNumber} retrieved successfully! Original batches: ${mergedFrom.join(', ')}`);
+            setSnackBarMessage(`Data for merged batch ${finalBatchNumber} retrieved successfully! Original batches: ${mergedFrom.join(', ')}`);
             setSnackBarSeverity('success');
           } else {
-            setSnackBarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
+            setSnackBarMessage(`Data for batch ${finalBatchNumber} retrieved successfully!`);
             setSnackBarSeverity('success');
           }
 
@@ -834,7 +850,7 @@ const PreprocessingStation = () => {
     { field: 'totalProcessedWeight', headerName: 'Total Processed Weight (kg)', width: 180, sortable: true },
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Processing Date', width: 180, sortable: true },
-    { field: 'preprocessingNotes', headerName: 'Notes', width: 200, sortable: true },
+    { field: 'preprocessingNotes', headerName: 'Notes', weight: 200, sortable: true },
     {
       field: 'finished',
       headerName: 'Finished',
@@ -1111,11 +1127,6 @@ const PreprocessingStation = () => {
                   Show Processing History
                 </Button>
               </Grid>
-              <Grid item>
-                <Button variant="contained" color="primary" onClick={handleOpenMergeDialog}>
-                  Merge Batches
-                </Button>
-              </Grid>
             </Grid>
 
             <Snackbar
@@ -1272,6 +1283,16 @@ const PreprocessingStation = () => {
             <Typography variant="h5" gutterBottom>
               Pending Processing
             </Typography>
+            <Box sx={{ mb: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleOpenMergeDialog}
+                disabled={selectedBatches.length < 2}
+              >
+                Merge Batches
+              </Button>
+            </Box>
             <Box sx={{ height: 600, width: '100%' }}>
               <DataGrid
                 rows={unprocessedBatches}
