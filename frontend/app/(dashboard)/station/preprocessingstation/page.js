@@ -22,6 +22,8 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
+  Checkbox,
+  ListItemText,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from 'axios';
@@ -63,6 +65,10 @@ const PreprocessingStation = () => {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
+  const [openMergeDialog, setOpenMergeDialog] = useState(false);
+  const [selectedBatches, setSelectedBatches] = useState([]);
+  const [mergeNotes, setMergeNotes] = useState('');
+  const [newBatchNumber, setNewBatchNumber] = useState('');
 
   // Debug re-renders
   useEffect(() => {
@@ -103,6 +109,7 @@ const PreprocessingStation = () => {
         finished: preprocessingResponse.finished || false,
         lotNumber: preprocessingResponse.lotNumber || 'N/A',
         referenceNumber: preprocessingResponse.referenceNumber || 'N/A',
+        mergedFrom: preprocessingResponse.mergedFrom || [],
       };
     } catch (error) {
       console.error('Error fetching available weight:', error);
@@ -115,6 +122,7 @@ const PreprocessingStation = () => {
         finished: false,
         lotNumber: 'N/A',
         referenceNumber: 'N/A',
+        mergedFrom: [],
       };
     }
   }, []);
@@ -125,8 +133,11 @@ const PreprocessingStation = () => {
       const dataArray = response.data;
       if (!dataArray.length) throw new Error('No data found for the provided batch number.');
       const data = dataArray[0];
+      if (data.merged) {
+        throw new Error('Batch is already merged.');
+      }
       const totalWeightNum = parseFloat(data.weight || 0);
-      const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
+      const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber, mergedFrom } = 
         await fetchAvailableWeight(batchNumber, totalWeightNum);
 
       setFarmerName(data.farmerName || '');
@@ -142,6 +153,9 @@ const PreprocessingStation = () => {
       if (finished) {
         setSnackBarMessage(`Batch ${batchNumber} is already marked as complete.`);
         setSnackBarSeverity('warning');
+      } else if (mergedFrom.length > 0) {
+        setSnackBarMessage(`Data for merged batch ${batchNumber} retrieved successfully! Original batches: ${mergedFrom.join(', ')}`);
+        setSnackBarSeverity('success');
       } else {
         setSnackBarMessage(`Data for batch ${batchNumber} retrieved successfully!`);
         setSnackBarSeverity('success');
@@ -166,6 +180,9 @@ const PreprocessingStation = () => {
 
         if (receivingData && receivingData.length > 0) {
           const batchData = receivingData[0];
+          if (batchData.merged) {
+            throw new Error('Batch is already merged.');
+          }
           const totalWeightNum = parseFloat(batchData.weight || 0);
           setBatchNumber(batchData.batchNumber);
           setFarmerName(batchData.farmerName || '');
@@ -173,7 +190,7 @@ const PreprocessingStation = () => {
           setQCDate(formatDate(batchData.qcDate));
           setTotalWeight(totalWeightNum.toFixed(2));
           setTotalBags(batchData.totalBags || '');
-          const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber } = 
+          const { weightAvailable, totalProcessedWeight, finished, lotNumber, referenceNumber, mergedFrom } = 
             await fetchAvailableWeight(batchData.batchNumber, totalWeightNum);
           setWeightAvailable(weightAvailable);
           setTotalProcessedWeight(totalProcessedWeight);
@@ -183,6 +200,9 @@ const PreprocessingStation = () => {
           if (finished) {
             setSnackBarMessage(`Batch ${batchData.batchNumber} is already marked as complete.`);
             setSnackBarSeverity('warning');
+          } else if (mergedFrom.length > 0) {
+            setSnackBarMessage(`Data for merged batch ${batchData.batchNumber} retrieved successfully! Original batches: ${mergedFrom.join(', ')}`);
+            setSnackBarSeverity('success');
           } else {
             setSnackBarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
             setSnackBarSeverity('success');
@@ -265,12 +285,14 @@ const PreprocessingStation = () => {
 
   const fetchWeightHistory = async () => {
     try {
-      const [batchesResponse, processedResponse] = await Promise.all([
+      const [batchesResponse, processedResponse, mergeResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/receiving`, { timeout: 15000 }),
         axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
+        axios.get(`${API_BASE_URL}/batch-merges`, { timeout: 15000 }),
       ]);
       const batches = Array.isArray(batchesResponse.data.allRows) ? batchesResponse.data.allRows : [];
       const processedWeights = Array.isArray(processedResponse.data.allRows) ? processedResponse.data.allRows : [];
+      const mergeData = Array.isArray(mergeResponse.data) ? mergeResponse.data : [];
 
       const historyData = batches.map((batch) => {
         const processedLogs = processedWeights.filter(log => 
@@ -278,6 +300,9 @@ const PreprocessingStation = () => {
         const totalProcessedWeight = processedLogs.reduce((acc, log) => 
           acc + parseFloat(log.weightProcessed || 0), 0).toFixed(2);
         const weightAvailable = (parseFloat(batch.weight || 0) - totalProcessedWeight).toFixed(2);
+        const mergeInfo = mergeData.find(m => 
+          m.new_batch_number.toLowerCase() === batch.batchNumber.toLowerCase());
+        
         return {
           batchNumber: batch.batchNumber,
           lotNumber: processedLogs.length > 0 ? processedLogs[processedLogs.length - 1].lotNumber || 'N/A' : 'N/A',
@@ -286,6 +311,11 @@ const PreprocessingStation = () => {
           totalProcessedWeight,
           weightAvailable,
           finished: processedLogs.length > 0 ? processedLogs[0].finished : false,
+          merged: batch.merged || false,
+          mergedFrom: mergeInfo ? mergeInfo.original_batch_numbers : [],
+          mergedAt: mergeInfo ? formatDate(mergeInfo.merged_at) : 'N/A',
+          mergeCreatedBy: mergeInfo ? mergeInfo.created_by : 'N/A',
+          mergeNotes: mergeInfo ? mergeInfo.notes || 'N/A' : 'N/A',
           processedLogs: processedLogs.map(log => ({
             processingDate: formatDate(log.processingDate),
             weightProcessed: parseFloat(log.weightProcessed || 0).toFixed(2),
@@ -306,6 +336,60 @@ const PreprocessingStation = () => {
 
   const showWeightHistory = () => {
     fetchWeightHistory();
+  };
+
+  const handleOpenMergeDialog = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/preprocessing/new-batch-number`, { timeout: 15000 });
+      setNewBatchNumber(response.data.newBatchNumber);
+      setOpenMergeDialog(true);
+    } catch (error) {
+      handleError('Failed to fetch new batch number for merging.', error);
+    }
+  };
+
+  const handleCloseMergeDialog = () => {
+    setOpenMergeDialog(false);
+    setSelectedBatches([]);
+    setMergeNotes('');
+    setNewBatchNumber('');
+  };
+
+  const handleMergeBatches = async () => {
+    if (selectedBatches.length < 2) {
+      setSnackBarMessage('Please select at least two batches to merge.');
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+
+    // Validate same type
+    const selectedBatchDetails = unprocessedBatches.filter(b => selectedBatches.includes(b.batchNumber));
+    const type = selectedBatchDetails[0]?.type;
+    if (!selectedBatchDetails.every(b => b.type === type)) {
+      setSnackBarMessage('All selected batches must have the same type (e.g., Arabica or Robusta).');
+      setSnackBarSeverity('error');
+      setOpenSnackBar(true);
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/preprocessing/merge`, {
+        batchNumbers: selectedBatches,
+        notes: mergeNotes.trim() || null,
+        createdBy: session?.user?.name || 'Unknown',
+      }, { timeout: 15000 });
+
+      setSnackBarMessage(`Batches merged successfully into ${response.data.newBatchNumber} with total weight ${response.data.totalWeight} kg.`);
+      setSnackBarSeverity('success');
+      await fetchPreprocessingData();
+      handleCloseMergeDialog();
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || `Failed to merge batches: ${error.message}`;
+      handleError(errorMessage, error);
+    } finally {
+      setOpenSnackBar(true);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -402,67 +486,68 @@ const PreprocessingStation = () => {
         axios.get(`${API_BASE_URL}/preprocessing`, { timeout: 15000 }),
         axios.get(`${API_BASE_URL}/qc`, { timeout: 15000 }),
       ]);
-  
-      // Ensure receivingData is an array from allRows
+
       const receivingData = Array.isArray(receivingResponse.data.allRows)
         ? receivingResponse.data.allRows
         : [];
       if (!Array.isArray(receivingResponse.data.allRows)) {
         console.warn('Receiving data.allRows is not an array:', receivingResponse.data.allRows);
       }
-  
-      // Ensure preprocessingResult is an array
+
       const preprocessingResult = Array.isArray(preprocessingResponse.data.allRows)
         ? preprocessingResponse.data.allRows
         : [];
       if (!Array.isArray(preprocessingResponse.data.allRows)) {
         console.warn('Preprocessing allRows is not an array:', preprocessingResponse.data.allRows);
       }
-  
-      // Ensure qcData is an array from allRows
+
       const qcData = Array.isArray(qcResponse.data.allRows)
         ? qcResponse.data.allRows
         : [];
       if (!Array.isArray(qcResponse.data.allRows)) {
         console.warn('QC data.allRows is not an array:', qcResponse.data.allRows);
       }
-  
-      // Create a map of batch numbers to their receiving data
+
       const receivingMap = new Map();
       receivingData.forEach(batch => {
-        receivingMap.set(batch.batchNumber.toLowerCase(), {
-          batchNumber: batch.batchNumber,
-          type: batch.type || 'N/A',
-          weight: parseFloat(batch.weight || 0),
-          receivingDate: formatDate(batch.receivingDate),
-          commodityType: batch.commodityType || 'N/A',
-        });
+        if (!batch.merged) {
+          receivingMap.set(batch.batchNumber.toLowerCase(), {
+            batchNumber: batch.batchNumber,
+            type: batch.type || 'N/A',
+            weight: parseFloat(batch.weight || 0),
+            receivingDate: formatDate(batch.receivingDate),
+            commodityType: batch.commodityType || 'N/A',
+            totalBags: batch.totalBags || 'N/A',
+            farmerName: batch.farmerName || 'N/A',
+          });
+        }
       });
-  
-      // Create a map of batch numbers to their QC data
+
       const qcMap = new Map();
       qcData.forEach(batch => {
-        qcMap.set(batch.batchNumber.toLowerCase(), {
-          qcDate: formatDate(batch.qcDate),
-          cherryScore: batch.cherryScore ? parseFloat(batch.cherryScore).toFixed(3) : 'N/A',
-          cherryGroup: batch.cherryGroup || 'N/A',
-          ripeness: batch.ripeness || 'N/A',
-          color: batch.color || 'N/A',
-          foreignMatter: batch.foreignMatter || 'N/A',
-          overallQuality: batch.overallQuality || 'N/A',
-        });
+        if (!batch.merged) {
+          qcMap.set(batch.batchNumber.toLowerCase(), {
+            qcDate: formatDate(batch.qcDate),
+            cherryScore: batch.cherryScore ? parseFloat(batch.cherryScore).toFixed(3) : 'N/A',
+            cherryGroup: batch.cherryGroup || 'N/A',
+            ripeness: batch.ripeness || 'N/A',
+            color: batch.color || 'N/A',
+            foreignMatter: batch.foreignMatter || 'N/A',
+            overallQuality: batch.overallQuality || 'N/A',
+          });
+        }
       });
-  
-      // Calculate total processed weight per batch
+
       const batchProcessedWeight = new Map();
       preprocessingResult.forEach(row => {
-        const batchNumber = row.batchNumber.toLowerCase();
-        const weight = parseFloat(row.weightProcessed || 0);
-        batchProcessedWeight.set(batchNumber, (batchProcessedWeight.get(batchNumber) || 0) + weight);
+        if (!row.merged) {
+          const batchNumber = row.batchNumber.toLowerCase();
+          const weight = parseFloat(row.weightProcessed || 0);
+          batchProcessedWeight.set(batchNumber, (batchProcessedWeight.get(batchNumber) || 0) + weight);
+        }
       });
-  
-      // Create one row per preprocessing entry
-      const formattedData = preprocessingResult.map(row => {
+
+      const formattedData = preprocessingResult.filter(row => !row.merged).map(row => {
         const batchNumberLower = row.batchNumber.toLowerCase();
         const receivingBatch = receivingMap.get(batchNumberLower) || {};
         const qcBatch = qcMap.get(batchNumberLower) || {};
@@ -470,7 +555,7 @@ const PreprocessingStation = () => {
         const totalProcessedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0).toFixed(2);
         const availableWeightRaw = totalWeight - totalProcessedWeight;
         const availableWeight = Math.abs(availableWeightRaw) < 0.01 ? '0.00' : availableWeightRaw.toFixed(2);
-  
+
         return {
           id: `${row.id}-${row.batchNumber}`,
           batchNumber: row.batchNumber,
@@ -497,16 +582,15 @@ const PreprocessingStation = () => {
           color: qcBatch.color || 'N/A',
           foreignMatter: qcBatch.foreignMatter || 'N/A',
           overallQuality: qcBatch.overallQuality || 'N/A',
+          mergedFrom: row.mergedFrom || [],
         };
       });
-  
-      // Unprocessed batches for the top DataGrid (Pending Processing)
+
       const batchAvailableWeight = new Map();
-  
-      // Include batches from preprocessing data
+
       formattedData.forEach(row => {
         const batchNumber = row.batchNumber.toLowerCase();
-        if (!row.finished && parseFloat(row.availableWeight) > 0) {
+        if (!row.finished && parseFloat(row.availableWeight) > 0 && !row.merged) {
           batchAvailableWeight.set(batchNumber, {
             ...row,
             id: row.batchNumber,
@@ -514,12 +598,10 @@ const PreprocessingStation = () => {
           });
         }
       });
-  
-      // Include receiving batches without preprocessing records, excluding commodityType: "Green Bean"
+
       receivingData.forEach(batch => {
         const batchNumberLower = batch.batchNumber.toLowerCase();
-        // Skip if already included from preprocessing or marked as finished or commodityType is "Green Bean"
-        if (!batchAvailableWeight.has(batchNumberLower) && batch.commodityType !== 'Green Bean') {
+        if (!batchAvailableWeight.has(batchNumberLower) && batch.commodityType !== 'Green Bean' && !batch.merged) {
           const totalWeight = parseFloat(batch.weight || 0);
           const processedWeight = parseFloat(batchProcessedWeight.get(batchNumberLower) || 0);
           const availableWeightRaw = totalWeight - processedWeight;
@@ -528,7 +610,7 @@ const PreprocessingStation = () => {
             row.batchNumber.toLowerCase() === batchNumberLower && row.finished
           );
           const qcBatch = qcMap.get(batchNumberLower) || {};
-  
+
           if (parseFloat(availableWeight) > 0 && !isFinished) {
             batchAvailableWeight.set(batchNumberLower, {
               id: batch.batchNumber,
@@ -554,22 +636,25 @@ const PreprocessingStation = () => {
               referenceNumber: 'N/A',
               startProcessingDate: 'N/A',
               preprocessingNotes: 'N/A',
+              totalBags: batch.totalBags || 'N/A',
+              farmerName: batch.farmerName || 'N/A',
+              mergedFrom: [],
             });
           }
         }
       });
-  
+
       const unprocessedBatches = Array.from(batchAvailableWeight.values()).sort((a, b) => {
         if (a.type !== b.type) return a.type.localeCompare(b.type);
         if (a.cherryGroup !== b.cherryGroup) return a.cherryGroup.localeCompare(b.cherryGroup);
         if (a.ripeness !== b.ripeness) return a.ripeness.localeCompare(b.ripeness);
         if (a.color !== b.color) return a.color.localeCompare(b.color);
         if (a.foreignMatter !== b.foreignMatter) return a.foreignMatter.localeCompare(b.foreignMatter);
-        if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.overallQuality);
+        if (a.overallQuality !== b.overallQuality) return a.overallQuality.localeCompare(b.cherryGroup);
         return 0;
       });
-  
-      console.log('Unprocessed Batches:', unprocessedBatches); // Debug log
+
+      console.log('Unprocessed Batches:', unprocessedBatches);
       setUnprocessedBatches(unprocessedBatches);
       setPreprocessingData(formattedData);
     } catch (error) {
@@ -668,8 +753,29 @@ const PreprocessingStation = () => {
   }, [processingType]);
 
   const unprocessedColumns = [
+    {
+      field: 'select',
+      headerName: 'Select',
+      width: 100,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <Checkbox
+          checked={selectedBatches.includes(row.batchNumber)}
+          onChange={(e) => {
+            setSelectedBatches(prev => 
+              e.target.checked 
+                ? [...prev, row.batchNumber]
+                : prev.filter(b => b !== row.batchNumber)
+            );
+          }}
+          disabled={row.finished || parseFloat(row.availableWeight) <= 0 || row.commodityType === 'Green Bean'}
+        />
+      ),
+    },
     { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 130, sortable: true },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 150, sortable: true },
+    { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 150, sortable: true },
     {
       field: 'action',
@@ -708,6 +814,13 @@ const PreprocessingStation = () => {
       sortable: true,
       groupable: true,
       aggregable: false,
+    },
+    {
+      field: 'mergedFrom',
+      headerName: 'Merged From',
+      width: 200,
+      sortable: true,
+      renderCell: ({ value }) => (value && value.length > 0 ? value.join(', ') : 'N/A'),
     },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
     { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
@@ -795,7 +908,6 @@ const PreprocessingStation = () => {
                     value={farmerName || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -804,7 +916,6 @@ const PreprocessingStation = () => {
                     value={lotNumber}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -813,7 +924,6 @@ const PreprocessingStation = () => {
                     value={referenceNumber}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -822,7 +932,6 @@ const PreprocessingStation = () => {
                     value={receivingDate || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -831,7 +940,6 @@ const PreprocessingStation = () => {
                     value={qcDate || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -840,7 +948,6 @@ const PreprocessingStation = () => {
                     value={totalWeight || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    // margin="normal"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -849,7 +956,6 @@ const PreprocessingStation = () => {
                     value={totalBags || ''}
                     InputProps={{ readOnly: true }}
                     fullWidth
-                    // margin="normal"
                   />
                 </Grid>
               </Grid>
@@ -1005,6 +1111,11 @@ const PreprocessingStation = () => {
                   Show Processing History
                 </Button>
               </Grid>
+              <Grid item>
+                <Button variant="contained" color="primary" onClick={handleOpenMergeDialog}>
+                  Merge Batches
+                </Button>
+              </Grid>
             </Grid>
 
             <Snackbar
@@ -1026,6 +1137,18 @@ const PreprocessingStation = () => {
                   weightHistory.map((history, index) => (
                     <Box key={index} sx={{ mb: 2 }}>
                       <Typography variant="h6">Batch: {history.batchNumber}</Typography>
+                      {history.merged && (
+                        <>
+                          <Typography>Status: Merged</Typography>
+                          <Typography>Merged From: {history.mergedFrom.join(', ') || 'N/A'}</Typography>
+                          <Typography>Merged At: {history.mergedAt}</Typography>
+                          <Typography>Merged By: {history.mergeCreatedBy}</Typography>
+                          {history.mergeNotes !== 'N/A' && (
+                            <Typography>Merge Notes: {history.mergeNotes}</Typography>
+                          )}
+                          <Divider sx={{ my: 1 }} />
+                        </>
+                      )}
                       <Typography>Lot Number: {history.lotNumber}</Typography>
                       <Typography>Reference Number: {history.referenceNumber}</Typography>
                       <Typography>Total Weight: {history.totalWeight} kg</Typography>
@@ -1081,6 +1204,61 @@ const PreprocessingStation = () => {
                   disabled={isFinishing}
                 >
                   {isFinishing ? 'Processing...' : 'Confirm'}
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            <Dialog
+              open={openMergeDialog}
+              onClose={handleCloseMergeDialog}
+            >
+              <DialogTitle>Merge Batches</DialogTitle>
+              <DialogContent>
+                <Typography>Select batches to merge into new batch: {newBatchNumber}</Typography>
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel id="merge-batches-label">Select Batches</InputLabel>
+                  <Select
+                    labelId="merge-batches-label"
+                    multiple
+                    value={selectedBatches}
+                    onChange={(e) => setSelectedBatches(e.target.value)}
+                    input={<OutlinedInput label="Select Batches" />}
+                    renderValue={(selected) => selected.join(', ')}
+                    MenuProps={MenuProps}
+                  >
+                    {unprocessedBatches.map((batch) => (
+                      <MenuItem
+                        key={batch.batchNumber}
+                        value={batch.batchNumber}
+                        disabled={batch.finished || parseFloat(batch.availableWeight) <= 0 || batch.commodityType === 'Green Bean'}
+                      >
+                        <Checkbox checked={selectedBatches.includes(batch.batchNumber)} />
+                        <ListItemText primary={`${batch.batchNumber} (${batch.type}, ${batch.availableWeight} kg)`} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Merge Notes"
+                  multiline
+                  rows={4}
+                  value={mergeNotes}
+                  onChange={(e) => setMergeNotes(e.target.value)}
+                  fullWidth
+                  margin="normal"
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCloseMergeDialog} color="primary">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleMergeBatches}
+                  color="primary"
+                  variant="contained"
+                  disabled={selectedBatches.length < 2}
+                >
+                  Merge
                 </Button>
               </DialogActions>
             </Dialog>
