@@ -247,7 +247,7 @@ router.get('/receiving', async (req, res) => {
     const { commodityType } = req.query;
     let whereClause = '';
     if (commodityType) {
-      whereClause = `WHERE a."commodityType" = :commodityType`;
+      whereClause = `AND a."commodityType" = :commodityType`;
     }
 
     const [allRows] = await sequelize.query(
@@ -256,8 +256,8 @@ router.get('/receiving', async (req, res) => {
        FROM "ReceivingData" a 
        LEFT JOIN "Farmers" b ON a."farmerID" = b."farmerID"
        LEFT JOIN (SELECT "batchNumber", MAX(price) price FROM "QCData" GROUP BY "batchNumber") c on a."batchNumber" = c."batchNumber"
+       WHERE a.merged = FALSE
        ${whereClause}
-       AND a.merged = FALSE
        ORDER BY a."receivingDate" DESC;`,
       {
         replacements: commodityType ? { commodityType } : {},
