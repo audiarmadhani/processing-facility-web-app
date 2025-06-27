@@ -19,6 +19,7 @@ import {
   Tab,
   Box,
   Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
@@ -34,10 +35,13 @@ const FermentationStation = () => {
   const [batchNumber, setBatchNumber] = useState('');
   const [tank, setTank] = useState('');
   const [blueBarrelCode, setBlueBarrelCode] = useState('');
+  const [weight, setWeight] = useState('');
   const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
   const [fermentationData, setFermentationData] = useState([]);
   const [availableBatches, setAvailableBatches] = useState([]);
   const [availableTanks, setAvailableTanks] = useState([]);
+  const [isLoadingTanks, setIsLoadingTanks] = useState(false);
+  const [tankError, setTankError] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -74,15 +78,20 @@ const FermentationStation = () => {
 
   // Fetch available tanks
   const fetchAvailableTanks = async () => {
+    setIsLoadingTanks(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-tanks`);
       setAvailableTanks(response.data || []);
+      setTankError(null);
     } catch (error) {
       console.error('Error fetching available tanks:', error);
       setSnackbarMessage('Failed to fetch available tanks.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       setAvailableTanks([]);
+      setTankError('Unable to load tank availability. Please try again.');
+    } finally {
+      setIsLoadingTanks(false);
     }
   };
 
@@ -121,8 +130,16 @@ const FermentationStation = () => {
       return;
     }
 
-    if (!batchNumber || !tank || (tank === 'Blue Barrel' && !blueBarrelCode)) {
+    if (!batchNumber || !tank || (tank === 'Blue Barrel' && !blueBarrelCode) || !weight) {
       setSnackbarMessage('All required fields must be filled.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const weightNum = parseFloat(weight);
+    if (isNaN(weightNum) || weightNum <= 0) {
+      setSnackbarMessage('Weight must be a positive number.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -132,16 +149,18 @@ const FermentationStation = () => {
       batchNumber: batchNumber.trim(),
       tank: tank === 'Blue Barrel' ? blueBarrelCode : tank,
       startDate: dayjs(startDate).toISOString(),
+      weight: weightNum,
       createdBy: session.user.name,
     };
 
     try {
       await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
-      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${payload.tank}.`);
+      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${payload.tank} with weight ${weightNum}kg.`);
       setSnackbarSeverity('success');
       setBatchNumber('');
       setTank('');
       setBlueBarrelCode('');
+      setWeight('');
       setStartDate(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
       await fetchFermentationData();
       await fetchAvailableBatches();
@@ -187,7 +206,7 @@ const FermentationStation = () => {
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-    { field: 'weight', headerName: 'Weight (kg)', width: 120 },
+    { field: 'weight', headerName: 'Fermentation Weight (kg)', width: 180 },
     { field: 'tank', headerName: 'Tank', width: 150 },
     {
       field: 'startDate',
@@ -247,6 +266,11 @@ const FermentationStation = () => {
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
               Fermentation Station Form
             </Typography>
+            {tankError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {tankError}
+              </Alert>
+            )}
             <form onSubmit={handleSubmit}>
               <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                 <InputLabel id="batch-number-label">Batch Number</InputLabel>
@@ -277,6 +301,7 @@ const FermentationStation = () => {
                   }}
                   input={<OutlinedInput label="Tank" />}
                   MenuProps={MenuProps}
+                  disabled={isLoadingTanks || tankError}
                 >
                   <MenuItem value="Biomaster" disabled={!availableTanks.includes('Biomaster')}>
                     Biomaster {availableTanks.includes('Biomaster') ? '' : '(In Use)'}
@@ -302,12 +327,38 @@ const FermentationStation = () => {
                       margin="normal"
                       error={!blueBarrelCode && tank === 'Blue Barrel'}
                       helperText={!blueBarrelCode && tank === 'Blue Barrel' ? 'Please select a Blue Barrel code' : ''}
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {isLoadingTanks ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
                     />
                   )}
                   sx={{ marginTop: '16px' }}
                   noOptionsText="No available Blue Barrels"
+                  disabled={isLoadingTanks || tankError}
                 />
               )}
+              <TextField
+                label="Weight (kg)"
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                fullWidth
+                required
+                margin="normal"
+                InputProps={{ inputProps: { min: 0.01, step: 0.01 } }}
+                error={weight && (isNaN(parseFloat(weight)) || parseFloat(weight) <= 0)}
+                helperText={
+                  weight && (isNaN(parseFloat(weight)) || parseFloat(weight) <= 0)
+                    ? 'Weight must be a positive number.'
+                    : ''
+                }
+              />
               <TextField
                 label="Start Date and Time"
                 type="datetime-local"
@@ -323,7 +374,16 @@ const FermentationStation = () => {
                 variant="contained"
                 color="primary"
                 style={{ marginTop: '16px' }}
-                disabled={!batchNumber || !tank || (tank === 'Blue Barrel' && !blueBarrelCode)}
+                disabled={
+                  !batchNumber ||
+                  !tank ||
+                  (tank === 'Blue Barrel' && !blueBarrelCode) ||
+                  !weight ||
+                  isNaN(parseFloat(weight)) ||
+                  parseFloat(weight) <= 0 ||
+                  isLoadingTanks ||
+                  tankError
+                }
               >
                 Start Fermentation
               </Button>
