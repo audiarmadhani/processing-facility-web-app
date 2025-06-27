@@ -15,9 +15,9 @@ import {
   DialogContent,
   DialogActions,
   Divider,
-  FormControl, 
-  InputLabel, 
-  Select, 
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
   OutlinedInput,
 } from '@mui/material';
@@ -29,7 +29,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
 const QCStation = () => {
   const { data: session, status } = useSession();
@@ -53,7 +53,6 @@ const QCStation = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [open, setOpen] = useState(false);
   const webcamRef = useRef(null);
-  const [imageSrc, setImageSrc] = useState(null);
   const [rfid, setRfid] = useState('');
   const [rfidTag, setRfidTag] = useState('');
 
@@ -76,152 +75,166 @@ const QCStation = () => {
     },
   };
 
-  useEffect(() => {
-    fetchQCData();
-  }, [qcData]);
-
-  const fetchQCData = async () => {
+  // Fetch both QC and Receiving data
+  const fetchData = async () => {
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/qc');
-      if (!response.ok) throw new Error('Failed to fetch QC data');
-      const data = await response.json();
-      setQcData(data.distinctRows || []);
+      // Fetch QC data
+      const qcResponse = await axios.get(`${API_BASE_URL}/api/qc`);
+      const qcDataResult = qcResponse.data.distinctRows || [];
+      setQcData(qcDataResult);
+
+      // Fetch Receiving data
+      const receivingResponse = await axios.get(`${API_BASE_URL}/api/receiving`);
+      const receivingDataResult = receivingResponse.data.allRows || [];
+      
+      const qcBatchNumbers = new Set(qcDataResult.map(qc => qc.batchNumber));
+      const filteredReceivingData = receivingDataResult
+        .filter(receiving => !qcBatchNumbers.has(receiving.batchNumber))
+        .map(receiving => ({
+          ...receiving,
+          slaDays: calculateSLA(receiving.receivingDate, receiving.lastProcessingDate),
+        }));
+
+      setReceivingData(filteredReceivingData);
     } catch (error) {
-      console.error('Error fetching QC data:', error);
+      console.error('Error fetching data:', error);
+      setSnackbarMessage('Failed to fetch data. Please try again.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      setQcData([]);
+      setReceivingData([]);
     }
   };
 
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const handleCloseSnackbar = () => {
-      setOpenSnackbar(false);
+    setOpenSnackbar(false);
   };
 
   const handleRfidScan = async () => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/get-rfid/QC`);
-      if (!response.ok) {
-          throw new Error(`Failed to fetch RFID: ${response.status}`);
-      }
-      const data = await response.json();
+      const response = await axios.get(`${API_BASE_URL}/api/get-rfid/QC`);
+      const data = response.data;
 
       if (data.rfid) {
-          setRfid(data.rfid);
-          const receivingResponse = await fetch(`https://processing-facility-backend.onrender.com/api/receivingrfid/${data.rfid}`);
-          if (!receivingResponse.ok) {
-              throw new Error(`Failed to fetch receiving data: ${receivingResponse.status}`);
-          }
-          const receivingData = await receivingResponse.json();
+        setRfid(data.rfid);
+        const receivingResponse = await axios.get(`${API_BASE_URL}/api/receivingrfid/${data.rfid}`);
+        const receivingData = receivingResponse.data;
 
-          if (receivingData && receivingData.length > 0) {
-              const batchData = receivingData[0];
-              setBatchNumber(batchData.batchNumber);
-              setFarmerName(batchData.farmerName);
-              setReceivingDate(batchData.receivingDateTrunc || '');
-              setWeight(batchData.weight || '');
-              setTotalBags(batchData.totalBags || '');
-              setContractType(batchData.contractType || '');
-              setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
-              setSnackbarSeverity('success');
-              await clearRfidData("qc");
-            } else {
-              setSnackbarMessage('No receiving data found for this RFID.');
-              setSnackbarSeverity('warning');
-            }
+        if (receivingData && receivingData.length > 0) {
+          const batchData = receivingData[0];
+          setBatchNumber(batchData.batchNumber);
+          setFarmerName(batchData.farmerName);
+          setReceivingDate(batchData.receivingDateTrunc || '');
+          setWeight(batchData.weight || '');
+          setTotalBags(batchData.totalBags || '');
+          setContractType(batchData.contractType || '');
+          setSnackbarMessage(`Data for batch ${batchData.batchNumber} retrieved successfully!`);
+          setSnackbarSeverity('success');
+          await clearRfidData();
+          await fetchData(); // Refresh data after RFID scan
+        } else {
+          setSnackbarMessage('No receiving data found for this RFID.');
+          setSnackbarSeverity('warning');
+          setOpenSnackbar(true);
+        }
       } else {
         setSnackbarMessage('No RFID tag scanned yet.');
         setSnackbarSeverity('warning');
+        setOpenSnackbar(true);
       }
     } catch (error) {
-        console.error('Error fetching batch number or receiving data:', error);
-        setSnackbarMessage('Error retrieving data. Please try again.');
-        setSnackbarSeverity('error');
-    } finally {
-        setOpenSnackbar(true);
+      console.error('Error fetching batch number or receiving data:', error);
+      setSnackbarMessage('Error retrieving data. Please try again.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
     }
   };
 
   const clearRfidData = async () => {
-      try {
-          const response = await fetch(`https://processing-facility-backend.onrender.com/api/clear-rfid/QC`, { method: 'DELETE' });
-          if (!response.ok) {
-              throw new Error(`Failed to clear RFID Data: ${response.status}`);
-          }
-      } catch (error) {
-          console.error("Error clearing RFID Data:", error);
-      }
+    try {
+      await axios.delete(`${API_BASE_URL}/api/clear-rfid/QC`);
+    } catch (error) {
+      console.error("Error clearing RFID Data:", error);
+    }
   };
 
   const analyzeWithRoboflow = async (file) => {
     const apiUrl = `https://detect.roboflow.com/coffee-cherry-ripeness/1?api_key=ynuuAcMjAI6jxTNKshV1`;
 
     try {
-        const formData = new FormData();
-        formData.append("file", file);
+      const formData = new FormData();
+      formData.append("file", file);
 
-        const response = await axios.post(apiUrl, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
+      const response = await axios.post(apiUrl, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-        const data = response.data;
-        if (!data?.predictions?.length) {
-            console.warn("No predictions found in API response.");
-            return { predictions: [], unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
-        }
-
-        const ripenessCounts = { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
-        data.predictions.forEach(({ confidence, class: ripeness }) => {
-            if (confidence >= 0.1) ripenessCounts[ripeness]++;
-        });
-
-        const total = Object.values(ripenessCounts).reduce((sum, count) => sum + count, 0);
-        const percentages = Object.fromEntries(
-            Object.entries(ripenessCounts).map(([key, count]) => [key, total ? ((count / total) * 100).toFixed(2) : 0])
-        );
-
-        return { predictions: data.predictions, ...percentages };
-    } catch (error) {
-        console.error("Error analyzing image:", error);
+      const data = response.data;
+      if (!data?.predictions?.length) {
+        console.warn("No predictions found in API response.");
         return { predictions: [], unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
+      }
+
+      const ripenessCounts = { unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
+      data.predictions.forEach(({ confidence, class: ripeness }) => {
+        if (confidence >= 0.1) ripenessCounts[ripeness]++;
+      });
+
+      const total = Object.values(ripenessCounts).reduce((sum, count) => sum + count, 0);
+      const percentages = Object.fromEntries(
+        Object.entries(ripenessCounts).map(([key, count]) => [key, total ? ((count / total) * 100).toFixed(2) : 0])
+      );
+
+      return { predictions: data.predictions, ...percentages };
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      return { predictions: [], unripe: 0, semi_ripe: 0, ripe: 0, overripe: 0 };
     }
   };
 
   const handleCapture = async () => {
     const video = webcamRef.current.video;
-  
+
     // Create canvas for plain image
     const plainCanvas = document.createElement("canvas");
     const plainContext = plainCanvas.getContext("2d");
     plainCanvas.width = 3840;
     plainCanvas.height = 2160;
     plainContext.drawImage(video, 0, 0, plainCanvas.width, plainCanvas.height);
-  
+
     // Create canvas for annotated image
     const annotatedCanvas = document.createElement("canvas");
     const annotatedContext = annotatedCanvas.getContext("2d");
     annotatedCanvas.width = 3840;
     annotatedCanvas.height = 2160;
     annotatedContext.drawImage(video, 0, 0, annotatedCanvas.width, annotatedCanvas.height);
-  
+
     const analysisResults = [];
-  
+
     // Perform Roboflow analysis on downscaled images
     for (let i = 0; i < 3; i++) {
       const smallCanvas = document.createElement("canvas");
       smallCanvas.width = 640;
       smallCanvas.height = 360;
       smallCanvas.getContext("2d").drawImage(plainCanvas, 0, 0, smallCanvas.width, smallCanvas.height);
-  
+
       const blob = await new Promise((resolve) => {
         smallCanvas.toBlob(resolve, "image/jpeg", 0.8);
       });
-  
+
       const analysisResult = await analyzeWithRoboflow(blob);
       analysisResults.push(analysisResult);
-  
+
       if (i < 2) {
         await new Promise((resolve) => setTimeout(resolve, 300));
       }
     }
-  
+
     // Average Roboflow results
     const averagedResults = {
       unripe: 0,
@@ -229,32 +242,32 @@ const QCStation = () => {
       ripe: 0,
       overripe: 0,
     };
-  
+
     analysisResults.forEach((result) => {
       averagedResults.unripe += parseFloat(result.unripe || 0);
       averagedResults.semi_ripe += parseFloat(result.semi_ripe || 0);
       averagedResults.ripe += parseFloat(result.ripe || 0);
       averagedResults.overripe += parseFloat(result.overripe || 0);
     });
-  
+
     averagedResults.unripe /= analysisResults.length;
     averagedResults.semi_ripe /= analysisResults.length;
     averagedResults.ripe /= analysisResults.length;
     averagedResults.overripe /= analysisResults.length;
-  
+
     setRoboflowResults({
       unripe: averagedResults.unripe.toFixed(2),
       semi_ripe: averagedResults.semi_ripe.toFixed(2),
       ripe: averagedResults.ripe.toFixed(2),
       overripe: averagedResults.overripe.toFixed(2),
     });
-  
+
     // Draw annotations only on annotated canvas
     if (analysisResults[analysisResults.length - 1].predictions.length > 0) {
       drawBoundingBoxes(annotatedContext, annotatedCanvas, analysisResults[analysisResults.length - 1].predictions);
       drawRipenessCounts(annotatedContext, annotatedCanvas, averagedResults);
     }
-  
+
     // Draw overlay text on annotated canvas
     drawOverlayText(
       annotatedContext,
@@ -266,10 +279,10 @@ const QCStation = () => {
       foreignMatter,
       overallQuality
     );
-  
+
     // Save and upload both images
     saveAndUploadImage(plainCanvas, annotatedCanvas, batchNumber);
-  
+
     setOpen(false);
   };
 
@@ -300,20 +313,20 @@ const QCStation = () => {
     const scaleY = canvas.height / smallHeight;
 
     predictions
-        .filter(({ confidence }) => confidence > 0.1)
-        .forEach(({ x, y, width, height, class: ripeness, confidence }) => {
-            const color = colorMap[ripeness] || "#FFFFFF";
-            const xScaled = x * scaleX, yScaled = y * scaleY;
-            const widthScaled = width * scaleX, heightScaled = height * scaleY;
+      .filter(({ confidence }) => confidence > 0.1)
+      .forEach(({ x, y, width, height, class: ripeness, confidence }) => {
+        const color = colorMap[ripeness] || "#FFFFFF";
+        const xScaled = x * scaleX, yScaled = y * scaleY;
+        const widthScaled = width * scaleX, heightScaled = height * scaleY;
 
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 8;
-            ctx.strokeRect(xScaled - widthScaled / 2, yScaled - heightScaled / 2, widthScaled, heightScaled);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 8;
+        ctx.strokeRect(xScaled - widthScaled / 2, yScaled - heightScaled / 2, widthScaled, heightScaled);
 
-            ctx.fillStyle = color;
-            ctx.font = "bold 36px Arial";
-            ctx.fillText(`${ripeness} ${(confidence * 100).toFixed(1)}%`, xScaled - widthScaled / 2, yScaled - heightScaled / 2 - 10);
-        });
+        ctx.fillStyle = color;
+        ctx.font = "bold 36px Arial";
+        ctx.fillText(`${ripeness} ${(confidence * 100).toFixed(1)}%`, xScaled - widthScaled / 2, yScaled - heightScaled / 2 - 10);
+      });
   };
 
   const drawRipenessCounts = (ctx, canvas, { unripe, semi_ripe, ripe, overripe }) => {
@@ -328,7 +341,7 @@ const QCStation = () => {
 
   const saveAndUploadImage = async (plainCanvas, annotatedCanvas, batchNumber) => {
     const cleanBatchNumber = batchNumber.trim().replace(/\s+/g, "");
-  
+
     // Process plain image
     const plainImageSrc = plainCanvas.toDataURL("image/jpeg", 1);
     const plainByteString = atob(plainImageSrc.split(",")[1]);
@@ -338,7 +351,7 @@ const QCStation = () => {
     for (let i = 0; i < plainByteString.length; i++) plainIa[i] = plainByteString.charCodeAt(i);
     const plainFile = new Blob([plainAb], { type: plainMimeString });
     const plainJpegFile = new File([plainFile], `image_${cleanBatchNumber}_plain.jpeg`, { type: "image/jpeg" });
-  
+
     // Process annotated image
     const annotatedImageSrc = annotatedCanvas.toDataURL("image/jpeg", 1);
     const annotatedByteString = atob(annotatedImageSrc.split(",")[1]);
@@ -348,7 +361,7 @@ const QCStation = () => {
     for (let i = 0; i < annotatedByteString.length; i++) annotatedIa[i] = annotatedByteString.charCodeAt(i);
     const annotatedFile = new Blob([annotatedAb], { type: annotatedMimeString });
     const annotatedJpegFile = new File([annotatedFile], `image_${cleanBatchNumber}_annotated.jpeg`, { type: "image/jpeg" });
-  
+
     // Upload both images
     await Promise.all([
       uploadImage(plainJpegFile, cleanBatchNumber),
@@ -358,65 +371,27 @@ const QCStation = () => {
 
   const uploadImage = async (file, batchNumber) => {
     try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("batchNumber", batchNumber);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("batchNumber", batchNumber);
 
-        const response = await fetch("https://processing-facility-backend.onrender.com/api/upload-image", {
-            method: "POST",
-            body: formData,
-        });
-
-        if (!response.ok) throw new Error("Failed to upload image");
-
-        const data = await response.json();
-        console.log("Image uploaded successfully:", data);
+      const response = await axios.post(`${API_BASE_URL}/api/upload-image`, formData);
+      console.log("Image uploaded successfully:", response.data);
     } catch (error) {
-        console.error("Error uploading image:", error);
+      console.error("Error uploading image:", error);
     }
   };
-
-  useEffect(() => {
-    const fetchReceivingData = async () => {
-      try {
-        const response = await fetch('https://processing-facility-backend.onrender.com/api/receiving');
-        if (!response.ok) throw new Error('Failed to fetch receiving data');
-  
-        const data = await response.json();
-        if (data && Array.isArray(data.allRows)) {
-          const qcBatchNumbers = new Set(qcData.map(qc => qc.batchNumber));
-          
-          const filteredReceivingData = data.allRows
-            .filter(receiving => !qcBatchNumbers.has(receiving.batchNumber))
-            .map(receiving => ({
-              ...receiving,
-              slaDays: calculateSLA(receiving.receivingDate, receiving.lastProcessingDate),
-            }));
-  
-          setReceivingData(filteredReceivingData);
-        } else {
-          console.error('Unexpected data format:', data);
-          setReceivingData([]);
-        }
-      } catch (error) {
-        console.error('Error fetching receiving data:', error);
-        setReceivingData([]);
-      }
-    };
-
-    fetchReceivingData();
-  }, [qcData]);
 
   const calculateSLA = (receivingDate, lastProcessingDate) => {
     const received = new Date(receivingDate);
     let endDate;
-  
+
     if (lastProcessingDate && lastProcessingDate !== 'N/A') {
       endDate = new Date(lastProcessingDate);
     } else {
       endDate = new Date();
     }
-  
+
     const diffTime = Math.abs(endDate - received);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -424,9 +399,8 @@ const QCStation = () => {
 
   const handleBatchNumberSearch = async () => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/receiving/${batchNumber}`);
-      if (!response.ok) throw new Error('Failed to fetch receiving data');
-      const data = await response.json();
+      const response = await axios.get(`${API_BASE_URL}/api/receiving/${batchNumber}`);
+      const data = response.data;
 
       if (Array.isArray(data) && data.length > 0) {
         const batchData = data[0];
@@ -489,13 +463,7 @@ const QCStation = () => {
     };
 
     try {
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/qc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(qcDataPayload),
-      });
-      if (!response.ok) throw new Error('Failed to submit QC data');
-
+      await axios.post(`${API_BASE_URL}/api/qc`, qcDataPayload);
       setSnackbarMessage(`QC data for batch ${batchNumber} submitted successfully!`);
       setSnackbarSeverity('success');
 
@@ -516,10 +484,7 @@ const QCStation = () => {
       setPaymentMethod('');
       setRoboflowResults({ unripe: null, semi_ripe: null, ripe: null, overripe: null });
 
-      const refreshQCData = await fetch('https://processing-facility-backend.onrender.com/api/qc');
-      const refreshData = await refreshQCData.json();
-      setQcData(refreshData.distinctRows || []);
-
+      await fetchData(); // Refresh data after submission
     } catch (error) {
       console.error('Error submitting QC data:', error);
       setSnackbarMessage('Failed to submit QC data. Please try again.');
@@ -531,23 +496,23 @@ const QCStation = () => {
 
   const handleExportToPDF = (row) => {
     const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [241.3, 279.4]
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [241.3, 279.4]
     });
 
     const addText = (text, x, y, options = {}) => {
-        doc.setFont('courier');
-        doc.setFontSize(10);
+      doc.setFont('courier');
+      doc.setFontSize(10);
 
-        if (options.bold) {
-            doc.setFont('courier', 'bold');
-        }
-        if (options.align) {
-            doc.text(text, x, y, { align: options.align });
-        } else {
-            doc.text(text, x, y);
-        }
+      if (options.bold) {
+        doc.setFont('courier', 'bold');
+      }
+      if (options.align) {
+        doc.text(text, x, y, { align: options.align });
+      } else {
+        doc.text(text, x, y);
+      }
     };
 
     addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 10, { align: 'center', bold: true });
@@ -582,7 +547,7 @@ const QCStation = () => {
     doc.rect(recNotesX, recNotesY, recNotesWidth, recNotesHeight);
     const recNotesLines = doc.splitTextToSize(row.receivingNotes || '', recNotesWidth - 5);
     recNotesLines.forEach((line, index) => {
-        addText(line, recNotesX + 2, recNotesY + 4 + (index * 6));
+      addText(line, recNotesX + 2, recNotesY + 4 + (index * 6));
     });
 
     yOffset += recNotesHeight + 6;
@@ -617,7 +582,7 @@ const QCStation = () => {
     doc.rect(qcNotesX, qcNotesY, qcNotesWidth, qcNotesHeight);
     const qcNotesLines = doc.splitTextToSize(row.qcNotes || '', qcNotesWidth - 5);
     qcNotesLines.forEach((line, index) => {
-        addText(line, qcNotesX + 2, qcNotesY + 4 + (index * 6));
+      addText(line, qcNotesX + 2, qcNotesY + 4 + (index * 6));
     });
 
     qcOffset += qcNotesHeight + 6;
@@ -679,43 +644,42 @@ const QCStation = () => {
     const printWindow = window.open('', '_blank');
 
     if (printWindow) {
-        printWindow.document.write(`<iframe src="${pdfData}" width="100%" height="100%" style="border: none;"></iframe>`);
-        printWindow.document.close();
-        printWindow.onload = () => {
-            setTimeout(() => { printWindow.focus(); }, 100);
-        }
+      printWindow.document.write(`<iframe src="${pdfData}" width="100%" height="100%" style="border: none;"></iframe>`);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        setTimeout(() => { printWindow.focus(); }, 100);
+      }
     } else {
-        alert('Please allow popups for this site to enable automatic printing.');
-        doc.output('dataurlnewwindow');
+      alert('Please allow popups for this site to enable automatic printing.');
+      doc.output('dataurlnewwindow');
     }
-};
+  };
 
   const qcColumns = [
     {
-			field: "export",
-			headerName: "Export Data",
-			width: 130,
-			renderCell: (params) => (
-					<button
-					onClick={() => handleExportToPDF(params.row)}
-					style={{
-							padding: "6px 12px",
-							backgroundColor: "#1976d2",
-							color: "#fff",
-							border: "none",
-							borderRadius: "4px",
-							cursor: "pointer",
-					}}
-					>
-					Export PDF
-					</button>
-			),
-			},
+      field: "export",
+      headerName: "Export Data",
+      width: 130,
+      renderCell: (params) => (
+        <button
+          onClick={() => handleExportToPDF(params.row)}
+          style={{
+            padding: "6px 12px",
+            backgroundColor: "#1976d2",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          Export PDF
+        </button>
+      ),
+    },
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'receivingDate', headerName: 'Receiving Date', width: 150 },
     { field: 'qcDate', headerName: 'QC Date', width: 110 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 140 },
-    
     {
       field: 'price',
       headerName: 'Cherry Price (/kg)',
@@ -744,7 +708,6 @@ const QCStation = () => {
         }).format(value);
       }
     },
-    
     { field: 'type', headerName: 'Type', width: 110 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
     { field: 'color', headerName: 'Color', width: 140 },
@@ -781,21 +744,17 @@ const QCStation = () => {
     { field: 'ripePercentage', headerName: 'Ripe (%)', width: 180 },
     { field: 'overripePercentage', headerName: 'Overripe (%)', width: 180 },
     { field: 'overallQuality', headerName: 'Overall Quality', width: 140 },
-
     { field: 'paymentMethod', headerName: 'Payment Method', width: 140 },
     { field: 'bankAccount', headerName: 'Bank Account', width: 140 },
     { field: 'bankName', headerName: 'Bank Name', width: 140 },
-
     { field: 'qcNotes', headerName: 'QC Notes', width: 180 },
     { field: 'receivingNotes', headerName: 'Receiving Notes', width: 180 },
-    
     { field: 'cherryGroup', headerName: 'Cherry Quality Group', width: 140 },
     { field: 'priceGroup', headerName: 'Cherry Price Group', width: 140 },
     { field: 'minPrice', headerName: 'Minimum Price', width: 140 },
     { field: 'maxPrice', headerName: 'Maximum Price', width: 140 },
     { field: 'validAt', headerName: 'Price Valid At', width: 140 },
     { field: 'validUntil', headerName: 'Price Valid Until', width: 140 },
-
     { field: 'receivingUpdatedBy', headerName: 'Receiving Staff', width: 140 },
     { field: 'qcCreatedBy', headerName: 'QC Staff', width: 140 },
   ];
@@ -841,7 +800,6 @@ const QCStation = () => {
                     Get RFID Tag
                   </Button>
                 </Grid>
-                
                 <Grid item xs>
                   <TextField
                     label="Batch Number Lookup"
@@ -853,7 +811,6 @@ const QCStation = () => {
                     margin="normal"
                   />
                 </Grid>
-
                 <Grid item>
                   <Button
                     variant="contained"
@@ -875,7 +832,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
-                        sx={{marginTop: "16px"}}
+                        sx={{ marginTop: "16px" }}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -885,7 +842,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
-                        sx={{marginTop: "16px"}}
+                        sx={{ marginTop: "16px" }}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -895,7 +852,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
-                        sx={{marginTop: "16px"}}
+                        sx={{ marginTop: "16px" }}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -905,7 +862,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
-                        sx={{marginTop: "16px"}}
+                        sx={{ marginTop: "16px" }}
                       />
                     </Grid>
                     <Grid item xs={6}>
@@ -915,7 +872,7 @@ const QCStation = () => {
                         InputProps={{ readOnly: true }}
                         fullWidth
                         margin="normal"
-                        sx={{marginTop: "16px"}}
+                        sx={{ marginTop: "16px" }}
                       />
                     </Grid>
                   </Grid>
@@ -923,7 +880,7 @@ const QCStation = () => {
                 </div>
               )}
 
-              <FormControl fullWidth required sx={{marginTop: "16px"}}>
+              <FormControl fullWidth required sx={{ marginTop: "16px" }}>
                 <InputLabel id="ripeness-label">Ripeness</InputLabel>
                 <Select
                   labelId="ripeness-label"
@@ -941,7 +898,7 @@ const QCStation = () => {
                 </Select>
               </FormControl>
 
-              <FormControl fullWidth required sx={{marginTop: "16px"}}>
+              <FormControl fullWidth required sx={{ marginTop: "16px" }}>
                 <InputLabel id="color-label">Color</InputLabel>
                 <Select
                   labelId="color-label"
@@ -960,8 +917,8 @@ const QCStation = () => {
                   <MenuItem value="Black">Black</MenuItem>
                 </Select>
               </FormControl>
-              
-              <FormControl fullWidth required sx={{marginTop: "16px"}}>
+
+              <FormControl fullWidth required sx={{ marginTop: "16px" }}>
                 <InputLabel id="fm-label">Foreign Matter</InputLabel>
                 <Select
                   labelId="fm-label"
@@ -977,7 +934,7 @@ const QCStation = () => {
                 </Select>
               </FormControl>
 
-              <FormControl fullWidth required sx={{marginTop: "16px"}}>
+              <FormControl fullWidth required sx={{ marginTop: "16px" }}>
                 <InputLabel id="oq-label">Overall Quality</InputLabel>
                 <Select
                   labelId="oq-label"
@@ -1007,7 +964,7 @@ const QCStation = () => {
                 />
               )}
 
-              <FormControl fullWidth required sx={{marginTop: "16px"}}>
+              <FormControl fullWidth required sx={{ marginTop: "16px" }}>
                 <InputLabel id="pm-label">Payment Method</InputLabel>
                 <Select
                   labelId="pm-label"
@@ -1024,7 +981,7 @@ const QCStation = () => {
                   <MenuItem value="Check">Contract</MenuItem>
                 </Select>
               </FormControl>
-              
+
               <TextField
                 label="QC Notes"
                 multiline
@@ -1042,9 +999,7 @@ const QCStation = () => {
                   value={roboflowResults.unripe}
                   fullWidth
                   margin="normal"
-                  InputProps={{
-                    readOnly: true,
-                  }}
+                  InputProps={{ readOnly: true }}
                 />
               )}
 
@@ -1054,9 +1009,7 @@ const QCStation = () => {
                   value={roboflowResults.semi_ripe}
                   fullWidth
                   margin="normal"
-                  InputProps={{
-                    readOnly: true,
-                  }}
+                  InputProps={{ readOnly: true }}
                 />
               )}
 
@@ -1066,9 +1019,7 @@ const QCStation = () => {
                   value={roboflowResults.ripe}
                   fullWidth
                   margin="normal"
-                  InputProps={{
-                    readOnly: true,
-                  }}
+                  InputProps={{ readOnly: true }}
                 />
               )}
 
@@ -1078,59 +1029,28 @@ const QCStation = () => {
                   value={roboflowResults.overripe}
                   fullWidth
                   margin="normal"
-                  InputProps={{
-                    readOnly: true,
-                  }}
+                  InputProps={{ readOnly: true }}
                 />
               )}
 
-              <Button 
-                variant="contained" 
-                color="secondary" 
-                onClick={() => setOpen(true)} 
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setOpen(true)}
                 style={{ marginTop: '16px', marginRight: '16px' }}
                 disabled={!batchNumber}
-                >
+              >
                 Capture Sample Image
               </Button>
-              <Button 
-                type="submit" 
-                variant="contained" 
-                color="primary" 
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
                 style={{ marginTop: '16px' }}
                 disabled={!batchNumber}
-                >
+              >
                 Submit QC Data
               </Button>
-
-              <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xl" fullWidth>
-                <DialogTitle>Capture Sample Image</DialogTitle>
-                <DialogContent>
-                  <Card variant="outlined" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
-                    <CardContent>
-                      <Webcam
-                        audio={false}
-                        ref={webcamRef}
-                        videoConstraints={{
-                          width: 1920,
-                          height: 1080,
-                          facingMode: "user",
-                        }}
-                        screenshotFormat="image/jpeg"
-                        onUserMediaError={error => console.error('Webcam error:', error)}
-                      />
-                    </CardContent>
-                  </Card>
-                </DialogContent>
-                <DialogActions sx={{ justifyContent: 'center' }}>
-                  <Button onClick={handleCapture} color="primary" variant="contained">
-                    Capture
-                  </Button>
-                  <Button onClick={() => setOpen(false)} color="secondary" variant="contained">
-                    Cancel
-                  </Button>
-                </DialogActions>
-              </Dialog>
             </form>
           </CardContent>
         </Card>
@@ -1142,6 +1062,14 @@ const QCStation = () => {
             <Typography variant="h5" gutterBottom>
               Pending QC
             </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={fetchData}
+              style={{ marginBottom: '16px' }}
+            >
+              Refresh Data
+            </Button>
             <div style={{ height: 800, width: '100%' }}>
               <DataGrid
                 rows={receivingData.map((row, index) => ({
@@ -1162,7 +1090,6 @@ const QCStation = () => {
             </div>
           </CardContent>
         </Card>
-
         <Divider style={{ margin: '16px 0' }} />
       </Grid>
 
@@ -1172,6 +1099,14 @@ const QCStation = () => {
             <Typography variant="h5" gutterBottom>
               Completed QC
             </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={fetchData}
+              style={{ marginBottom: '16px' }}
+            >
+              Refresh Data
+            </Button>
             <div style={{ height: 1000, width: '100%' }}>
               <DataGrid
                 rows={qcData.map((row, index) => ({
@@ -1203,6 +1138,35 @@ const QCStation = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
+
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xl" fullWidth>
+        <DialogTitle>Capture Sample Image</DialogTitle>
+        <DialogContent>
+          <Card variant="outlined" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
+            <CardContent>
+              <Webcam
+                audio={false}
+                ref={webcamRef}
+                videoConstraints={{
+                  width: 1920,
+                  height: 1080,
+                  facingMode: "user",
+                }}
+                screenshotFormat="image/jpeg"
+                onUserMediaError={error => console.error('Webcam error:', error)}
+              />
+            </CardContent>
+          </Card>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center' }}>
+          <Button onClick={handleCapture} color="primary" variant="contained">
+            Capture
+          </Button>
+          <Button onClick={() => setOpen(false)} color="secondary" variant="contained">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   );
 };
