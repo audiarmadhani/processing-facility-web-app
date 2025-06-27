@@ -824,7 +824,7 @@ const DryingStation = () => {
             See Details
           </Button>
         </Typography>
-        <div style={{ height: '400px', width: '100%', overflow: 'auto' }}>
+        <div style={{ height: '600px', width: '100%', overflow: 'auto' }}>
           {areaData.length === 0 ? (
             <Typography variant="body1" align="center" color="textSecondary" sx={{ pt: '180px' }}>
               No batches in {area}
@@ -838,7 +838,7 @@ const DryingStation = () => {
               getRowId={row => row.batchNumber}
               slots={{ toolbar: GridToolbar }}
               sx={{ 
-                maxHeight: 400, 
+                maxHeight: 600, 
                 border: '1px solid rgba(0,0,0,0.12)', 
                 '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
               }}
