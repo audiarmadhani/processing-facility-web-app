@@ -66,6 +66,7 @@ const NAVIGATION: Navigation = [
 
       { segment: "preprocessingstation", title: "Processing Station", icon: <FactoryIcon /> },
       { segment: "wetmillstation", title: "Wet Mill Station", icon: <FactoryIcon /> },
+      { segment: "fermentationstation", title: "Fermentation Station", icon: <FactoryIcon /> },
       { segment: "dryingstation", title: "Drying Station", icon: <FactoryIcon /> },
       { segment: "drymillstation", title: "Dry Mill Station", icon: <FactoryIcon /> },
       // { segment: "postprocessingstation", title: "Post-Processing Station", icon: <LocalShippingOutlinedIcon /> },
