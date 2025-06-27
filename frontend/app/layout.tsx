@@ -26,6 +26,9 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
+import PropaneTankIcon from '@mui/icons-material/PropaneTank';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
+import RouteIcon from '@mui/icons-material/Route';
 
 export const metadata = {
   title: "BTM HEQA Platform",
@@ -64,10 +67,10 @@ const NAVIGATION: Navigation = [
 
       { kind: "divider" },
 
-      { segment: "preprocessingstation", title: "Processing Station", icon: <FactoryIcon /> },
+      { segment: "preprocessingstation", title: "Processing Station", icon: <RouteIcon /> },
       { segment: "wetmillstation", title: "Wet Mill Station", icon: <FactoryIcon /> },
-      { segment: "fermentationstation", title: "Fermentation Station", icon: <FactoryIcon /> },
-      { segment: "dryingstation", title: "Drying Station", icon: <FactoryIcon /> },
+      { segment: "fermentationstation", title: "Fermentation Station", icon: <PropaneTankIcon /> },
+      { segment: "dryingstation", title: "Drying Station", icon: <ThermostatIcon /> },
       { segment: "drymillstation", title: "Dry Mill Station", icon: <FactoryIcon /> },
       // { segment: "postprocessingstation", title: "Post-Processing Station", icon: <LocalShippingOutlinedIcon /> },
 
@@ -85,7 +88,7 @@ const NAVIGATION: Navigation = [
     icon: <ShoppingCartIcon />,
     children: [
       { segment: "dashboard", title: "OMS Dashboard", icon: <StorefrontIcon /> },
-      { segment: "ordercreation", title: "New Order", icon: <AddShoppingCartIcon /> },
+      { segment: "ordercreation", title: "New Order", icon: <LocalShippingOutlinedIcon /> },
     ],
   },
 
