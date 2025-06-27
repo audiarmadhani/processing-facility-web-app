@@ -711,7 +711,7 @@ const QCStation = () => {
 					</button>
 			),
 			},
-    { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'receivingDate', headerName: 'Receiving Date', width: 150 },
     { field: 'qcDate', headerName: 'QC Date', width: 110 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 140 },
@@ -801,7 +801,7 @@ const QCStation = () => {
   ];
 
   const pendingQcColumns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
     { field: 'receivingDateTrunc', headerName: 'Receiving Date', width: 120 },
     { field: 'weight', headerName: 'Weight (kg)', width: 150 },
