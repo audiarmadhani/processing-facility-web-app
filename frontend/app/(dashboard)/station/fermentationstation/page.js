@@ -35,6 +35,7 @@ const FermentationStation = () => {
   const [tank, setTank] = useState('');
   const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
   const [fermentationData, setFermentationData] = useState([]);
+  const [availableBatches, setAvailableBatches] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -49,6 +50,20 @@ const FermentationStation = () => {
         width: 250,
       },
     },
+  };
+
+  // Fetch available batches for dropdown
+  const fetchAvailableBatches = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-batches`);
+      setAvailableBatches(response.data || []);
+    } catch (error) {
+      console.error('Error fetching available batches:', error);
+      setSnackbarMessage('Failed to fetch available batches.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      setAvailableBatches([]);
+    }
   };
 
   // Fetch fermentation data
@@ -68,33 +83,11 @@ const FermentationStation = () => {
   // Fetch data on component mount
   useEffect(() => {
     fetchFermentationData();
+    fetchAvailableBatches();
   }, []);
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
-  };
-
-  const handleBatchNumberSearch = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/receiving/${batchNumber}`);
-      const data = response.data;
-
-      if (Array.isArray(data) && data.length > 0) {
-        setSnackbarMessage(`Batch ${batchNumber} found. Please select a tank and submit.`);
-        setSnackbarSeverity('success');
-      } else {
-        setSnackbarMessage('No valid data found for this batch number.');
-        setSnackbarSeverity('warning');
-        setBatchNumber('');
-      }
-    } catch (error) {
-      console.error('Error fetching batch data:', error);
-      setSnackbarMessage(`Error: ${error.message}`);
-      setSnackbarSeverity('error');
-      setBatchNumber('');
-    } finally {
-      setOpenSnackbar(true);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -129,9 +122,10 @@ const FermentationStation = () => {
       setTank('');
       setStartDate(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
       await fetchFermentationData();
+      await fetchAvailableBatches(); // Refresh dropdown
     } catch (error) {
       console.error('Error submitting fermentation data:', error);
-      setSnackbarMessage('Failed to start fermentation. Please try again.');
+      setSnackbarMessage(error.response?.data?.error || 'Failed to start fermentation. Please try again.');
       setSnackbarSeverity('error');
     } finally {
       setOpenSnackbar(true);
@@ -144,6 +138,7 @@ const FermentationStation = () => {
       setSnackbarMessage(`Fermentation finished for batch ${batchNumber}.`);
       setSnackbarSeverity('success');
       await fetchFermentationData();
+      await fetchAvailableBatches(); // Refresh dropdown
     } catch (error) {
       console.error('Error finishing fermentation:', error);
       setSnackbarMessage('Failed to finish fermentation. Please try again.');
@@ -229,29 +224,23 @@ const FermentationStation = () => {
               Fermentation Station Form
             </Typography>
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs>
-                  <TextField
-                    label="Batch Number"
-                    value={batchNumber}
-                    onChange={(e) => setBatchNumber(e.target.value)}
-                    placeholder="Enter batch number"
-                    fullWidth
-                    required
-                    margin="normal"
-                  />
-                </Grid>
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleBatchNumberSearch}
-                    style={{ marginTop: '24px' }}
-                  >
-                    Search
-                  </Button>
-                </Grid>
-              </Grid>
+              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                <InputLabel id="batch-number-label">Batch Number</InputLabel>
+                <Select
+                  labelId="batch-number-label"
+                  id="batch-number"
+                  value={batchNumber}
+                  onChange={(e) => setBatchNumber(e.target.value)}
+                  input={<OutlinedInput label="Batch Number" />}
+                  MenuProps={MenuProps}
+                >
+                  {availableBatches.map(batch => (
+                    <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                      {batch.batchNumber} (Lot: {batch.lotNumber}, Farmer: {batch.farmerName}, {batch.weight}kg)
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                 <InputLabel id="tank-label">Tank</InputLabel>
                 <Select
@@ -263,7 +252,7 @@ const FermentationStation = () => {
                   MenuProps={MenuProps}
                 >
                   <MenuItem value="Biomaster">Biomaster</MenuItem>
-                  <MenuItem value="Carrybrew Tank">Carrybrew Tank</MenuItem>
+                  <MenuItem value="Carrybrew">Carrybrew</MenuItem>
                 </Select>
               </FormControl>
               <TextField
