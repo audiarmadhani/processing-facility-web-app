@@ -826,17 +826,10 @@ const PreprocessingStation = () => {
     { 
       field: 'batchNumber', 
       headerName: 'Batch Number', 
-      width: 160, 
+      width: 180, 
       sortable: true,
       groupable: true,
       aggregable: false,
-    },
-    {
-      field: 'mergedFrom',
-      headerName: 'Merged From',
-      width: 200,
-      sortable: true,
-      renderCell: ({ value }) => (value && value.length > 0 ? value.join(', ') : 'N/A'),
     },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
     { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
@@ -851,6 +844,13 @@ const PreprocessingStation = () => {
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Processing Date', width: 180, sortable: true },
     { field: 'preprocessingNotes', headerName: 'Notes', weight: 200, sortable: true },
+    {
+      field: 'mergedFrom',
+      headerName: 'Merged From',
+      width: 200,
+      sortable: true,
+      renderCell: ({ value }) => (value && value.length > 0 ? value.join(', ') : 'N/A'),
+    },
     {
       field: 'finished',
       headerName: 'Finished',

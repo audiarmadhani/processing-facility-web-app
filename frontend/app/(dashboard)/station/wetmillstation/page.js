@@ -494,7 +494,7 @@ const WetmillStation = () => {
   const totalWeights = getTotalWeights();
 
   const columns = useMemo(() => [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 160 },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     {
       field: 'status',
       headerName: 'Status',
