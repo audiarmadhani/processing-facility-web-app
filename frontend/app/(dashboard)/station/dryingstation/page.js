@@ -833,7 +833,7 @@ const DryingStation = () => {
             <DataGrid
               rows={areaData}
               columns={columns}
-              pageSizeOptions={[5, 10, 20]}
+              pageSizeOptions={[20, 50, 100]}
               disableRowSelectionOnClick
               getRowId={row => row.batchNumber}
               slots={{ toolbar: GridToolbar }}
@@ -845,7 +845,7 @@ const DryingStation = () => {
               rowHeight={35}
               pagination
               initialState={{
-                pagination: { paginationModel: { pageSize: 10 } }
+                pagination: { paginationModel: { pageSize: 50 } }
               }}
             />
           )}
