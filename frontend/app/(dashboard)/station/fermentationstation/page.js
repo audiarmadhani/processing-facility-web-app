@@ -10,7 +10,6 @@ import {
   Snackbar,
   Card,
   CardContent,
-  Divider,
   FormControl,
   InputLabel,
   Select,
@@ -19,6 +18,7 @@ import {
   Tabs,
   Tab,
   Box,
+  Autocomplete,
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
@@ -33,13 +33,19 @@ const FermentationStation = () => {
   const { data: session, status } = useSession();
   const [batchNumber, setBatchNumber] = useState('');
   const [tank, setTank] = useState('');
+  const [blueBarrelCode, setBlueBarrelCode] = useState('');
   const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
   const [fermentationData, setFermentationData] = useState([]);
   const [availableBatches, setAvailableBatches] = useState([]);
+  const [availableTanks, setAvailableTanks] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [tabValue, setTabValue] = useState('Biomaster');
+
+  const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
+    `BB-HQ-${String(i + 1).padStart(4, '0')}`
+  );
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -66,6 +72,20 @@ const FermentationStation = () => {
     }
   };
 
+  // Fetch available tanks
+  const fetchAvailableTanks = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-tanks`);
+      setAvailableTanks(response.data || []);
+    } catch (error) {
+      console.error('Error fetching available tanks:', error);
+      setSnackbarMessage('Failed to fetch available tanks.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      setAvailableTanks([]);
+    }
+  };
+
   // Fetch fermentation data
   const fetchFermentationData = async () => {
     try {
@@ -84,6 +104,7 @@ const FermentationStation = () => {
   useEffect(() => {
     fetchFermentationData();
     fetchAvailableBatches();
+    fetchAvailableTanks();
   }, []);
 
   const handleCloseSnackbar = () => {
@@ -100,8 +121,8 @@ const FermentationStation = () => {
       return;
     }
 
-    if (!batchNumber || !tank || !startDate) {
-      setSnackbarMessage('All fields are required.');
+    if (!batchNumber || !tank || (tank === 'Blue Barrel' && !blueBarrelCode)) {
+      setSnackbarMessage('All required fields must be filled.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -109,20 +130,22 @@ const FermentationStation = () => {
 
     const payload = {
       batchNumber: batchNumber.trim(),
-      tank,
+      tank: tank === 'Blue Barrel' ? blueBarrelCode : tank,
       startDate: dayjs(startDate).toISOString(),
       createdBy: session.user.name,
     };
 
     try {
       await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
-      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${tank}.`);
+      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${payload.tank}.`);
       setSnackbarSeverity('success');
       setBatchNumber('');
       setTank('');
+      setBlueBarrelCode('');
       setStartDate(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
       await fetchFermentationData();
-      await fetchAvailableBatches(); // Refresh dropdown
+      await fetchAvailableBatches();
+      await fetchAvailableTanks();
     } catch (error) {
       console.error('Error submitting fermentation data:', error);
       setSnackbarMessage(error.response?.data?.error || 'Failed to start fermentation. Please try again.');
@@ -138,7 +161,8 @@ const FermentationStation = () => {
       setSnackbarMessage(`Fermentation finished for batch ${batchNumber}.`);
       setSnackbarSeverity('success');
       await fetchFermentationData();
-      await fetchAvailableBatches(); // Refresh dropdown
+      await fetchAvailableBatches();
+      await fetchAvailableTanks();
     } catch (error) {
       console.error('Error finishing fermentation:', error);
       setSnackbarMessage('Failed to finish fermentation. Please try again.');
@@ -247,14 +271,43 @@ const FermentationStation = () => {
                   labelId="tank-label"
                   id="tank"
                   value={tank}
-                  onChange={(e) => setTank(e.target.value)}
+                  onChange={(e) => {
+                    setTank(e.target.value);
+                    if (e.target.value !== 'Blue Barrel') setBlueBarrelCode('');
+                  }}
                   input={<OutlinedInput label="Tank" />}
                   MenuProps={MenuProps}
                 >
-                  <MenuItem value="Biomaster">Biomaster</MenuItem>
-                  <MenuItem value="Carrybrew">Carrybrew</MenuItem>
+                  <MenuItem value="Biomaster" disabled={!availableTanks.includes('Biomaster')}>
+                    Biomaster {availableTanks.includes('Biomaster') ? '' : '(In Use)'}
+                  </MenuItem>
+                  <MenuItem value="Carrybrew" disabled={!availableTanks.includes('Carrybrew')}>
+                    Carrybrew {availableTanks.includes('Carrybrew') ? '' : '(In Use)'}
+                  </MenuItem>
+                  <MenuItem value="Blue Barrel" disabled={!availableTanks.some(tank => tank.startsWith('BB-HQ-'))}>
+                    Blue Barrel {availableTanks.some(tank => tank.startsWith('BB-HQ-')) ? '' : '(All In Use)'}
+                  </MenuItem>
                 </Select>
               </FormControl>
+              {tank === 'Blue Barrel' && (
+                <Autocomplete
+                  options={blueBarrelCodes.filter(code => availableTanks.includes(code))}
+                  value={blueBarrelCode}
+                  onChange={(e, newValue) => setBlueBarrelCode(newValue || '')}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Blue Barrel Code"
+                      required
+                      margin="normal"
+                      error={!blueBarrelCode && tank === 'Blue Barrel'}
+                      helperText={!blueBarrelCode && tank === 'Blue Barrel' ? 'Please select a Blue Barrel code' : ''}
+                    />
+                  )}
+                  sx={{ marginTop: '16px' }}
+                  noOptionsText="No available Blue Barrels"
+                />
+              )}
               <TextField
                 label="Start Date and Time"
                 type="datetime-local"
@@ -270,7 +323,7 @@ const FermentationStation = () => {
                 variant="contained"
                 color="primary"
                 style={{ marginTop: '16px' }}
-                disabled={!batchNumber || !tank}
+                disabled={!batchNumber || !tank || (tank === 'Blue Barrel' && !blueBarrelCode)}
               >
                 Start Fermentation
               </Button>
@@ -299,12 +352,17 @@ const FermentationStation = () => {
               sx={{ marginBottom: '16px' }}
             >
               <Tab label="Biomaster" value="Biomaster" />
-              <Tab label="Carrybrew" value="Carrybrew Tank" />
+              <Tab label="Carrybrew" value="Carrybrew" />
+              <Tab label="Blue Barrel" value="Blue Barrel" />
             </Tabs>
             <div style={{ height: 800, width: '100%' }}>
               <DataGrid
                 rows={fermentationData
-                  .filter(row => row.tank === tabValue)
+                  .filter(row => 
+                    tabValue === 'Blue Barrel' 
+                      ? row.tank.startsWith('BB-HQ-') 
+                      : row.tank === tabValue
+                  )
                   .map((row, index) => ({ id: index + 1, ...row }))}
                 columns={fermentationColumns}
                 pageSize={5}
