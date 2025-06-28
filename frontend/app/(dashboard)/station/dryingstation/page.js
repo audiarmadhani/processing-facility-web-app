@@ -323,8 +323,8 @@ const DryingStation = () => {
         )
         .map(d => ({
           ...d,
-          temperature: parseFloat(d.temperature) || 0,
-          humidity: parseFloat(d.humidity) || 0,
+          temperature: d.temperature || '',
+          humidity: d.humidity || '',
         }));
       setHistoricalEnvData(parsedData);
     } catch (error) {
@@ -830,22 +830,16 @@ const DryingStation = () => {
       field: 'recorded_at', 
       headerName: 'Date (WITA)', 
       width: 180,
-      valueGetter: ({ value }) => value || 'N/A',
-      valueFormatter: ({ value }) => formatDateForGrid(value)
     },
     { 
       field: 'temperature', 
       headerName: 'Temperature (°C)', 
       width: 150,
-      type: 'number',
-      valueFormatter: ({ value }) => (typeof value === 'number' ? value.toFixed(2) : 'N/A')
     },
     { 
       field: 'humidity', 
       headerName: 'Humidity (%)', 
       width: 150,
-      type: 'number',
-      valueFormatter: ({ value }) => (typeof value === 'number' ? value.toFixed(2) : 'N/A')
     }
   ], []);
 
@@ -1331,14 +1325,11 @@ const DryingStation = () => {
                 <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
                   Historical Environmental Data
                 </Typography>
-                <div style={{ height: 400, width: '100%' }}>
+                <div style={{ height: 300, width: '100%' }}>
                   <DataGrid
-                    rows={historicalEnvData.map((row, index) => {
-                      console.log('DataGrid row:', { id: index, ...row }); // Debug log
-                      return { id: index, ...row };
-                    })}
+                    rows={historicalEnvData.map((row, index) => ({ id: index, ...row }))}
                     columns={envColumns}
-                    pageSizeOptions={[10, 25, 50]}
+                    pageSizeOptions={[100, 200, 500]}
                     slots={{ toolbar: GridToolbar }}
                     sx={{ 
                       border: '1px solid rgba(0,0,0,0.12)', 
@@ -1347,7 +1338,7 @@ const DryingStation = () => {
                     rowHeight={35}
                     pagination
                     initialState={{
-                      pagination: { paginationModel: { pageSize: 25 } },
+                      pagination: { paginationModel: { pageSize: 100 } },
                       sorting: { sortModel: [{ field: 'recorded_at', sort: 'desc' }] }
                     }}
                   />
