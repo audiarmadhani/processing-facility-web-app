@@ -8,7 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, Checkbox
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { Line } from 'react-chartjs-2'; // Added Line import
+import { Line } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -249,7 +249,7 @@ const DryingStation = () => {
         ...prev,
         ...greenhouseResult.reduce((data, { device_id, temperature, humidity }) => ({
           ...data,
-          [device_id]: { temperature: temperature || 0, humidity: humidity || 0 }
+          [device_id]: { temperature: parseFloat(temperature) || 0, humidity: parseFloat(humidity) || 0 }
         }), {})
       }));
     } catch (error) {
@@ -314,14 +314,21 @@ const DryingStation = () => {
       const data = await response.json();
       if (!Array.isArray(data)) {
         console.error('Expected array for historical env data, got:', data);
-        setHistoricalEnvData([]);
         throw new Error('Invalid data format');
       }
-      setHistoricalEnvData(data.filter(d => 
-        d.recorded_at && !isNaN(new Date(d.recorded_at).getTime()) &&
-        typeof d.temperature === 'number' && typeof d.humidity === 'number'
-      ));
+      const parsedData = data
+        .filter(d => 
+          d.recorded_at && !isNaN(new Date(d.recorded_at).getTime()) &&
+          typeof d.temperature !== 'undefined' && typeof d.humidity !== 'undefined'
+        )
+        .map(d => ({
+          ...d,
+          temperature: parseFloat(d.temperature) || 0,
+          humidity: parseFloat(d.humidity) || 0,
+        }));
+      setHistoricalEnvData(parsedData);
     } catch (error) {
+      console.error('Error fetching historical env data:', error);
       setSnackbarMessage(error.message || 'Failed to fetch historical environmental data');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -956,14 +963,14 @@ const DryingStation = () => {
     datasets: [
       {
         label: 'Temperature (°C)',
-        data: historicalEnvData.map(d => d.temperature),
+        data: historicalEnvData.map(d => Number(d.temperature)),
         borderColor: 'rgba(255,99,132,1)',
         fill: false,
         tension: 0.1
       },
       {
         label: 'Humidity (%)',
-        data: historicalEnvData.map(d => d.humidity),
+        data: historicalEnvData.map(d => Number(d.humidity)),
         borderColor: 'rgba(75,192,192,1)',
         fill: false,
         tension: 0.1
@@ -1311,27 +1318,36 @@ const DryingStation = () => {
         <Dialog open={openEnvDialog} onClose={handleCloseEnvDialog} maxWidth="md" fullWidth>
           <DialogTitle>Environmental Data - Device {selectedDevice}</DialogTitle>
           <DialogContent>
-            <Line data={envChartData} options={envChartOptions} />
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Historical Environmental Data
-            </Typography>
-            <div style={{ height: 400, width: '100%' }}>
-              <DataGrid
-                rows={historicalEnvData.map((row, index) => ({ id: index, ...row }))}
-                columns={envColumns}
-                pageSizeOptions={[10, 25, 50]}
-                slots={{ toolbar: GridToolbar }}
-                sx={{ 
-                  border: '1px solid rgba(0,0,0,0.12)', 
-                  '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
-                }}
-                rowHeight={35}
-                pagination
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 25 } }
-                }}
-              />
-            </div>
+            {historicalEnvData.length === 0 ? (
+              <Typography variant="body1" align="center" color="textSecondary" sx={{ mt: 2 }}>
+                No environmental data available
+              </Typography>
+            ) : (
+              <>
+                <Line data={envChartData} options={envChartOptions} />
+                <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+                  Historical Environmental Data
+                </Typography>
+                <div style={{ height: 400, width: '100%' }}>
+                  <DataGrid
+                    rows={historicalEnvData.map((row, index) => ({ id: index, ...row }))}
+                    columns={envColumns}
+                    pageSizeOptions={[10, 25, 50]}
+                    slots={{ toolbar: GridToolbar }}
+                    sx={{ 
+                      border: '1px solid rgba(0,0,0,0.12)', 
+                      '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
+                    }}
+                    rowHeight={35}
+                    pagination
+                    initialState={{
+                      pagination: { paginationModel: { pageSize: 25 } },
+                      sorting: { sortModel: [{ field: 'recorded_at', sort: 'desc' }] }
+                    }}
+                  />
+                </div>
+              </>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseEnvDialog}>Close</Button>
