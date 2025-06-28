@@ -8,7 +8,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, Checkbox
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { Line } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -126,6 +125,20 @@ const DryingStation = () => {
       month: '2-digit',
       day: '2-digit',
     });
+  };
+
+  // Format date for DataGrid in WITA (UTC+8)
+  const formatDateForGrid = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') {
+      return 'N/A';
+    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date detected:', dateString);
+      return 'N/A';
+    }
+    date.setHours(date.getHours() + 8); // Convert to WITA
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
   const fetchAreaData = useCallback(async (area, forceRefresh = false) => {
@@ -298,11 +311,20 @@ const DryingStation = () => {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/greenhouse-historical/${device_id}`);
       if (!response.ok) throw new Error('Failed to fetch historical environmental data');
       const data = await response.json();
-      setHistoricalEnvData(data);
+      if (!Array.isArray(data)) {
+        console.error('Expected array for historical env data, got:', data);
+        setHistoricalEnvData([]);
+        throw new Error('Invalid data format');
+      }
+      setHistoricalEnvData(data.filter(d => 
+        d.recorded_at && !isNaN(new Date(d.recorded_at).getTime()) &&
+        typeof d.temperature === 'number' && typeof d.humidity === 'number'
+      ));
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to fetch historical environmental data');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
+      setHistoricalEnvData([]);
     }
   }, []);
 
@@ -795,6 +817,27 @@ const DryingStation = () => {
     { field: 'quality', headerName: 'Quality', width: 160 }
   ], [handleDetailsClick, handleMoveClick, handleWeightClick]);
 
+  const envColumns = useMemo(() => [
+    { 
+      field: 'recorded_at', 
+      headerName: 'Date (WITA)', 
+      width: 180,
+      valueFormatter: ({ value }) => formatDateForGrid(value)
+    },
+    { 
+      field: 'temperature', 
+      headerName: 'Temperature (°C)', 
+      width: 150,
+      valueFormatter: ({ value }) => parseFloat(value).toFixed(2)
+    },
+    { 
+      field: 'humidity', 
+      headerName: 'Humidity (%)', 
+      width: 150,
+      valueFormatter: ({ value }) => parseFloat(value).toFixed(2)
+    }
+  ], []);
+
   const renderDataGrid = useCallback((area) => {
     const areaData = dryingData[area] || [];
     const deviceId = deviceMapping[area];
@@ -1268,6 +1311,26 @@ const DryingStation = () => {
           <DialogTitle>Environmental Data - Device {selectedDevice}</DialogTitle>
           <DialogContent>
             <Line data={envChartData} options={envChartOptions} />
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+              Historical Environmental Data
+            </Typography>
+            <div style={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={historicalEnvData.map((row, index) => ({ id: index, ...row }))}
+                columns={envColumns}
+                pageSizeOptions={[10, 25, 50]}
+                slots={{ toolbar: GridToolbar }}
+                sx={{ 
+                  border: '1px solid rgba(0,0,0,0.12)', 
+                  '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
+                }}
+                rowHeight={35}
+                pagination
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 25 } }
+                }}
+              />
+            </div>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseEnvDialog}>Close</Button>
