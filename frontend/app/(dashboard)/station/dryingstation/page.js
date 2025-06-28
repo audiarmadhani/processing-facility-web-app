@@ -830,19 +830,22 @@ const DryingStation = () => {
       field: 'recorded_at', 
       headerName: 'Date (WITA)', 
       width: 180,
+      valueGetter: ({ value }) => value || 'N/A',
       valueFormatter: ({ value }) => formatDateForGrid(value)
     },
     { 
       field: 'temperature', 
       headerName: 'Temperature (°C)', 
       width: 150,
-      valueFormatter: ({ value }) => parseFloat(value).toFixed(2)
+      type: 'number',
+      valueFormatter: ({ value }) => (typeof value === 'number' ? value.toFixed(2) : 'N/A')
     },
     { 
       field: 'humidity', 
       headerName: 'Humidity (%)', 
       width: 150,
-      valueFormatter: ({ value }) => parseFloat(value).toFixed(2)
+      type: 'number',
+      valueFormatter: ({ value }) => (typeof value === 'number' ? value.toFixed(2) : 'N/A')
     }
   ], []);
 
@@ -1330,7 +1333,10 @@ const DryingStation = () => {
                 </Typography>
                 <div style={{ height: 400, width: '100%' }}>
                   <DataGrid
-                    rows={historicalEnvData.map((row, index) => ({ id: index, ...row }))}
+                    rows={historicalEnvData.map((row, index) => {
+                      console.log('DataGrid row:', { id: index, ...row }); // Debug log
+                      return { id: index, ...row };
+                    })}
                     columns={envColumns}
                     pageSizeOptions={[10, 25, 50]}
                     slots={{ toolbar: GridToolbar }}
