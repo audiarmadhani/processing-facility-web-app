@@ -66,9 +66,17 @@ const FermentationStation = () => {
   const fetchAvailableBatches = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-batches`);
-      setAvailableBatches(response.data || []);
+      if (!Array.isArray(response.data)) {
+        console.error('fetchAvailableBatches: Expected array, got:', response.data);
+        setAvailableBatches([]);
+        setSnackbarMessage('Invalid batch data received.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return;
+      }
+      setAvailableBatches(response.data);
     } catch (error) {
-      console.error('Error fetching available batches:', error);
+      console.error('Error fetching available batches:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to fetch available batches.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -81,10 +89,19 @@ const FermentationStation = () => {
     setIsLoadingTanks(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-tanks`);
-      setAvailableTanks(response.data || []);
+      if (!Array.isArray(response.data)) {
+        console.error('fetchAvailableTanks: Expected array, got:', response.data);
+        setAvailableTanks([]);
+        setTankError('Invalid tank data received. Please try again.');
+        setSnackbarMessage('Failed to fetch available tanks.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return;
+      }
+      setAvailableTanks(response.data);
       setTankError(null);
     } catch (error) {
-      console.error('Error fetching available tanks:', error);
+      console.error('Error fetching available tanks:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to fetch available tanks.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -99,9 +116,17 @@ const FermentationStation = () => {
   const fetchFermentationData = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation`);
-      setFermentationData(response.data || []);
+      if (!Array.isArray(response.data)) {
+        console.error('fetchFermentationData: Expected array, got:', response.data);
+        setFermentationData([]);
+        setSnackbarMessage('Invalid fermentation data received.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return;
+      }
+      setFermentationData(response.data);
     } catch (error) {
-      console.error('Error fetching fermentation data:', error);
+      console.error('Error fetching fermentation data:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to fetch fermentation data. Please try again.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -166,7 +191,7 @@ const FermentationStation = () => {
       await fetchAvailableBatches();
       await fetchAvailableTanks();
     } catch (error) {
-      console.error('Error submitting fermentation data:', error);
+      console.error('Error submitting fermentation data:', error, 'Response:', error.response);
       setSnackbarMessage(error.response?.data?.error || 'Failed to start fermentation. Please try again.');
       setSnackbarSeverity('error');
     } finally {
@@ -183,7 +208,7 @@ const FermentationStation = () => {
       await fetchAvailableBatches();
       await fetchAvailableTanks();
     } catch (error) {
-      console.error('Error finishing fermentation:', error);
+      console.error('Error finishing fermentation:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to finish fermentation. Please try again.');
       setSnackbarSeverity('error');
     } finally {
