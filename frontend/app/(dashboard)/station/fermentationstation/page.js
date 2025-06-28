@@ -57,7 +57,7 @@ const FermentationStation = () => {
     PaperProps: {
       style: {
         maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-        width: 250,
+        width: 350, // Increased width to accommodate additional info
       },
     },
   };
@@ -306,10 +306,16 @@ const FermentationStation = () => {
                   onChange={(e) => setBatchNumber(e.target.value)}
                   input={<OutlinedInput label="Batch Number" />}
                   MenuProps={MenuProps}
+                  renderValue={(selected) => selected || 'Select a batch'}
                 >
                   {availableBatches.map(batch => (
                     <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                      {batch.batchNumber} (Lot: {batch.lotNumber}, Farmer: {batch.farmerName}, {batch.weight}kg)
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body1">{batch.batchNumber}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Lot: {batch.lotNumber}, Farmer: {batch.farmerName}, {batch.weight}kg
+                        </Typography>
+                      </Box>
                     </MenuItem>
                   ))}
                 </Select>
