@@ -80,6 +80,7 @@ const DryingStation = () => {
   const [newMoisture, setNewMoisture] = useState('');
   const [newMeasurementDate, setNewMeasurementDate] = useState('');
   const [greenhouseData, setGreenhouseData] = useState({});
+  const [areaTotalWeights, setAreaTotalWeights] = useState({});
   const [openEnvDialog, setOpenEnvDialog] = useState(false);
   const [historicalEnvData, setHistoricalEnvData] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
@@ -158,6 +159,7 @@ const DryingStation = () => {
       if (areaBatchNumbers.length === 0) {
         setNoDataAreas(prev => new Set(prev).add(area));
         setDryingData(prev => ({ ...prev, [area]: [] }));
+        setAreaTotalWeights(prev => ({ ...prev, [area]: 0 }));
         return;
       }
   
@@ -241,7 +243,10 @@ const DryingStation = () => {
           return typeA - typeB;
         });
   
+      const totalWeight = ghweightResult.find(item => item.dryingArea === area)?.total_weight || 0;
+  
       setDryingData(prev => ({ ...prev, [area]: areaData }));
+      setAreaTotalWeights(prev => ({ ...prev, [area]: parseFloat(totalWeight).toFixed(2) }));
       setNoDataAreas(prev => {
         const newSet = new Set(prev);
         newSet.delete(area);
@@ -259,6 +264,7 @@ const DryingStation = () => {
       setSnackbarMessage(error.message || `Error fetching data for ${area}`);
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
+      setAreaTotalWeights(prev => ({ ...prev, [area]: 'N/A' }));
     } finally {
       setAreaLoading(prev => ({ ...prev, [area]: false }));
     }
@@ -618,7 +624,7 @@ const DryingStation = () => {
       setOpenMoveDialog(false);
       setNewDryingArea('');
       setSelectedBatch(null);
-      await fetchAreaData(newDryingArea, true);
+      await Promise.all([fetchAreaData(selectedBatch.dryingArea, true), fetchAreaData(newDryingArea, true)]);
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to move batch');
       setSnackbarSeverity('error');
@@ -849,6 +855,7 @@ const DryingStation = () => {
     const areaData = dryingData[area] || [];
     const deviceId = deviceMapping[area];
     const envData = greenhouseData[deviceId] || { temperature: 0, humidity: 0 };
+    const totalWeight = areaTotalWeights[area] || 'N/A';
 
     if (areaLoading[area]) {
       return (
@@ -862,6 +869,9 @@ const DryingStation = () => {
       <>
         <Typography variant="h6" gutterBottom>
           {area}
+        </Typography>
+        <Typography variant="body2" gutterBottom>
+          Total Weight: {totalWeight} kg
         </Typography>
         <Typography variant="body2" gutterBottom>
           Temp: {envData.temperature}°C | Humidity: {envData.humidity}%
@@ -902,7 +912,7 @@ const DryingStation = () => {
         </div>
       </>
     );
-  }, [dryingData, areaLoading, greenhouseData, deviceMapping, columns]);
+  }, [dryingData, areaLoading, greenhouseData, areaTotalWeights, deviceMapping, columns]);
 
   const generateOptimalCurve = useCallback(() => {
     if (!selectedBatch || selectedBatch.startDryingDate === 'N/A') return { labels: [], data: [] };
