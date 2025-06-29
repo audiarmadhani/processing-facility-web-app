@@ -163,20 +163,22 @@ const DryingStation = () => {
         return;
       }
   
-      const [qcResponse, greenhouseResponse, ghweightResponse] = await Promise.all([
+      const [qcResponse, greenhouseResponse, ghweightResponse, wetmillWeightResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
         fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest'),
-        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-weight')
+        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-weight'),
+        fetch('https://processing-facility-backend.onrender.com/api/wetmill-weights')
       ]);
   
-      if (!qcResponse.ok || !greenhouseResponse.ok || !ghweightResponse.ok) {
+      if (!qcResponse.ok || !greenhouseResponse.ok || !ghweightResponse.ok || !wetmillWeightResponse.ok) {
         throw new Error('Failed to fetch data from one or more endpoints');
       }
   
-      const [qcResult, greenhouseResult, ghweightResult] = await Promise.all([
+      const [qcResult, greenhouseResult, ghweightResult, wetmillWeightResult] = await Promise.all([
         qcResponse.json(),
         greenhouseResponse.json(),
-        ghweightResponse.json()
+        ghweightResponse.json(),
+        wetmillWeightResponse.json()
       ]);
   
       const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 
@@ -203,6 +205,13 @@ const DryingStation = () => {
           console.warn('Skipping weight record with undefined batchNumber:', { total_weight, measurement_date });
         }
       });
+
+      const wetmillWeights = {};
+      wetmillWeightResult.forEach(({ batchNumber, wetmill_weight }) => {
+        if (batchNumber) {
+          wetmillWeights[batchNumber] = parseFloat(wetmill_weight) || 0;
+        }
+      });
   
       const areaData = pendingPreprocessingData
         .filter(batch => areaBatchNumbers.includes(batch.batchNumber))
@@ -219,6 +228,7 @@ const DryingStation = () => {
             startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
             endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
             weight: batchWeights[batch.batchNumber] ? parseFloat(batchWeights[batch.batchNumber].total).toFixed(2) : '0',
+            wetmillWeight: wetmillWeights[batch.batchNumber] ? parseFloat(wetmillWeights[batch.batchNumber]).toFixed(2) : '0',
             type: batch.type || 'N/A',
             producer: batch.producer || 'N/A',
             productLine: batch.productLine || 'N/A',
@@ -825,6 +835,7 @@ const DryingStation = () => {
     },
     { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
     { field: 'endDryingDate', headerName: 'End Drying Date', width: 150 },
+    { field: 'wetmillWeight', headerName: 'Wetmill Weight (kg)', width: 160 },
     { field: 'weight', headerName: 'Dry Weight (kg)', width: 140 },
     { field: 'type', headerName: 'Type', width: 90 },
     { field: 'producer', headerName: 'Producer', width: 90 },
