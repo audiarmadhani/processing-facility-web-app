@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import {
   Typography,
@@ -20,6 +20,15 @@ import {
   Box,
   Autocomplete,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableHead,
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
@@ -35,7 +44,6 @@ const FermentationStation = () => {
   const [batchNumber, setBatchNumber] = useState('');
   const [tank, setTank] = useState('');
   const [blueBarrelCode, setBlueBarrelCode] = useState('');
-  const [weight, setWeight] = useState('');
   const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
   const [fermentationData, setFermentationData] = useState([]);
   const [availableBatches, setAvailableBatches] = useState([]);
@@ -46,10 +54,18 @@ const FermentationStation = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [tabValue, setTabValue] = useState('Biomaster');
+  const [openWeightDialog, setOpenWeightDialog] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [weightMeasurements, setWeightMeasurements] = useState([]);
+  const [newWeight, setNewWeight] = useState('');
+  const [newProcessingType, setNewProcessingType] = useState('');
+  const [newWeightDate, setNewWeightDate] = useState(dayjs().format('YYYY-MM-DD'));
 
   const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
   );
+
+  const processingTypes = ['Washed', 'Natural'];
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -57,12 +73,11 @@ const FermentationStation = () => {
     PaperProps: {
       style: {
         maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-        width: 350, // Increased width to accommodate additional info
+        width: 350,
       },
     },
   };
 
-  // Fetch available batches for dropdown
   const fetchAvailableBatches = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-batches`);
@@ -84,7 +99,6 @@ const FermentationStation = () => {
     }
   };
 
-  // Fetch available tanks
   const fetchAvailableTanks = async () => {
     setIsLoadingTanks(true);
     try {
@@ -112,7 +126,6 @@ const FermentationStation = () => {
     }
   };
 
-  // Fetch fermentation data
   const fetchFermentationData = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation`);
@@ -134,7 +147,27 @@ const FermentationStation = () => {
     }
   };
 
-  // Fetch data on component mount
+  const fetchWeightMeasurements = async (batchNumber) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/fermentation-weight-measurements/${batchNumber}`);
+      if (!Array.isArray(response.data)) {
+        console.error('fetchWeightMeasurements: Expected array, got:', response.data);
+        setWeightMeasurements([]);
+        setSnackbarMessage('Invalid weight measurements received.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return;
+      }
+      setWeightMeasurements(response.data);
+    } catch (error) {
+      console.error('Error fetching weight measurements:', error, 'Response:', error.response);
+      setSnackbarMessage('Failed to fetch weight measurements.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      setWeightMeasurements([]);
+    }
+  };
+
   useEffect(() => {
     fetchFermentationData();
     fetchAvailableBatches();
@@ -155,16 +188,8 @@ const FermentationStation = () => {
       return;
     }
 
-    if (!batchNumber || !tank || (tank === 'Blue Barrel' && !blueBarrelCode) || !weight) {
+    if (!batchNumber || !tank || (tank === 'Blue Barrel' && !blueBarrelCode)) {
       setSnackbarMessage('All required fields must be filled.');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-
-    const weightNum = parseFloat(weight);
-    if (isNaN(weightNum) || weightNum <= 0) {
-      setSnackbarMessage('Weight must be a positive number.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -174,18 +199,16 @@ const FermentationStation = () => {
       batchNumber: batchNumber.trim(),
       tank: tank === 'Blue Barrel' ? blueBarrelCode : tank,
       startDate: dayjs(startDate).toISOString(),
-      weight: weightNum,
       createdBy: session.user.name,
     };
 
     try {
       await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
-      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${payload.tank} with weight ${weightNum}kg.`);
+      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${payload.tank}.`);
       setSnackbarSeverity('success');
       setBatchNumber('');
       setTank('');
       setBlueBarrelCode('');
-      setWeight('');
       setStartDate(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
       await fetchFermentationData();
       await fetchAvailableBatches();
@@ -216,6 +239,79 @@ const FermentationStation = () => {
     }
   };
 
+  const handleTrackWeight = (row) => {
+    setSelectedBatch(row);
+    fetchWeightMeasurements(row.batchNumber);
+    setNewWeight('');
+    setNewProcessingType('');
+    setNewWeightDate(dayjs().format('YYYY-MM-DD'));
+    setOpenWeightDialog(true);
+  };
+
+  const handleAddWeight = async () => {
+    if (!newWeight || isNaN(newWeight) || parseFloat(newWeight) <= 0) {
+      setSnackbarMessage('Enter a valid weight (positive number).');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    if (!newProcessingType) {
+      setSnackbarMessage('Select a processing type.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const selectedDate = new Date(newWeightDate);
+    const startDateObj = new Date(selectedBatch.startDate);
+    const now = new Date();
+
+    if (isNaN(selectedDate.getTime())) {
+      setSnackbarMessage('Invalid measurement date.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    if (selectedDate > now) {
+      setSnackbarMessage('Measurement date cannot be in the future.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    if (selectedDate < startDateObj) {
+      setSnackbarMessage('Measurement date cannot be before the start date.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    try {
+      const payload = {
+        batchNumber: selectedBatch.batchNumber,
+        processingType: newProcessingType,
+        weight: parseFloat(newWeight),
+        measurement_date: newWeightDate,
+      };
+      const response = await axios.post(`${API_BASE_URL}/api/fermentation-weight-measurement`, payload);
+      setWeightMeasurements([...weightMeasurements, response.data.measurement]);
+      setNewWeight('');
+      setNewProcessingType('');
+      setNewWeightDate(dayjs().format('YYYY-MM-DD'));
+      setSnackbarMessage('Weight measurement added successfully.');
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
+      await fetchFermentationData();
+    } catch (error) {
+      console.error('Error adding weight measurement:', error, 'Response:', error.response);
+      setSnackbarMessage(error.response?.data?.error || 'Failed to add weight measurement.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  };
+
   const calculateElapsedTime = (startDate, endDate) => {
     if (endDate) return '-';
     const start = dayjs(startDate);
@@ -231,7 +327,12 @@ const FermentationStation = () => {
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-    { field: 'weight', headerName: 'Fermentation Weight (kg)', width: 180 },
+    { 
+      field: 'latest_weight', 
+      headerName: 'Fermentation Weight (kg)', 
+      width: 180,
+      valueFormatter: ({ value }) => parseFloat(value).toFixed(2),
+    },
     { field: 'tank', headerName: 'Tank', width: 150 },
     {
       field: 'startDate',
@@ -254,6 +355,21 @@ const FermentationStation = () => {
     { field: 'status', headerName: 'Status', width: 120 },
     { field: 'createdBy', headerName: 'Created By', width: 150 },
     {
+      field: 'trackWeight',
+      headerName: 'Track Weight',
+      width: 150,
+      renderCell: ({ row }) => (
+        <Button
+          variant="contained"
+          color="info"
+          size="small"
+          onClick={() => handleTrackWeight(row)}
+        >
+          Track Weight
+        </Button>
+      ),
+    },
+    {
       field: 'actions',
       headerName: 'Actions',
       width: 150,
@@ -275,7 +391,7 @@ const FermentationStation = () => {
     return <p>Loading...</p>;
   }
 
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'manager' && session.user.role !== 'staff')) {
+  if (!session?.user || !['admin', 'manager', 'staff'].includes(session.user.role)) {
     return (
       <Typography variant="h6">
         Access Denied. You do not have permission to view this page.
@@ -375,22 +491,6 @@ const FermentationStation = () => {
                 />
               )}
               <TextField
-                label="Weight (kg)"
-                type="number"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                fullWidth
-                required
-                margin="normal"
-                InputProps={{ inputProps: { min: 0.01, step: 0.01 } }}
-                error={weight && (isNaN(parseFloat(weight)) || parseFloat(weight) <= 0)}
-                helperText={
-                  weight && (isNaN(parseFloat(weight)) || parseFloat(weight) <= 0)
-                    ? 'Weight must be a positive number.'
-                    : ''
-                }
-              />
-              <TextField
                 label="Start Date and Time"
                 type="datetime-local"
                 value={startDate}
@@ -409,9 +509,6 @@ const FermentationStation = () => {
                   !batchNumber ||
                   !tank ||
                   (tank === 'Blue Barrel' && !blueBarrelCode) ||
-                  !weight ||
-                  isNaN(parseFloat(weight)) ||
-                  parseFloat(weight) <= 0 ||
                   isLoadingTanks ||
                   tankError
                 }
@@ -470,6 +567,88 @@ const FermentationStation = () => {
           </CardContent>
         </Card>
       </Grid>
+
+      <Dialog open={openWeightDialog} onClose={() => setOpenWeightDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber}</DialogTitle>
+        <DialogContent>
+          <Typography variant="h6" gutterBottom>Add Weight Measurement</Typography>
+          <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
+            <Grid item xs={4}>
+              <FormControl fullWidth>
+                <InputLabel id="processing-type-label">Processing Type</InputLabel>
+                <Select
+                  labelId="processing-type-label"
+                  value={newProcessingType}
+                  onChange={(e) => setNewProcessingType(e.target.value)}
+                  label="Processing Type"
+                >
+                  {processingTypes.map(type => (
+                    <MenuItem key={type} value={type}>{type}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Weight (kg)"
+                type="number"
+                value={newWeight}
+                onChange={(e) => setNewWeight(e.target.value)}
+                fullWidth
+                inputProps={{ min: 0.01, step: 0.01 }}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                label="Measurement Date"
+                type="date"
+                value={newWeightDate}
+                onChange={(e) => setNewWeightDate(e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+          </Grid>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleAddWeight}
+            fullWidth
+            sx={{ mb: 2 }}
+            disabled={!newWeight || !newProcessingType || !newWeightDate}
+          >
+            Add Weight
+          </Button>
+          <Typography variant="h6" gutterBottom>Weight History</Typography>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell>Processing Type</TableCell>
+                <TableCell>Weight (kg)</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {weightMeasurements.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center">No weight measurements recorded.</TableCell>
+                </TableRow>
+              ) : (
+                weightMeasurements.map(m => (
+                  <TableRow key={m.id}>
+                    <TableCell>{dayjs(m.measurement_date).format('YYYY-MM-DD')}</TableCell>
+                    <TableCell>{m.processingType}</TableCell>
+                    <TableCell>{parseFloat(m.weight).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenWeightDialog(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={openSnackbar}
