@@ -161,18 +161,20 @@ const DryingStation = () => {
         return;
       }
   
-      const [qcResponse, greenhouseResponse] = await Promise.all([
+      const [qcResponse, greenhouseResponse, ghweightResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
-        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest')
+        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest'),
+        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-weight')
       ]);
   
-      if (!qcResponse.ok || !greenhouseResponse.ok) {
+      if (!qcResponse.ok || !greenhouseResponse.ok || !ghweightResponse.ok) {
         throw new Error('Failed to fetch data from one or more endpoints');
       }
   
-      const [qcResult, greenhouseResult] = await Promise.all([
+      const [qcResult, greenhouseResult, ghweightResult] = await Promise.all([
         qcResponse.json(),
-        greenhouseResponse.json()
+        greenhouseResponse.json(),
+        ghweightResponse.json()
       ]);
   
       const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 
