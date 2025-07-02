@@ -343,29 +343,10 @@ const FermentationStation = () => {
   const fermentationColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180 },
-    { field: 'tank', headerName: 'Tank', width: 150 },
-    {
-      field: 'elapsedTime',
-      headerName: 'Elapsed Time',
-      width: 150,
-      renderCell: ({ row }) => calculateElapsedTime(row.startDate, row.endDate),
-    },
-    {
-      field: 'startDate',
-      headerName: 'Start Date',
-      width: 180,
-      renderCell: ({ value }) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      field: 'endDate',
-      headerName: 'End Date',
-      width: 180,
-      renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
-    },
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 150,
+      width: 80,
       renderCell: ({ row }) => (
         <>
           <IconButton
@@ -397,6 +378,25 @@ const FermentationStation = () => {
           </Menu>
         </>
       ),
+    },
+    { field: 'tank', headerName: 'Tank', width: 140 },
+    {
+      field: 'elapsedTime',
+      headerName: 'Elapsed Time',
+      width: 130,
+      renderCell: ({ row }) => calculateElapsedTime(row.startDate, row.endDate),
+    },
+    {
+      field: 'startDate',
+      headerName: 'Start Date',
+      width: 180,
+      renderCell: ({ value }) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    {
+      field: 'endDate',
+      headerName: 'End Date',
+      width: 180,
+      renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
     { 
