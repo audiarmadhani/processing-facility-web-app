@@ -329,10 +329,9 @@ const FermentationStation = () => {
   };
 
   const calculateElapsedTime = (startDate, endDate) => {
-    if (endDate) return '-';
     const start = dayjs(startDate);
-    const now = dayjs();
-    const duration = dayjs.duration(now.diff(start));
+    const end = endDate ? dayjs(endDate) : dayjs();
+    const duration = dayjs.duration(end.diff(start));
     const days = Math.floor(duration.asDays());
     const hours = Math.floor(duration.asHours() % 24);
     const minutes = Math.floor(duration.asMinutes() % 60);
@@ -403,7 +402,7 @@ const FermentationStation = () => {
     { 
       field: 'latest_weight', 
       headerName: 'Fermentation Weight (kg)', 
-      width: 180,
+      width: 200,
       valueFormatter: ({ value }) => parseFloat(value).toFixed(2),
     },
     { field: 'status', headerName: 'Status', width: 120 },

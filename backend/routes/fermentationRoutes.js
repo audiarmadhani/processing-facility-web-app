@@ -43,27 +43,59 @@ router.get('/fermentation/available-tanks', async (req, res) => {
 // Route for fetching available batches for fermentation
 router.get('/fermentation/available-batches', async (req, res) => {
   try {
+    // Debug: Check ReceivingData
+    const receivingData = await sequelize.query(
+      `SELECT "batchNumber", producer, merged, "commodityType"
+       FROM "ReceivingData"
+       WHERE producer = 'HEQA' AND merged = FALSE AND "commodityType" = 'Cherry'`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    console.log('ReceivingData eligible batches:', receivingData);
+
+    // Debug: Check FermentationData
+    const fermentationData = await sequelize.query(
+      `SELECT "batchNumber", status 
+       FROM "FermentationData"`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    console.log('FermentationData batches:', fermentationData);
+
+    // Debug: Check DryingData
+    const dryingData = await sequelize.query(
+      `SELECT "batchNumber" 
+       FROM "DryingData"`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    console.log('DryingData batches:', dryingData);
+
+    // Main query
     const [rows] = await sequelize.query(
-      `SELECT 
+      `SELECT DISTINCT 
         r."batchNumber",
-        p."lotNumber",
         r."farmerName",
-        r.weight
+        r.weight,
+        MIN(p."lotNumber") as "lotNumber"
       FROM "ReceivingData" r
-      LEFT JOIN "PreprocessingData" p on r."batchNumber" = p."batchNumber"
+      LEFT JOIN "PreprocessingData" p ON r."batchNumber" = p."batchNumber" AND p.merged = FALSE
       LEFT JOIN "DryingData" d ON r."batchNumber" = d."batchNumber"
       WHERE r.producer = 'HEQA'
       AND r.merged = FALSE
-      -- AND p.merged = FALSE
       AND d."batchNumber" IS NULL
       AND r."commodityType" = 'Cherry'
+      AND r."batchNumber" NOT IN (
+        SELECT "batchNumber" FROM "FermentationData" WHERE status = 'In Progress'
+      )
+      GROUP BY r."batchNumber", r."farmerName", r.weight
       ORDER BY r."batchNumber" DESC;`,
       {
         type: sequelize.QueryTypes.SELECT
       }
     );
 
-    res.json(Array.isArray(rows) ? rows : rows ? [rows] : []);
+    // Log raw query results for debugging
+    console.log('Available batches query result:', rows);
+
+    res.json(rows || []);
   } catch (err) {
     console.error('Error fetching available batches:', err);
     res.status(500).json({ message: 'Failed to fetch available batches.', details: err.message });
