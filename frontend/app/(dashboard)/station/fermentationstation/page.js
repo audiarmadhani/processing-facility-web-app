@@ -479,6 +479,9 @@ const FermentationStation = () => {
                   <MenuItem value="Carrybrew" disabled={!availableTanks.includes('Carrybrew')}>
                     Carrybrew {availableTanks.includes('Carrybrew') ? '' : '(In Use)'}
                   </MenuItem>
+                  <MenuItem value="Washing Track" disabled={!availableTanks.includes('Washing Track')}>
+                    Washing Track {availableTanks.includes('Washing Track') ? '' : '(In Use)'}
+                  </MenuItem>
                   <MenuItem value="Blue Barrel" disabled={!availableTanks.some(tank => tank.startsWith('BB-HQ-'))}>
                     Blue Barrel {availableTanks.some(tank => tank.startsWith('BB-HQ-')) ? '' : '(All In Use)'}
                   </MenuItem>
@@ -564,6 +567,7 @@ const FermentationStation = () => {
             >
               <Tab label="Biomaster" value="Biomaster" />
               <Tab label="Carrybrew" value="Carrybrew" />
+              <Tab label="Washing Track" value="Washing Track" />
               <Tab label="Blue Barrel" value="Blue Barrel" />
             </Tabs>
             <div style={{ height: 800, width: '100%' }}>
