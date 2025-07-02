@@ -388,12 +388,12 @@ function Dashboard() {
                             { 
                               field: 'farmerName', 
                               headerName: 'Farmer Name', 
-                              width: 160,
+                              width: 250,
                             },
                             { 
                               field: 'brokerName', 
-                              headerName: 'Broker Name', 
-                              width: 150,
+                              headerName: 'Broker', 
+                              width: 100,
                             },
                             { 
                               field: 'contractValue', 

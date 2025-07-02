@@ -247,7 +247,7 @@ function FarmerInputStation() {
 
   const columns = [
     { field: "farmerID", headerName: "ID", sortable: true, width: 40 },
-    { field: "farmerName", headerName: "Name", sortable: true, width: 150 },
+    { field: "farmerName", headerName: "Name", sortable: true, width: 300 },
     { field: "desa", headerName: "Desa", sortable: true, width: 120 },
     { field: "kecamatan", headerName: "Kecamatan", sortable: true, width: 120 },
     { field: "kabupaten", headerName: "Kabupaten", sortable: true, width: 120 },
