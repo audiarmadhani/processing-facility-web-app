@@ -29,10 +29,9 @@ import {
   TableRow,
   TableCell,
   TableHead,
-  IconButton,
   Menu,
 } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Alert from '@mui/material/Alert';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from "axios";
@@ -346,17 +345,19 @@ const FermentationStation = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 80,
+      width: 120,
       renderCell: ({ row }) => (
         <>
-          <IconButton
-            aria-label="actions"
+          <Button
+            variant="contained"
+            size="small"
+            endIcon={<ArrowDropDownIcon />}
             aria-controls={`actions-menu-${row.id}`}
             aria-haspopup="true"
             onClick={(event) => handleMenuClick(event, row)}
           >
-            <MoreVertIcon />
-          </IconButton>
+            Action
+          </Button>
           <Menu
             id={`actions-menu-${row.id}`}
             anchorEl={anchorEl}
