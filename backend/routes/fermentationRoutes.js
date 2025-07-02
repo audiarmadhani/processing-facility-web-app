@@ -10,7 +10,8 @@ router.get('/fermentation/available-tanks', async (req, res) => {
     );
     const allTanks = ['Biomaster', 'Carrybrew', ...allBlueBarrelCodes];
 
-    const [inUseTanks] = await sequelize.query(
+    // Fetch in-use tanks
+    const inUseTanks = await sequelize.query(
       `SELECT DISTINCT tank 
        FROM "FermentationData" 
        WHERE status = :status`,
@@ -20,11 +21,16 @@ router.get('/fermentation/available-tanks', async (req, res) => {
       }
     );
 
-    if (!inUseTanks || inUseTanks.length === 0) {
-      return res.json(allTanks);
-    }
+    // Ensure inUseTanks is an array
+    const inUseTanksArray = Array.isArray(inUseTanks) ? inUseTanks : inUseTanks ? [inUseTanks] : [];
+    
+    // Log for debugging
+    console.log('inUseTanks:', inUseTanksArray);
 
-    const inUseTankNames = inUseTanks.map(row => row.tank);
+    // Map tank names, ensuring we handle empty results
+    const inUseTankNames = inUseTanksArray.map(row => row.tank).filter(tank => tank);
+
+    // Filter out in-use tanks
     const availableTanks = allTanks.filter(tank => !inUseTankNames.includes(tank));
     
     res.json(availableTanks);
@@ -40,13 +46,15 @@ router.get('/fermentation/available-batches', async (req, res) => {
     const [rows] = await sequelize.query(
       `SELECT 
         r."batchNumber",
-        r."lotNumber",
+        p."lotNumber",
         r."farmerName",
         r.weight
       FROM "ReceivingData" r
+      LEFT JOIN "PreprocessingData" p on r."batchNumber" = p."batchNumber"
       LEFT JOIN "DryingData" d ON r."batchNumber" = d."batchNumber"
       WHERE r.producer = 'HEQA'
       AND r.merged = FALSE
+      -- AND p.merged = FALSE
       AND d."batchNumber" IS NULL
       AND r."commodityType" = 'Cherry'
       ORDER BY r."batchNumber" DESC;`,

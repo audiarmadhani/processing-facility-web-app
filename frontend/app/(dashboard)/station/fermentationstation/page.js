@@ -326,20 +326,7 @@ const FermentationStation = () => {
   const fermentationColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180 },
-    { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-    { 
-      field: 'latest_weight', 
-      headerName: 'Fermentation Weight (kg)', 
-      width: 180,
-      valueFormatter: ({ value }) => parseFloat(value).toFixed(2),
-    },
     { field: 'tank', headerName: 'Tank', width: 150 },
-    {
-      field: 'startDate',
-      headerName: 'Start Date',
-      width: 180,
-      renderCell: ({ value }) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
-    },
     {
       field: 'elapsedTime',
       headerName: 'Elapsed Time',
@@ -347,13 +334,18 @@ const FermentationStation = () => {
       renderCell: ({ row }) => calculateElapsedTime(row.startDate, row.endDate),
     },
     {
+      field: 'startDate',
+      headerName: 'Start Date',
+      width: 180,
+      renderCell: ({ value }) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
+    },
+    
+    {
       field: 'endDate',
       headerName: 'End Date',
       width: 180,
       renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
-    { field: 'status', headerName: 'Status', width: 120 },
-    { field: 'createdBy', headerName: 'Created By', width: 150 },
     {
       field: 'trackWeight',
       headerName: 'Track Weight',
@@ -385,6 +377,15 @@ const FermentationStation = () => {
         </Button>
       ),
     },
+    { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
+    { 
+      field: 'latest_weight', 
+      headerName: 'Fermentation Weight (kg)', 
+      width: 180,
+      valueFormatter: ({ value }) => parseFloat(value).toFixed(2),
+    },
+    { field: 'status', headerName: 'Status', width: 120 },
+    { field: 'createdBy', headerName: 'Created By', width: 150 },
   ];
 
   if (status === 'loading') {
