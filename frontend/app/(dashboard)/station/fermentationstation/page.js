@@ -29,7 +29,9 @@ import {
   TableRow,
   TableCell,
   TableHead,
+  IconButton,
 } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Alert from '@mui/material/Alert';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from "axios";
@@ -60,6 +62,8 @@ const FermentationStation = () => {
   const [newWeight, setNewWeight] = useState('');
   const [newProcessingType, setNewProcessingType] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedRow, setSelectedRow] = useState(null);
 
   const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
@@ -236,6 +240,7 @@ const FermentationStation = () => {
       setSnackbarSeverity('error');
     } finally {
       setOpenSnackbar(true);
+      setAnchorEl(null);
     }
   };
 
@@ -246,6 +251,7 @@ const FermentationStation = () => {
     setNewProcessingType('');
     setNewWeightDate(dayjs().format('YYYY-MM-DD'));
     setOpenWeightDialog(true);
+    setAnchorEl(null);
   };
 
   const handleAddWeight = async () => {
@@ -312,6 +318,16 @@ const FermentationStation = () => {
     }
   };
 
+  const handleMenuClick = (event, row) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedRow(row);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedRow(null);
+  };
+
   const calculateElapsedTime = (startDate, endDate) => {
     if (endDate) return '-';
     const start = dayjs(startDate);
@@ -339,7 +355,6 @@ const FermentationStation = () => {
       width: 180,
       renderCell: ({ value }) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
     },
-    
     {
       field: 'endDate',
       headerName: 'End Date',
@@ -347,34 +362,39 @@ const FermentationStation = () => {
       renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
-      field: 'trackWeight',
-      headerName: 'Track Weight',
-      width: 150,
-      renderCell: ({ row }) => (
-        <Button
-          variant="contained"
-          color="info"
-          size="small"
-          onClick={() => handleTrackWeight(row)}
-        >
-          Track Weight
-        </Button>
-      ),
-    },
-    {
       field: 'actions',
       headerName: 'Actions',
       width: 150,
       renderCell: ({ row }) => (
-        <Button
-          variant="contained"
-          color="primary"
-          size="small"
-          onClick={() => handleFinishFermentation(row.batchNumber)}
-          disabled={row.status === 'Finished'}
-        >
-          Finish
-        </Button>
+        <>
+          <IconButton
+            aria-label="actions"
+            aria-controls={`actions-menu-${row.id}`}
+            aria-haspopup="true"
+            onClick={(event) => handleMenuClick(event, row)}
+          >
+            <MoreVertIcon />
+          </IconButton>
+          <Menu
+            id={`actions-menu-${row.id}`}
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl) && selectedRow?.id === row.id}
+            onClose={handleMenuClose}
+            MenuListProps={{
+              'aria-labelledby': `actions-button-${row.id}`,
+            }}
+          >
+            <MenuItem onClick={() => handleTrackWeight(row)}>
+              Track Weight
+            </MenuItem>
+            <MenuItem
+              onClick={() => handleFinishFermentation(row.batchNumber)}
+              disabled={row.status === 'Finished'}
+            >
+              Finish
+            </MenuItem>
+          </Menu>
+        </>
       ),
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
