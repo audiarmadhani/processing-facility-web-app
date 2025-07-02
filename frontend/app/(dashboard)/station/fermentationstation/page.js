@@ -85,15 +85,16 @@ const FermentationStation = () => {
   const fetchAvailableBatches = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-batches`);
-      if (!Array.isArray(response.data)) {
-        console.error('fetchAvailableBatches: Expected array, got:', response.data);
+      const data = Array.isArray(response.data) ? response.data : response.data ? [response.data] : [];
+      if (data.length === 0) {
+        console.warn('fetchAvailableBatches: No batch data received:', response.data);
         setAvailableBatches([]);
-        setSnackbarMessage('Invalid batch data received.');
-        setSnackbarSeverity('error');
+        setSnackbarMessage('No batches available.');
+        setSnackbarSeverity('warning');
         setOpenSnackbar(true);
         return;
       }
-      setAvailableBatches(response.data);
+      setAvailableBatches(data);
     } catch (error) {
       console.error('Error fetching available batches:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to fetch available batches.');
