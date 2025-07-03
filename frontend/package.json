@@ -24,6 +24,7 @@
     "@mui/x-date-pickers": "^7.26.0",
     "@mui/x-tree-view": "^7",
     "@react-spring/web": "^9",
+    "@ssthouse/react-tree-chart": "^0.1.2",
     "@toolpad/core": "latest",
     "axios": "^1.7.9",
     "axios-retry": "^4.5.0",

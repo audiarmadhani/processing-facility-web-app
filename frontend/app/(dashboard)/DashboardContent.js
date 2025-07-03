@@ -46,6 +46,8 @@ import RobustaFarmersContributionChart from './charts/RobustaFarmersContribution
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
+import TreeChart from '@ssthouse/react-tree-chart';
+import '@ssthouse/react-tree-chart/lib/react-tree-chart.css';
 
 function Dashboard() {
   const { data: session } = useSession();
@@ -310,108 +312,28 @@ function Dashboard() {
   }, []);
 
   const getProgressData = (batchNumber) => {
-    if (!batchNumber) return { nodes: [], links: [], title: '' };
+    if (!batchNumber) return null;
 
     const batchEntries = batchTrackingData.filter(b => b.batchNumber === batchNumber);
-    if (batchEntries.length === 0) return { nodes: [], links: [], title: '' };
+    if (batchEntries.length === 0) return null;
 
     const processingTypes = [...new Set(batchEntries.map(b => b.processingType))];
     const grades = [...new Set(batchEntries.map(b => b.grade))];
     const title = `Batch ${batchNumber} (${processingTypes.join(', ')}, Grade ${grades.join(', ')})`;
 
-    const stages = [
-      { name: 'Receiving', weightKey: 'receiving_weight', dateKey: 'receiving_date' },
-      { name: 'Preprocessing', weightKey: 'preprocessing_weight', dateKey: 'preprocessing_date' },
-      { name: 'Wet Mill', weightKey: 'wetmill_weight', dateKey: 'wetmill_weight_date' },
-      { name: 'Fermentation', weightKey: 'fermentation_weight', dateKey: 'fermentation_weight_date' },
-      { name: 'Drying', weightKey: 'drying_weight', dateKey: 'drying_weight_date' },
-      { name: 'Dry Mill', weightKey: 'dry_mill_weight', dateKey: 'dry_mill_weight_date' },
-    ];
+    const treeData = {
+      value: title,
+      children: [
+        { value: 'Receiving', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.receiving_weight) || 0), 0)} kg` }] },
+        { value: 'Preprocessing', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.preprocessing_weight) || 0), 0)} kg` }] },
+        { value: 'Wet Mill', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.wetmill_weight) || 0), 0)} kg` }] },
+        { value: 'Fermentation', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.fermentation_weight) || 0), 0)} kg` }] },
+        { value: 'Drying', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.drying_weight) || 0), 0)} kg` }] },
+        { value: 'Dry Mill', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.dry_mill_weight) || 0), 0)} kg` }] }
+      ].filter(child => child.children[0].value !== '0 kg')
+    };
 
-    const nodes = [];
-    const links = [];
-    let nodeId = 0;
-
-    // Add shared stages (Receiving, Preprocessing)
-    const sharedStages = ['Receiving', 'Preprocessing'];
-    sharedStages.forEach((stageName, stageIndex) => {
-      const stage = stages.find(s => s.name === stageName);
-      const totalWeight = batchEntries.reduce((sum, entry) => {
-        const weight = parseFloat(entry[stage.weightKey]) || 0;
-        return isNaN(weight) ? sum : sum + weight;
-      }, 0);
-      if (totalWeight > 0) {
-        const status = stageIndex === 0 || batchEntries.every(e => e[stage.dateKey]) ? 'completed' : 'in-progress';
-        nodes.push({
-          id: nodeId,
-          name: stageName,
-          weight: totalWeight,
-          y: stageIndex * 100,
-          x: 0,
-          status: status,
-        });
-        if (stageIndex > 0) {
-          links.push({
-            source: nodeId - 1,
-            target: nodeId,
-            curve: 'basis',
-          });
-        }
-        nodeId++;
-      }
-    });
-
-    // Handle splits after Preprocessing
-    const splitStageIndex = sharedStages.length;
-    batchEntries.forEach((entry, entryIndex) => {
-      const processingType = entry.processingType;
-      stages.slice(splitStageIndex).forEach((stage, stageIndex) => {
-        const weight = parseFloat(entry[stage.weightKey]) || 0;
-        if (weight > 0 && entry[stage.weightKey] !== 'N/A') {
-          // Skip Fermentation for Natural/CM Natural
-          if (stage.name === 'Fermentation' && ['Natural', 'CM Natural'].includes(processingType)) return;
-          // Skip Wet Mill for Natural/Honey if not applicable
-          if (stage.name === 'Wet Mill' && ['Natural', 'Honey'].includes(processingType) && !entry[stage.weightKey]) return;
-
-          const position = entry.position.split(' ')[0]; // e.g., "Drying" from "Drying (Finished)"
-          const status = stage.name === position ? 'in-progress' : stage.name < position ? 'completed' : 'pending';
-          const node = {
-            id: nodeId,
-            name: stage.name,
-            weight: weight,
-            processingType: processingType,
-            y: (stageIndex + splitStageIndex) * 100,
-            x: entryIndex * 150 - ((batchEntries.length - 1) * 75), // Spread branches horizontally
-            status: status,
-          };
-          nodes.push(node);
-
-          if (stageIndex === 0) {
-            const preprocessingNode = nodes.find(n => n.name === 'Preprocessing');
-            if (preprocessingNode) {
-              links.push({
-                source: preprocessingNode.id,
-                target: nodeId,
-                curve: 'basis',
-              });
-            }
-          } else {
-            const prevStage = stages[stageIndex + splitStageIndex - 1];
-            const prevNode = nodes.find(n => n.name === prevStage.name && n.processingType === processingType);
-            if (prevNode) {
-              links.push({
-                source: prevNode.id,
-                target: nodeId,
-                curve: 'basis',
-              });
-            }
-          }
-          nodeId++;
-        }
-      });
-    });
-
-    return { nodes, links, title };
+    return treeData;
   };
 
   useEffect(() => {
@@ -515,7 +437,7 @@ function Dashboard() {
             </FormControl>
           </Grid>
 
-          {/* Batch Tracking Filter
+          {/* Batch Tracking Filter */}
           <Grid item xs={6} md={2.4}>
             <TextField
               label="Filter Batch Numbers (comma-separated)"
@@ -529,7 +451,7 @@ function Dashboard() {
               fullWidth
               variant="outlined"
             />
-          </Grid> */}
+          </Grid>
 
           {/* Batch Tracking Table */}
           <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
@@ -639,56 +561,37 @@ function Dashboard() {
           </Grid>
 
           {/* Batch Tracking Dialog */}
-          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
-            <DialogTitle>
-              {selectedBatch && getProgressData(selectedBatch.batchNumber).title}
+          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+            <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
+              Batch Progress
             </DialogTitle>
             <DialogContent>
-              {selectedBatch && (
-                <svg width="800" height={getProgressData(selectedBatch.batchNumber).nodes.length * 120}>
-                  {getProgressData(selectedBatch.batchNumber).links.map((link, index) => {
-                    const sourceNode = getProgressData(selectedBatch.batchNumber).nodes.find(n => n.id === link.source);
-                    const targetNode = getProgressData(selectedBatch.batchNumber).nodes.find(n => n.id === link.target);
-                    if (sourceNode && targetNode) {
-                      const midX = (sourceNode.x + targetNode.x) / 2;
-                      const controlX = midX + (targetNode.x > sourceNode.x ? 50 : -50); // Curve control point
-                      return (
-                        <path
-                          key={`link-${index}`}
-                          d={`M ${sourceNode.x} ${sourceNode.y} Q ${controlX} ${sourceNode.y + 50} ${targetNode.x} ${targetNode.y - 50}`}
-                          stroke="#8884d8"
-                          strokeWidth="2"
-                          fill="none"
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-                  {getProgressData(selectedBatch.batchNumber).nodes.map((node, index) => (
-                    <g key={`node-${index}`} transform={`translate(${node.x + 400}, ${node.y + 20})`}>
-                      <circle
-                        cx="0"
-                        cy="0"
-                        r="10"
-                        fill={node.status === 'completed' ? 'green' : node.status === 'in-progress' ? 'yellow' : 'gray'}
-                      />
-                      {node.status === 'completed' && (
-                        <text x="15" y="5" fill="#fff" fontSize="12">✓</text>
-                      )}
-                      <text
-                        x="15"
-                        y="-5"
-                        fill="#000"
-                        fontSize="12"
-                        textAnchor="start"
-                      >
-                        {`${node.name}: ${node.weight.toFixed(2)} kg${node.processingType ? ` (${node.processingType})` : ''}`}
-                      </text>
-                    </g>
-                  ))}
-                </svg>
+              {selectedBatch && getProgressData(selectedBatch.batchNumber) && (
+                <Box sx={{ padding: 2, backgroundColor: '#fff', minHeight: '400px' }}>
+                  <TreeChart
+                    dataset={getProgressData(selectedBatch.batchNumber)}
+                    config={{
+                      nodeWidth: 100,
+                      nodeHeight: 50,
+                      levelHeight: 70,
+                      margin: { top: 20, right: 20, bottom: 20, left: 20 }
+                    }}
+                    nodeRenderer={({ node }) => (
+                      <div style={{
+                        padding: '8px',
+                        backgroundColor: '#e0f7fa',
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        fontSize: '0.9rem',
+                        color: '#333'
+                      }}>
+                        {node.value}
+                      </div>
+                    )}
+                  />
+                </Box>
               )}
-              <Button onClick={handleCloseDialog} variant="contained" sx={{ mt: 2 }}>
+              <Button onClick={handleCloseDialog} variant="contained" sx={{ mt: 2, width: '100%' }}>
                 Close
               </Button>
             </DialogContent>
