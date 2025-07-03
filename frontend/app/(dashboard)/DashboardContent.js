@@ -337,10 +337,10 @@ function Dashboard() {
     sharedStages.forEach((stageName, stageIndex) => {
       const stage = stages.find(s => s.name === stageName);
       const totalWeight = batchEntries.reduce((sum, entry) => {
-        const weight = parseFloat(entry[stage.weightKey]);
+        const weight = parseFloat(entry[stage.weightKey]) || 0;
         return isNaN(weight) ? sum : sum + weight;
       }, 0);
-      if (!isNaN(totalWeight)) {
+      if (totalWeight > 0) {
         const status = stageIndex === 0 || batchEntries.every(e => e[stage.dateKey]) ? 'completed' : 'in-progress';
         nodes.push({
           id: nodeId,
@@ -366,12 +366,12 @@ function Dashboard() {
     batchEntries.forEach((entry, entryIndex) => {
       const processingType = entry.processingType;
       stages.slice(splitStageIndex).forEach((stage, stageIndex) => {
-        const weight = parseFloat(entry[stage.weightKey]);
-        if (!isNaN(weight) && weight > 0 && entry[stage.weightKey] !== 'N/A') {
+        const weight = parseFloat(entry[stage.weightKey]) || 0;
+        if (weight > 0 && entry[stage.weightKey] !== 'N/A') {
           // Skip Fermentation for Natural/CM Natural
           if (stage.name === 'Fermentation' && ['Natural', 'CM Natural'].includes(processingType)) return;
           // Skip Wet Mill for Natural/Honey if not applicable
-          if (stage.name === 'Wet Mill' && ['Natural', 'Honey'].includes(processingType) && entry[stage.weightKey] === 'N/A') return;
+          if (stage.name === 'Wet Mill' && ['Natural', 'Honey'].includes(processingType) && !entry[stage.weightKey]) return;
 
           const position = entry.position.split(' ')[0]; // e.g., "Drying" from "Drying (Finished)"
           const status = stage.name === position ? 'in-progress' : stage.name < position ? 'completed' : 'pending';
@@ -641,14 +641,14 @@ function Dashboard() {
           {/* Batch Tracking Dialog */}
           <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
             <DialogTitle>
-              {selectedBatch && getProgressData(selectedBatch.batch_number).title}
+              {selectedBatch && getProgressData(selectedBatch.batchNumber).title}
             </DialogTitle>
             <DialogContent>
               {selectedBatch && (
-                <svg width="800" height={getProgressData(selectedBatch.batch_number).nodes.length * 120}>
-                  {getProgressData(selectedBatch.batch_number).links.map((link, index) => {
-                    const sourceNode = getProgressData(selectedBatch.batch_number).nodes.find(n => n.id === link.source);
-                    const targetNode = getProgressData(selectedBatch.batch_number).nodes.find(n => n.id === link.target);
+                <svg width="800" height={getProgressData(selectedBatch.batchNumber).nodes.length * 120}>
+                  {getProgressData(selectedBatch.batchNumber).links.map((link, index) => {
+                    const sourceNode = getProgressData(selectedBatch.batchNumber).nodes.find(n => n.id === link.source);
+                    const targetNode = getProgressData(selectedBatch.batchNumber).nodes.find(n => n.id === link.target);
                     if (sourceNode && targetNode) {
                       const midX = (sourceNode.x + targetNode.x) / 2;
                       const controlX = midX + (targetNode.x > sourceNode.x ? 50 : -50); // Curve control point
@@ -664,7 +664,7 @@ function Dashboard() {
                     }
                     return null;
                   })}
-                  {getProgressData(selectedBatch.batch_number).nodes.map((node, index) => (
+                  {getProgressData(selectedBatch.batchNumber).nodes.map((node, index) => (
                     <g key={`node-${index}`} transform={`translate(${node.x + 400}, ${node.y + 20})`}>
                       <circle
                         cx="0"
