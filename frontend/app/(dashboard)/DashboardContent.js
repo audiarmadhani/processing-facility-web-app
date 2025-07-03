@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import { TextField } from '@mui/material';
+import { TextField, Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -24,6 +24,7 @@ import {
   Alert
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 import TotalBatchesChart from './charts/TotalBatchesChart';
 import TotalCostChart from './charts/TotalCostChart';
@@ -54,20 +55,44 @@ function Dashboard() {
   const userRole = session?.user?.role || "user";
 
   const [metrics, setMetrics] = useState({
-    totalBatches: 0, 
-    totalArabicaWeight: 0, 
-    totalRobustaWeight: 0, 
-    totalArabicaCost: 0, 
+    totalBatches: 0,
+    totalArabicaWeight: 0,
+    totalRobustaWeight: 0,
+    totalArabicaCost: 0,
     totalRobustaCost: 0,
-    lastmonthArabicaWeight: 0, 
+    lastmonthArabicaWeight: 0,
     lastmonthRobustaWeight: 0, 
-    lastmonthArabicaCost: 0, 
+    lastmonthArabicaCost: 0,
     lastmonthRobustaCost: 0,
     totalWeight: 0,
     totalCost: 0,
     activeFarmers: 0,
     pendingQC: 0,
     pendingProcessing: 0,
+    avgArabicaCost: 0,
+    avgRobustaCost: 0,
+    lastmonthAvgArabicaCost: 0,
+    lastmonthAvgRobustaCost: 0,
+    totalArabicaProcessed: 0,
+    totalRobustaProcessed: 0,
+    lastmonthArabicaProcessed: 0,
+    lastmonthRobustaProcessed: 0,
+    totalArabicaProduction: 0,
+    totalRobustaProduction: 0,
+    lastmonthArabicaProduction: 0,
+    lastmonthRobustaProduction: 0,
+    arabicaYield: 0,
+    robustaYield: 0,
+    landCoveredArabica: 0,
+    landCoveredRobusta: 0,
+    activeArabicaFarmers: 0,
+    activeRobustaFarmers: 0,
+    pendingArabicaQC: 0,
+    pendingRobustaQC: 0,
+    pendingArabicaProcessing: 0,
+    pendingRobustaProcessing: 0,
+    pendingArabicaWeightProcessing: 0,
+    pendingRobustaWeightProcessing: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -76,7 +101,12 @@ function Dashboard() {
   const [heqaTargets, setHeqaTargets] = useState([]);
   const [robustaTargets, setRobustaTargets] = useState([]);
   const [landTargets, setLandTargets] = useState([]);
+  const [batchTrackingData, setBatchTrackingData] = useState([]);
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
+  const [isLoadingBatchTracking, setIsLoadingBatchTracking] = useState(false);
+  const [batchFilter, setBatchFilter] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const formatWeight = (weight) => {
@@ -90,8 +120,6 @@ function Dashboard() {
       return `Rp ${new Intl.NumberFormat('de-DE').format(weight)} /kg`;
     }
   };
-
-  const [timeframe, setTimeframe] = useState('this_month');
 
   const timeframes = [
     { value: 'this_week', label: 'This Week' },
@@ -112,6 +140,7 @@ function Dashboard() {
   };
 
   const selectedRangeLabel = timeframeLabels[timeframe];
+  const [timeframe, setTimeframe] = useState('this_year');
 
   // Fetch Arabica targets
   const fetchArabicaTargets = useCallback(async () => {
@@ -305,13 +334,28 @@ function Dashboard() {
       await fetchRobustaTargets();
       await fetchLandTargets();
       await fetchHeqaTargets();
+      await fetchBatchTrackingData();
     };
 
     fetchAllData();
-  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets]);
+  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets, fetchBatchTrackingData]);
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
+  };
+
+  const handleBatchFilterChange = (event) => {
+    setBatchFilter(event.target.value);
+  };
+
+  const handleBatchClick = (batch) => {
+    setSelectedBatch(batch);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedBatch(null);
   };
 
   const handleCloseSnackbar = () => {
