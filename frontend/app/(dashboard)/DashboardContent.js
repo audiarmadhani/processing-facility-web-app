@@ -80,7 +80,7 @@ function Dashboard() {
   // New state for batch tracking
   const [batchTrackingData, setBatchTrackingData] = useState([]);
   const [isLoadingBatchTracking, setIsLoadingBatchTracking] = useState(false);
-  // const [batchFilter, setBatchFilter] = useState('');
+  const [batchFilter, setBatchFilter] = useState('');
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
 
@@ -356,9 +356,9 @@ function Dashboard() {
     setError(null);
   };
 
-  // const handleBatchFilterChange = (event) => {
-  //   setBatchFilter(event.target.value);
-  // };
+  const handleBatchFilterChange = (event) => {
+    setBatchFilter(event.target.value);
+  };
 
   const handleBatchClick = (batch) => {
     setSelectedBatch(batch);
