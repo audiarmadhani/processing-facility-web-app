@@ -24,7 +24,7 @@ import {
   Alert
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'; // Added for pop-up chart
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Scatter } from 'recharts';
 
 import TotalBatchesChart from './charts/TotalBatchesChart';
 import TotalCostChart from './charts/TotalCostChart';
