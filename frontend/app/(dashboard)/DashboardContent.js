@@ -451,6 +451,163 @@ function Dashboard() {
             </FormControl>
           </Grid>
 
+          {/* Batch Tracking Filter */}
+          <Grid item xs={6} md={2.4}>
+            <TextField
+              label="Filter Batch Numbers (comma-separated)"
+              value={batchFilter}
+              onChange={handleBatchFilterChange}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  fetchBatchTrackingData();
+                }
+              }}
+              fullWidth
+              variant="outlined"
+            />
+          </Grid>
+
+          {/* Batch Tracking Table */}
+          <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent sx={{ height: '100%' }}>
+                <Typography variant="h6" gutterBottom>
+                  Batch Tracking
+                </Typography>
+                {isLoadingBatchTracking ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
+                    <CircularProgress />
+                  </Box>
+                ) : batchTrackingData.length === 0 ? (
+                  <Typography variant="body1" color="error">
+                    No batch tracking data available. Please try again later or check batch numbers.
+                  </Typography>
+                ) : (
+                  <DataGrid
+                    rows={batchTrackingData}
+                    columns={[
+                      { 
+                        field: 'batchNumber', 
+                        headerName: 'Batch Number', 
+                        width: 180,
+                        renderCell: (params) => (
+                          <Button
+                            variant="text"
+                            color="primary"
+                            onClick={() => handleBatchClick(params.row)}
+                          >
+                            {params.value}
+                          </Button>
+                        ),
+                      },
+                      { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
+                      { field: 'processingType', headerName: 'Processing Type', width: 120 },
+                      { field: 'grade', headerName: 'Grade', width: 100 },
+                      { 
+                        field: 'receiving_weight', 
+                        headerName: 'Receiving Weight (kg)', 
+                        width: 150,
+                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
+                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
+                      },
+                      { 
+                        field: 'preprocessing_weight', 
+                        headerName: 'Preprocessing Weight (kg)', 
+                        width: 150,
+                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
+                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
+                      },
+                      { 
+                        field: 'wetmill_weight', 
+                        headerName: 'Wet Mill Weight (kg)', 
+                        width: 150,
+                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
+                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
+                      },
+                      { 
+                        field: 'fermentation_weight', 
+                        headerName: 'Fermentation Weight (kg)', 
+                        width: 150,
+                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
+                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
+                      },
+                      { 
+                        field: 'drying_weight', 
+                        headerName: 'Drying Weight (kg)', 
+                        width: 150,
+                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
+                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
+                      },
+                      { 
+                        field: 'dry_mill_weight', 
+                        headerName: 'Dry Mill Weight (kg)', 
+                        width: 150,
+                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
+                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
+                      },
+                      { field: 'position', headerName: 'Position', width: 150 },
+                      { field: 'status', headerName: 'Status', width: 120 },
+                    ]}
+                    pageSizeOptions={[5, 10, 20]}
+                    slots={{ toolbar: GridToolbar }}
+                    sx={{
+                      height: '80%',
+                      border: '1px solid rgba(0,0,0,0.12)',
+                      '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                      '& .null-weight': { color: 'red', fontWeight: 'bold' },
+                      '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                      '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                    }}
+                    rowHeight={32}
+                    disableRowSelectionOnClick
+                    initialState={{
+                      pagination: { paginationModel: { pageSize: 10 } },
+                      sorting: {
+                        sortModel: [{ field: 'batchNumber', sort: 'asc' }],
+                      },
+                    }}
+                    localeText={{
+                      noRowsLabel: 'No batch tracking data available'
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Batch Tracking Dialog */}
+          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+            <DialogTitle>Batch Weight Progression: {selectedBatch?.batchNumber}</DialogTitle>
+            <DialogContent>
+              {selectedBatch && (
+                <LineChart
+                  width={800}
+                  height={400}
+                  data={getChartData(selectedBatch)}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" label={{ value: 'Processing Stage', position: 'bottom' }} />
+                  <YAxis label={{ value: 'Weight (kg)', angle: -90, position: 'left' }} />
+                  <Tooltip formatter={(value, name, props) => [
+                    value,
+                    `Weight (Date: ${props.payload.date})`
+                  ]} />
+                  <Legend />
+                  <Line
+                    type="monotone" // Smooth line
+                    dataKey="weight"
+                    stroke="#8884d8"
+                    activeDot={{ r: 8 }}
+                    name="Weight (kg)"
+                  />
+                </LineChart>
+              )}
+            </DialogContent>
+            <Button onClick={handleCloseDialog} color="primary" sx={{ m: 2 }}>
+              Close
+            </Button>
+          </Dialog>
 
           {/* Arabica Section */}
           <Grid item xs={12} md={12}>
