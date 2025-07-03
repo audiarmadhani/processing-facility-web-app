@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
+import * as d3 from 'd3'; // Import D3.js
 import { TextField, Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
