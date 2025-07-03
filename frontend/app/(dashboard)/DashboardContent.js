@@ -80,7 +80,7 @@ function Dashboard() {
   // New state for batch tracking
   const [batchTrackingData, setBatchTrackingData] = useState([]);
   const [isLoadingBatchTracking, setIsLoadingBatchTracking] = useState(false);
-  const [batchFilter, setBatchFilter] = useState('');
+  // const [batchFilter, setBatchFilter] = useState('');
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
 
@@ -356,9 +356,9 @@ function Dashboard() {
     setError(null);
   };
 
-  const handleBatchFilterChange = (event) => {
-    setBatchFilter(event.target.value);
-  };
+  // const handleBatchFilterChange = (event) => {
+  //   setBatchFilter(event.target.value);
+  // };
 
   const handleBatchClick = (batch) => {
     setSelectedBatch(batch);
@@ -524,7 +524,7 @@ function Dashboard() {
             </FormControl>
           </Grid>
 
-          {/* Batch Tracking Filter */}
+          {/* Batch Tracking Filter
           <Grid item xs={6} md={2.4}>
             <TextField
               label="Filter Batch Numbers (comma-separated)"
@@ -538,7 +538,7 @@ function Dashboard() {
               fullWidth
               variant="outlined"
             />
-          </Grid>
+          </Grid> */}
 
           {/* Batch Tracking Table */}
           <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
@@ -620,7 +620,7 @@ function Dashboard() {
                         valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
                       },
                     ]}
-                    pageSizeOptions={[20, 50, 200]}
+                    pageSizeOptions={[20, 50, 100]}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
                       height: '100%',
@@ -633,7 +633,7 @@ function Dashboard() {
                     rowHeight={32}
                     disableRowSelectionOnClick
                     initialState={{
-                      pagination: { paginationModel: { pageSize: 50 } },
+                      pagination: { paginationModel: { pageSize: 100 } },
                       sorting: {
                         sortModel: [{ field: 'batchNumber', sort: 'asc' }],
                       },
@@ -797,7 +797,7 @@ function Dashboard() {
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                           ]}
-                          pageSizeOptions={[20, 50, 200]}
+                          pageSizeOptions={[20, 50, 100]}
                           slots={{ toolbar: GridToolbar }}
                           sx={{
                             height: '100%',
@@ -810,7 +810,7 @@ function Dashboard() {
                           rowHeight={32}
                           disableRowSelectionOnClick
                           initialState={{
-                            pagination: { paginationModel: { pageSize: 50 } },
+                            pagination: { paginationModel: { pageSize: 100 } },
                             sorting: {
                               sortModel: [{ field: 'processingType', sort: 'asc' }],
                             },
