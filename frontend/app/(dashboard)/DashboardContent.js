@@ -371,43 +371,116 @@ function Dashboard() {
   };
 
   // Prepare data for the line chart in the dialog
-  const getChartData = (batch) => {
-    if (!batch) return [];
+  const getChartData = (batchNumber) => {
+    if (!batchNumber) return { nodes: [], links: [], title: '' };
+
+    // Filter all batch entries with the same batchNumber
+    const batchEntries = batchTrackingData.filter(b => b.batchNumber === batchNumber);
+    if (batchEntries.length === 0) return { nodes: [], links: [], title: '' };
+
+    // Get unique processing types and grades
+    const processingTypes = [...new Set(batchEntries.map(b => b.processingType))];
+    const grades = [...new Set(batchEntries.map(b => b.grade))];
+    const title = `Batch ${batchNumber} (${processingTypes.join(', ')}, Grade ${grades.join(', ')})`;
+
+    // Define processing stages
     const stages = [
-      { name: 'Receiving', weight: batch.receiving_weight, date: batch.receiving_date },
-      { name: 'Preprocessing', weight: batch.preprocessing_weight, date: batch.preprocessing_date },
-      { name: 'Wet Mill', weight: batch.wetmill_weight, date: batch.wetmill_weight_date },
-      { name: 'Fermentation', weight: batch.fermentation_weight, date: batch.fermentation_weight_date },
-      { name: 'Drying', weight: batch.drying_weight, date: batch.drying_weight_date },
-      { name: 'Dry Mill', weight: batch.dry_mill_weight, date: batch.dry_mill_weight_date },
+      { name: 'Receiving', weightKey: 'receiving_weight', dateKey: 'receiving_date' },
+      { name: 'Preprocessing', weightKey: 'preprocessing_weight', dateKey: 'preprocessing_date' },
+      { name: 'Wet Mill', weightKey: 'wetmill_weight', dateKey: 'wetmill_weight_date' },
+      { name: 'Fermentation', weightKey: 'fermentation_weight', dateKey: 'fermentation_weight_date' },
+      { name: 'Drying', weightKey: 'drying_weight', dateKey: 'drying_weight_date' },
+      { name: 'Dry Mill', weightKey: 'dry_mill_weight', dateKey: 'dry_mill_weight_date' },
     ];
 
-    // Filter stages based on processing type
-    let filteredStages = stages;
-    if (batch.processingType === 'N/A') {
-      // For 'N/A' (Unknown), include all stages with non-null weights
-      filteredStages = stages.filter(stage => stage.weight !== 'N/A');
-    } else if (batch.processingType === 'Washed') {
-      // Washed: Include all stages
-      filteredStages = stages.filter(stage => stage.weight !== 'N/A');
-    } else if (batch.processingType === 'Natural') {
-      // Natural: Skip Wet Mill and Fermentation
-      filteredStages = stages.filter(stage => 
-        ['Receiving', 'Preprocessing', 'Drying', 'Dry Mill'].includes(stage.name) && stage.weight !== 'N/A'
-      );
-    } else if (batch.processingType === 'Honey') {
-      // Honey: Skip Wet Mill
-      filteredStages = stages.filter(stage => 
-        ['Receiving', 'Preprocessing', 'Fermentation', 'Drying', 'Dry Mill'].includes(stage.name) && stage.weight !== 'N/A'
-      );
-    }
+    // Create nodes and links for the chart
+    const nodes = [];
+    const links = [];
+    let nodeId = 0;
 
-    // Format dates and ensure weights are numbers
-    return filteredStages.map(stage => ({
-      name: stage.name,
-      weight: parseFloat(stage.weight) || 0,
-      date: stage.date ? dayjs(stage.date).format('YYYY-MM-DD') : 'N/A',
-    }));
+    // Add nodes for shared stages (Receiving, Preprocessing)
+    const sharedStages = ['Receiving', 'Preprocessing'];
+    sharedStages.forEach((stageName, stageIndex) => {
+      const stage = stages.find(s => s.name === stageName);
+      // Sum weights for shared stages across all entries
+      const totalWeight = batchEntries.reduce((sum, entry) => {
+        const weight = parseFloat(entry[stage.weightKey]);
+        return isNaN(weight) ? sum : sum + weight;
+      }, 0);
+      if (!isNaN(totalWeight)) {
+        nodes.push({
+          id: nodeId,
+          name: stageName,
+          weight: totalWeight,
+          y: stageIndex * 100, // Vertical positioning
+          x: 0, // Center for shared stages
+        });
+        if (stageIndex > 0) {
+          links.push({
+            source: nodeId - 1,
+            target: nodeId,
+            curve: 'basis',
+          });
+        }
+        nodeId++;
+      }
+    });
+
+    // Handle splits after Preprocessing
+    const splitStageIndex = sharedStages.length; // Start splitting at Wet Mill
+    batchEntries.forEach((entry, entryIndex) => {
+      const processingType = entry.processingType;
+      // Start at Wet Mill or later stages
+      stages.slice(splitStageIndex).forEach((stage, stageIndex) => {
+        const weight = parseFloat(entry[stage.weightKey]);
+        if (!isNaN(weight) && weight > 0 && entry[stage.weightKey] !== 'N/A') {
+          // Skip Fermentation for Natural/CM Natural
+          if (stage.name === 'Fermentation' && ['Natural', 'CM Natural'].includes(processingType)) {
+            return;
+          }
+          // Skip Wet Mill for Natural/Honey if not applicable
+          if (stage.name === 'Wet Mill' && ['Natural', 'Honey'].includes(processingType) && entry[stage.weightKey] === 'N/A') {
+            return;
+          }
+          const node = {
+            id: nodeId,
+            name: stage.name,
+            weight: weight,
+            processingType: processingType,
+            y: (stageIndex + splitStageIndex) * 100,
+            x: entryIndex * 100 - ((batchEntries.length - 1) * 50), // Spread branches horizontally
+          };
+          nodes.push(node);
+
+          // Link to previous node (Preprocessing or previous stage in the same branch)
+          if (stageIndex === 0) {
+            // Link to Preprocessing (last shared stage)
+            const preprocessingNode = nodes.find(n => n.name === 'Preprocessing');
+            if (preprocessingNode) {
+              links.push({
+                source: preprocessingNode.id,
+                target: nodeId,
+                curve: 'basis',
+              });
+            }
+          } else {
+            // Link to previous stage in the same branch
+            const prevStage = stages[stageIndex + splitStageIndex - 1];
+            const prevNode = nodes.find(n => n.name === prevStage.name && n.processingType === processingType);
+            if (prevNode) {
+              links.push({
+                source: prevNode.id,
+                target: nodeId,
+                curve: 'basis',
+              });
+            }
+          }
+          nodeId++;
+        }
+      });
+    });
+
+    return { nodes, links, title };
   };
 
   if (loading) {
@@ -501,33 +574,34 @@ function Dashboard() {
                         ),
                       },
                       { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-                      { field: 'processingType', headerName: 'Processing Type', width: 120 },
-                      { field: 'grade', headerName: 'Grade', width: 100 },
+                      { field: 'processingType', headerName: 'Processing Type', width: 140 },
+                      { field: 'position', headerName: 'Position', width: 150 },
+                      { field: 'status', headerName: 'Status', width: 120 },
                       { 
                         field: 'receiving_weight', 
                         headerName: 'Receiving Weight (kg)', 
-                        width: 150,
+                        width: 160,
                         cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
                         valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
                       },
                       { 
                         field: 'preprocessing_weight', 
                         headerName: 'Preprocessing Weight (kg)', 
-                        width: 150,
+                        width: 180,
                         cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
                         valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
                       },
                       { 
                         field: 'wetmill_weight', 
                         headerName: 'Wet Mill Weight (kg)', 
-                        width: 150,
+                        width: 160,
                         cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
                         valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
                       },
                       { 
                         field: 'fermentation_weight', 
                         headerName: 'Fermentation Weight (kg)', 
-                        width: 150,
+                        width: 180,
                         cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
                         valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
                       },
@@ -545,13 +619,11 @@ function Dashboard() {
                         cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
                         valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
                       },
-                      { field: 'position', headerName: 'Position', width: 150 },
-                      { field: 'status', headerName: 'Status', width: 120 },
                     ]}
-                    pageSizeOptions={[5, 10, 20]}
+                    pageSizeOptions={[20, 50, 200]}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
-                      height: '80%',
+                      height: '100%',
                       border: '1px solid rgba(0,0,0,0.12)',
                       '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
                       '& .null-weight': { color: 'red', fontWeight: 'bold' },
@@ -561,7 +633,7 @@ function Dashboard() {
                     rowHeight={32}
                     disableRowSelectionOnClick
                     initialState={{
-                      pagination: { paginationModel: { pageSize: 10 } },
+                      pagination: { paginationModel: { pageSize: 50 } },
                       sorting: {
                         sortModel: [{ field: 'batchNumber', sort: 'asc' }],
                       },
@@ -576,37 +648,67 @@ function Dashboard() {
           </Grid>
 
           {/* Batch Tracking Dialog */}
-          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-            <DialogTitle>Batch Weight Progression: {selectedBatch?.batchNumber}</DialogTitle>
+          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
+            <DialogTitle>
+              {selectedBatch && getChartData(selectedBatch.batch_number).title}
+            </DialogTitle>
             <DialogContent>
               {selectedBatch && (
                 <LineChart
                   width={800}
-                  height={400}
-                  data={getChartData(selectedBatch)}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  height={600}
+                  margin={{ top: 20, right: 100, left: 100, bottom: 20 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" label={{ value: 'Processing Stage', position: 'bottom' }} />
-                  <YAxis label={{ value: 'Weight (kg)', angle: -90, position: 'left' }} />
-                  <Tooltip formatter={(value, name, props) => [
-                    value,
-                    `Weight (Date: ${props.payload.date})`
-                  ]} />
-                  <Legend />
-                  <Line
-                    type="monotone" // Smooth line
-                    dataKey="weight"
-                    stroke="#8884d8"
-                    activeDot={{ r: 8 }}
-                    name="Weight (kg)"
+                  <XAxis type="number" dataKey="x" hide />
+                  <YAxis type="number" dataKey="y" hide reversed />
+                  {getChartData(selectedBatch.batch_number).links.map((link, index) => (
+                    <Line
+                      key={`line-${index}`}
+                      data={getChartData(selectedBatch.batch_number).nodes.filter(n => [link.source, link.target].includes(n.id))}
+                      dataKey="x"
+                      type="basis"
+                      stroke="#8884d8"
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  ))}
+                  <Scatter
+                    data={getChartData(selectedBatch.batch_number).nodes}
+                    fill="#8884d8"
+                  >
+                    {getChartData(selectedBatch.batch_number).nodes.map((node, index) => (
+                      <g key={`node-${index}`}>
+                        <circle
+                          cx={node.x}
+                          cy={node.y}
+                          r={8}
+                          fill="#8884d8"
+                        />
+                        <text
+                          x={node.x + 10}
+                          y={node.y}
+                          fill="#000"
+                          fontSize={12}
+                          textAnchor="start"
+                        >
+                          {`${node.name}: ${node.weight.toFixed(2)} kg${node.processingType ? ` (${node.processingType})` : ''}`}
+                        </text>
+                      </g>
+                    ))}
+                  </Scatter>
+                  <Tooltip
+                    formatter={(value, name, props) => [
+                      `${props.payload.weight.toFixed(2)} kg`,
+                      props.payload.name + (props.payload.processingType ? ` (${props.payload.processingType})` : ''),
+                    ]}
                   />
                 </LineChart>
               )}
+              <Button onClick={handleCloseDialog} variant="contained" sx={{ mt: 2 }}>
+                Close
+              </Button>
             </DialogContent>
-            <Button onClick={handleCloseDialog} color="primary" sx={{ m: 2 }}>
-              Close
-            </Button>
           </Dialog>
 
           {/* Arabica Section */}
@@ -695,10 +797,10 @@ function Dashboard() {
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                           ]}
-                          pageSizeOptions={[5]}
+                          pageSizeOptions={[20, 50, 200]}
                           slots={{ toolbar: GridToolbar }}
                           sx={{
-                            height: '80%',
+                            height: '100%',
                             border: '1px solid rgba(0,0,0,0.12)',
                             '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
                             '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
@@ -708,7 +810,7 @@ function Dashboard() {
                           rowHeight={32}
                           disableRowSelectionOnClick
                           initialState={{
-                            pagination: { paginationModel: { pageSize: 20 } },
+                            pagination: { paginationModel: { pageSize: 50 } },
                             sorting: {
                               sortModel: [{ field: 'processingType', sort: 'asc' }],
                             },
