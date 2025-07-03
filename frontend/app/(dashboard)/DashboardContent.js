@@ -24,7 +24,6 @@ import {
   Alert
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Scatter } from 'recharts';
 
 import TotalBatchesChart from './charts/TotalBatchesChart';
 import TotalCostChart from './charts/TotalCostChart';
@@ -53,20 +52,44 @@ function Dashboard() {
   const userRole = session?.user?.role || "user";
 
   const [metrics, setMetrics] = useState({
-    totalBatches: 0, 
-    totalArabicaWeight: 0, 
-    totalRobustaWeight: 0, 
-    totalArabicaCost: 0, 
+    totalBatches: 0,
+    totalArabicaWeight: 0,
+    totalRobustaWeight: 0,
+    totalArabicaCost: 0,
     totalRobustaCost: 0,
-    lastmonthArabicaWeight: 0, 
-    lastmonthRobustaWeight: 0, 
-    lastmonthArabicaCost: 0, 
+    lastmonthArabicaWeight: 0,
+    lastmonthRobustaWeight: 0,
+    lastmonthArabicaCost: 0,
     lastmonthRobustaCost: 0,
     totalWeight: 0,
     totalCost: 0,
     activeFarmers: 0,
     pendingQC: 0,
     pendingProcessing: 0,
+    avgArabicaCost: 0,
+    avgRobustaCost: 0,
+    lastmonthAvgArabicaCost: 0,
+    lastmonthAvgRobustaCost: 0,
+    totalArabicaProcessed: 0,
+    totalRobustaProcessed: 0,
+    lastmonthArabicaProcessed: 0,
+    lastmonthRobustaProcessed: 0,
+    totalArabicaProduction: 0,
+    totalRobustaProduction: 0,
+    lastmonthArabicaProduction: 0,
+    lastmonthRobustaProduction: 0,
+    arabicaYield: 0,
+    robustaYield: 0,
+    landCoveredArabica: 0,
+    landCoveredRobusta: 0,
+    activeArabicaFarmers: 0,
+    activeRobustaFarmers: 0,
+    pendingArabicaQC: 0,
+    pendingRobustaQC: 0,
+    pendingArabicaProcessing: 0,
+    pendingRobustaProcessing: 0,
+    pendingArabicaWeightProcessing: 0,
+    pendingRobustaWeightProcessing: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -75,14 +98,13 @@ function Dashboard() {
   const [heqaTargets, setHeqaTargets] = useState([]);
   const [robustaTargets, setRobustaTargets] = useState([]);
   const [landTargets, setLandTargets] = useState([]);
-  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  // New state for batch tracking
   const [batchTrackingData, setBatchTrackingData] = useState([]);
+  const [isLoadingTargets, setIsLoadingTargets] = useState(false);
   const [isLoadingBatchTracking, setIsLoadingBatchTracking] = useState(false);
   const [batchFilter, setBatchFilter] = useState('');
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const formatWeight = (weight) => {
     if (weight >= 1e9) {
@@ -92,11 +114,9 @@ function Dashboard() {
     } else if (weight >= 1e3) {
       return `${(weight / 1e3).toFixed(2)} K`;
     } else {
-      return `Rp ${new Intl.NumberFormat('de-DE').format(weight)} /kg`;
+      return `${new Intl.NumberFormat('de-DE').format(weight)} /kg`;
     }
   };
-
-  const [timeframe, setTimeframe] = useState('this_month');
 
   const timeframes = [
     { value: 'this_week', label: 'This Week' },
@@ -116,9 +136,9 @@ function Dashboard() {
     last_year: 'Last Year',
   };
 
+  const [timeframe, setTimeframe] = useState('this_month');
   const selectedRangeLabel = timeframeLabels[timeframe];
 
-  // Fetch Batch Tracking Data
   const fetchBatchTrackingData = useCallback(async () => {
     console.log('Starting fetchBatchTrackingData');
     setIsLoadingBatchTracking(true);
@@ -131,7 +151,7 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Raw Batch Tracking API response:', data);
+      console.log('Raw batch tracking API response:', data);
       const formattedData = data.map((row, index) => ({
         id: index,
         ...row,
@@ -149,7 +169,6 @@ function Dashboard() {
     }
   }, [batchFilter]);
 
-  // Fetch Arabica targets
   const fetchArabicaTargets = useCallback(async () => {
     console.log('Starting fetchArabicaTargets');
     setIsLoadingTargets(true);
@@ -159,24 +178,20 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Raw API response:', data);
+      console.log('Raw Arabica API response:', data);
       if (!data.arabicaTarget || !Array.isArray(data.arabicaTarget)) {
         throw new Error('Invalid response format: arabicaTarget array not found');
       }
-      const formattedData = data.arabicaTarget.map((row, index) => {
-        const formattedRow = {
-          id: index,
-          processingType: row.processingType,
-          cherryNow: parseFloat(row.cherryNow) || null,
-          projectedGB: parseFloat(row.projectedGB) || null,
-          cherryTarget: parseFloat(row.cherryTarget) || null,
-          gbTarget: parseFloat(row.gbTarget) || null,
-          cherryDeficit: parseFloat(row.cherryDeficit) || null,
-          cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
-        };
-        console.log('Formatted row:', formattedRow);
-        return formattedRow;
-      });
+      const formattedData = data.arabicaTarget.map((row, index) => ({
+        id: index,
+        processingType: row.processingType,
+        cherryNow: parseFloat(row.cherryNow) || null,
+        projectedGB: parseFloat(row.projectedGB) || null,
+        cherryTarget: parseFloat(row.cherryTarget) || null,
+        gbTarget: parseFloat(row.gbTarget) || null,
+        cherryDeficit: parseFloat(row.cherryDeficit) || null,
+        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+      }));
       console.log('Setting arabicaTargets:', formattedData);
       setArabicaTargets(formattedData);
     } catch (err) {
@@ -189,7 +204,6 @@ function Dashboard() {
     }
   }, []);
 
-  // Fetch Heqa targets
   const fetchHeqaTargets = useCallback(async () => {
     console.log('Starting fetchHeqaTargets');
     setIsLoadingTargets(true);
@@ -199,24 +213,20 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Raw API response:', data);
+      console.log('Raw Heqa API response:', data);
       if (!data.heqaTarget || !Array.isArray(data.heqaTarget)) {
         throw new Error('Invalid response format: heqaTarget array not found');
       }
-      const formattedData = data.heqaTarget.map((row, index) => {
-        const formattedRow = {
-          id: index,
-          productLine: row.productLine,
-          cherryNow: parseFloat(row.cherryNow) || null,
-          projectedGB: parseFloat(row.projectedGB) || null,
-          cherryTarget: parseFloat(row.cherryTarget) || null,
-          gbTarget: parseFloat(row.gbTarget) || null,
-          cherryDeficit: parseFloat(row.cherryDeficit) || null,
-          cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
-        };
-        console.log('Formatted row:', formattedRow);
-        return formattedRow;
-      });
+      const formattedData = data.heqaTarget.map((row, index) => ({
+        id: index,
+        productLine: row.productLine,
+        cherryNow: parseFloat(row.cherryNow) || null,
+        projectedGB: parseFloat(row.projectedGB) || null,
+        cherryTarget: parseFloat(row.cherryTarget) || null,
+        gbTarget: parseFloat(row.gbTarget) || null,
+        cherryDeficit: parseFloat(row.cherryDeficit) || null,
+        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+      }));
       console.log('Setting heqaTargets:', formattedData);
       setHeqaTargets(formattedData);
     } catch (err) {
@@ -229,7 +239,6 @@ function Dashboard() {
     }
   }, []);
 
-  // Fetch Robusta targets
   const fetchRobustaTargets = useCallback(async () => {
     console.log('Starting fetchRobustaTargets');
     setIsLoadingTargets(true);
@@ -243,20 +252,16 @@ function Dashboard() {
       if (!data.robustaTarget || !Array.isArray(data.robustaTarget)) {
         throw new Error('Invalid response format: robustaTarget array not found');
       }
-      const formattedData = data.robustaTarget.map((row, index) => {
-        const formattedRow = {
-          id: index,
-          processingType: row.processingType,
-          cherryNow: parseFloat(row.cherryNow) || null,
-          projectedGB: parseFloat(row.projectedGB) || null,
-          cherryTarget: parseFloat(row.cherryTarget) || null,
-          gbTarget: parseFloat(row.gbTarget) || null,
-          cherryDeficit: parseFloat(row.cherryDeficit) || null,
-          cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
-        };
-        console.log('Formatted Robusta row:', formattedRow);
-        return formattedRow;
-      });
+      const formattedData = data.robustaTarget.map((row, index) => ({
+        id: index,
+        processingType: row.processingType,
+        cherryNow: parseFloat(row.cherryNow) || null,
+        projectedGB: parseFloat(row.projectedGB) || null,
+        cherryTarget: parseFloat(row.cherryTarget) || null,
+        gbTarget: parseFloat(row.gbTarget) || null,
+        cherryDeficit: parseFloat(row.cherryDeficit) || null,
+        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+      }));
       console.log('Setting robustaTargets:', formattedData);
       setRobustaTargets(formattedData);
     } catch (err) {
@@ -269,7 +274,6 @@ function Dashboard() {
     }
   }, []);
 
-  // Fetch Land targets
   const fetchLandTargets = useCallback(async () => {
     console.log('Starting fetchLandTargets');
     setIsLoadingTargets(true);
@@ -279,24 +283,20 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Raw API response:', data);
+      console.log('Raw Land API response:', data);
       if (!data.landTarget || !Array.isArray(data.landTarget)) {
         throw new Error('Invalid response format: landTarget array not found');
       }
-      const formattedData = data.landTarget.map((row, index) => {
-        const formattedRow = {
-          id: index,
-          farmerName: row.farmerName,
-          brokerName: row.brokerName || null,
-          contractValue: parseFloat(row.contractValue) || null,
-          cherryEstimate: parseFloat(row.cherryEstimate) || null,
-          gbEstimate: parseFloat(row.gbEstimate) || null,
-          currentcherrytotal: parseFloat(row.currentcherrytotal) || null,
-          difference: parseFloat(row.difference) || null,
-        };
-        console.log('Formatted row:', formattedRow);
-        return formattedRow;
-      });
+      const formattedData = data.landTarget.map((row, index) => ({
+        id: index,
+        farmerName: row.farmerName,
+        brokerName: row.brokerName || null,
+        contractValue: parseFloat(row.contractValue) || null,
+        cherryEstimate: parseFloat(row.cherryEstimate) || null,
+        gbEstimate: parseFloat(row.gbEstimate) || null,
+        currentcherrytotal: parseFloat(row.currentcherrytotal) || null,
+        difference: parseFloat(row.difference) || null,
+      }));
       console.log('Setting landTargets:', formattedData);
       setLandTargets(formattedData);
     } catch (err) {
@@ -309,7 +309,111 @@ function Dashboard() {
     }
   }, []);
 
-  // Fetch metrics and targets
+  const getProgressData = (batchNumber) => {
+    if (!batchNumber) return { nodes: [], links: [], title: '' };
+
+    const batchEntries = batchTrackingData.filter(b => b.batchNumber === batchNumber);
+    if (batchEntries.length === 0) return { nodes: [], links: [], title: '' };
+
+    const processingTypes = [...new Set(batchEntries.map(b => b.processingType))];
+    const grades = [...new Set(batchEntries.map(b => b.grade))];
+    const title = `Batch ${batchNumber} (${processingTypes.join(', ')}, Grade ${grades.join(', ')})`;
+
+    const stages = [
+      { name: 'Receiving', weightKey: 'receiving_weight', dateKey: 'receiving_date' },
+      { name: 'Preprocessing', weightKey: 'preprocessing_weight', dateKey: 'preprocessing_date' },
+      { name: 'Wet Mill', weightKey: 'wetmill_weight', dateKey: 'wetmill_weight_date' },
+      { name: 'Fermentation', weightKey: 'fermentation_weight', dateKey: 'fermentation_weight_date' },
+      { name: 'Drying', weightKey: 'drying_weight', dateKey: 'drying_weight_date' },
+      { name: 'Dry Mill', weightKey: 'dry_mill_weight', dateKey: 'dry_mill_weight_date' },
+    ];
+
+    const nodes = [];
+    const links = [];
+    let nodeId = 0;
+
+    // Add shared stages (Receiving, Preprocessing)
+    const sharedStages = ['Receiving', 'Preprocessing'];
+    sharedStages.forEach((stageName, stageIndex) => {
+      const stage = stages.find(s => s.name === stageName);
+      const totalWeight = batchEntries.reduce((sum, entry) => {
+        const weight = parseFloat(entry[stage.weightKey]);
+        return isNaN(weight) ? sum : sum + weight;
+      }, 0);
+      if (!isNaN(totalWeight)) {
+        const status = stageIndex === 0 || batchEntries.every(e => e[stage.dateKey]) ? 'completed' : 'in-progress';
+        nodes.push({
+          id: nodeId,
+          name: stageName,
+          weight: totalWeight,
+          y: stageIndex * 100,
+          x: 0,
+          status: status,
+        });
+        if (stageIndex > 0) {
+          links.push({
+            source: nodeId - 1,
+            target: nodeId,
+            curve: 'basis',
+          });
+        }
+        nodeId++;
+      }
+    });
+
+    // Handle splits after Preprocessing
+    const splitStageIndex = sharedStages.length;
+    batchEntries.forEach((entry, entryIndex) => {
+      const processingType = entry.processingType;
+      stages.slice(splitStageIndex).forEach((stage, stageIndex) => {
+        const weight = parseFloat(entry[stage.weightKey]);
+        if (!isNaN(weight) && weight > 0 && entry[stage.weightKey] !== 'N/A') {
+          // Skip Fermentation for Natural/CM Natural
+          if (stage.name === 'Fermentation' && ['Natural', 'CM Natural'].includes(processingType)) return;
+          // Skip Wet Mill for Natural/Honey if not applicable
+          if (stage.name === 'Wet Mill' && ['Natural', 'Honey'].includes(processingType) && entry[stage.weightKey] === 'N/A') return;
+
+          const position = entry.position.split(' ')[0]; // e.g., "Drying" from "Drying (Finished)"
+          const status = stage.name === position ? 'in-progress' : stage.name < position ? 'completed' : 'pending';
+          const node = {
+            id: nodeId,
+            name: stage.name,
+            weight: weight,
+            processingType: processingType,
+            y: (stageIndex + splitStageIndex) * 100,
+            x: entryIndex * 150 - ((batchEntries.length - 1) * 75), // Spread branches horizontally
+            status: status,
+          };
+          nodes.push(node);
+
+          if (stageIndex === 0) {
+            const preprocessingNode = nodes.find(n => n.name === 'Preprocessing');
+            if (preprocessingNode) {
+              links.push({
+                source: preprocessingNode.id,
+                target: nodeId,
+                curve: 'basis',
+              });
+            }
+          } else {
+            const prevStage = stages[stageIndex + splitStageIndex - 1];
+            const prevNode = nodes.find(n => n.name === prevStage.name && n.processingType === processingType);
+            if (prevNode) {
+              links.push({
+                source: prevNode.id,
+                target: nodeId,
+                curve: 'basis',
+              });
+            }
+          }
+          nodeId++;
+        }
+      });
+    });
+
+    return { nodes, links, title };
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       console.log('Starting fetchData');
@@ -341,7 +445,7 @@ function Dashboard() {
       await fetchRobustaTargets();
       await fetchLandTargets();
       await fetchHeqaTargets();
-      await fetchBatchTrackingData(); // Added batch tracking fetch
+      await fetchBatchTrackingData();
     };
 
     fetchAllData();
@@ -349,11 +453,6 @@ function Dashboard() {
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
-  };
-
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-    setError(null);
   };
 
   const handleBatchFilterChange = (event) => {
@@ -370,117 +469,9 @@ function Dashboard() {
     setSelectedBatch(null);
   };
 
-  // Prepare data for the line chart in the dialog
-  const getChartData = (batchNumber) => {
-    if (!batchNumber) return { nodes: [], links: [], title: '' };
-
-    // Filter all batch entries with the same batchNumber
-    const batchEntries = batchTrackingData.filter(b => b.batchNumber === batchNumber);
-    if (batchEntries.length === 0) return { nodes: [], links: [], title: '' };
-
-    // Get unique processing types and grades
-    const processingTypes = [...new Set(batchEntries.map(b => b.processingType))];
-    const grades = [...new Set(batchEntries.map(b => b.grade))];
-    const title = `Batch ${batchNumber} (${processingTypes.join(', ')}, Grade ${grades.join(', ')})`;
-
-    // Define processing stages
-    const stages = [
-      { name: 'Receiving', weightKey: 'receiving_weight', dateKey: 'receiving_date' },
-      { name: 'Preprocessing', weightKey: 'preprocessing_weight', dateKey: 'preprocessing_date' },
-      { name: 'Wet Mill', weightKey: 'wetmill_weight', dateKey: 'wetmill_weight_date' },
-      { name: 'Fermentation', weightKey: 'fermentation_weight', dateKey: 'fermentation_weight_date' },
-      { name: 'Drying', weightKey: 'drying_weight', dateKey: 'drying_weight_date' },
-      { name: 'Dry Mill', weightKey: 'dry_mill_weight', dateKey: 'dry_mill_weight_date' },
-    ];
-
-    // Create nodes and links for the chart
-    const nodes = [];
-    const links = [];
-    let nodeId = 0;
-
-    // Add nodes for shared stages (Receiving, Preprocessing)
-    const sharedStages = ['Receiving', 'Preprocessing'];
-    sharedStages.forEach((stageName, stageIndex) => {
-      const stage = stages.find(s => s.name === stageName);
-      // Sum weights for shared stages across all entries
-      const totalWeight = batchEntries.reduce((sum, entry) => {
-        const weight = parseFloat(entry[stage.weightKey]);
-        return isNaN(weight) ? sum : sum + weight;
-      }, 0);
-      if (!isNaN(totalWeight)) {
-        nodes.push({
-          id: nodeId,
-          name: stageName,
-          weight: totalWeight,
-          y: stageIndex * 100, // Vertical positioning
-          x: 0, // Center for shared stages
-        });
-        if (stageIndex > 0) {
-          links.push({
-            source: nodeId - 1,
-            target: nodeId,
-            curve: 'basis',
-          });
-        }
-        nodeId++;
-      }
-    });
-
-    // Handle splits after Preprocessing
-    const splitStageIndex = sharedStages.length; // Start splitting at Wet Mill
-    batchEntries.forEach((entry, entryIndex) => {
-      const processingType = entry.processingType;
-      // Start at Wet Mill or later stages
-      stages.slice(splitStageIndex).forEach((stage, stageIndex) => {
-        const weight = parseFloat(entry[stage.weightKey]);
-        if (!isNaN(weight) && weight > 0 && entry[stage.weightKey] !== 'N/A') {
-          // Skip Fermentation for Natural/CM Natural
-          if (stage.name === 'Fermentation' && ['Natural', 'CM Natural'].includes(processingType)) {
-            return;
-          }
-          // Skip Wet Mill for Natural/Honey if not applicable
-          if (stage.name === 'Wet Mill' && ['Natural', 'Honey'].includes(processingType) && entry[stage.weightKey] === 'N/A') {
-            return;
-          }
-          const node = {
-            id: nodeId,
-            name: stage.name,
-            weight: weight,
-            processingType: processingType,
-            y: (stageIndex + splitStageIndex) * 100,
-            x: entryIndex * 100 - ((batchEntries.length - 1) * 50), // Spread branches horizontally
-          };
-          nodes.push(node);
-
-          // Link to previous node (Preprocessing or previous stage in the same branch)
-          if (stageIndex === 0) {
-            // Link to Preprocessing (last shared stage)
-            const preprocessingNode = nodes.find(n => n.name === 'Preprocessing');
-            if (preprocessingNode) {
-              links.push({
-                source: preprocessingNode.id,
-                target: nodeId,
-                curve: 'basis',
-              });
-            }
-          } else {
-            // Link to previous stage in the same branch
-            const prevStage = stages[stageIndex + splitStageIndex - 1];
-            const prevNode = nodes.find(n => n.name === prevStage.name && n.processingType === processingType);
-            if (prevNode) {
-              links.push({
-                source: prevNode.id,
-                target: nodeId,
-                curve: 'basis',
-              });
-            }
-          }
-          nodeId++;
-        }
-      });
-    });
-
-    return { nodes, links, title };
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    setError(null);
   };
 
   if (loading) {
@@ -650,60 +641,52 @@ function Dashboard() {
           {/* Batch Tracking Dialog */}
           <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
             <DialogTitle>
-              {selectedBatch && getChartData(selectedBatch.batch_number).title}
+              {selectedBatch && getProgressData(selectedBatch.batch_number).title}
             </DialogTitle>
             <DialogContent>
               {selectedBatch && (
-                <LineChart
-                  width={800}
-                  height={600}
-                  margin={{ top: 20, right: 100, left: 100, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" dataKey="x" hide />
-                  <YAxis type="number" dataKey="y" hide reversed />
-                  {getChartData(selectedBatch.batch_number).links.map((link, index) => (
-                    <Line
-                      key={`line-${index}`}
-                      data={getChartData(selectedBatch.batch_number).nodes.filter(n => [link.source, link.target].includes(n.id))}
-                      dataKey="x"
-                      type="basis"
-                      stroke="#8884d8"
-                      dot={false}
-                      isAnimationActive={false}
-                    />
-                  ))}
-                  <Scatter
-                    data={getChartData(selectedBatch.batch_number).nodes}
-                    fill="#8884d8"
-                  >
-                    {getChartData(selectedBatch.batch_number).nodes.map((node, index) => (
-                      <g key={`node-${index}`}>
-                        <circle
-                          cx={node.x}
-                          cy={node.y}
-                          r={8}
-                          fill="#8884d8"
+                <svg width="800" height={getProgressData(selectedBatch.batch_number).nodes.length * 120}>
+                  {getProgressData(selectedBatch.batch_number).links.map((link, index) => {
+                    const sourceNode = getProgressData(selectedBatch.batch_number).nodes.find(n => n.id === link.source);
+                    const targetNode = getProgressData(selectedBatch.batch_number).nodes.find(n => n.id === link.target);
+                    if (sourceNode && targetNode) {
+                      const midX = (sourceNode.x + targetNode.x) / 2;
+                      const controlX = midX + (targetNode.x > sourceNode.x ? 50 : -50); // Curve control point
+                      return (
+                        <path
+                          key={`link-${index}`}
+                          d={`M ${sourceNode.x} ${sourceNode.y} Q ${controlX} ${sourceNode.y + 50} ${targetNode.x} ${targetNode.y - 50}`}
+                          stroke="#8884d8"
+                          strokeWidth="2"
+                          fill="none"
                         />
-                        <text
-                          x={node.x + 10}
-                          y={node.y}
-                          fill="#000"
-                          fontSize={12}
-                          textAnchor="start"
-                        >
-                          {`${node.name}: ${node.weight.toFixed(2)} kg${node.processingType ? ` (${node.processingType})` : ''}`}
-                        </text>
-                      </g>
-                    ))}
-                  </Scatter>
-                  <Tooltip
-                    formatter={(value, name, props) => [
-                      `${props.payload.weight.toFixed(2)} kg`,
-                      props.payload.name + (props.payload.processingType ? ` (${props.payload.processingType})` : ''),
-                    ]}
-                  />
-                </LineChart>
+                      );
+                    }
+                    return null;
+                  })}
+                  {getProgressData(selectedBatch.batch_number).nodes.map((node, index) => (
+                    <g key={`node-${index}`} transform={`translate(${node.x + 400}, ${node.y + 20})`}>
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="10"
+                        fill={node.status === 'completed' ? 'green' : node.status === 'in-progress' ? 'yellow' : 'gray'}
+                      />
+                      {node.status === 'completed' && (
+                        <text x="15" y="5" fill="#fff" fontSize="12">✓</text>
+                      )}
+                      <text
+                        x="15"
+                        y="-5"
+                        fill="#000"
+                        fontSize="12"
+                        textAnchor="start"
+                      >
+                        {`${node.name}: ${node.weight.toFixed(2)} kg${node.processingType ? ` (${node.processingType})` : ''}`}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
               )}
               <Button onClick={handleCloseDialog} variant="contained" sx={{ mt: 2 }}>
                 Close
