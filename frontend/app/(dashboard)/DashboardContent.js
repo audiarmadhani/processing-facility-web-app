@@ -561,7 +561,13 @@ function Dashboard() {
           </Grid>
 
           {/* Batch Tracking Dialog */}
-          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+          <Dialog
+            open={openDialog}
+            onClose={handleCloseDialog}
+            maxWidth="md"
+            fullWidth
+            TransitionComponent={null} // Disable transitions temporarily
+          >
             <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
               Batch Progress
             </DialogTitle>
