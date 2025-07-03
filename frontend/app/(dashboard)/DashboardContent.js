@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import * as d3 from 'd3'; // Import D3.js
 import { TextField, Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -316,47 +315,17 @@ function Dashboard() {
     const batchEntries = batchTrackingData.filter(b => b.batchNumber === batchNumber);
     if (batchEntries.length === 0) return null;
 
-    const processingTypes = [...new Set(batchEntries.map(b => b.processingType).filter(pt => pt !== 'N/A'))];
-    const grades = [...new Set(batchEntries.map(b => b.grade).filter(g => g))];
-    const title = `Batch ${batchNumber} (${processingTypes.join(', ') || 'N/A'}, Grade ${grades.join(', ') || 'N/A'})`;
+    const receivingWeight = parseFloat(batchEntries[0].receiving_weight) || 0;
+    const progressData = [
+      { step: 'Receiving', weight: receivingWeight, yield: 100 },
+      { step: 'Processing', weight: parseFloat(batchEntries[0].preprocessing_weight) || 0, yield: receivingWeight ? (parseFloat(batchEntries[0].preprocessing_weight) / receivingWeight * 100) : 0 },
+      { step: 'Wet Mill', weight: parseFloat(batchEntries[0].wetmill_weight) || 0, yield: receivingWeight ? (parseFloat(batchEntries[0].wetmill_weight) / receivingWeight * 100) : 0 },
+      { step: 'Fermentation', weight: parseFloat(batchEntries[0].fermentation_weight) || 0, yield: receivingWeight ? (parseFloat(batchEntries[0].fermentation_weight) / receivingWeight * 100) : 0 },
+      { step: 'Drying', weight: parseFloat(batchEntries[0].drying_weight) || 0, yield: receivingWeight ? (parseFloat(batchEntries[0].drying_weight) / receivingWeight * 100) : 0 },
+      { step: 'Dry Mill', weight: parseFloat(batchEntries[0].dry_mill_weight) || 0, yield: receivingWeight ? (parseFloat(batchEntries[0].dry_mill_weight) / receivingWeight * 100) : 0 },
+    ].filter(row => row.weight > 0 || row.step === 'Receiving');
 
-    const treeData = {
-      name: "Batch Process",
-      weight: parseFloat(batchEntries[0].receiving_weight) || 1000, // Initial weight
-      children: [
-        {
-          name: "Receiving",
-          weight: parseFloat(batchEntries[0].receiving_weight) || 0,
-          children: [
-            {
-              name: "Preprocessing",
-              weight: parseFloat(batchEntries[0].preprocessing_weight) || 0,
-              children: processingTypes.map(pt => {
-                const entriesForType = batchEntries.filter(e => e.processingType === pt);
-                return {
-                  name: pt,
-                  weight: parseFloat(entriesForType[0]?.wetmill_weight) || 0,
-                  children: [
-                    { name: "Wet Mill", weight: parseFloat(entriesForType[0]?.wetmill_weight) || 0 },
-                    { name: "Drying", weight: parseFloat(entriesForType[0]?.drying_weight) || 0 },
-                    {
-                      name: "Dry Mill",
-                      weight: parseFloat(entriesForType[0]?.dry_mill_weight) || 0,
-                      children: grades.map(grade => ({
-                        name: grade,
-                        weight: parseFloat(batchEntries.find(e => e.processingType === pt && e.grade === grade)?.dry_mill_weight) || 0
-                      })).filter(g => g.weight > 0)
-                    }
-                  ].filter(child => child.weight > 0)
-                };
-              }).filter(pt => pt.weight > 0)
-            }
-          ]
-        }
-      ]
-    };
-
-    return treeData;
+    return progressData.map((row, index) => ({ id: index, ...row }));
   };
 
   useEffect(() => {
@@ -458,6 +427,22 @@ function Dashboard() {
                 ))}
               </Select>
             </FormControl>
+          </Grid>
+
+          {/* Batch Tracking Filter */}
+          <Grid item xs={6} md={2.4}>
+            <TextField
+              label="Filter Batch Numbers (comma-separated)"
+              value={batchFilter}
+              onChange={handleBatchFilterChange}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  fetchBatchTrackingData();
+                }
+              }}
+              fullWidth
+              variant="outlined"
+            />
           </Grid>
 
           {/* Batch Tracking Table */}
@@ -576,87 +561,44 @@ function Dashboard() {
             TransitionComponent={null}
           >
             <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
-              Batch Progress
+              Batch Progress - {selectedBatch?.batchNumber}
             </DialogTitle>
             <DialogContent>
               {selectedBatch && getProgressData(selectedBatch.batchNumber) && (
-                <Box sx={{ padding: 2, backgroundColor: '#fff', minHeight: '600px', position: 'relative' }}>
-                  <svg width="100%" height="600">
-                    <g transform="translate(50,20)">
-                      {(() => {
-                        const data = getProgressData(selectedBatch.batchNumber);
-                        const root = d3.hierarchy(data);
-                        const treeLayout = d3.tree().size([580, 1100]);
-                        treeLayout(root);
-
-                        const links = root.links();
-                        const nodes = root.descendants();
-
-                        return (
-                          <>
-                            {/* Links */}
-                            {links.map((d, i) => {
-                              const source = d.source;
-                              const target = d.target;
-                              let pathD;
-                              if (target.data.name === "Drying" && source.data.name === "Wet Mill") {
-                                pathD = d3.linkVertical()
-                                  .x(d => d.y)
-                                  .y(d => source.x)({ source, target: { ...target, x: source.x } });
-                              } else if (target.data.name === "Dry Mill" && source.data.name === "Drying") {
-                                pathD = d3.linkVertical()
-                                  .x(d => d.y)
-                                  .y(d => source.x)({ source, target: { ...target, x: source.x } });
-                              } else {
-                                pathD = d3.linkVertical()
-                                  .x(d => d.y)
-                                  .y(d => d.x)(d);
-                              }
-                              return <path key={`link-${i}`} className="link" d={pathD} />;
-                            })}
-
-                            {/* Nodes */}
-                            {nodes.map((d, i) => {
-                              const isParentWetMillOrDrying = d.parent && ["Wet Mill", "Drying"].includes(d.parent.data.name) && d.data.name === "Drying";
-                              const isParentDrying = d.parent && d.parent.data.name === "Drying" && d.data.name === "Dry Mill";
-                              const yPos = isParentWetMillOrDrying || isParentDrying ? d.parent.x : d.x;
-                              return (
-                                <g
-                                  key={`node-${i}`}
-                                  className="node"
-                                  transform={`translate(${d.y},${yPos - 25})`}
-                                >
-                                  <rect
-                                    width={Math.max(120, d.data.name.length * 7 + 80)}
-                                    height={50}
-                                    rx={10}
-                                    ry={10}
-                                    y={-25}
-                                    fill="#f0f0f0"
-                                    stroke="steelblue"
-                                    strokeWidth={1}
-                                  />
-                                  <text x={10} y={-5} fontSize="12px" fill="#333">{d.data.name}</text>
-                                  <text x={10} y={10} fontSize="12px" fill="#333">
-                                    Weight: {d.data.weight || 0} kg
-                                  </text>
-                                  <text
-                                    x={10}
-                                    y={25}
-                                    fontSize="12px"
-                                    fill={d.data.weight && (d.data.weight / data.weight * 100 < 100) ? "red" : "green"}
-                                  >
-                                    Yield: {(d.data.weight / data.weight * 100).toFixed(1) || 0}%
-                                  </text>
-                                </g>
-                              );
-                            })}
-                          </>
-                        );
-                      })()}
-                    </g>
-                  </svg>
-                </Box>
+                <DataGrid
+                  rows={getProgressData(selectedBatch.batchNumber)}
+                  columns={[
+                    { field: 'step', headerName: 'Process Step', width: 150 },
+                    { 
+                      field: 'weight', 
+                      headerName: 'Weight (kg)', 
+                      width: 150,
+                      valueFormatter: (value) => new Intl.NumberFormat('de-DE').format(parseFloat(value)),
+                    },
+                    { 
+                      field: 'yield', 
+                      headerName: 'Yield (%)', 
+                      width: 120,
+                      valueFormatter: (value) => value.toFixed(2),
+                    },
+                  ]}
+                  pageSizeOptions={[5]}
+                  sx={{
+                    height: '400px',
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
+                    '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+                    '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
+                  }}
+                  rowHeight={32}
+                  disableRowSelectionOnClick
+                  initialState={{
+                    pagination: { paginationModel: { pageSize: 5 } },
+                  }}
+                  localeText={{
+                    noRowsLabel: 'No progress data available'
+                  }}
+                />
               )}
               <Button onClick={handleCloseDialog} variant="contained" sx={{ mt: 2, width: '100%' }}>
                 Close
