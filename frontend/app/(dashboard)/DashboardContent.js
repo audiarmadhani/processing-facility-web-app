@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { TextField, Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
@@ -46,8 +46,6 @@ import RobustaFarmersContributionChart from './charts/RobustaFarmersContribution
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
-import TreeChart from '@ssthouse/react-tree-chart';
-import '@ssthouse/react-tree-chart/lib/react-tree-chart.css';
 
 function Dashboard() {
   const { data: session } = useSession();
@@ -317,20 +315,44 @@ function Dashboard() {
     const batchEntries = batchTrackingData.filter(b => b.batchNumber === batchNumber);
     if (batchEntries.length === 0) return null;
 
-    const processingTypes = [...new Set(batchEntries.map(b => b.processingType))];
-    const grades = [...new Set(batchEntries.map(b => b.grade))];
-    const title = `Batch ${batchNumber} (${processingTypes.join(', ')}, Grade ${grades.join(', ')})`;
+    const processingTypes = [...new Set(batchEntries.map(b => b.processingType).filter(pt => pt !== 'N/A'))];
+    const grades = [...new Set(batchEntries.map(b => b.grade).filter(g => g))];
+    const title = `Batch ${batchNumber} (${processingTypes.join(', ') || 'N/A'}, Grade ${grades.join(', ') || 'N/A'})`;
 
     const treeData = {
-      value: title,
+      name: "Batch Process",
+      weight: parseFloat(batchEntries[0].receiving_weight) || 1000, // Initial weight
       children: [
-        { value: 'Receiving', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.receiving_weight) || 0), 0)} kg` }] },
-        { value: 'Preprocessing', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.preprocessing_weight) || 0), 0)} kg` }] },
-        { value: 'Wet Mill', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.wetmill_weight) || 0), 0)} kg` }] },
-        { value: 'Fermentation', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.fermentation_weight) || 0), 0)} kg` }] },
-        { value: 'Drying', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.drying_weight) || 0), 0)} kg` }] },
-        { value: 'Dry Mill', children: [{ value: `${batchEntries.reduce((sum, e) => sum + (parseFloat(e.dry_mill_weight) || 0), 0)} kg` }] }
-      ].filter(child => child.children[0].value !== '0 kg')
+        {
+          name: "Receiving",
+          weight: parseFloat(batchEntries[0].receiving_weight) || 0,
+          children: [
+            {
+              name: "Preprocessing",
+              weight: parseFloat(batchEntries[0].preprocessing_weight) || 0,
+              children: processingTypes.map(pt => {
+                const entriesForType = batchEntries.filter(e => e.processingType === pt);
+                return {
+                  name: pt,
+                  weight: parseFloat(entriesForType[0]?.wetmill_weight) || 0,
+                  children: [
+                    { name: "Wet Mill", weight: parseFloat(entriesForType[0]?.wetmill_weight) || 0 },
+                    { name: "Drying", weight: parseFloat(entriesForType[0]?.drying_weight) || 0 },
+                    {
+                      name: "Dry Mill",
+                      weight: parseFloat(entriesForType[0]?.dry_mill_weight) || 0,
+                      children: grades.map(grade => ({
+                        name: grade,
+                        weight: parseFloat(batchEntries.find(e => e.processingType === pt && e.grade === grade)?.dry_mill_weight) || 0
+                      })).filter(g => g.weight > 0)
+                    }
+                  ].filter(child => child.weight > 0)
+                };
+              }).filter(pt => pt.weight > 0)
+            }
+          ]
+        }
+      ]
     };
 
     return treeData;
@@ -435,22 +457,6 @@ function Dashboard() {
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-
-          {/* Batch Tracking Filter */}
-          <Grid item xs={6} md={2.4}>
-            <TextField
-              label="Filter Batch Numbers (comma-separated)"
-              value={batchFilter}
-              onChange={handleBatchFilterChange}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  fetchBatchTrackingData();
-                }
-              }}
-              fullWidth
-              variant="outlined"
-            />
           </Grid>
 
           {/* Batch Tracking Table */}
@@ -564,37 +570,91 @@ function Dashboard() {
           <Dialog
             open={openDialog}
             onClose={handleCloseDialog}
-            maxWidth="md"
+            maxWidth="lg"
             fullWidth
-            TransitionComponent={null} // Disable transitions temporarily
+            TransitionComponent={null}
           >
             <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
               Batch Progress
             </DialogTitle>
             <DialogContent>
               {selectedBatch && getProgressData(selectedBatch.batchNumber) && (
-                <Box sx={{ padding: 2, backgroundColor: '#fff', minHeight: '400px' }}>
-                  <TreeChart
-                    dataset={getProgressData(selectedBatch.batchNumber)}
-                    config={{
-                      nodeWidth: 100,
-                      nodeHeight: 50,
-                      levelHeight: 70,
-                      margin: { top: 20, right: 20, bottom: 20, left: 20 }
-                    }}
-                    nodeRenderer={({ node }) => (
-                      <div style={{
-                        padding: '8px',
-                        backgroundColor: '#e0f7fa',
-                        borderRadius: '8px',
-                        textAlign: 'center',
-                        fontSize: '0.9rem',
-                        color: '#333'
-                      }}>
-                        {node.value}
-                      </div>
-                    )}
-                  />
+                <Box sx={{ padding: 2, backgroundColor: '#fff', minHeight: '600px', position: 'relative' }}>
+                  <svg width="100%" height="600">
+                    <g transform="translate(50,20)">
+                      {(() => {
+                        const data = getProgressData(selectedBatch.batchNumber);
+                        const root = d3.hierarchy(data);
+                        const treeLayout = d3.tree().size([580, 1100]);
+                        treeLayout(root);
+
+                        const links = root.links();
+                        const nodes = root.descendants();
+
+                        return (
+                          <>
+                            {/* Links */}
+                            {links.map((d, i) => {
+                              const source = d.source;
+                              const target = d.target;
+                              let pathD;
+                              if (target.data.name === "Drying" && source.data.name === "Wet Mill") {
+                                pathD = d3.linkVertical()
+                                  .x(d => d.y)
+                                  .y(d => source.x)({ source, target: { ...target, x: source.x } });
+                              } else if (target.data.name === "Dry Mill" && source.data.name === "Drying") {
+                                pathD = d3.linkVertical()
+                                  .x(d => d.y)
+                                  .y(d => source.x)({ source, target: { ...target, x: source.x } });
+                              } else {
+                                pathD = d3.linkVertical()
+                                  .x(d => d.y)
+                                  .y(d => d.x)(d);
+                              }
+                              return <path key={`link-${i}`} className="link" d={pathD} />;
+                            })}
+
+                            {/* Nodes */}
+                            {nodes.map((d, i) => {
+                              const isParentWetMillOrDrying = d.parent && ["Wet Mill", "Drying"].includes(d.parent.data.name) && d.data.name === "Drying";
+                              const isParentDrying = d.parent && d.parent.data.name === "Drying" && d.data.name === "Dry Mill";
+                              const yPos = isParentWetMillOrDrying || isParentDrying ? d.parent.x : d.x;
+                              return (
+                                <g
+                                  key={`node-${i}`}
+                                  className="node"
+                                  transform={`translate(${d.y},${yPos - 25})`}
+                                >
+                                  <rect
+                                    width={Math.max(120, d.data.name.length * 7 + 80)}
+                                    height={50}
+                                    rx={10}
+                                    ry={10}
+                                    y={-25}
+                                    fill="#f0f0f0"
+                                    stroke="steelblue"
+                                    strokeWidth={1}
+                                  />
+                                  <text x={10} y={-5} fontSize="12px" fill="#333">{d.data.name}</text>
+                                  <text x={10} y={10} fontSize="12px" fill="#333">
+                                    Weight: {d.data.weight || 0} kg
+                                  </text>
+                                  <text
+                                    x={10}
+                                    y={25}
+                                    fontSize="12px"
+                                    fill={d.data.weight && (d.data.weight / data.weight * 100 < 100) ? "red" : "green"}
+                                  >
+                                    Yield: {(d.data.weight / data.weight * 100).toFixed(1) || 0}%
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
+                    </g>
+                  </svg>
                 </Box>
               )}
               <Button onClick={handleCloseDialog} variant="contained" sx={{ mt: 2, width: '100%' }}>
