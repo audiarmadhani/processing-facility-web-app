@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import { TextField } from '@mui/material';
+import { TextField, Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -24,6 +24,7 @@ import {
   Alert
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'; // Added for pop-up chart
 
 import TotalBatchesChart from './charts/TotalBatchesChart';
 import TotalCostChart from './charts/TotalCostChart';
@@ -43,8 +44,6 @@ import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
-// import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
-// import RobustaSankeyChart from './charts/RobustaSankeyChart';
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
@@ -78,6 +77,12 @@ function Dashboard() {
   const [landTargets, setLandTargets] = useState([]);
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  // New state for batch tracking
+  const [batchTrackingData, setBatchTrackingData] = useState([]);
+  const [isLoadingBatchTracking, setIsLoadingBatchTracking] = useState(false);
+  const [batchFilter, setBatchFilter] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const formatWeight = (weight) => {
     if (weight >= 1e9) {
@@ -113,6 +118,37 @@ function Dashboard() {
 
   const selectedRangeLabel = timeframeLabels[timeframe];
 
+  // Fetch Batch Tracking Data
+  const fetchBatchTrackingData = useCallback(async () => {
+    console.log('Starting fetchBatchTrackingData');
+    setIsLoadingBatchTracking(true);
+    try {
+      const url = batchFilter
+        ? `https://processing-facility-backend.onrender.com/api/batch-tracking?batchNumbers=${encodeURIComponent(batchFilter)}`
+        : 'https://processing-facility-backend.onrender.com/api/batch-tracking';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Raw Batch Tracking API response:', data);
+      const formattedData = data.map((row, index) => ({
+        id: index,
+        ...row,
+        processingType: row.processingType === 'Unknown' ? 'N/A' : row.processingType,
+      }));
+      console.log('Setting batchTrackingData:', formattedData);
+      setBatchTrackingData(formattedData);
+    } catch (err) {
+      console.error('Error fetching batch tracking data:', err);
+      setError(err.message || 'Failed to fetch batch tracking data');
+      setOpenSnackbar(true);
+      setBatchTrackingData([]);
+    } finally {
+      setIsLoadingBatchTracking(false);
+    }
+  }, [batchFilter]);
+
   // Fetch Arabica targets
   const fetchArabicaTargets = useCallback(async () => {
     console.log('Starting fetchArabicaTargets');
@@ -147,7 +183,7 @@ function Dashboard() {
       console.error('Error fetching Arabica targets:', err);
       setError(err.message || 'Failed to fetch Arabica targets');
       setOpenSnackbar(true);
-      setArabicaTargets([]); // Reset to empty array on error
+      setArabicaTargets([]);
     } finally {
       setIsLoadingTargets(false);
     }
@@ -187,7 +223,7 @@ function Dashboard() {
       console.error('Error fetching Heqa targets:', err);
       setError(err.message || 'Failed to fetch Heqa targets');
       setOpenSnackbar(true);
-      setHeqaTargets([]); // Reset to empty array on error
+      setHeqaTargets([]);
     } finally {
       setIsLoadingTargets(false);
     }
@@ -227,13 +263,13 @@ function Dashboard() {
       console.error('Error fetching Robusta targets:', err);
       setError(err.message || 'Failed to fetch Robusta targets');
       setOpenSnackbar(true);
-      setRobustaTargets([]); // Reset to empty array on error
+      setRobustaTargets([]);
     } finally {
       setIsLoadingTargets(false);
     }
   }, []);
 
-  // Fetch Arabica targets
+  // Fetch Land targets
   const fetchLandTargets = useCallback(async () => {
     console.log('Starting fetchLandTargets');
     setIsLoadingTargets(true);
@@ -267,7 +303,7 @@ function Dashboard() {
       console.error('Error fetching land targets:', err);
       setError(err.message || 'Failed to fetch land targets');
       setOpenSnackbar(true);
-      setLandTargets([]); // Reset to empty array on error
+      setLandTargets([]);
     } finally {
       setIsLoadingTargets(false);
     }
@@ -305,10 +341,11 @@ function Dashboard() {
       await fetchRobustaTargets();
       await fetchLandTargets();
       await fetchHeqaTargets();
+      await fetchBatchTrackingData(); // Added batch tracking fetch
     };
 
     fetchAllData();
-  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets]);
+  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets, fetchBatchTrackingData]);
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
@@ -317,6 +354,60 @@ function Dashboard() {
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
     setError(null);
+  };
+
+  const handleBatchFilterChange = (event) => {
+    setBatchFilter(event.target.value);
+  };
+
+  const handleBatchClick = (batch) => {
+    setSelectedBatch(batch);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedBatch(null);
+  };
+
+  // Prepare data for the line chart in the dialog
+  const getChartData = (batch) => {
+    if (!batch) return [];
+    const stages = [
+      { name: 'Receiving', weight: batch.receiving_weight, date: batch.receiving_date },
+      { name: 'Preprocessing', weight: batch.preprocessing_weight, date: batch.preprocessing_date },
+      { name: 'Wet Mill', weight: batch.wetmill_weight, date: batch.wetmill_weight_date },
+      { name: 'Fermentation', weight: batch.fermentation_weight, date: batch.fermentation_weight_date },
+      { name: 'Drying', weight: batch.drying_weight, date: batch.drying_weight_date },
+      { name: 'Dry Mill', weight: batch.dry_mill_weight, date: batch.dry_mill_weight_date },
+    ];
+
+    // Filter stages based on processing type
+    let filteredStages = stages;
+    if (batch.processingType === 'N/A') {
+      // For 'N/A' (Unknown), include all stages with non-null weights
+      filteredStages = stages.filter(stage => stage.weight !== 'N/A');
+    } else if (batch.processingType === 'Washed') {
+      // Washed: Include all stages
+      filteredStages = stages.filter(stage => stage.weight !== 'N/A');
+    } else if (batch.processingType === 'Natural') {
+      // Natural: Skip Wet Mill and Fermentation
+      filteredStages = stages.filter(stage => 
+        ['Receiving', 'Preprocessing', 'Drying', 'Dry Mill'].includes(stage.name) && stage.weight !== 'N/A'
+      );
+    } else if (batch.processingType === 'Honey') {
+      // Honey: Skip Wet Mill
+      filteredStages = stages.filter(stage => 
+        ['Receiving', 'Preprocessing', 'Fermentation', 'Drying', 'Dry Mill'].includes(stage.name) && stage.weight !== 'N/A'
+      );
+    }
+
+    // Format dates and ensure weights are numbers
+    return filteredStages.map(stage => ({
+      name: stage.name,
+      weight: parseFloat(stage.weight) || 0,
+      date: stage.date ? dayjs(stage.date).format('YYYY-MM-DD') : 'N/A',
+    }));
   };
 
   if (loading) {
