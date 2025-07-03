@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import { TextField, Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
+import { TextField } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -24,7 +24,6 @@ import {
   Alert
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 import TotalBatchesChart from './charts/TotalBatchesChart';
 import TotalCostChart from './charts/TotalCostChart';
@@ -44,6 +43,8 @@ import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
+// import ArabicaSankeyChart from './charts/ArabicaSankeyChart';
+// import RobustaSankeyChart from './charts/RobustaSankeyChart';
 
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
@@ -53,44 +54,20 @@ function Dashboard() {
   const userRole = session?.user?.role || "user";
 
   const [metrics, setMetrics] = useState({
-    totalBatches: 0,
-    totalArabicaWeight: 0,
-    totalRobustaWeight: 0,
-    totalArabicaCost: 0,
+    totalBatches: 0, 
+    totalArabicaWeight: 0, 
+    totalRobustaWeight: 0, 
+    totalArabicaCost: 0, 
     totalRobustaCost: 0,
-    lastmonthArabicaWeight: 0,
-    lastmonthRobustaWeight: 0,
-    lastmonthArabicaCost: 0,
+    lastmonthArabicaWeight: 0, 
+    lastmonthRobustaWeight: 0, 
+    lastmonthArabicaCost: 0, 
     lastmonthRobustaCost: 0,
     totalWeight: 0,
     totalCost: 0,
     activeFarmers: 0,
     pendingQC: 0,
     pendingProcessing: 0,
-    avgArabicaCost: 0,
-    avgRobustaCost: 0,
-    lastmonthAvgArabicaCost: 0,
-    lastmonthAvgRobustaCost: 0,
-    totalArabicaProcessed: 0,
-    totalRobustaProcessed: 0,
-    lastmonthArabicaProcessed: 0,
-    lastmonthRobustaProcessed: 0,
-    totalArabicaProduction: 0,
-    totalRobustaProduction: 0,
-    lastmonthArabicaProduction: 0,
-    lastmonthRobustaProduction: 0,
-    arabicaYield: 0,
-    robustaYield: 0,
-    landCoveredArabica: 0,
-    landCoveredRobusta: 0,
-    activeArabicaFarmers: 0,
-    activeRobustaFarmers: 0,
-    pendingArabicaQC: 0,
-    pendingRobustaQC: 0,
-    pendingArabicaProcessing: 0,
-    pendingRobustaProcessing: 0,
-    pendingArabicaWeightProcessing: 0,
-    pendingRobustaWeightProcessing: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -99,12 +76,7 @@ function Dashboard() {
   const [heqaTargets, setHeqaTargets] = useState([]);
   const [robustaTargets, setRobustaTargets] = useState([]);
   const [landTargets, setLandTargets] = useState([]);
-  const [batchTrackingData, setBatchTrackingData] = useState([]);
   const [isLoadingTargets, setIsLoadingTargets] = useState(false);
-  const [isLoadingBatchTracking, setIsLoadingBatchTracking] = useState(false);
-  const [batchFilter, setBatchFilter] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const formatWeight = (weight) => {
@@ -118,6 +90,8 @@ function Dashboard() {
       return `Rp ${new Intl.NumberFormat('de-DE').format(weight)} /kg`;
     }
   };
+
+  const [timeframe, setTimeframe] = useState('this_month');
 
   const timeframes = [
     { value: 'this_week', label: 'This Week' },
@@ -138,38 +112,8 @@ function Dashboard() {
   };
 
   const selectedRangeLabel = timeframeLabels[timeframe];
-  const [timeframe, setTimeframe] = useState('this_month');
 
-  const fetchBatchTrackingData = useCallback(async () => {
-    console.log('Starting fetchBatchTrackingData');
-    setIsLoadingBatchTracking(true);
-    try {
-      const url = batchFilter
-        ? `https://processing-facility-backend.onrender.com/api/batch-tracking?batchNumbers=${encodeURIComponent(batchFilter)}`
-        : 'https://processing-facility-backend.onrender.com/api/batch-tracking';
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('Raw batch tracking API response:', data);
-      const formattedData = data.map((row, index) => ({
-        id: index,
-        ...row,
-        processingType: row.processingType === 'Unknown' ? 'N/A' : row.processingType,
-      }));
-      console.log('Setting batchTrackingData:', formattedData);
-      setBatchTrackingData(formattedData);
-    } catch (err) {
-      console.error('Error fetching batch tracking data:', err);
-      setError(err.message || 'Failed to fetch batch tracking data');
-      setOpenSnackbar(true);
-      setBatchTrackingData([]);
-    } finally {
-      setIsLoadingBatchTracking(false);
-    }
-  }, [batchFilter]);
-
+  // Fetch Arabica targets
   const fetchArabicaTargets = useCallback(async () => {
     console.log('Starting fetchArabicaTargets');
     setIsLoadingTargets(true);
@@ -179,32 +123,37 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Raw Arabica API response:', data);
+      console.log('Raw API response:', data);
       if (!data.arabicaTarget || !Array.isArray(data.arabicaTarget)) {
         throw new Error('Invalid response format: arabicaTarget array not found');
       }
-      const formattedData = data.arabicaTarget.map((row, index) => ({
-        id: index,
-        processingType: row.processingType,
-        cherryNow: parseFloat(row.cherryNow) || null,
-        projectedGB: parseFloat(row.projectedGB) || null,
-        cherryTarget: parseFloat(row.cherryTarget) || null,
-        gbTarget: parseFloat(row.gbTarget) || null,
-        cherryDeficit: parseFloat(row.cherryDeficit) || null,
-        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
-      }));
+      const formattedData = data.arabicaTarget.map((row, index) => {
+        const formattedRow = {
+          id: index,
+          processingType: row.processingType,
+          cherryNow: parseFloat(row.cherryNow) || null,
+          projectedGB: parseFloat(row.projectedGB) || null,
+          cherryTarget: parseFloat(row.cherryTarget) || null,
+          gbTarget: parseFloat(row.gbTarget) || null,
+          cherryDeficit: parseFloat(row.cherryDeficit) || null,
+          cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+        };
+        console.log('Formatted row:', formattedRow);
+        return formattedRow;
+      });
       console.log('Setting arabicaTargets:', formattedData);
       setArabicaTargets(formattedData);
     } catch (err) {
       console.error('Error fetching Arabica targets:', err);
       setError(err.message || 'Failed to fetch Arabica targets');
       setOpenSnackbar(true);
-      setArabicaTargets([]);
+      setArabicaTargets([]); // Reset to empty array on error
     } finally {
       setIsLoadingTargets(false);
     }
   }, []);
 
+  // Fetch Heqa targets
   const fetchHeqaTargets = useCallback(async () => {
     console.log('Starting fetchHeqaTargets');
     setIsLoadingTargets(true);
@@ -214,32 +163,37 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Raw Heqa API response:', data);
+      console.log('Raw API response:', data);
       if (!data.heqaTarget || !Array.isArray(data.heqaTarget)) {
         throw new Error('Invalid response format: heqaTarget array not found');
       }
-      const formattedData = data.heqaTarget.map((row, index) => ({
-        id: index,
-        productLine: row.productLine,
-        cherryNow: parseFloat(row.cherryNow) || null,
-        projectedGB: parseFloat(row.projectedGB) || null,
-        cherryTarget: parseFloat(row.cherryTarget) || null,
-        gbTarget: parseFloat(row.gbTarget) || null,
-        cherryDeficit: parseFloat(row.cherryDeficit) || null,
-        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
-      }));
+      const formattedData = data.heqaTarget.map((row, index) => {
+        const formattedRow = {
+          id: index,
+          productLine: row.productLine,
+          cherryNow: parseFloat(row.cherryNow) || null,
+          projectedGB: parseFloat(row.projectedGB) || null,
+          cherryTarget: parseFloat(row.cherryTarget) || null,
+          gbTarget: parseFloat(row.gbTarget) || null,
+          cherryDeficit: parseFloat(row.cherryDeficit) || null,
+          cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+        };
+        console.log('Formatted row:', formattedRow);
+        return formattedRow;
+      });
       console.log('Setting heqaTargets:', formattedData);
       setHeqaTargets(formattedData);
     } catch (err) {
       console.error('Error fetching Heqa targets:', err);
       setError(err.message || 'Failed to fetch Heqa targets');
       setOpenSnackbar(true);
-      setHeqaTargets([]);
+      setHeqaTargets([]); // Reset to empty array on error
     } finally {
       setIsLoadingTargets(false);
     }
   }, []);
 
+  // Fetch Robusta targets
   const fetchRobustaTargets = useCallback(async () => {
     console.log('Starting fetchRobustaTargets');
     setIsLoadingTargets(true);
@@ -253,28 +207,33 @@ function Dashboard() {
       if (!data.robustaTarget || !Array.isArray(data.robustaTarget)) {
         throw new Error('Invalid response format: robustaTarget array not found');
       }
-      const formattedData = data.robustaTarget.map((row, index) => ({
-        id: index,
-        processingType: row.processingType,
-        cherryNow: parseFloat(row.cherryNow) || null,
-        projectedGB: parseFloat(row.projectedGB) || null,
-        cherryTarget: parseFloat(row.cherryTarget) || null,
-        gbTarget: parseFloat(row.gbTarget) || null,
-        cherryDeficit: parseFloat(row.cherryDeficit) || null,
-        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
-      }));
+      const formattedData = data.robustaTarget.map((row, index) => {
+        const formattedRow = {
+          id: index,
+          processingType: row.processingType,
+          cherryNow: parseFloat(row.cherryNow) || null,
+          projectedGB: parseFloat(row.projectedGB) || null,
+          cherryTarget: parseFloat(row.cherryTarget) || null,
+          gbTarget: parseFloat(row.gbTarget) || null,
+          cherryDeficit: parseFloat(row.cherryDeficit) || null,
+          cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+        };
+        console.log('Formatted Robusta row:', formattedRow);
+        return formattedRow;
+      });
       console.log('Setting robustaTargets:', formattedData);
       setRobustaTargets(formattedData);
     } catch (err) {
       console.error('Error fetching Robusta targets:', err);
       setError(err.message || 'Failed to fetch Robusta targets');
       setOpenSnackbar(true);
-      setRobustaTargets([]);
+      setRobustaTargets([]); // Reset to empty array on error
     } finally {
       setIsLoadingTargets(false);
     }
   }, []);
 
+  // Fetch Arabica targets
   const fetchLandTargets = useCallback(async () => {
     console.log('Starting fetchLandTargets');
     setIsLoadingTargets(true);
@@ -284,65 +243,37 @@ function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Raw Land API response:', data);
+      console.log('Raw API response:', data);
       if (!data.landTarget || !Array.isArray(data.landTarget)) {
         throw new Error('Invalid response format: landTarget array not found');
       }
-      const formattedData = data.landTarget.map((row, index) => ({
-        id: index,
-        farmerName: row.farmerName,
-        brokerName: row.brokerName || null,
-        contractValue: parseFloat(row.contractValue) || null,
-        cherryEstimate: parseFloat(row.cherryEstimate) || null,
-        gbEstimate: parseFloat(row.gbEstimate) || null,
-        currentcherrytotal: parseFloat(row.currentcherrytotal) || null,
-        difference: parseFloat(row.difference) || null,
-      }));
+      const formattedData = data.landTarget.map((row, index) => {
+        const formattedRow = {
+          id: index,
+          farmerName: row.farmerName,
+          brokerName: row.brokerName || null,
+          contractValue: parseFloat(row.contractValue) || null,
+          cherryEstimate: parseFloat(row.cherryEstimate) || null,
+          gbEstimate: parseFloat(row.gbEstimate) || null,
+          currentcherrytotal: parseFloat(row.currentcherrytotal) || null,
+          difference: parseFloat(row.difference) || null,
+        };
+        console.log('Formatted row:', formattedRow);
+        return formattedRow;
+      });
       console.log('Setting landTargets:', formattedData);
       setLandTargets(formattedData);
     } catch (err) {
       console.error('Error fetching land targets:', err);
       setError(err.message || 'Failed to fetch land targets');
       setOpenSnackbar(true);
-      setLandTargets([]);
+      setLandTargets([]); // Reset to empty array on error
     } finally {
       setIsLoadingTargets(false);
     }
   }, []);
 
-  const getChartData = (batch) => {
-    if (!batch) return [];
-    const stages = [
-      { name: 'Receiving', weight: batch.receiving_weight, date: batch.receiving_date },
-      { name: 'Preprocessing', weight: batch.preprocessing_weight, date: batch.preprocessing_date },
-      { name: 'Wet Mill', weight: batch.wetmill_weight, date: batch.wetmill_weight_date },
-      { name: 'Fermentation', weight: batch.fermentation_weight, date: batch.fermentation_weight_date },
-      { name: 'Drying', weight: batch.drying_weight, date: batch.drying_weight_date },
-      { name: 'Dry Mill', weight: batch.dry_mill_weight, date: batch.dry_mill_weight_date },
-    ];
-
-    let filteredStages = stages;
-    if (batch.processingType === 'N/A') {
-      filteredStages = stages.filter(stage => stage.weight !== 'N/A');
-    } else if (batch.processingType === 'Washed') {
-      filteredStages = stages.filter(stage => stage.weight !== 'N/A');
-    } else if (batch.processingType === 'Natural') {
-      filteredStages = stages.filter(stage => 
-        ['Receiving', 'Preprocessing', 'Drying', 'Dry Mill'].includes(stage.name) && stage.weight !== 'N/A'
-      );
-    } else if (batch.processingType === 'Honey') {
-      filteredStages = stages.filter(stage => 
-        ['Receiving', 'Preprocessing', 'Fermentation', 'Drying', 'Dry Mill'].includes(stage.name) && stage.weight !== 'N/A'
-      );
-    }
-
-    return filteredStages.map(stage => ({
-      name: stage.name,
-      weight: parseFloat(stage.weight) || 0,
-      date: stage.date ? dayjs(stage.date).format('YYYY-MM-DD') : 'N/A',
-    }));
-  };
-
+  // Fetch metrics and targets
   useEffect(() => {
     const fetchData = async () => {
       console.log('Starting fetchData');
@@ -374,28 +305,13 @@ function Dashboard() {
       await fetchRobustaTargets();
       await fetchLandTargets();
       await fetchHeqaTargets();
-      await fetchBatchTrackingData();
     };
 
     fetchAllData();
-  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets, fetchBatchTrackingData]);
+  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets]);
 
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
-  };
-
-  const handleBatchFilterChange = (event) => {
-    setBatchFilter(event.target.value);
-  };
-
-  const handleBatchClick = (batch) => {
-    setSelectedBatch(batch);
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedBatch(null);
   };
 
   const handleCloseSnackbar = () => {
