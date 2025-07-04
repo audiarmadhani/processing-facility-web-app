@@ -37,7 +37,12 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from "axios";
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
+import timezone from 'dayjs/plugin/timezone'; // Add timezone plugin
+import utc from 'dayjs/plugin/utc'; // Add utc plugin for timezone conversion
 dayjs.extend(duration);
+dayjs.extend(utc); // Extend with utc
+dayjs.extend(timezone); // Extend with timezone
+dayjs.tz.setDefault('Asia/Makassar'); // Set default timezone to WIB (UTC+7)
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
@@ -46,7 +51,7 @@ const FermentationStation = () => {
   const [batchNumber, setBatchNumber] = useState('');
   const [tank, setTank] = useState('');
   const [blueBarrelCode, setBlueBarrelCode] = useState('');
-  const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
+  const [startDate, setStartDate] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
   const [fermentationData, setFermentationData] = useState([]);
   const [availableBatches, setAvailableBatches] = useState([]);
   const [availableTanks, setAvailableTanks] = useState([]);
@@ -61,7 +66,7 @@ const FermentationStation = () => {
   const [weightMeasurements, setWeightMeasurements] = useState([]);
   const [newWeight, setNewWeight] = useState('');
   const [newProcessingType, setNewProcessingType] = useState('');
-  const [newWeightDate, setNewWeightDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [newWeightDate, setNewWeightDate] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
 
@@ -203,7 +208,7 @@ const FermentationStation = () => {
     const payload = {
       batchNumber: batchNumber.trim(),
       tank: tank === 'Blue Barrel' ? blueBarrelCode : tank,
-      startDate: dayjs(startDate).toISOString(),
+      startDate: dayjs(startDate).tz('Asia/Makassar', true).toISOString(), // Convert to UTC with WIB
       createdBy: session.user.name,
     };
 
@@ -214,7 +219,7 @@ const FermentationStation = () => {
       setBatchNumber('');
       setTank('');
       setBlueBarrelCode('');
-      setStartDate(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
+      setStartDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
       await fetchFermentationData();
       await fetchAvailableBatches();
       await fetchAvailableTanks();
@@ -250,7 +255,7 @@ const FermentationStation = () => {
     fetchWeightMeasurements(row.batchNumber);
     setNewWeight('');
     setNewProcessingType('');
-    setNewWeightDate(dayjs().format('YYYY-MM-DD'));
+    setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
     setOpenWeightDialog(true);
     setAnchorEl(null);
   };
@@ -306,7 +311,7 @@ const FermentationStation = () => {
       setWeightMeasurements([...weightMeasurements, response.data.measurement]);
       setNewWeight('');
       setNewProcessingType('');
-      setNewWeightDate(dayjs().format('YYYY-MM-DD'));
+      setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
       setSnackbarMessage('Weight measurement added successfully.');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
@@ -330,8 +335,8 @@ const FermentationStation = () => {
   };
 
   const calculateElapsedTime = (startDate, endDate) => {
-    const start = dayjs(startDate);
-    const end = endDate ? dayjs(endDate) : dayjs();
+    const start = dayjs.tz(startDate, 'Asia/Makassar'); // Parse with WIB
+    const end = endDate ? dayjs.tz(endDate, 'Asia/Makassar') : dayjs.tz(); // Use WIB for end date
     const duration = dayjs.duration(end.diff(start));
     const days = Math.floor(duration.asDays());
     const hours = Math.floor(duration.asHours() % 24);
@@ -390,13 +395,13 @@ const FermentationStation = () => {
       field: 'startDate',
       headerName: 'Start Date',
       width: 180,
-      renderCell: ({ value }) => dayjs(value).format('YYYY-MM-DD HH:mm:ss'),
+      renderCell: ({ value }) => dayjs.tz(value, 'Asia/Makassar').format('YYYY-MM-DD HH:mm:ss'), // Convert UTC to WIB
     },
     {
       field: 'endDate',
       headerName: 'End Date',
       width: 180,
-      renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
+      renderCell: ({ value }) => value ? dayjs.tz(value, 'Asia/Makassar').format('YYYY-MM-DD HH:mm:ss') : '-', // Convert UTC to WIB
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
     { 

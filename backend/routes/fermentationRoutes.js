@@ -94,9 +94,6 @@ router.get('/fermentation/available-batches', async (req, res) => {
       WHERE r.merged = FALSE
       AND d."batchNumber" IS NULL
       AND r."commodityType" = 'Cherry'
-      AND r."batchNumber" NOT IN (
-        SELECT "batchNumber" FROM "FermentationData" WHERE status = 'In Progress'
-      )
       GROUP BY r."batchNumber", r."farmerName", r.weight
       ORDER BY r."batchNumber" DESC;`,
       {
@@ -149,17 +146,16 @@ router.post('/fermentation', async (req, res) => {
       FROM "ReceivingData" r
       WHERE r."batchNumber" = :batchNumber 
       AND r.merged = FALSE 
-      AND r.producer = :producer
       AND r."commodityType" = 'Cherry'`,
       {
-        replacements: { batchNumber, producer: 'HEQA' },
+        replacements: { batchNumber },
         transaction: t,
         type: sequelize.QueryTypes.SELECT
       }
     );
     if (!batchCheck) {
       await t.rollback();
-      return res.status(400).json({ error: 'Batch number not found, merged, not from producer HEQA, or not Cherry.' });
+      return res.status(400).json({ error: 'Batch number not found, merged, or not Cherry.' });
     }
 
     const [tankCheck] = await sequelize.query(
@@ -225,8 +221,8 @@ router.get('/fermentation', async (req, res) => {
     const [rows] = await sequelize.query(
       `SELECT 
         f.*, 
-        (f."startDate" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Makassar') as "startDate",
-        (f."endDate" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Makassar') as "endDate",
+        (f."startDate") as "startDate",
+        (f."endDate") as "endDate",
         r."farmerName",
         r.weight AS receiving_weight,
         COALESCE((
