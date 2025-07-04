@@ -341,7 +341,6 @@ const FermentationStation = () => {
 
   const fermentationColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
-    { field: 'lotNumber', headerName: 'Lot Number', width: 180 },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -452,7 +451,7 @@ const FermentationStation = () => {
                       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                         <Typography variant="body1">{batch.batchNumber}</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Lot: {batch.lotNumber}, Farmer: {batch.farmerName}, {batch.weight}kg
+                          Farmer: {batch.farmerName}, {batch.weight}kg
                         </Typography>
                       </Box>
                     </MenuItem>
