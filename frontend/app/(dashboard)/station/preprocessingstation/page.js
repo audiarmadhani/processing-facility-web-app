@@ -356,7 +356,7 @@ const PreprocessingStation = () => {
 
   const handleOpenMergeDialog = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/preprocessing/new-batch-number`, { timeout: 15000 });
+      const response = await axios.get(`${API_BASE_URL}/new-batch-number`, { timeout: 15000 });
       setNewBatchNumber(response.data.newBatchNumber);
       setOpenMergeDialog(true);
     } catch (error) {
