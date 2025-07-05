@@ -390,7 +390,7 @@ const PreprocessingStation = () => {
     }
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/preprocessing/merge`, {
+      const response = await axios.post(`${API_BASE_URL}//merge`, {
         batchNumbers: selectedBatches,
         notes: mergeNotes.trim() || null,
         createdBy: session?.user?.name || 'Unknown',
