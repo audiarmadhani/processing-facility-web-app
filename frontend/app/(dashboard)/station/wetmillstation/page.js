@@ -54,6 +54,7 @@ const WetmillStation = () => {
   const [newBagWeight, setNewBagWeight] = useState('');
   const [newBagNumber, setNewBagNumber] = useState(1);
   const [newProcessingType, setNewProcessingType] = useState('');
+  const [newProducer, setNewProducer] = useState('HQ'); // Default to HQ
   const [newWeightDate, setNewWeightDate] = useState('');
   const [editingWeightId, setEditingWeightId] = useState(null);
   const [selectedWeightIds, setSelectedWeightIds] = useState([]);
@@ -61,7 +62,7 @@ const WetmillStation = () => {
   const [deletedWeights, setDeletedWeights] = useState([]);
   const [unprocessedFilter, setUnprocessedFilter] = useState('');
   const [completedFilter, setCompletedFilter] = useState('');
-  const isFetchingRef = useRef(false); // Prevent concurrent fetches
+  const isFetchingRef = useRef(false);
 
   const fetchOrderBook = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -100,11 +101,10 @@ const WetmillStation = () => {
       }
 
       const batchWeights = {};
-      weightsResult.forEach(({ batchNumber, total_weight, measurement_date }) => {
+      weightsResult.forEach(({ batchNumber, producer, total_weight, measurement_date }) => {
         if (batchNumber) {
-          batchWeights[batchNumber] = { total: total_weight, date: measurement_date };
-        } else {
-          console.warn('Skipping weight record with undefined batchNumber:', { total_weight, measurement_date });
+          const key = `${batchNumber}_${producer || 'N/A'}`;
+          batchWeights[key] = { total: total_weight, date: measurement_date };
         }
       });
 
@@ -137,7 +137,8 @@ const WetmillStation = () => {
             status,
             startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
             lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
-            weight: batchWeights[batch.batchNumber] ? Number(batchWeights[batch.batchNumber].total).toFixed(2) : 'N/A',
+            weight: batchWeights[`${batch.batchNumber}_N/A`]?.total || batchWeights[`${batch.batchNumber}_HQ`]?.total || batchWeights[`${batch.batchNumber}_BTM`]?.total || 'N/A',
+            producer: latestWetmillEntry?.producer || 'N/A', // Assuming wetmill data might include producer
             lotNumbers: latestWetmillEntry?.lotNumbers || ['N/A'],
             referenceNumbers: latestWetmillEntry?.referenceNumbers || ['N/A'],
             lotMapping: latestWetmillEntry?.lotMapping || [],
@@ -186,17 +187,12 @@ const WetmillStation = () => {
       const response = await fetch(`https://processing-facility-backend.onrender.com/api/wetmill-weight-measurements/${batchNumber}`);
       if (!response.ok) throw new Error('Failed to retrieve weight measurements.');
       const data = await response.json();
-      // Filter out measurements with invalid measurement_date or weight
       const validMeasurements = data.filter(m => {
         const date = new Date(m.measurement_date);
         const isValidDate = !isNaN(date.getTime());
         const isValidWeight = typeof m.weight === 'number' && !isNaN(m.weight) && m.weight >= 0;
-        if (!isValidDate) {
-          console.warn(`Invalid measurement_date in measurement ID ${m.id}: ${m.measurement_date}`);
-        }
-        if (!isValidWeight) {
-          console.warn(`Invalid weight in measurement ID ${m.id}: ${m.weight}`);
-        }
+        if (!isValidDate) console.warn(`Invalid measurement_date in measurement ID ${m.id}: ${m.measurement_date}`);
+        if (!isValidWeight) console.warn(`Invalid weight in measurement ID ${m.id}: ${m.weight}`);
         return isValidDate && isValidWeight;
       });
       setWeightMeasurements(validMeasurements);
@@ -213,9 +209,11 @@ const WetmillStation = () => {
     }
   }, []);
 
-  const fetchMaxBagNumber = useCallback(async (batchNumber, processingType) => {
+  const fetchMaxBagNumber = useCallback(async (batchNumber, processingType, producer) => {
     try {
-      const response = await fetch(`https://processing-facility-backend.onrender.com/api/wetmill-weight-measurements/${batchNumber}/${processingType}/max-bag-number`);
+      const url = new URL(`https://processing-facility-backend.onrender.com/api/wetmill-weight-measurements/${batchNumber}/${processingType}/max-bag-number`);
+      if (producer) url.searchParams.append('producer', producer);
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to retrieve max bag number.');
       const { maxBagNumber } = await response.json();
       setNewBagNumber(maxBagNumber + 1);
@@ -228,7 +226,6 @@ const WetmillStation = () => {
   }, []);
 
   const handleAddOrUpdateBagWeight = useCallback(async () => {
-    // Normalize input: replace comma with dot and parse
     const normalizedWeight = newBagWeight.replace(',', '.');
     const weightValue = parseFloat(normalizedWeight);
     
@@ -240,6 +237,12 @@ const WetmillStation = () => {
     }
     if (!newProcessingType) {
       setSnackbarMessage('Please select a processing type.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+    if (!newProducer) {
+      setSnackbarMessage('Please select a producer.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -281,6 +284,7 @@ const WetmillStation = () => {
         const payload = {
           weight: weightValue,
           measurement_date: newWeightDate,
+          producer: newProducer,
         };
         const response = await fetch(`https://processing-facility-backend.onrender.com/api/wetmill-weight-measurement/${editingWeightId}`, {
           method: 'PUT',
@@ -297,6 +301,7 @@ const WetmillStation = () => {
         const payload = {
           batchNumber: selectedBatch.batchNumber,
           processingType: newProcessingType,
+          producer: newProducer,
           bagNumber: newBagNumber,
           weight: weightValue,
           measurement_date: newWeightDate,
@@ -315,20 +320,21 @@ const WetmillStation = () => {
       }
       setNewBagWeight('');
       setNewWeightDate(new Date().toISOString().slice(0, 10));
-      await fetchOrderBook(); // Refresh data to update weights
+      await fetchOrderBook();
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to save weight measurement');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
   }, [
-    newBagWeight, newProcessingType, newWeightDate, editingWeightId, newBagNumber,
+    newBagWeight, newProcessingType, newProducer, newWeightDate, editingWeightId, newBagNumber,
     selectedBatch, weightMeasurements, fetchOrderBook,
   ]);
 
   const handleEditBagWeight = useCallback((measurement) => {
     setEditingWeightId(measurement.id);
     setNewProcessingType(measurement.processingType);
+    setNewProducer(measurement.producer || 'HQ'); // Default to HQ if not present
     setNewBagNumber(measurement.bagNumber);
     setNewBagWeight(measurement.weight.toString());
     setNewWeightDate(new Date(measurement.measurement_date).toISOString().slice(0, 10));
@@ -351,7 +357,7 @@ const WetmillStation = () => {
       setSnackbarMessage(result.message);
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      await fetchOrderBook(); // Refresh data to update weights
+      await fetchOrderBook();
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to delete weight measurements');
       setSnackbarSeverity('error');
@@ -366,6 +372,7 @@ const WetmillStation = () => {
         const payload = {
           batchNumber: weight.batchNumber,
           processingType: weight.processingType,
+          producer: weight.producer,
           bagNumber: weight.bagNumber,
           weight: weight.weight,
           measurement_date: weight.measurement_date,
@@ -384,7 +391,7 @@ const WetmillStation = () => {
       setSnackbarMessage('Weight measurements restored successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      await fetchOrderBook(); // Refresh data to update weights
+      await fetchOrderBook();
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to restore weight measurements');
       setSnackbarSeverity('error');
@@ -395,15 +402,23 @@ const WetmillStation = () => {
   const handleProcessingTypeChange = useCallback(async (value) => {
     setNewProcessingType(value);
     if (value && selectedBatch && !editingWeightId) {
-      await fetchMaxBagNumber(selectedBatch.batchNumber, value);
+      await fetchMaxBagNumber(selectedBatch.batchNumber, value, newProducer);
     }
-  }, [selectedBatch, editingWeightId, fetchMaxBagNumber]);
+  }, [selectedBatch, editingWeightId, fetchMaxBagNumber, newProducer]);
+
+  const handleProducerChange = useCallback(async (value) => {
+    setNewProducer(value);
+    if (newProcessingType && selectedBatch && !editingWeightId) {
+      await fetchMaxBagNumber(selectedBatch.batchNumber, newProcessingType, value);
+    }
+  }, [selectedBatch, editingWeightId, fetchMaxBagNumber, newProcessingType]);
 
   const handleWeightClick = useCallback((batch) => {
     setSelectedBatch(batch);
     fetchWeightMeasurements(batch.batchNumber);
     setNewBagWeight('');
     setNewProcessingType('');
+    setNewProducer('HQ'); // Default to HQ
     setNewWeightDate(new Date().toISOString().slice(0, 10));
     setNewBagNumber(1);
     setEditingWeightId(null);
@@ -419,6 +434,7 @@ const WetmillStation = () => {
     setNewBagWeight('');
     setNewBagNumber(1);
     setNewProcessingType('');
+    setNewProducer('');
     setNewWeightDate('');
     setEditingWeightId(null);
     setSelectedWeightIds([]);
@@ -458,13 +474,13 @@ const WetmillStation = () => {
   }, 2000), [fetchOrderBook]);
 
   const handleWeightInputChange = useCallback((e) => {
-    const value = e.target.value.replace(',', '.'); // Replace comma with dot
+    const value = e.target.value.replace(',', '.');
     setNewBagWeight(value);
   }, []);
 
   useEffect(() => {
     fetchOrderBook();
-    const intervalId = setInterval(fetchOrderBook, 300000); // 5 minutes
+    const intervalId = setInterval(fetchOrderBook, 300000);
     return () => clearInterval(intervalId);
   }, [fetchOrderBook]);
 
@@ -474,6 +490,8 @@ const WetmillStation = () => {
       : ['Washed', 'Natural'],
     [selectedBatch]
   );
+
+  const producers = useMemo(() => ['HQ', 'BTM'], []); // Fixed list of producers
 
   const getTotalWeights = useCallback(() => {
     const totals = {};
@@ -485,8 +503,9 @@ const WetmillStation = () => {
       }
       const dateKey = date.toISOString().slice(0, 10);
       if (!totals[dateKey]) totals[dateKey] = {};
-      if (!totals[dateKey][m.processingType]) totals[dateKey][m.processingType] = 0;
-      totals[dateKey][m.processingType] += Number(m.weight) || 0;
+      if (!totals[dateKey][m.processingType]) totals[dateKey][m.processingType] = {};
+      if (!totals[dateKey][m.processingType][m.producer]) totals[dateKey][m.processingType][m.producer] = 0;
+      totals[dateKey][m.processingType][m.producer] += Number(m.weight) || 0;
     });
     return totals;
   }, [weightMeasurements]);
@@ -659,7 +678,7 @@ const WetmillStation = () => {
                     rows={filteredCompletedBatches}
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
-                    dataRowSelection={false}
+                    disableRowSelectionOnClick
                     getRowId={row => row.batchNumber}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
@@ -687,7 +706,7 @@ const WetmillStation = () => {
                 {editingWeightId ? 'Edit Bag Weight' : 'Add Bag Weight'}
               </Typography>
               <Grid container spacing={1} alignItems="center">
-                <Grid item xs={4}>
+                <Grid item xs={3}>
                   <FormControl fullWidth size="small">
                     <InputLabel id="processing-type-label">Processing Type</InputLabel>
                     <Select
@@ -704,6 +723,22 @@ const WetmillStation = () => {
                   </FormControl>
                 </Grid>
                 <Grid item xs={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="producer-label">Producer</InputLabel>
+                    <Select
+                      labelId="producer-label"
+                      value={newProducer}
+                      onChange={e => handleProducerChange(e.target.value)}
+                      label="Producer"
+                      disabled={editingWeightId !== null}
+                    >
+                      {producers.map(prod => (
+                        <MenuItem key={prod} value={prod}>{prod}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={2}>
                   <TextField
                     label="Bag Number"
                     value={newBagNumber}
@@ -712,7 +747,7 @@ const WetmillStation = () => {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={3}>
+                <Grid item xs={2}>
                   <TextField
                     label="Weight (kg)"
                     value={newBagWeight}
@@ -754,6 +789,7 @@ const WetmillStation = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Processing Type</TableCell>
+                  <TableCell>Producer</TableCell>
                   <TableCell align="right">Total Weight (kg)</TableCell>
                   <TableCell>Lot Number</TableCell>
                   <TableCell>Reference Number</TableCell>
@@ -762,18 +798,23 @@ const WetmillStation = () => {
               <TableBody>
                 {processingTypes.map(type => {
                   const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
-                  const latestDate = typeMeasurements.length > 0 
-                    ? new Date(Math.max(...typeMeasurements.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
-                    : null;
-                  const total = latestDate && totalWeights[latestDate]?.[type] ? totalWeights[latestDate][type] : 0;
-                  return (
-                    <TableRow key={type}>
-                      <TableCell>{type}</TableCell>
-                      <TableCell align="right">{Number(total).toFixed(2)}</TableCell>
-                      <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.lotNumber || 'N/A'}</TableCell>
-                      <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.referenceNumber || 'N/A'}</TableCell>
-                    </TableRow>
-                  );
+                  const producersForType = [...new Set(typeMeasurements.map(m => m.producer || 'N/A'))];
+                  return producersForType.map(prod => {
+                    const measurementsForProducer = typeMeasurements.filter(m => m.producer === prod);
+                    const latestDate = measurementsForProducer.length > 0
+                      ? new Date(Math.max(...measurementsForProducer.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
+                      : null;
+                    const total = latestDate && totalWeights[latestDate]?.[type]?.[prod] ? totalWeights[latestDate][type][prod] : 0;
+                    return (
+                      <TableRow key={`${type}_${prod}`}>
+                        <TableCell>{type}</TableCell>
+                        <TableCell>{prod}</TableCell>
+                        <TableCell align="right">{Number(total).toFixed(2)}</TableCell>
+                        <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.lotNumber || 'N/A'}</TableCell>
+                        <TableCell>{selectedBatch?.lotMapping?.find(m => m.processingType === type)?.referenceNumber || 'N/A'}</TableCell>
+                      </TableRow>
+                    );
+                  });
                 })}
               </TableBody>
             </Table>
@@ -799,6 +840,7 @@ const WetmillStation = () => {
                   </TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell>Processing Type</TableCell>
+                  <TableCell>Producer</TableCell>
                   <TableCell>Bag Number</TableCell>
                   <TableCell align="right">Weight (kg)</TableCell>
                   <TableCell>Actions</TableCell>
@@ -807,7 +849,7 @@ const WetmillStation = () => {
               <TableBody>
                 {weightMeasurements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">No weight measurements recorded</TableCell>
+                    <TableCell colSpan={7} align="center">No weight measurements recorded</TableCell>
                   </TableRow>
                 ) : (
                   weightMeasurements.map(m => (
@@ -820,6 +862,7 @@ const WetmillStation = () => {
                       </TableCell>
                       <TableCell>{new Date(m.measurement_date).toLocaleDateString('en-US', { timeZone: 'Asia/Makassar' })}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
+                      <TableCell>{m.producer || 'N/A'}</TableCell>
                       <TableCell>{m.bagNumber}</TableCell>
                       <TableCell align="right">{Number(m.weight).toFixed(2)}</TableCell>
                       <TableCell>
@@ -864,7 +907,7 @@ const WetmillStation = () => {
               <Typography variant="body2" sx={{ mt: 2 }}>
                 Affected bags: {weightMeasurements
                   .filter(m => selectedWeightIds.includes(m.id))
-                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${Number(m.weight).toFixed(2)} kg)`)
+                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.producer || 'N/A'}, ${Number(m.weight).toFixed(2)} kg)`)
                   .join(', ')}
               </Typography>
             )}

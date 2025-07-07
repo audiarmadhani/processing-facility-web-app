@@ -83,10 +83,10 @@ router.post('/merge', async (req, res) => {
 
     // Validate batches and fetch additional data
     const batches = await sequelize.query(
-      `SELECT r."batchNumber", r."type", r."weight", r."farmerName", r."receivingDate", r."totalBags", r."commodityType", r."rfid", q."qcDate", q."cherryScore", q."cherryGroup", q."ripeness", q."color", q."foreignMatter", q."overallQuality"
+      `SELECT r."batchNumber", r."type", r."weight", r."farmerName", r."receivingDate", r."totalBags", r."commodityType", r."rfid", q."qcDate", q."ripeness", q."color", q."foreignMatter", q."overallQuality"
        FROM "ReceivingData" r
        LEFT JOIN "QCData" q ON LOWER(r."batchNumber") = LOWER(q."batchNumber")
-       WHERE LOWER(r."batchNumber") = ANY(:batchNumbers) AND r.merged = FALSE AND r."commodityType" != 'Green Bean'`,
+       WHERE LOWER(r."batchNumber") IN (:batchNumbers) AND r.merged = FALSE AND r."commodityType" != 'Green Bean'`,
       {
         replacements: { batchNumbers: batchNumbers.map(b => b.trim().toLowerCase()) },
         type: sequelize.QueryTypes.SELECT,
@@ -110,7 +110,7 @@ router.post('/merge', async (req, res) => {
     const processed = await sequelize.query(
       `SELECT "batchNumber", SUM("weightProcessed") AS "totalProcessed"
        FROM "PreprocessingData"
-       WHERE LOWER("batchNumber") = ANY(:batchNumbers)
+       WHERE LOWER("batchNumber") IN (:batchNumbers)
        GROUP BY "batchNumber"`,
       {
         replacements: { batchNumbers: batchNumbers.map(b => b.trim().toLowerCase()) },
@@ -139,14 +139,13 @@ router.post('/merge', async (req, res) => {
     );
 
     let sequenceNumber = sequenceResult.latest_batch_number;
-    // Safely handle last_updated_date
     let lastUpdatedDate = sequenceResult.last_updated_date;
     if (lastUpdatedDate instanceof Date && !isNaN(lastUpdatedDate)) {
       lastUpdatedDate = lastUpdatedDate.toISOString().slice(0, 10);
     } else if (typeof lastUpdatedDate === 'string') {
       lastUpdatedDate = new Date(lastUpdatedDate).toISOString().slice(0, 10);
     } else {
-      lastUpdatedDate = today; // Default to today if invalid
+      lastUpdatedDate = today;
     }
 
     if (lastUpdatedDate !== today) {
@@ -218,16 +217,14 @@ router.post('/merge', async (req, res) => {
     // Insert into QCData for merged batch
     await sequelize.query(
       `INSERT INTO "QCData" (
-        "batchNumber", "qcDate", "cherryScore", "cherryGroup", "ripeness", "color", "foreignMatter", "overallQuality", "createdAt", "updatedAt", merged
+        "batchNumber", "qcDate", "ripeness", "color", "foreignMatter", "overallQuality", "createdAt", "updatedAt", merged
       ) VALUES (
-        :batchNumber, :qcDate, :cherryScore, :cherryGroup, :ripeness, :color, :foreignMatter, :overallQuality, :createdAt, :updatedAt, FALSE
+        :batchNumber, :qcDate, :ripeness, :color, :foreignMatter, :overallQuality, :createdAt, :updatedAt, FALSE
       )`,
       {
         replacements: {
           batchNumber: newBatchNumber,
           qcDate: latestQcDate,
-          cherryScore: cherryScores || null,
-          cherryGroup: cherryGroups || null,
           ripeness: ripenesses || null,
           color: colors || null,
           foreignMatter: foreignMatters || null,
@@ -242,7 +239,7 @@ router.post('/merge', async (req, res) => {
 
     // Update original batches
     await sequelize.query(
-      `UPDATE "ReceivingData" SET merged = TRUE WHERE LOWER("batchNumber") = ANY(:batchNumbers)`,
+      `UPDATE "ReceivingData" SET merged = TRUE WHERE LOWER("batchNumber") IN (:batchNumbers)`,
       {
         replacements: { batchNumbers: batchNumbers.map(b => b.trim().toLowerCase()) },
         type: sequelize.QueryTypes.UPDATE,
@@ -250,7 +247,7 @@ router.post('/merge', async (req, res) => {
       }
     );
     await sequelize.query(
-      `UPDATE "QCData" SET merged = TRUE WHERE LOWER("batchNumber") = ANY(:batchNumbers)`,
+      `UPDATE "QCData" SET merged = TRUE WHERE LOWER("batchNumber") IN (:batchNumbers)`,
       {
         replacements: { batchNumbers: batchNumbers.map(b => b.trim().toLowerCase()) },
         type: sequelize.QueryTypes.UPDATE,
@@ -258,7 +255,7 @@ router.post('/merge', async (req, res) => {
       }
     );
     await sequelize.query(
-      `UPDATE "PreprocessingData" SET merged = TRUE WHERE LOWER("batchNumber") = ANY(:batchNumbers)`,
+      `UPDATE "PreprocessingData" SET merged = TRUE WHERE LOWER("batchNumber") IN (:batchNumbers)`,
       {
         replacements: { batchNumbers: batchNumbers.map(b => b.trim().toLowerCase()) },
         type: sequelize.QueryTypes.UPDATE,
@@ -271,12 +268,12 @@ router.post('/merge', async (req, res) => {
       `INSERT INTO "BatchMerges" (
         new_batch_number, original_batch_numbers, merged_at, created_by, notes
       ) VALUES (
-        :newBatchNumber, :originalBatchNumbers, :mergedAt, :createdBy, :notes
+        :newBatchNumber, ARRAY[:originalBatchNumbers], :mergedAt, :createdBy, :notes
       )`,
       {
         replacements: {
           newBatchNumber,
-          originalBatchNumbers: batchNumbers,
+          originalBatchNumbers: batchNumbers, // Pass the array to be cast as a PostgreSQL array
           mergedAt: new Date(),
           createdBy: createdBy || 'Unknown',
           notes: notes || null
@@ -303,7 +300,6 @@ router.post('/merge', async (req, res) => {
   }
 });
 
-// Route for creating preprocessing data
 // Route for creating preprocessing data
 router.post('/preprocessing', async (req, res) => {
   let t;
@@ -896,7 +892,7 @@ router.get('/batch-merges/original/:batchNumber', async (req, res) => {
     const mergeData = await sequelize.query(
       `SELECT new_batch_number, original_batch_numbers
        FROM "BatchMerges"
-       WHERE :batchNumber = ANY(original_batch_numbers)`,
+       WHERE :batchNumber IN (original_batch_numbers)`,
       { replacements: { batchNumber: batchNumber.trim() }, type: sequelize.QueryTypes.SELECT }
     );
 
