@@ -491,21 +491,23 @@ const WetmillStation = () => {
     if (!lotMapping) return '';
     const mapping = lotMapping.find(m => m.processingType === processingType);
     if (!mapping) return '';
-    // Infer producer from lotNumber (e.g., "HQ" from "HQ25", "BTM" from "ID-BTM")
     if (mapping.lotNumber?.startsWith('HQ')) return 'HQ';
     if (mapping.lotNumber?.startsWith('ID-BTM')) return 'BTM';
     return '';
   }, []);
 
   const availableProcessingTypes = useMemo(() => {
-    return selectedBatch?.lotMapping?.map(m => m.processingType) || ['Washed', 'Natural', 'Pulped Natural', 'CM Washed'];
+    return [...new Set(selectedBatch?.lotMapping?.map(m => m.processingType)) || ['Washed', 'Natural', 'Pulped Natural', 'CM Washed']];
   }, [selectedBatch]);
 
   const availableProducersForType = useMemo(() => {
     if (!newProcessingType || !selectedBatch?.lotMapping) return ['HQ', 'BTM'];
-    const mapping = selectedBatch.lotMapping.find(m => m.processingType === newProcessingType);
-    if (!mapping) return ['HQ', 'BTM'];
-    return mapping.lotNumber?.startsWith('HQ') ? ['HQ'] : mapping.lotNumber?.startsWith('ID-BTM') ? ['BTM'] : ['HQ', 'BTM'];
+    const mappings = selectedBatch.lotMapping.filter(m => m.processingType === newProcessingType);
+    return [...new Set(mappings.map(m => {
+      if (m.lotNumber?.startsWith('HQ')) return 'HQ';
+      if (m.lotNumber?.startsWith('ID-BTM')) return 'BTM';
+      return 'HQ'; // Default fallback
+    }))];
   }, [newProcessingType, selectedBatch]);
 
   const getTotalWeights = useCallback(() => {
@@ -745,7 +747,7 @@ const WetmillStation = () => {
                       value={newProducer}
                       onChange={e => handleProducerChange(e.target.value)}
                       label="Producer"
-                      disabled={editingWeightId !== null}
+                      disabled={editingWeightId !== null || !newProcessingType}
                     >
                       {availableProducersForType.map(prod => (
                         <MenuItem key={prod} value={prod}>{prod}</MenuItem>
@@ -792,6 +794,7 @@ const WetmillStation = () => {
                     onClick={handleAddOrUpdateBagWeight}
                     fullWidth
                     size="small"
+                    disabled={!newProcessingType || !newProducer}
                   >
                     {editingWeightId ? 'Update' : 'Add'}
                   </Button>
@@ -811,26 +814,23 @@ const WetmillStation = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {availableProcessingTypes.map(type => {
-                  const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
-                  const producersForType = [...new Set(typeMeasurements.map(m => m.producer || deriveProducerFromLotMapping(type, selectedBatch?.lotMapping)))];
-                  return producersForType.map(prod => {
-                    const measurementsForProducer = typeMeasurements.filter(m => m.producer === prod);
-                    const latestDate = measurementsForProducer.length > 0
-                      ? new Date(Math.max(...measurementsForProducer.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
-                      : null;
-                    const total = latestDate && totalWeights[latestDate]?.[type]?.[prod] ? totalWeights[latestDate][type][prod] : 0;
-                    const mapping = selectedBatch?.lotMapping?.find(m => m.processingType === type);
-                    return (
-                      <TableRow key={`${type}_${prod}`}>
-                        <TableCell>{type}</TableCell>
-                        <TableCell>{prod}</TableCell>
-                        <TableCell align="right">{Number(total).toFixed(2)}</TableCell>
-                        <TableCell>{mapping?.lotNumber || 'N/A'}</TableCell>
-                        <TableCell>{mapping?.referenceNumber || 'N/A'}</TableCell>
-                      </TableRow>
-                    );
-                  });
+                {selectedBatch?.lotMapping?.map((mapping, index) => {
+                  const typeMeasurements = weightMeasurements.filter(m => m.processingType === mapping.processingType);
+                  const derivedProducer = deriveProducerFromLotMapping(mapping.processingType, selectedBatch?.lotMapping);
+                  const measurementsForProducer = typeMeasurements.filter(m => m.producer === derivedProducer || (!m.producer && deriveProducerFromLotMapping(m.processingType, selectedBatch?.lotMapping) === derivedProducer));
+                  const latestDate = measurementsForProducer.length > 0
+                    ? new Date(Math.max(...measurementsForProducer.map(m => new Date(m.measurement_date)))).toISOString().slice(0, 10)
+                    : null;
+                  const total = latestDate && totalWeights[latestDate]?.[mapping.processingType]?.[derivedProducer] ? totalWeights[latestDate][mapping.processingType][derivedProducer] : 0;
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>{mapping.processingType}</TableCell>
+                      <TableCell>{derivedProducer}</TableCell>
+                      <TableCell align="right">{Number(total).toFixed(2)}</TableCell>
+                      <TableCell>{mapping.lotNumber || 'N/A'}</TableCell>
+                      <TableCell>{mapping.referenceNumber || 'N/A'}</TableCell>
+                    </TableRow>
+                  );
                 })}
               </TableBody>
             </Table>
