@@ -68,29 +68,29 @@ const WetmillStation = () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     setIsLoading(true);
-
+  
     try {
       const [qcResponse, wetmillResponse, dryingResponse] = await Promise.all([
         fetch('https://processing-facility-backend.onrender.com/api/qc'),
         fetch('https://processing-facility-backend.onrender.com/api/wetmill-data'),
         fetch('https://processing-facility-backend.onrender.com/api/drying-data'),
       ]);
-
+  
       if (!qcResponse.ok || !wetmillResponse.ok || !dryingResponse.ok) {
         throw new Error('Failed to fetch data from one or more endpoints');
       }
-
+  
       const [qcResult, wetmillData, dryingData] = await Promise.all([
         qcResponse.json(),
         wetmillResponse.json(),
         dryingResponse.json(),
       ]);
-
+  
       const qcData = qcResult.distinctRows || [];
       const batchNumbers = qcData
         .filter(batch => batch && batch.batchNumber && typeof batch.batchNumber === 'string')
         .map(batch => batch.batchNumber);
-
+  
       let weightsResult = [];
       if (batchNumbers.length > 0) {
         const weightsResponse = await fetch(
@@ -99,7 +99,7 @@ const WetmillStation = () => {
         if (!weightsResponse.ok) throw new Error('Failed to fetch aggregated weights');
         weightsResult = await weightsResponse.json();
       }
-
+  
       const batchWeights = {};
       weightsResult.forEach(({ batchNumber, producer, total_weight, measurement_date }) => {
         if (batchNumber) {
@@ -107,7 +107,7 @@ const WetmillStation = () => {
           batchWeights[key] = { total: total_weight, date: measurement_date };
         }
       });
-
+  
       const today = new Date();
       const formattedData = qcData
         .filter(batch => batch && batch.batchNumber && typeof batch.batchNumber === 'string')
@@ -116,13 +116,13 @@ const WetmillStation = () => {
           const sla = isNaN(receivingDate)
             ? 'N/A'
             : Math.ceil(Math.abs(today - receivingDate) / (1000 * 60 * 60 * 24));
-
+  
           const batchWetmillData = wetmillData.filter(data => data.batchNumber === batch.batchNumber);
           const latestWetmillEntry = batchWetmillData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-
+  
           const batchDryingData = dryingData.filter(data => data.batchNumber === batch.batchNumber);
           const latestDryingEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-
+  
           const status = latestDryingEntry && latestDryingEntry.entered_at
             ? 'In Drying'
             : latestWetmillEntry
@@ -130,14 +130,14 @@ const WetmillStation = () => {
                 ? 'Exited Wet Mill'
                 : 'Entered Wet Mill'
               : 'Not Scanned';
-
+  
           return {
             ...batch,
             sla,
             status,
             startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
             lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
-            weight: batchWeights[`${batchNumber}_N/A`]?.total || batchWeights[`${batchNumber}_HQ`]?.total || batchWeights[`${batchNumber}_BTM`]?.total || 'N/A',
+            weight: batchWeights[`${batch.batchNumber}_N/A`]?.total || batchWeights[`${batch.batchNumber}_HQ`]?.total || batchWeights[`${batch.batchNumber}_BTM`]?.total || 'N/A',
             producer: latestWetmillEntry?.producer || 'N/A',
             lotNumbers: latestWetmillEntry?.lotNumbers || ['N/A'],
             referenceNumbers: latestWetmillEntry?.referenceNumbers || ['N/A'],
@@ -149,26 +149,26 @@ const WetmillStation = () => {
           const typeA = typeOrder[a.type] ?? 2;
           const typeB = typeOrder[b.type] ?? 2;
           if (typeA !== typeB) return typeA - typeB;
-
+  
           const statusOrder = { 'Entered Wet Mill': 0, 'Not Scanned': 1, 'Exited Wet Mill': 2, 'In Drying': 3 };
           const statusA = statusOrder[a.status] || 4;
           const statusB = statusOrder[b.status] || 4;
           if (statusA !== statusB) return statusA - statusB;
-
+  
           const dateA = a.startProcessingDate === 'N/A' ? '' : a.startProcessingDate;
           const dateB = b.startProcessingDate === 'N/A' ? '' : b.startProcessingDate;
           if (dateA !== dateB) return dateA.localeCompare(dateB);
-
+  
           return 0;
         });
-
+  
       const unprocessedAndInProgress = formattedData.filter(batch => 
         batch.status === 'Not Scanned' || batch.status === 'Entered Wet Mill'
       );
       const completedWetMill = formattedData.filter(batch => 
         batch.status === 'Exited Wet Mill' || batch.status === 'In Drying'
       );
-
+  
       setUnprocessedAndInProgressBatches(unprocessedAndInProgress);
       setCompletedWetMillBatches(completedWetMill);
     } catch (error) {
