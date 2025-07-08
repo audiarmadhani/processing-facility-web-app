@@ -137,7 +137,7 @@ const WetmillStation = () => {
             status,
             startProcessingDate: batch.startProcessingDate ? new Date(batch.startProcessingDate).toISOString().slice(0, 10) : 'N/A',
             lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
-            weight: batchWeights[`${batch.batchNumber}_N/A`]?.total || batchWeights[`${batch.batchNumber}_HQ`]?.total || batchWeights[`${batch.batchNumber}_BTM`]?.total || 'N/A',
+            weight: batchWeights[`${batchNumber}_N/A`]?.total || batchWeights[`${batchNumber}_HQ`]?.total || batchWeights[`${batchNumber}_BTM`]?.total || 'N/A',
             producer: latestWetmillEntry?.producer || 'N/A',
             lotNumbers: latestWetmillEntry?.lotNumbers || ['N/A'],
             referenceNumbers: latestWetmillEntry?.referenceNumbers || ['N/A'],
@@ -443,8 +443,8 @@ const WetmillStation = () => {
   }, [selectedBatch, editingWeightId, fetchMaxBagNumber, newProcessingType]);
 
   const handleWeightClick = useCallback((batch) => {
-    if (!batch || !batch.batchNumber) {
-      setSnackbarMessage('Invalid batch selected.');
+    if (!batch || !batch.batchNumber || !batch.startProcessingDate) {
+      setSnackbarMessage('Invalid batch selected or missing start processing date.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -464,7 +464,9 @@ const WetmillStation = () => {
 
   const handleCloseWeightDialog = useCallback(() => {
     setOpenWeightDialog(false);
-    setSelectedBatch(null);
+    if (selectedBatch) {
+      setSelectedBatch(null);
+    }
     setWeightMeasurements([]);
     setNewBagWeight('');
     setNewBagNumber(1);
@@ -474,7 +476,7 @@ const WetmillStation = () => {
     setEditingWeightId(null);
     setSelectedWeightIds([]);
     setDeletedWeights([]);
-  }, []);
+  }, [selectedBatch]);
 
   const handleSelectWeight = useCallback((id) => {
     setSelectedWeightIds(prev => 
@@ -651,6 +653,10 @@ const WetmillStation = () => {
     return <Typography variant="h6">Access Denied. You do not have permission to view this page.</Typography>;
   }
 
+  useEffect(() => {
+    console.log('Selected Batch:', selectedBatch);
+  }, [selectedBatch]);
+
   return (
     <ErrorBoundary>
       <Grid container spacing={3} sx={{ p: 2 }}>
@@ -821,7 +827,7 @@ const WetmillStation = () => {
                     fullWidth
                     InputLabelProps={{ shrink: true }}
                     InputProps={{
-                      min: selectedBatch?.startProcessingDate !== 'N/A' ? selectedBatch.startProcessingDate : undefined,
+                      min: selectedBatch ? (selectedBatch.startProcessingDate !== 'N/A' ? selectedBatch.startProcessingDate : new Date('1970-01-01').toISOString().slice(0, 10)) : new Date('1970-01-01').toISOString().slice(0, 10),
                       max: new Date().toISOString().slice(0, 10),
                     }}
                   />
@@ -870,7 +876,7 @@ const WetmillStation = () => {
                       <TableCell>{mapping.referenceNumber || 'N/A'}</TableCell>
                     </TableRow>
                   );
-                })}
+                }) || []}
               </TableBody>
             </Table>
 
