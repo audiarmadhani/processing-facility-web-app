@@ -37,12 +37,12 @@ import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import axios from "axios";
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import timezone from 'dayjs/plugin/timezone'; // Add timezone plugin
-import utc from 'dayjs/plugin/utc'; // Add utc plugin for timezone conversion
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 dayjs.extend(duration);
-dayjs.extend(utc); // Extend with utc
-dayjs.extend(timezone); // Extend with timezone
-dayjs.tz.setDefault('Asia/Makassar'); // Set default timezone to WIB (UTC+7)
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Asia/Makassar');
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
@@ -67,6 +67,7 @@ const FermentationStation = () => {
   const [newWeight, setNewWeight] = useState('');
   const [newProcessingType, setNewProcessingType] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
+  const [newProducer, setNewProducer] = useState('HQ');
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
 
@@ -75,6 +76,7 @@ const FermentationStation = () => {
   );
 
   const processingTypes = ['Washed', 'Natural'];
+  const producers = ['HQ', 'BTM'];
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -208,7 +210,7 @@ const FermentationStation = () => {
     const payload = {
       batchNumber: batchNumber.trim(),
       tank: tank === 'Blue Barrel' ? blueBarrelCode : tank,
-      startDate: dayjs(startDate).tz('Asia/Makassar', true).toISOString(), // Convert to UTC with WIB
+      startDate: dayjs(startDate).tz('Asia/Makassar', true).toISOString(),
       createdBy: session.user.name,
     };
 
@@ -256,6 +258,7 @@ const FermentationStation = () => {
     setNewWeight('');
     setNewProcessingType('');
     setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
+    setNewProducer('HQ');
     setOpenWeightDialog(true);
     setAnchorEl(null);
   };
@@ -306,12 +309,14 @@ const FermentationStation = () => {
         processingType: newProcessingType,
         weight: parseFloat(newWeight),
         measurement_date: newWeightDate,
+        producer: newProducer,
       };
       const response = await axios.post(`${API_BASE_URL}/api/fermentation-weight-measurement`, payload);
       setWeightMeasurements([...weightMeasurements, response.data.measurement]);
       setNewWeight('');
       setNewProcessingType('');
       setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
+      setNewProducer('HQ');
       setSnackbarMessage('Weight measurement added successfully.');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
@@ -335,8 +340,8 @@ const FermentationStation = () => {
   };
 
   const calculateElapsedTime = (startDate, endDate) => {
-    const start = dayjs.tz(startDate, 'Asia/Makassar'); // Parse with WIB
-    const end = endDate ? dayjs.tz(endDate, 'Asia/Makassar') : dayjs.tz(); // Use WIB for end date
+    const start = dayjs.tz(startDate, 'Asia/Makassar');
+    const end = endDate ? dayjs.tz(endDate, 'Asia/Makassar') : dayjs.tz();
     const duration = dayjs.duration(end.diff(start));
     const days = Math.floor(duration.asDays());
     const hours = Math.floor(duration.asHours() % 24);
@@ -395,13 +400,13 @@ const FermentationStation = () => {
       field: 'startDate',
       headerName: 'Start Date',
       width: 180,
-      renderCell: ({ value }) => dayjs.tz(value, 'Asia/Makassar').format('YYYY-MM-DD HH:mm:ss'), // Convert UTC to WIB
+      renderCell: ({ value }) => dayjs.tz(value, 'Asia/Makassar').format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       field: 'endDate',
       headerName: 'End Date',
       width: 180,
-      renderCell: ({ value }) => value ? dayjs.tz(value, 'Asia/Makassar').format('YYYY-MM-DD HH:mm:ss') : '-', // Convert UTC to WIB
+      renderCell: ({ value }) => value ? dayjs.tz(value, 'Asia/Makassar').format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
     { 
@@ -639,6 +644,21 @@ const FermentationStation = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
+            <Grid item xs={4}>
+              <FormControl fullWidth>
+                <InputLabel id="producer-label">Producer</InputLabel>
+                <Select
+                  labelId="producer-label"
+                  value={newProducer}
+                  onChange={(e) => setNewProducer(e.target.value)}
+                  label="Producer"
+                >
+                  {producers.map(prod => (
+                    <MenuItem key={prod} value={prod}>{prod}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
           <Button
             variant="contained"
@@ -657,12 +677,13 @@ const FermentationStation = () => {
                 <TableCell>Date</TableCell>
                 <TableCell>Processing Type</TableCell>
                 <TableCell>Weight (kg)</TableCell>
+                <TableCell>Producer</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {weightMeasurements.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} align="center">No weight measurements recorded.</TableCell>
+                  <TableCell colSpan={4} align="center">No weight measurements recorded.</TableCell>
                 </TableRow>
               ) : (
                 weightMeasurements.map(m => (
@@ -670,6 +691,7 @@ const FermentationStation = () => {
                     <TableCell>{dayjs(m.measurement_date).format('YYYY-MM-DD')}</TableCell>
                     <TableCell>{m.processingType}</TableCell>
                     <TableCell>{parseFloat(m.weight).toFixed(2)}</TableCell>
+                    <TableCell>{m.producer}</TableCell>
                   </TableRow>
                 ))
               )}
