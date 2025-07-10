@@ -25,6 +25,11 @@ import {
   AccordionSummary,
   AccordionDetails,
   LinearProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
@@ -92,6 +97,10 @@ const DryMillStation = () => {
   const [errorLog, setErrorLog] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [completionProgress, setCompletionProgress] = useState(0);
+  const [openSampleTrackingDialog, setOpenSampleTrackingDialog] = useState(false);
+  const [sampleDateTaken, setSampleDateTaken] = useState(new Date().toISOString().split('T')[0]);
+  const [sampleWeightTaken, setSampleWeightTaken] = useState('');
+  const [sampleHistory, setSampleHistory] = useState([]);
   const rfidInputRef = useRef(null);
 
   const logError = (message, error) => {
@@ -117,6 +126,7 @@ const DryMillStation = () => {
           dryMillEntered: batch.dryMillEntered,
           dryMillExited: batch.dryMillExited,
           cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
+          drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2), // Added drying weight
           producer: batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
@@ -298,6 +308,22 @@ const DryMillStation = () => {
       setSnackbarMessage(message);
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
+    }
+  }, []);
+
+  const fetchSampleHistory = useCallback(async (batchNumber) => {
+    try {
+      const response = await axios.get(
+        `https://processing-facility-backend.onrender.com/api/dry-mill/${batchNumber}/sample-history`
+      );
+      setSampleHistory(response.data || []);
+    } catch (error) {
+      const message = error.response?.data?.error || "Failed to fetch sample history.";
+      logError(message, error);
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      setSampleHistory([]);
     }
   }, []);
 
@@ -831,6 +857,36 @@ const DryMillStation = () => {
     [selectedBatch, grades, selectedProcessingType, fetchDryMillData]
   );
 
+  const handleAddSample = useCallback(async () => {
+    if (!selectedBatch || !sampleWeightTaken || isNaN(parseFloat(sampleWeightTaken)) || parseFloat(sampleWeightTaken) <= 0) {
+      setSnackbarMessage("Please enter a valid positive sample weight.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/add-sample`,
+        {
+          dateTaken: sampleDateTaken,
+          weightTaken: parseFloat(sampleWeightTaken),
+        }
+      );
+      setSampleHistory([...sampleHistory, response.data]);
+      setSampleWeightTaken('');
+      setSnackbarMessage("Sample added successfully.");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
+      await fetchDryMillData();
+    } catch (error) {
+      const message = error.response?.data?.error || "Failed to add sample.";
+      logError(message, error);
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  }, [selectedBatch, sampleDateTaken, sampleWeightTaken, sampleHistory, fetchDryMillData]);
+
   useEffect(() => {
     fetchDryMillData();
     fetchLatestRfid();
@@ -852,8 +908,9 @@ const DryMillStation = () => {
         setBatchProcessingTypes([selectedBatch.processingType]);
         setSelectedProcessingType(selectedBatch.processingType);
       }
+      fetchSampleHistory(selectedBatch.batchNumber);
     }
-  }, [selectedBatch, fetchBatchProcessingTypes]);
+  }, [selectedBatch, fetchBatchProcessingTypes, fetchSampleHistory]);
 
   useEffect(() => {
     if (selectedBatch && selectedProcessingType) {
@@ -908,6 +965,15 @@ const DryMillStation = () => {
     setCompletionProgress(0);
   };
 
+  const handleSampleTrackingClick = (batch) => {
+    setSelectedBatch(batch);
+    setSampleDateTaken(new Date().toISOString().split('T')[0]);
+    setSampleWeightTaken('');
+    setSampleHistory([]);
+    fetchSampleHistory(batch.batchNumber);
+    setOpenSampleTrackingDialog(true);
+  };
+
   const handleCloseDialog = () => {
     if (hasUnsavedChanges) {
       if (confirm("You have unsaved changes. Do you want to discard them?")) {
@@ -935,6 +1001,14 @@ const DryMillStation = () => {
     setOpenStorageDialog(false);
     setRfid("");
     setSelectedBatch(null);
+  };
+
+  const handleCloseSampleTrackingDialog = () => {
+    setOpenSampleTrackingDialog(false);
+    setSelectedBatch(null);
+    setSampleDateTaken(new Date().toISOString().split('T')[0]);
+    setSampleWeightTaken('');
+    setSampleHistory([]);
   };
 
   const handleCloseSnackbar = () => {
@@ -994,9 +1068,26 @@ const DryMillStation = () => {
           </Button>
         ),
       },
+      {
+        field: "sampleTracking",
+        headerName: "Sample Tracking",
+        width: 150,
+        sortable: false,
+        renderCell: (params) => (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleSampleTrackingClick(params.row)}
+            disabled={isLoading}
+          >
+            Sample Tracking
+          </Button>
+        ),
+      },
       { field: "dryMillEntered", headerName: "Dry Mill Entered", width: 150 },
       { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
-      { field: "cherry_weight", headerName: "Weight (kg)", width: 160 },
+      { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 160 },
+      { field: "drying_weight", headerName: "Drying Weight (kg)", width: 160 }, // Added drying weight column
       { field: "producer", headerName: "Producer", width: 120 },
       { field: "productLine", headerName: "Product Line", width: 160 },
       {
@@ -1087,8 +1178,8 @@ const DryMillStation = () => {
         const statusOrder = { "In Dry Mill": 0, "Processed": 1, "Not Started": 2 };
         return (
           (statusOrder[a.status] || 2) - (statusOrder[b.status] || 2) ||
-          (a.dryMillEntered === "N/A" ? Infinity : new Date(a.dryMillEntered)).batchNumber -
-          (b.dryMillEntered === "N/A" ? Infinity : new Date(b.dryMillEntered)).batchNumber
+          (a.dryMillEntered === "N/A" ? Infinity : new Date(a.dryMillEntered)) -
+          (b.dryMillEntered === "N/A" ? Infinity : new Date(b.dryMillEntered))
         );
       }),
     [parentBatches]
@@ -1491,6 +1582,81 @@ const DryMillStation = () => {
             disabled={isLoading}
           >
             Confirm Storage
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openSampleTrackingDialog}
+        onClose={handleCloseSampleTrackingDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Sample Tracking - Batch {selectedBatch?.batchNumber}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={6}>
+              <TextField
+                label="Date Taken"
+                type="date"
+                value={sampleDateTaken}
+                onChange={(e) => setSampleDateTaken(e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                disabled={isLoading}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Weight Taken (kg)"
+                type="number"
+                value={sampleWeightTaken}
+                onChange={(e) => setSampleWeightTaken(e.target.value)}
+                fullWidth
+                inputProps={{ min: 0, step: 0.1 }}
+                disabled={isLoading}
+              />
+            </Grid>
+          </Grid>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleAddSample}
+            disabled={isLoading || !sampleWeightTaken || isNaN(parseFloat(sampleWeightTaken)) || parseFloat(sampleWeightTaken) <= 0}
+            sx={{ mb: 2 }}
+          >
+            Add Sample
+          </Button>
+          <Typography variant="h6" gutterBottom>Sample History</Typography>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date Taken</TableCell>
+                <TableCell>Weight Taken (kg)</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sampleHistory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} align="center">No samples recorded.</TableCell>
+                </TableRow>
+              ) : (
+                sampleHistory.map((sample, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{new Date(sample.dateTaken).toLocaleDateString()}</TableCell>
+                    <TableCell>{parseFloat(sample.weightTaken).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Total Sample Weight Taken: {sampleHistory.reduce((acc, sample) => acc + parseFloat(sample.weightTaken || 0), 0).toFixed(2)} kg
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSampleTrackingDialog} disabled={isLoading}>
+            Close
           </Button>
         </DialogActions>
       </Dialog>
