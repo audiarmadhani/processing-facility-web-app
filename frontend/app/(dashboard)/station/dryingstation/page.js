@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import {
   Button, Typography, Snackbar, Alert, Grid, Card, CardContent, CircularProgress, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel,
-  Table, TableBody, TableCell, TableHead, TableRow, Checkbox, Box, InputAdornment
+  Table, TableBody, TableCell, TableHead, TableRow, Checkbox
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { Line } from 'react-chartjs-2';
@@ -92,7 +92,7 @@ const DryingStation = () => {
   const [newBagNumber, setNewBagNumber] = useState(1);
   const [newProcessingType, setNewProcessingType] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(new Date().toISOString().slice(0, 10));
-  const [newProducer, setNewProducer] = useState('HQ');
+  const [newProducer, setNewProducer] = useState('');
   const [editingWeightId, setEditingWeightId] = useState(null);
   const [selectedWeightIds, setSelectedWeightIds] = useState([]);
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
@@ -113,7 +113,6 @@ const DryingStation = () => {
     "Drying Room": "GH_SENSOR_6"
   }), []);
 
-  // Enhanced date validation and formatting
   const formatDateForDisplay = (dateString) => {
     if (!dateString || typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       return 'N/A';
@@ -130,7 +129,6 @@ const DryingStation = () => {
     });
   };
 
-  // Format date for DataGrid in WITA (UTC+8)
   const formatDateForGrid = (dateString) => {
     if (!dateString || typeof dateString !== 'string') {
       return 'N/A';
@@ -303,9 +301,24 @@ const DryingStation = () => {
       const parsedData = data.map(m => ({
         ...m,
         weight: parseFloat(m.weight) || 0,
-        measurement_date: m.measurement_date || 'N/A'
+        measurement_date: m.measurement_date || 'N/A',
+        lotNumbers: m.lotNumbers && Array.isArray(m.lotNumbers) ? m.lotNumbers[0] || 'N/A' : 'N/A',
+        referenceNumbers: m.referenceNumbers && Array.isArray(m.referenceNumbers) ? m.referenceNumbers[0] || 'N/A' : 'N/A',
+        lotMapping: m.lotMapping && Array.isArray(m.lotMapping) ? m.lotMapping.reduce((acc, item) => ({
+          ...acc,
+          [item.processingType]: { lotNumber: item.lotNumber || 'N/A', referenceNumber: item.referenceNumber || 'N/A' }
+        }), {}) : {}
       }));
       setWeightMeasurements(parsedData);
+      // Set newProducer based on the latest measurement
+      if (parsedData.length > 0) {
+        const latestMeasurement = parsedData.reduce((latest, current) =>
+          new Date(latest.measurement_date) > new Date(current.measurement_date) ? latest : current
+        );
+        setNewProducer(latestMeasurement.producer || '');
+      } else {
+        setNewProducer('');
+      }
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to fetch weight measurements');
       setSnackbarSeverity('error');
@@ -456,7 +469,7 @@ const DryingStation = () => {
         };
         setWeightMeasurements([...weightMeasurements, newMeasurement]);
         setNewBagNumber(newBagNumber + 1);
-        setNewProducer('HQ');
+        setNewProducer('');
         setSnackbarMessage('Weight measurement added successfully');
         setSnackbarSeverity('success');
       }
@@ -710,12 +723,16 @@ const DryingStation = () => {
     setNewProcessingType('');
     setNewWeightDate(new Date().toISOString().slice(0, 10));
     setNewBagNumber(1);
-    setNewProducer('HQ');
+    // Initialize newProducer from the latest weight measurement if available
+    const latestWeight = weightMeasurements.length > 0 ? weightMeasurements.reduce((latest, current) =>
+      new Date(latest.measurement_date) > new Date(current.measurement_date) ? latest : current
+    ) : null;
+    setNewProducer(latestWeight?.producer || '');
     setEditingWeightId(null);
     setSelectedWeightIds([]);
     setDeletedWeights([]);
     setOpenWeightDialog(true);
-  }, [fetchWeightMeasurements]);
+  }, [fetchWeightMeasurements, weightMeasurements]);
 
   const handleProcessingTypeChange = useCallback(async (value) => {
     setNewProcessingType(value);
@@ -745,7 +762,7 @@ const DryingStation = () => {
     setNewBagWeight('');
     setNewBagNumber(1);
     setNewProcessingType('');
-    setNewProducer('HQ');
+    setNewProducer('');
     setNewWeightDate('');
     setEditingWeightId(null);
     setSelectedWeightIds([]);
@@ -922,7 +939,7 @@ const DryingStation = () => {
               disableRowSelectionOnClick
               getRowId={row => row.batchNumber}
               slots={{ toolbar: GridToolbar }}
-              sx={{ 
+              sx={ { 
                 maxHeight: 600, 
                 border: '1px solid rgba(0,0,0,0.12)', 
                 '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
@@ -1274,6 +1291,8 @@ const DryingStation = () => {
                 <TableRow>
                   <TableCell>Processing Type</TableCell>
                   <TableCell>Producer</TableCell>
+                  <TableCell>Reference Number</TableCell>
+                  <TableCell>Lot Number</TableCell>
                   <TableCell align="right">Total Weight (kg)</TableCell>
                 </TableRow>
               </TableHead>
@@ -1286,10 +1305,18 @@ const DryingStation = () => {
                           ? m.measurement_date : latest, null)
                     : null;
                   const total = latestDate && totalWeights[latestDate]?.[type] || 0;
+                  const referenceNumber = typeMeasurements.length > 0 
+                    ? typeMeasurements.find(m => m.processingType === type)?.lotMapping[type]?.referenceNumber || 'N/A'
+                    : 'N/A';
+                  const lotNumber = typeMeasurements.length > 0 
+                    ? typeMeasurements.find(m => m.processingType === type)?.lotMapping[type]?.lotNumber || 'N/A'
+                    : 'N/A';
                   return (
                     <TableRow key={type}>
                       <TableCell>{type}</TableCell>
-                      <TableCell>{newProducer}</TableCell>
+                      <TableCell>{newProducer || 'N/A'}</TableCell>
+                      <TableCell>{referenceNumber}</TableCell>
+                      <TableCell>{lotNumber}</TableCell>
                       <TableCell align="right">{total.toFixed(2)}</TableCell>
                     </TableRow>
                   );
@@ -1321,13 +1348,15 @@ const DryingStation = () => {
                   <TableCell>Producer</TableCell>
                   <TableCell>Bag Number</TableCell>
                   <TableCell align="right">Weight (kg)</TableCell>
+                  <TableCell>Reference Number</TableCell>
+                  <TableCell>Lot Number</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {weightMeasurements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">No weight measurements recorded</TableCell>
+                    <TableCell colSpan={9} align="center">No weight measurements recorded</TableCell>
                   </TableRow>
                 ) : (
                   weightMeasurements.map(m => (
@@ -1340,9 +1369,11 @@ const DryingStation = () => {
                       </TableCell>
                       <TableCell>{formatDateForDisplay(m.measurement_date)}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
-                      <TableCell>{m.producer}</TableCell>
+                      <TableCell>{m.producer || 'N/A'}</TableCell>
                       <TableCell>{m.bagNumber}</TableCell>
                       <TableCell align="right">{parseFloat(m.weight).toFixed(2)}</TableCell>
+                      <TableCell>{m.referenceNumbers}</TableCell>
+                      <TableCell>{m.lotNumbers}</TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
@@ -1385,7 +1416,7 @@ const DryingStation = () => {
               <Typography variant="body2" sx={{ mt: 2 }}>
                 Affected bags: {weightMeasurements
                   .filter(m => selectedWeightIds.includes(m.id))
-                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.producer}, ${m.weight.toFixed(2)} kg)`)
+                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.producer || 'N/A'}, ${m.weight.toFixed(2)} kg)`)
                   .join(', ')}
               </Typography>
             )}
@@ -1417,7 +1448,7 @@ const DryingStation = () => {
                     columns={envColumns}
                     pageSizeOptions={[100, 200, 500]}
                     slots={{ toolbar: GridToolbar }}
-                    sx={{ 
+                    sx={ { 
                       border: '1px solid rgba(0,0,0,0.12)', 
                       '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
                     }}
