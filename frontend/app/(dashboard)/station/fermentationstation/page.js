@@ -70,6 +70,8 @@ const FermentationStation = () => {
   const [newProducer, setNewProducer] = useState('HQ');
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [openFinishDialog, setOpenFinishDialog] = useState(false);
+  const [endDateTime, setEndDateTime] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
 
   const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
@@ -234,10 +236,29 @@ const FermentationStation = () => {
     }
   };
 
-  const handleFinishFermentation = async (batchNumber) => {
+  const handleFinishFermentation = async () => {
     try {
-      await axios.put(`${API_BASE_URL}/api/fermentation/finish/${batchNumber}`);
-      setSnackbarMessage(`Fermentation finished for batch ${batchNumber}.`);
+      const endDate = dayjs(endDateTime).tz('Asia/Makassar', true).toISOString();
+      const startDateObj = dayjs(selectedRow.startDate).tz('Asia/Makassar');
+      const endDateObj = dayjs(endDateTime).tz('Asia/Makassar');
+
+      if (endDateObj.isBefore(startDateObj)) {
+        setSnackbarMessage('End date cannot be before start date.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return;
+      }
+
+      const now = dayjs().tz('Asia/Makassar');
+      if (endDateObj.isAfter(now)) {
+        setSnackbarMessage('End date cannot be in the future.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return;
+      }
+
+      await axios.put(`${API_BASE_URL}/api/fermentation/finish/${selectedRow.batchNumber}`, { endDate });
+      setSnackbarMessage(`Fermentation finished for batch ${selectedRow.batchNumber}.`);
       setSnackbarSeverity('success');
       await fetchFermentationData();
       await fetchAvailableBatches();
@@ -248,6 +269,7 @@ const FermentationStation = () => {
       setSnackbarSeverity('error');
     } finally {
       setOpenSnackbar(true);
+      setOpenFinishDialog(false);
       setAnchorEl(null);
     }
   };
@@ -380,7 +402,10 @@ const FermentationStation = () => {
               Track Weight
             </MenuItem>
             <MenuItem
-              onClick={() => handleFinishFermentation(row.batchNumber)}
+              onClick={() => {
+                setEndDateTime(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
+                setOpenFinishDialog(true);
+              }}
               disabled={row.status === 'Finished'}
             >
               Finish
@@ -494,6 +519,9 @@ const FermentationStation = () => {
                   <MenuItem value="Blue Barrel" disabled={!availableTanks.some(tank => tank.startsWith('BB-HQ-'))}>
                     Blue Barrel {availableTanks.some(tank => tank.startsWith('BB-HQ-')) ? '' : '(All In Use)'}
                   </MenuItem>
+                  <MenuItem value="Fermentation Bucket">
+                    Fermentation Bucket
+                  </MenuItem>
                 </Select>
               </FormControl>
               {tank === 'Blue Barrel' && (
@@ -578,6 +606,7 @@ const FermentationStation = () => {
               <Tab label="Carrybrew" value="Carrybrew" />
               <Tab label="Washing Track" value="Washing Track" />
               <Tab label="Blue Barrel" value="Blue Barrel" />
+              <Tab label="Fermentation Bucket" value="Fermentation Bucket" />
             </Tabs>
             <div style={{ height: 800, width: '100%' }}>
               <DataGrid
@@ -700,6 +729,32 @@ const FermentationStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenWeightDialog(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openFinishDialog} onClose={() => setOpenFinishDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Finish Fermentation - Batch {selectedRow?.batchNumber}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="End Date and Time"
+            type="datetime-local"
+            value={endDateTime}
+            onChange={(e) => setEndDateTime(e.target.value)}
+            fullWidth
+            required
+            margin="normal"
+            InputLabelProps={{ shrink: true }}
+            inputProps={{
+              min: selectedRow?.startDate || dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'),
+              max: dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'),
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenFinishDialog(false)}>Cancel</Button>
+          <Button variant="contained" color="primary" onClick={handleFinishFermentation} disabled={!endDateTime}>
+            Finish
+          </Button>
         </DialogActions>
       </Dialog>
 
