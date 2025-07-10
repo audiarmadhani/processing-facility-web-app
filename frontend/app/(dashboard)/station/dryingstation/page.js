@@ -92,6 +92,7 @@ const DryingStation = () => {
   const [newBagNumber, setNewBagNumber] = useState(1);
   const [newProcessingType, setNewProcessingType] = useState('');
   const [newWeightDate, setNewWeightDate] = useState('');
+  const [newProducer, setNewProducer] = useState('HQ');
   const [editingWeightId, setEditingWeightId] = useState(null);
   const [selectedWeightIds, setSelectedWeightIds] = useState([]);
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
@@ -373,6 +374,12 @@ const DryingStation = () => {
       setOpenSnackbar(true);
       return;
     }
+    if (!newProducer) {
+      setSnackbarMessage('Select a producer');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
 
     const selectedDate = new Date(newWeightDate);
     const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
@@ -432,6 +439,7 @@ const DryingStation = () => {
           bagNumber: newBagNumber,
           weight: parseFloat(newBagWeight),
           measurement_date: newWeightDate,
+          producer: newProducer,
         };
         const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurement', {
           method: 'POST',
@@ -448,6 +456,7 @@ const DryingStation = () => {
         };
         setWeightMeasurements([...weightMeasurements, newMeasurement]);
         setNewBagNumber(newBagNumber + 1);
+        setNewProducer('HQ');
         setSnackbarMessage('Weight measurement added successfully');
         setSnackbarSeverity('success');
       }
@@ -464,6 +473,7 @@ const DryingStation = () => {
     newBagWeight,
     newProcessingType,
     newWeightDate,
+    newProducer,
     editingWeightId,
     newBagNumber,
     selectedBatch,
@@ -480,6 +490,7 @@ const DryingStation = () => {
       ? measurement.measurement_date
       : new Date().toISOString().slice(0, 10);
     setNewWeightDate(date);
+    setNewProducer(measurement.producer);
   }, []);
 
   const handleDeleteBagWeights = useCallback(async () => {
@@ -516,7 +527,8 @@ const DryingStation = () => {
           processingType: weight.processingType,
           bagNumber: weight.bagNumber,
           weight: weight.weight,
-          measurement_date: weight.measurement_date
+          measurement_date: weight.measurement_date,
+          producer: weight.producer,
         };
         const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-weight-measurement', {
           method: 'POST',
@@ -698,6 +710,7 @@ const DryingStation = () => {
     setNewProcessingType('');
     setNewWeightDate(new Date().toISOString().slice(0, 10));
     setNewBagNumber(1);
+    setNewProducer('HQ');
     setEditingWeightId(null);
     setSelectedWeightIds([]);
     setDeletedWeights([]);
@@ -733,6 +746,7 @@ const DryingStation = () => {
     setNewBagNumber(1);
     setNewProcessingType('');
     setNewWeightDate('');
+    setNewProducer('HQ');
     setEditingWeightId(null);
     setSelectedWeightIds([]);
     setDeletedWeights([]);
@@ -1170,7 +1184,7 @@ const DryingStation = () => {
           <DialogContent>
             <Typography variant="h6" gutterBottom>{editingWeightId ? 'Edit Weight Measurement' : 'Add Weight Measurement'}</Typography>
             <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
                 <FormControl fullWidth>
                   <InputLabel id="processing-type-label">Processing Type</InputLabel>
                   <Select
@@ -1186,7 +1200,7 @@ const DryingStation = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
                 <TextField
                   label="Weight (kg)"
                   value={newBagWeight}
@@ -1196,7 +1210,7 @@ const DryingStation = () => {
                   inputProps={{ min: 0, step: 0.01 }}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={3}>
                 <TextField
                   label="Measurement Date"
                   type="date"
@@ -1206,6 +1220,21 @@ const DryingStation = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
+              <Grid item xs={3}>
+                <FormControl fullWidth>
+                  <InputLabel id="producer-label">Producer</InputLabel>
+                  <Select
+                    labelId="producer-label"
+                    value={newProducer}
+                    onChange={e => setNewProducer(e.target.value)}
+                    label="Producer"
+                    disabled={editingWeightId !== null}
+                  >
+                    <MenuItem value="HQ">HQ</MenuItem>
+                    <MenuItem value="BTM">BTM</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid item xs={12}>
@@ -1214,7 +1243,7 @@ const DryingStation = () => {
                   color="primary"
                   onClick={handleAddOrUpdateBagWeight}
                   fullWidth
-                  disabled={!newProcessingType || !newBagWeight || !newWeightDate}
+                  disabled={!newProcessingType || !newBagWeight || !newWeightDate || !newProducer}
                 >
                   {editingWeightId ? 'Update' : 'Add'} Weight
                 </Button>
@@ -1260,13 +1289,14 @@ const DryingStation = () => {
                   <TableCell>Date</TableCell>
                   <TableCell>Processing Type</TableCell>
                   <TableCell>Weight (kg)</TableCell>
+                  <TableCell>Producer</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {weightMeasurements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} align="center">No weight measurements recorded.</TableCell>
+                    <TableCell colSpan={6} align="center">No weight measurements recorded.</TableCell>
                   </TableRow>
                 ) : (
                   weightMeasurements.map(m => (
@@ -1280,6 +1310,7 @@ const DryingStation = () => {
                       <TableCell>{formatDateForDisplay(m.measurement_date)}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
                       <TableCell>{parseFloat(m.weight).toFixed(2)}</TableCell>
+                      <TableCell>{m.producer}</TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
@@ -1322,7 +1353,7 @@ const DryingStation = () => {
               <Typography variant="body2" sx={{ mt: 2 }}>
                 Affected bags: {weightMeasurements
                   .filter(m => selectedWeightIds.includes(m.id))
-                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.weight.toFixed(2)} kg)`)
+                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.weight.toFixed(2)} kg, ${m.producer})`)
                   .join(', ')}
               </Typography>
             )}
