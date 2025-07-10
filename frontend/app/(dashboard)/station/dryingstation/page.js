@@ -91,7 +91,7 @@ const DryingStation = () => {
   const [newBagWeight, setNewBagWeight] = useState('');
   const [newBagNumber, setNewBagNumber] = useState(1);
   const [newProcessingType, setNewProcessingType] = useState('');
-  const [newWeightDate, setNewWeightDate] = useState('');
+  const [newWeightDate, setNewWeightDate] = useState(new Date().toISOString().slice(0, 10));
   const [newProducer, setNewProducer] = useState('HQ');
   const [editingWeightId, setEditingWeightId] = useState(null);
   const [selectedWeightIds, setSelectedWeightIds] = useState([]);
@@ -745,8 +745,8 @@ const DryingStation = () => {
     setNewBagWeight('');
     setNewBagNumber(1);
     setNewProcessingType('');
-    setNewWeightDate('');
     setNewProducer('HQ');
+    setNewWeightDate('');
     setEditingWeightId(null);
     setSelectedWeightIds([]);
     setDeletedWeights([]);
@@ -1180,94 +1180,124 @@ const DryingStation = () => {
         </Dialog>
 
         <Dialog open={openWeightDialog} onClose={handleCloseWeightDialog} maxWidth="md" fullWidth>
-          <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber}</DialogTitle>
+          <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber || 'N/A'}</DialogTitle>
           <DialogContent>
-            <Typography variant="h6" gutterBottom>{editingWeightId ? 'Edit Weight Measurement' : 'Add Weight Measurement'}</Typography>
-            <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
-              <Grid item xs={3}>
-                <FormControl fullWidth>
-                  <InputLabel id="processing-type-label">Processing Type</InputLabel>
-                  <Select
-                    labelId="processing-type-label"
-                    value={newProcessingType}
-                    onChange={e => handleProcessingTypeChange(e.target.value)}
-                    label="Processing Type"
-                    disabled={editingWeightId !== null}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {editingWeightId ? 'Edit Bag Weight' : 'Add Bag Weight'}
+              </Typography>
+              <Grid container spacing={1} alignItems="center">
+                <Grid item xs={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="processing-type-label">Processing Type</InputLabel>
+                    <Select
+                      labelId="processing-type-label"
+                      value={newProcessingType}
+                      onChange={e => handleProcessingTypeChange(e.target.value)}
+                      label="Processing Type"
+                      disabled={editingWeightId !== null}
+                    >
+                      {processingTypes.map(type => (
+                        <MenuItem key={type} value={type}>{type}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="producer-label">Producer</InputLabel>
+                    <Select
+                      labelId="producer-label"
+                      value={newProducer}
+                      onChange={e => setNewProducer(e.target.value)}
+                      label="Producer"
+                      disabled={editingWeightId !== null}
+                    >
+                      <MenuItem value="HQ">HQ</MenuItem>
+                      <MenuItem value="BTM">BTM</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={2}>
+                  <TextField
+                    label="Bag Number"
+                    value={newBagNumber}
+                    InputProps={{ readOnly: true }}
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={2}>
+                  <TextField
+                    label="Weight (kg)"
+                    value={newBagWeight}
+                    onChange={e => setNewBagWeight(e.target.value)}
+                    type="number"
+                    size="small"
+                    fullWidth
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                </Grid>
+                <Grid item xs={2}>
+                  <TextField
+                    label="Date"
+                    type="date"
+                    value={newWeightDate}
+                    onChange={e => setNewWeightDate(e.target.value)}
+                    size="small"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{
+                      min: selectedBatch ? (selectedBatch.startDryingDate !== 'N/A' ? selectedBatch.startDryingDate : new Date('1970-01-01').toISOString().slice(0, 10)) : new Date('1970-01-01').toISOString().slice(0, 10),
+                      max: new Date().toISOString().slice(0, 10),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={1}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleAddOrUpdateBagWeight}
+                    fullWidth
+                    size="small"
+                    disabled={!newProcessingType || !newProducer || !newBagWeight}
                   >
-                    {processingTypes.map(type => (
-                      <MenuItem key={type} value={type}>{type}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    {editingWeightId ? 'Update' : 'Add'}
+                  </Button>
+                </Grid>
               </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  label="Weight (kg)"
-                  value={newBagWeight}
-                  onChange={e => setNewBagWeight(e.target.value)}
-                  type="number"
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.01 }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  label="Measurement Date"
-                  type="date"
-                  value={newWeightDate}
-                  onChange={e => setNewWeightDate(e.target.value)}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <FormControl fullWidth>
-                  <InputLabel id="producer-label">Producer</InputLabel>
-                  <Select
-                    labelId="producer-label"
-                    value={newProducer}
-                    onChange={e => setNewProducer(e.target.value)}
-                    label="Producer"
-                    disabled={editingWeightId !== null}
-                  >
-                    <MenuItem value="HQ">HQ</MenuItem>
-                    <MenuItem value="BTM">BTM</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={12}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddOrUpdateBagWeight}
-                  fullWidth
-                  disabled={!newProcessingType || !newBagWeight || !newWeightDate || !newProducer}
-                >
-                  {editingWeightId ? 'Update' : 'Add'} Weight
-                </Button>
-              </Grid>
-            </Grid>
+            </Box>
 
-            {processingTypes.map(type => {
-              const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
-              const latestDate = typeMeasurements.length > 0
-                ? typeMeasurements.reduce((latest, m) => 
-                    m.measurement_date !== 'N/A' && (!latest || m.measurement_date > latest) 
-                      ? m.measurement_date : latest, null)
-                : null;
-              const total = latestDate && totalWeights[latestDate]?.[type] || 0;
-              return (
-                <div key={type}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    {type} Total: {parseFloat(total).toFixed(2)} kg {latestDate ? `(${formatDateForDisplay(latestDate)})` : ''}
-                  </Typography>
-                </div>
-              );
-            })}
+            <Typography variant="h6" gutterBottom>Batch Summary</Typography>
+            <Table size="small" sx={{ mb: 2 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Processing Type</TableCell>
+                  <TableCell>Producer</TableCell>
+                  <TableCell align="right">Total Weight (kg)</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {processingTypes.map(type => {
+                  const typeMeasurements = weightMeasurements.filter(m => m.processingType === type);
+                  const latestDate = typeMeasurements.length > 0
+                    ? typeMeasurements.reduce((latest, m) => 
+                        m.measurement_date !== 'N/A' && (!latest || m.measurement_date > latest) 
+                          ? m.measurement_date : latest, null)
+                    : null;
+                  const total = latestDate && totalWeights[latestDate]?.[type] || 0;
+                  return (
+                    <TableRow key={type}>
+                      <TableCell>{type}</TableCell>
+                      <TableCell>{newProducer}</TableCell>
+                      <TableCell align="right">{total.toFixed(2)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
 
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Weight History</Typography>
+            <Typography variant="h6" gutterBottom>Weight History</Typography>
             <Button
               variant="contained"
               color="error"
@@ -1277,7 +1307,7 @@ const DryingStation = () => {
             >
               Delete Selected
             </Button>
-            <Table>
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell padding="checkbox">
@@ -1288,15 +1318,16 @@ const DryingStation = () => {
                   </TableCell>
                   <TableCell>Date</TableCell>
                   <TableCell>Processing Type</TableCell>
-                  <TableCell>Weight (kg)</TableCell>
                   <TableCell>Producer</TableCell>
+                  <TableCell>Bag Number</TableCell>
+                  <TableCell align="right">Weight (kg)</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {weightMeasurements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">No weight measurements recorded.</TableCell>
+                    <TableCell colSpan={7} align="center">No weight measurements recorded</TableCell>
                   </TableRow>
                 ) : (
                   weightMeasurements.map(m => (
@@ -1309,8 +1340,9 @@ const DryingStation = () => {
                       </TableCell>
                       <TableCell>{formatDateForDisplay(m.measurement_date)}</TableCell>
                       <TableCell>{m.processingType}</TableCell>
-                      <TableCell>{parseFloat(m.weight).toFixed(2)}</TableCell>
                       <TableCell>{m.producer}</TableCell>
+                      <TableCell>{m.bagNumber}</TableCell>
+                      <TableCell align="right">{parseFloat(m.weight).toFixed(2)}</TableCell>
                       <TableCell>
                         <Button
                           variant="outlined"
@@ -1322,8 +1354,8 @@ const DryingStation = () => {
                         </Button>
                         <Button
                           variant="outlined"
-                          color="error"
                           size="small"
+                          color="error"
                           onClick={() => {
                             setSelectedWeightIds([m.id]);
                             setOpenDeleteConfirmDialog(true);
@@ -1343,17 +1375,17 @@ const DryingStation = () => {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={openDeleteConfirmDialog} onClose={handleCloseDeleteConfirmDialog} maxWidth="xs" fullWidth>
+        <Dialog open={openDeleteConfirmDialog} onClose={handleCloseDeleteConfirmDialog} maxWidth="sm" fullWidth>
           <DialogTitle>Confirm Deletion</DialogTitle>
           <DialogContent>
-            <Typography variant="body1">
+            <Typography>
               Are you sure you want to delete {selectedWeightIds.length} weight measurement{selectedWeightIds.length > 1 ? 's' : ''}?
             </Typography>
             {selectedWeightIds.length > 0 && (
               <Typography variant="body2" sx={{ mt: 2 }}>
                 Affected bags: {weightMeasurements
                   .filter(m => selectedWeightIds.includes(m.id))
-                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.weight.toFixed(2)} kg, ${m.producer})`)
+                  .map(m => `Bag ${m.bagNumber} (${m.processingType}, ${m.producer}, ${m.weight.toFixed(2)} kg)`)
                   .join(', ')}
               </Typography>
             )}
