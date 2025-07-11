@@ -55,8 +55,8 @@ const formatLabelData = (
     batch?.dryMillExited && batch.status === "Processed"
       ? new Date(batch.dryMillExited).toLocaleDateString()
       : new Date().toLocaleDateString();
-  const lotNumber = batch?.lotNumber || "N/A"; // Use lotNumber from sub-batch or parent
-  const referenceNumber = batch?.referenceNumber || "N/A"; // Use referenceNumber from sub-batch or parent
+  const lotNumber = batch?.lotNumber || "N/A";
+  const referenceNumber = batch?.referenceNumber || "N/A";
   const cherryLotNumber = batch?.parentBatchNumber || batch?.batchNumber;
 
   return [
@@ -98,8 +98,8 @@ const DryMillStation = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [completionProgress, setCompletionProgress] = useState(0);
   const [openSampleTrackingDialog, setOpenSampleTrackingDialog] = useState(false);
-  const [sampleDateTaken, setSampleDateTaken] = useState(new Date().toISOString().split('T')[0]);
-  const [sampleWeightTaken, setSampleWeightTaken] = useState('');
+  const [sampleDateTaken, setSampleDateTaken] = useState(new Date().toISOString().split("T")[0]);
+  const [sampleWeightTaken, setSampleWeightTaken] = useState("");
   const [sampleHistory, setSampleHistory] = useState([]);
   const rfidInputRef = useRef(null);
 
@@ -126,7 +126,7 @@ const DryMillStation = () => {
           dryMillEntered: batch.dryMillEntered,
           dryMillExited: batch.dryMillExited,
           cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
-          drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2), // Added drying weight
+          drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
           producer: batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
@@ -232,9 +232,7 @@ const DryMillStation = () => {
             {
               grade: gradeData.grade,
               weight: parseFloat(gradeData.weight) || 0,
-              bagWeights: Array.isArray(gradeData.bagWeights)
-                ? gradeData.bagWeights.map((w) => String(w))
-                : [],
+              bagWeights: Array.isArray(gradeData.bagWeights) ? gradeData.bagWeights.map((w) => String(w)) : [],
               bagged_at: gradeData.bagged_at || new Date().toISOString().split("T")[0],
               tempSequence: gradeData.tempSequence || "0001",
               is_stored: gradeData.is_stored || false,
@@ -249,9 +247,7 @@ const DryMillStation = () => {
             fetchedGradesMap[grade.grade] = {
               grade: grade.grade,
               weight: parseFloat(grade.weight) || 0,
-              bagWeights: Array.isArray(grade.bagWeights)
-                ? grade.bagWeights.map((w) => String(w))
-                : [],
+              bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map((w) => String(w)) : [],
               bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
               tempSequence: grade.tempSequence || "0001",
               is_stored: grade.is_stored || false,
@@ -281,9 +277,7 @@ const DryMillStation = () => {
         setOpenSnackbar(true);
         return [
           {
-            grade: selectedBatch?.parentBatchNumber
-              ? selectedBatch?.quality?.trim() || "Grade 1"
-              : "Grade 1",
+            grade: selectedBatch?.parentBatchNumber ? selectedBatch?.quality?.trim() || "Grade 1" : "Grade 1",
             weight: 0,
             bagWeights: [],
             bagged_at: new Date().toISOString().split("T")[0],
@@ -530,16 +524,11 @@ const DryMillStation = () => {
         setSnackbarSeverity("success");
         setOpenSnackbar(true);
         setHasUnsavedChanges(false);
-        // Update grades with lotNumber and referenceNumber from response
         setGrades((prevGrades) =>
           prevGrades.map((grade, idx) => ({
             ...grade,
-            lotNumber:
-              response.data.grades[idx]?.lotNumber || grade.lotNumber || "N/A",
-            referenceNumber:
-              response.data.grades[idx]?.referenceNumber ||
-              grade.referenceNumber ||
-              "N/A",
+            lotNumber: response.data.grades[idx]?.lotNumber || grade.lotNumber || "N/A",
+            referenceNumber: response.data.grades[idx]?.referenceNumber || grade.referenceNumber || "N/A",
           }))
         );
         await fetchDryMillData();
@@ -566,7 +555,6 @@ const DryMillStation = () => {
         return;
       }
 
-      // Find the sub-batch or use grade-specific lotNumber/referenceNumber
       const subBatch =
         subBatches.find(
           (sb) =>
@@ -698,8 +686,7 @@ const DryMillStation = () => {
             newGrades[index] = {
               ...newGrades[index],
               lotNumber: response.data.lotNumber || prevGrades[index].lotNumber,
-              referenceNumber:
-                response.data.referenceNumber || prevGrades[index].referenceNumber,
+              referenceNumber: response.data.referenceNumber || prevGrades[index].referenceNumber,
             };
             return newGrades;
           });
@@ -776,8 +763,7 @@ const DryMillStation = () => {
             newGrades[gradeIndex] = {
               ...newGrades[gradeIndex],
               lotNumber: response.data.lotNumber || prevGrades[gradeIndex].lotNumber,
-              referenceNumber:
-                response.data.referenceNumber || prevGrades[gradeIndex].referenceNumber,
+              referenceNumber: response.data.referenceNumber || prevGrades[gradeIndex].referenceNumber,
             };
             return newGrades;
           });
@@ -873,7 +859,7 @@ const DryMillStation = () => {
         }
       );
       setSampleHistory([...sampleHistory, response.data]);
-      setSampleWeightTaken('');
+      setSampleWeightTaken("");
       setSnackbarMessage("Sample added successfully.");
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
@@ -924,16 +910,13 @@ const DryMillStation = () => {
         }
       );
 
-      // Calculate completion progress
       if (!selectedBatch.parentBatchNumber) {
         const fetchProgress = async () => {
           try {
             const subBatchesResponse = await axios.get(
               `https://processing-facility-backend.onrender.com/api/postprocessing-data/${selectedBatch.batchNumber}`
             );
-            const subBatchTypes = [
-              ...new Set(subBatchesResponse.data.map((sb) => sb.processingType)),
-            ];
+            const subBatchTypes = [...new Set(subBatchesResponse.data.map((sb) => sb.processingType))];
             const totalTypes =
               selectedBatch.batchType === "Green Beans" ? 1 : batchProcessingTypes.length;
             const progress = (subBatchTypes.length / totalTypes) * 100;
@@ -967,8 +950,8 @@ const DryMillStation = () => {
 
   const handleSampleTrackingClick = (batch) => {
     setSelectedBatch(batch);
-    setSampleDateTaken(new Date().toISOString().split('T')[0]);
-    setSampleWeightTaken('');
+    setSampleDateTaken(new Date().toISOString().split("T")[0]);
+    setSampleWeightTaken("");
     setSampleHistory([]);
     fetchSampleHistory(batch.batchNumber);
     setOpenSampleTrackingDialog(true);
@@ -1006,8 +989,8 @@ const DryMillStation = () => {
   const handleCloseSampleTrackingDialog = () => {
     setOpenSampleTrackingDialog(false);
     setSelectedBatch(null);
-    setSampleDateTaken(new Date().toISOString().split('T')[0]);
-    setSampleWeightTaken('');
+    setSampleDateTaken(new Date().toISOString().split("T")[0]);
+    setSampleWeightTaken("");
     setSampleHistory([]);
   };
 
@@ -1087,7 +1070,7 @@ const DryMillStation = () => {
       { field: "dryMillEntered", headerName: "Dry Mill Entered", width: 150 },
       { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
       { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 160 },
-      { field: "drying_weight", headerName: "Drying Weight (kg)", width: 160 }, // Added drying weight column
+      { field: "drying_weight", headerName: "Drying Weight (kg)", width: 160 },
       { field: "producer", headerName: "Producer", width: 120 },
       { field: "productLine", headerName: "Product Line", width: 160 },
       {
@@ -1209,7 +1192,6 @@ const DryMillStation = () => {
         slots={{ toolbar: GridToolbar }}
         autosizeOnMount
         autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
-        rowHeight="auto"
         sx={{ height: 400, width: "100%" }}
       />
     ),
@@ -1243,7 +1225,6 @@ const DryMillStation = () => {
         slots={{ toolbar: GridToolbar }}
         autosizeOnMount
         autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
-        rowHeight="auto"
         sx={{ height: 600, width: "100%" }}
       />
     );
@@ -1341,8 +1322,7 @@ const DryMillStation = () => {
           </Box>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {grades.map((grade, index) => {
-              const totalWeight =
-                grade.weight || grade.bagWeights.reduce((acc, w) => acc + parseFloat(w || 0), 0);
+              const totalWeight = grade.weight || grade.bagWeights.reduce((acc, w) => acc + parseFloat(w || 0), 0);
               const totalBags = grade.bagWeights.length;
               return (
                 <Grid item xs={12} key={`${grade.grade}-${index}`}>
@@ -1633,18 +1613,47 @@ const DryMillStation = () => {
               <TableRow>
                 <TableCell>Date Taken</TableCell>
                 <TableCell>Weight Taken (kg)</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {sampleHistory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={2} align="center">No samples recorded.</TableCell>
+                  <TableCell colSpan={3} align="center">No samples recorded.</TableCell>
                 </TableRow>
               ) : (
                 sampleHistory.map((sample, index) => (
                   <TableRow key={index}>
                     <TableCell>{new Date(sample.dateTaken).toLocaleDateString()}</TableCell>
                     <TableCell>{parseFloat(sample.weightTaken).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        onClick={async () => {
+                          try {
+                            await axios.delete(
+                              `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/remove-sample/${sample.id}`
+                            );
+                            setSampleHistory(sampleHistory.filter((s) => s.id !== sample.id));
+                            setSnackbarMessage("Sample removed successfully.");
+                            setSnackbarSeverity("success");
+                            setOpenSnackbar(true);
+                            await fetchDryMillData();
+                          } catch (error) {
+                            const message = error.response?.data?.error || "Failed to remove sample.";
+                            logError(message, error);
+                            setSnackbarMessage(message);
+                            setSnackbarSeverity("error");
+                            setOpenSnackbar(true);
+                          }
+                        }}
+                        disabled={isLoading}
+                      >
+                        Remove
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
