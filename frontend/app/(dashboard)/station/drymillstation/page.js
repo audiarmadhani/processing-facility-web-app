@@ -116,56 +116,72 @@ const DryMillStation = () => {
     try {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
-
-      const parentBatchesData = data
-        .filter((batch) => !batch.parentBatchNumber && !batch.isStored && batch.status !== "Processed")
-        .map((batch) => ({
-          id: batch.batchNumber,
-          batchNumber: batch.batchNumber,
-          status: batch.status,
-          dryMillEntered: batch.dryMillEntered,
-          dryMillExited: batch.dryMillExited,
-          cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
-          drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
-          producer: batch.producer || "N/A",
-          farmerName: batch.farmerName || "N/A",
-          productLine: batch.productLine || "N/A",
-          processingTypes: Array.isArray(batch.processingTypes) ? batch.processingTypes : [],
-          totalBags: batch.totalBags || "N/A",
-          notes: batch.notes || "N/A",
-          type: batch.type || "N/A",
-          farmVarieties: batch.farmVarieties || "N/A",
-          isStored: batch.isStored,
-          batchType: batch.batchType || "Cherry",
-          lotNumber: batch.lotNumber || "N/A",
-          referenceNumber: batch.referenceNumber || "N/A",
-        }));
-
+  
+      // Group data by batchNumber to handle multiple processing types
+      const batchesMap = new Map();
+      data.forEach((batch) => {
+        const key = batch.batchNumber;
+        if (!batchesMap.has(key)) {
+          batchesMap.set(key, {
+            batchNumber: batch.batchNumber,
+            status: batch.status,
+            dryMillEntered: batch.dryMillEntered,
+            dryMillExited: batch.dryMillExited,
+            cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
+            drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
+            producer: batch.producer || "N/A",
+            farmerName: batch.farmerName || "N/A",
+            productLine: batch.productLine || "N/A",
+            processingTypes: [],
+            totalBags: batch.totalBags || "N/A",
+            notes: batch.notes || "N/A",
+            type: batch.type || "N/A",
+            farmVarieties: batch.farmVarieties || "N/A",
+            isStored: !!batch.storeddate || !!batch.storeddatetrunc,
+            batchType: batch.batchType || "Cherry",
+            lotNumber: batch.lotNumber || "N/A",
+            referenceNumber: batch.referenceNumber || "N/A",
+            id: batch.batchNumber, // Use batchNumber as id for parent batches
+          });
+        }
+        const existingBatch = batchesMap.get(key);
+        if (!existingBatch.processingTypes.includes(batch.processingtype)) {
+          existingBatch.processingTypes.push(batch.processingtype);
+        }
+        // Update weight and drying_weight based on the latest entry for simplicity
+        existingBatch.weight = parseFloat(batch.weight || 0).toFixed(2);
+        existingBatch.drying_weight = parseFloat(batch.drying_weight || 0).toFixed(2);
+      });
+  
+      const parentBatchesData = Array.from(batchesMap.values()).filter(
+        (batch) => batch.status !== "Processed" && !batch.isStored
+      );
+  
       const subBatchesData = data
-        .filter((batch) => typeof batch.parentBatchNumber === "string" && batch.parentBatchNumber.trim())
+        .filter((batch) => batch.parentbatchnumber && batch.parentbatchnumber !== batch.batchNumber)
         .map((batch) => ({
-          id: `${batch.batchNumber}-${batch.processingType || "unknown"}`,
+          id: `${batch.batchNumber}-${batch.processingtype || "unknown"}`,
           batchNumber: batch.batchNumber,
           status: batch.status,
           dryMillEntered: batch.dryMillEntered,
           dryMillExited: batch.dryMillExited,
           storeddatetrunc: batch.storeddatetrunc || "N/A",
-          weight: batch.weight || "N/A",
+          weight: parseFloat(batch.weight || 0).toFixed(2),
           producer: batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
-          processingType: batch.processingType || "N/A",
+          processingType: batch.processingtype || "N/A",
           quality: batch.quality || "N/A",
           totalBags: batch.totalBags || "N/A",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
-          parentBatchNumber: batch.parentBatchNumber,
+          parentBatchNumber: batch.parentbatchnumber,
           lotNumber: batch.lotNumber || "N/A",
           referenceNumber: batch.referenceNumber || "N/A",
-          bagWeights: batch.bagDetails || [],
-          isStored: batch.isStored,
+          bagWeights: batch.bagdetails || [],
+          isStored: !!batch.storeddate || !!batch.storeddatetrunc,
         }));
-
+  
       setParentBatches(parentBatchesData);
       setSubBatches(subBatchesData);
       setDataGridError(null);
@@ -178,7 +194,7 @@ const DryMillStation = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, []);setBatchProcessingTypes
 
   const fetchProcessingTypes = useCallback(async () => {
     try {
@@ -889,7 +905,7 @@ const DryMillStation = () => {
       if (!selectedBatch.parentBatchNumber) {
         const types = fetchBatchProcessingTypes(selectedBatch.batchNumber);
         setBatchProcessingTypes(types);
-        setSelectedProcessingType(types[0] || null);
+        setSelectedProcessingType(types[0] || null); // Ensure a default processing type is set
       } else {
         setBatchProcessingTypes([selectedBatch.processingType]);
         setSelectedProcessingType(selectedBatch.processingType);
@@ -1451,21 +1467,7 @@ const DryMillStation = () => {
           <Button onClick={handleCloseDialog} disabled={isLoading}>
             Cancel
           </Button>
-          {selectedBatch?.parentBatchNumber ? (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSaveSubBatch}
-              disabled={
-                isLoading ||
-                !selectedBatch ||
-                selectedBatch?.isStored ||
-                grades[0]?.is_stored
-              }
-            >
-              Save
-            </Button>
-          ) : (
+          {!selectedBatch?.parentBatchNumber && (
             <>
               <Button
                 variant="contained"
@@ -1475,7 +1477,7 @@ const DryMillStation = () => {
                   isLoading ||
                   !selectedBatch ||
                   !selectedProcessingType ||
-                  selectedBatch?.isStored
+                  selectedBatch.status === "Processed" // Add status check instead of isStored
                 }
               >
                 Save Splits
@@ -1487,7 +1489,6 @@ const DryMillStation = () => {
                 disabled={
                   isLoading ||
                   !selectedBatch ||
-                  selectedBatch?.isStored ||
                   batchProcessingTypes.length === 0 ||
                   !["admin", "manager"].includes(session.user.role)
                 }
