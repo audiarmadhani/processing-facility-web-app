@@ -1210,13 +1210,18 @@ const DryMillStation = () => {
       <DataGrid
         rows={getParentBatches()}
         columns={parentColumns}
-        initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
-        pageSizeOptions={[5, 10, 20]}
+        initialState={{ pagination: { paginationModel: { pageSize: 200 } } }}
+        pageSizeOptions={[10, 50, 100]}
         disableRowSelectionOnClick
         getRowId={(row) => row.id}
         slots={{ toolbar: GridToolbar }}
         autosizeOnMount
-        autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
+        autosizeOptions={{
+            includeHeaders: true,
+            includeOutliers: true,
+            expand: true,
+          }}
+        rowHeight={35}
         sx={{ height: 400, width: "100%" }}
       />
     ),
