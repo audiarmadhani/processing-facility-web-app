@@ -91,7 +91,6 @@ const DryMillStation = () => {
   const [dataGridError, setDataGridError] = useState(null);
   const [errorLog, setErrorLog] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [completionProgress, setCompletionProgress] = useState(0);
   const [openSampleTrackingDialog, setOpenSampleTrackingDialog] = useState(false);
   const [sampleDateTaken, setSampleDateTaken] = useState(new Date().toISOString().split("T")[0]);
   const [sampleWeightTaken, setSampleWeightTaken] = useState("");
@@ -939,33 +938,15 @@ const DryMillStation = () => {
   }, [selectedBatch, fetchBatchProcessingTypes, fetchSampleHistory]);
 
   useEffect(() => {
-    if (selectedBatch && selectedProcessingType) {
+    if (selectedBatch && selectedProcessingType && openDialog) {
       fetchExistingGrades(selectedBatch.batchNumber, selectedProcessingType).then(
         (existingGrades) => {
           setGrades(existingGrades);
           setHasUnsavedChanges(false);
         }
       );
-
-      if (!selectedBatch.parentBatchNumber) {
-        const fetchProgress = async () => {
-          try {
-            const subBatchesResponse = await axios.get(
-              `https://processing-facility-backend.onrender.com/api/postprocessing-data/${selectedBatch.batchNumber}`
-            );
-            const subBatchTypes = [...new Set(subBatchesResponse.data.map((sb) => sb.processingType))];
-            const totalTypes =
-              selectedBatch.batchType === "Green Beans" ? 1 : batchProcessingTypes.length;
-            const progress = (subBatchTypes.length / totalTypes) * 100;
-            setCompletionProgress(progress);
-          } catch (error) {
-            setCompletionProgress(0);
-          }
-        };
-        fetchProgress();
-      }
     }
-  }, [selectedBatch, selectedProcessingType, batchProcessingTypes, fetchExistingGrades]);
+  }, [selectedBatch, selectedProcessingType, openDialog, fetchExistingGrades]);
 
   useEffect(() => {
     if (openStorageDialog && rfidInputRef.current) {
@@ -1599,7 +1580,7 @@ const DryMillStation = () => {
                 disabled={isLoading}
               />
             </Grid>
-            <Grid item xs= {6}>
+            <Grid item xs={6}>
               <TextField
                 label="Weight Taken (kg)"
                 type="number"
