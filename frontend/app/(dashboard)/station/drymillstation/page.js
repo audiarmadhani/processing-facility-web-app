@@ -1343,11 +1343,6 @@ const DryMillStation = () => {
               </Tabs>
             )}
           <Box sx={{ mb: 2 }}>
-            <Typography variant="body2">Completion Progress</Typography>
-            <LinearProgress variant="determinate" value={completionProgress} />
-            <Typography variant="caption" color="text.secondary">
-              {completionProgress.toFixed(0)}% Complete
-            </Typography>
           </Box>
           <form onSubmit={(e) => { e.preventDefault(); handleAddBag(currentWeight); }}>
             <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
