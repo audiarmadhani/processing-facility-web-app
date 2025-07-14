@@ -981,8 +981,7 @@ const DryMillStation = () => {
   const handleDetailsClick = (batch) => {
     setSelectedBatch(batch);
     setOpenDialog(true);
-    setHasUnsavedChanges(false);
-    setCompletionProgress(0);
+    handleSortAndWeigh(); // Trigger split and save to PostprocessingData
   };
 
   const handleSampleTrackingClick = (batch) => {
@@ -1331,19 +1330,20 @@ const DryMillStation = () => {
           {batchProcessingTypes.length > 1 &&
             !selectedBatch?.parentBatchNumber &&
             selectedBatch?.batchType !== "Green Beans" && (
-              <Tabs
-                value={batchProcessingTypes.indexOf(selectedProcessingType) || 0}
-                onChange={handleTabChange}
+              <Select
+                value={selectedProcessingType || ""}
+                onChange={(e) => setSelectedProcessingType(e.target.value)}
+                fullWidth
                 sx={{ mb: 2 }}
-                disabled={selectedBatch?.storedDate || selectedBatch?.status === "Processed"}
+                disabled={isLoading || selectedBatch?.storedDate}
               >
                 {batchProcessingTypes.map((type) => (
-                  <Tab key={type} label={type} />
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
                 ))}
-              </Tabs>
+              </Select>
             )}
-          <Box sx={{ mb: 2 }}>
-          </Box>
           <form onSubmit={(e) => { e.preventDefault(); handleAddBag(currentWeight); }}>
             <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
               <Grid item xs={4}>
@@ -1461,7 +1461,7 @@ const DryMillStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} disabled={isLoading}>
-            Cancel
+            Close
           </Button>
           {!selectedBatch?.parentBatchNumber && (
             <>
@@ -1491,21 +1491,23 @@ const DryMillStation = () => {
               >
                 Mark Complete
               </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleSaveSubBatch}
-                disabled={
-                  isLoading ||
-                  !selectedBatch ||
-                  !selectedProcessingType ||
-                  !grades.find((g) => g.grade === selectedGrade)?.bagWeights.length ||
-                  selectedBatch.storedDate
-                }
-              >
-                Save Sub-Batch
-              </Button>
             </>
+          )}
+          {selectedBatch?.parentBatchNumber && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSaveSubBatch}
+              disabled={
+                isLoading ||
+                !selectedBatch ||
+                !selectedProcessingType ||
+                !grades.find((g) => g.grade === selectedGrade)?.bagWeights.length ||
+                selectedBatch.storedDate
+              }
+            >
+              Save Sub-Batch
+            </Button>
           )}
         </DialogActions>
       </Dialog>
@@ -1597,7 +1599,7 @@ const DryMillStation = () => {
                 disabled={isLoading}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs= {6}>
               <TextField
                 label="Weight Taken (kg)"
                 type="number"
