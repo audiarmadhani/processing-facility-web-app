@@ -376,10 +376,10 @@ const DryMillStation = () => {
   const checkCompletionEligibility = useCallback(
     async (batchNumber, processingTypes, batchType) => {
       try {
-        if (batchType === "Green Beans") {
+        if (batchType === 'Green Beans') {
           const response = await axios.get(
             `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`,
-            { params: { processingType: "Dry" } }
+            { params: { processingType: 'Dry' } }
           );
           const grades = response.data;
           return grades.some(
@@ -387,36 +387,45 @@ const DryMillStation = () => {
           );
         }
 
-        const subBatchesResponse = await axios.get(
+        // Use postprocessing-data as primary source
+        const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/postprocessing-data/${batchNumber}`
         );
-        const subBatchTypes = [...new Set(subBatchesResponse.data.map((sb) => sb.processingType))];
-        const missingTypes = processingTypes.filter((pt) => !subBatchTypes.includes(pt));
-        if (missingTypes.length > 0) {
-          throw new Error(`Missing sub-batches for processing types: ${missingTypes.join(", ")}`);
+        const subBatches = response.data;
+
+        if (!subBatches || subBatches.length === 0) {
+          throw new Error('No sub-batches found');
         }
 
-        for (const processingType of processingTypes) {
-          const response = await axios.get(
-            `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`,
-            { params: { processingType } }
-          );
-          const grades = response.data;
-          const hasValidSplits = grades.some(
-            (grade) => parseFloat(grade.weight) > 0 && grade.bagged_at && !grade.is_stored
-          );
-          if (!hasValidSplits) {
-            return false;
-          }
-        }
-        return true;
+        const hasValidSplits = processingTypes.every((pt) =>
+          subBatches.some(
+            (sb) =>
+              sb.processingType === pt &&
+              parseFloat(sb.weight) > 0 &&
+              !sb.isStored
+          )
+        );
+        return hasValidSplits;
       } catch (error) {
-        const message = error.message || "Failed to validate splits for completion.";
-        logError(message, error);
-        setSnackbarMessage(message);
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
-        return false;
+        // Fallback to dry-mill-grades if postprocessing-data fails
+        const hasValidSplits = await Promise.all(
+          processingTypes.map(async (processingType) => {
+            try {
+              const response = await axios.get(
+                `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`,
+                { params: { processingType } }
+              );
+              const grades = response.data;
+              return grades.some(
+                (grade) => parseFloat(grade.weight) > 0 && grade.bagged_at && !grade.is_stored
+              );
+            } catch (error) {
+              logError(`Failed to fetch grades for ${processingType}`, error);
+              return false;
+            }
+          })
+        );
+        return hasValidSplits.every((isValid) => isValid);
       }
     },
     []
