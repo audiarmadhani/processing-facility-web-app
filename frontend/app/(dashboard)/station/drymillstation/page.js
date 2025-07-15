@@ -1054,8 +1054,8 @@ const DryMillStation = () => {
       },
       {
         field: "details",
-        headerName: "Details",
-        width: 100,
+        headerName: "Track Weight",
+        width: 170,
         sortable: false,
         renderCell: (params) => (
           <Button
@@ -1064,14 +1064,14 @@ const DryMillStation = () => {
             onClick={() => handleDetailsClick(params.row)}
             disabled={isLoading}
           >
-            Details
+            Track Weight
           </Button>
         ),
       },
       {
         field: "sampleTracking",
         headerName: "Sample Tracking",
-        width: 150,
+        width: 170,
         sortable: false,
         renderCell: (params) => (
           <Button
