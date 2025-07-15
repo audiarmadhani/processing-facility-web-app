@@ -73,8 +73,8 @@ const FermentationStation = () => {
   const [openFinishDialog, setOpenFinishDialog] = useState(false);
   const [endDateTime, setEndDateTime] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
 
-  // Hardcoded processing types
-  const availableProcessingTypes = [
+  // Hardcoded processing types as fallback
+  const defaultProcessingTypes = [
     "Aerobic Natural",
     "Aerobic Pulped Natural",
     "Aerobic Washed",
@@ -91,6 +91,8 @@ const FermentationStation = () => {
     "Pulped Natural",
     "Washed"
   ];
+
+  const [availableProcessingTypes, setAvailableProcessingTypes] = useState(defaultProcessingTypes);
 
   const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
@@ -177,9 +179,10 @@ const FermentationStation = () => {
           batchWeights.set(batchKey, {});
         }
         const weights = await axios.get(`${API_BASE_URL}/api/fermentation-weight-measurements/${batchKey}`);
-        if (Array.isArray(weights.data)) {
+        if (weights.data) {
+          const dataArray = Array.isArray(weights.data) ? weights.data : [weights.data];
           const totalWeights = {};
-          weights.data.forEach(measurement => {
+          dataArray.forEach(measurement => {
             totalWeights[measurement.processingType] = (totalWeights[measurement.processingType] || 0) + parseFloat(measurement.weight);
           });
           batchWeights.set(batchKey, totalWeights);
@@ -203,21 +206,47 @@ const FermentationStation = () => {
   const fetchWeightMeasurements = async (batchNumber) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation-weight-measurements/${batchNumber}`);
-      if (!Array.isArray(response.data)) {
-        console.error('fetchWeightMeasurements: Expected array, got:', response.data);
+      if (response.data) {
+        const dataArray = Array.isArray(response.data) ? response.data : [response.data];
+        setWeightMeasurements(dataArray);
+      } else {
+        console.error('fetchWeightMeasurements: No data received:', response.data);
         setWeightMeasurements([]);
         setSnackbarMessage('Invalid weight measurements received.');
         setSnackbarSeverity('error');
         setOpenSnackbar(true);
-        return;
       }
-      setWeightMeasurements(response.data);
     } catch (error) {
       console.error('Error fetching weight measurements:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to fetch weight measurements.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       setWeightMeasurements([]);
+    }
+  };
+
+  const fetchPreprocessingData = async (batchNumber) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/preprocessing/${batchNumber}`);
+      if (response.data && Array.isArray(response.data.preprocessingData)) {
+        const uniqueProcessingTypes = [...new Set(response.data.preprocessingData.map(item => item.processingType))];
+        setAvailableProcessingTypes(uniqueProcessingTypes.length > 0 ? uniqueProcessingTypes : defaultProcessingTypes);
+        if (uniqueProcessingTypes.length > 0 && !newProcessingType) {
+          setNewProcessingType(uniqueProcessingTypes[0]);
+        }
+      } else {
+        console.error('fetchPreprocessingData: Expected preprocessingData array, got:', response.data);
+        setAvailableProcessingTypes(defaultProcessingTypes);
+        setSnackbarMessage('Invalid preprocessing data received. Using default processing types.');
+        setSnackbarSeverity('warning');
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Error fetching preprocessing data:', error, 'Response:', error.response);
+      setAvailableProcessingTypes(defaultProcessingTypes);
+      setSnackbarMessage('Failed to fetch preprocessing data. Using default processing types.');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
     }
   };
 
@@ -319,10 +348,8 @@ const FermentationStation = () => {
     setNewWeight('');
     setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
     setNewProducer('HQ');
-    // Set default processing type if none is selected
-    if (!newProcessingType && availableProcessingTypes.length > 0) {
-      setNewProcessingType(availableProcessingTypes[0]);
-    }
+    // Fetch preprocessing data to set batch-specific processing types
+    await fetchPreprocessingData(row.batchNumber);
     setOpenWeightDialog(true);
     setAnchorEl(null);
   };
