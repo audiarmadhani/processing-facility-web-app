@@ -68,6 +68,7 @@ const FermentationStation = () => {
   const [newProcessingType, setNewProcessingType] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
   const [newProducer, setNewProducer] = useState('HQ');
+  const [availableProcessingTypes, setAvailableProcessingTypes] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
   const [openFinishDialog, setOpenFinishDialog] = useState(false);
@@ -77,7 +78,6 @@ const FermentationStation = () => {
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
   );
 
-  const processingTypes = ['Washed', 'Natural'];
   const producers = ['HQ', 'BTM'];
 
   const ITEM_HEIGHT = 48;
@@ -151,7 +151,28 @@ const FermentationStation = () => {
         setOpenSnackbar(true);
         return;
       }
-      setFermentationData(response.data);
+
+      const batchWeights = new Map();
+      for (const batch of response.data) {
+        const batchKey = batch.batchNumber;
+        if (!batchWeights.has(batchKey)) {
+          batchWeights.set(batchKey, {});
+        }
+        const weights = await axios.get(`${API_BASE_URL}/api/fermentation-weight-measurements/${batchKey}`);
+        if (Array.isArray(weights.data)) {
+          const totalWeights = {};
+          weights.data.forEach(measurement => {
+            totalWeights[measurement.processingType] = (totalWeights[measurement.processingType] || 0) + parseFloat(measurement.weight);
+          });
+          batchWeights.set(batchKey, totalWeights);
+        }
+      }
+
+      const updatedData = response.data.map(batch => ({
+        ...batch,
+        totalWeights: batchWeights.get(batch.batchNumber) || {},
+      }));
+      setFermentationData(updatedData);
     } catch (error) {
       console.error('Error fetching fermentation data:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to fetch fermentation data. Please try again.');
@@ -182,10 +203,36 @@ const FermentationStation = () => {
     }
   };
 
+  const fetchProcessingTypes = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/fermentation/processing-types`);
+      if (Array.isArray(response.data)) {
+        setAvailableProcessingTypes(response.data);
+        // Set default processing type if none is selected
+        if (!newProcessingType && response.data.length > 0) {
+          setNewProcessingType(response.data[0]);
+        }
+      } else {
+        console.error('fetchProcessingTypes: Expected array, got:', response.data);
+        setAvailableProcessingTypes([]);
+        setSnackbarMessage('Invalid processing types received.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Error fetching processing types:', error, 'Response:', error.response);
+      setSnackbarMessage('Failed to fetch processing types.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      setAvailableProcessingTypes([]);
+    }
+  };
+
   useEffect(() => {
     fetchFermentationData();
     fetchAvailableBatches();
     fetchAvailableTanks();
+    fetchProcessingTypes();
   }, []);
 
   const handleCloseSnackbar = () => {
@@ -274,13 +321,17 @@ const FermentationStation = () => {
     }
   };
 
-  const handleTrackWeight = (row) => {
+  const handleTrackWeight = async (row) => {
     setSelectedBatch(row);
-    fetchWeightMeasurements(row.batchNumber);
+    await fetchWeightMeasurements(row.batchNumber);
     setNewWeight('');
-    setNewProcessingType('');
     setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
     setNewProducer('HQ');
+    // Fetch available processing types and set the first one as default if not already set
+    await fetchProcessingTypes();
+    if (!newProcessingType && availableProcessingTypes.length > 0) {
+      setNewProcessingType(availableProcessingTypes[0]);
+    }
     setOpenWeightDialog(true);
     setAnchorEl(null);
   };
@@ -336,7 +387,7 @@ const FermentationStation = () => {
       const response = await axios.post(`${API_BASE_URL}/api/fermentation-weight-measurement`, payload);
       setWeightMeasurements([...weightMeasurements, response.data.measurement]);
       setNewWeight('');
-      setNewProcessingType('');
+      setNewProcessingType(availableProcessingTypes[0] || ''); // Reset to first available or empty
       setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
       setNewProducer('HQ');
       setSnackbarMessage('Weight measurement added successfully.');
@@ -435,10 +486,15 @@ const FermentationStation = () => {
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
     { 
-      field: 'latest_weight', 
+      field: 'totalWeights', 
       headerName: 'Fermentation Weight (kg)', 
       width: 200,
-      valueFormatter: ({ value }) => parseFloat(value).toFixed(2),
+      renderCell: ({ row }) => {
+        const weights = row.totalWeights || {};
+        return Object.entries(weights).map(([type, weight]) => (
+          <div key={type}>{`${type}: ${weight.toFixed(2)}kg`}</div>
+        )) || '0.00';
+      },
     },
     { field: 'status', headerName: 'Status', width: 120 },
     { field: 'createdBy', headerName: 'Created By', width: 150 },
@@ -647,7 +703,7 @@ const FermentationStation = () => {
                   onChange={(e) => setNewProcessingType(e.target.value)}
                   label="Processing Type"
                 >
-                  {processingTypes.map(type => (
+                  {availableProcessingTypes.map(type => (
                     <MenuItem key={type} value={type}>{type}</MenuItem>
                   ))}
                 </Select>
