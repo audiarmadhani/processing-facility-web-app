@@ -200,26 +200,6 @@ router.get('/fermentation', async (req, res) => {
   }
 });
 
-// Route for fetching available processing types
-router.get('/fermentation/processing-types', async (req, res) => {
-  try {
-    const [rows] = await sequelize.query(
-      `SELECT DISTINCT "processingType" 
-       FROM "ReferenceMappings_duplicate" 
-       ORDER BY "processingType" ASC`,
-      {
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
-
-    const processingTypes = rows.map(row => row.processingType).filter(type => type);
-    res.json(processingTypes);
-  } catch (err) {
-    console.error('Error fetching processing types:', err);
-    res.status(500).json({ message: 'Failed to fetch processing types.', details: err.message });
-  }
-});
-
 // Route for saving a new weight measurement
 router.post('/fermentation-weight-measurement', async (req, res) => {
   const { batchNumber, processingType, weight, measurement_date, producer } = req.body;

@@ -68,11 +68,29 @@ const FermentationStation = () => {
   const [newProcessingType, setNewProcessingType] = useState('');
   const [newWeightDate, setNewWeightDate] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
   const [newProducer, setNewProducer] = useState('HQ');
-  const [availableProcessingTypes, setAvailableProcessingTypes] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
   const [openFinishDialog, setOpenFinishDialog] = useState(false);
   const [endDateTime, setEndDateTime] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
+
+  // Hardcoded processing types
+  const availableProcessingTypes = [
+    "Aerobic Natural",
+    "Aerobic Pulped Natural",
+    "Aerobic Washed",
+    "Anaerobic Natural",
+    "Anaerobic Pulped Natural",
+    "Anaerobic Washed",
+    "CM Natural",
+    "CM Pulped Natural",
+    "CM Washed",
+    "Natural",
+    "O2 Natural",
+    "O2 Pulped Natural",
+    "O2 Washed",
+    "Pulped Natural",
+    "Washed"
+  ];
 
   const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
@@ -203,36 +221,10 @@ const FermentationStation = () => {
     }
   };
 
-  const fetchProcessingTypes = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/fermentation/processing-types`);
-      if (Array.isArray(response.data)) {
-        setAvailableProcessingTypes(response.data);
-        // Set default processing type if none is selected
-        if (!newProcessingType && response.data.length > 0) {
-          setNewProcessingType(response.data[0]);
-        }
-      } else {
-        console.error('fetchProcessingTypes: Expected array, got:', response.data);
-        setAvailableProcessingTypes([]);
-        setSnackbarMessage('Invalid processing types received.');
-        setSnackbarSeverity('error');
-        setOpenSnackbar(true);
-      }
-    } catch (error) {
-      console.error('Error fetching processing types:', error, 'Response:', error.response);
-      setSnackbarMessage('Failed to fetch processing types.');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      setAvailableProcessingTypes([]);
-    }
-  };
-
   useEffect(() => {
     fetchFermentationData();
     fetchAvailableBatches();
     fetchAvailableTanks();
-    fetchProcessingTypes();
   }, []);
 
   const handleCloseSnackbar = () => {
@@ -327,8 +319,7 @@ const FermentationStation = () => {
     setNewWeight('');
     setNewWeightDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DD'));
     setNewProducer('HQ');
-    // Fetch available processing types and set the first one as default if not already set
-    await fetchProcessingTypes();
+    // Set default processing type if none is selected
     if (!newProcessingType && availableProcessingTypes.length > 0) {
       setNewProcessingType(availableProcessingTypes[0]);
     }
