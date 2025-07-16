@@ -475,7 +475,7 @@ const PreprocessingStation = () => {
       const response = await axios.post(`${API_BASE_URL}/split`, {
         originalBatchNumber: splitBatchNumber,
         splitCount,
-        splitWeight: splitWeights.map(w => parseFloat(w)), // Send array of weights
+        splitWeights: splitWeights.map(w => parseFloat(w)), // Changed from splitWeight to splitWeights
         createdBy: session?.user?.name || 'Unknown',
       }, { timeout: 15000 });
 
