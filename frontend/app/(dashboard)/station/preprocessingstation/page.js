@@ -475,8 +475,9 @@ const PreprocessingStation = () => {
       const response = await axios.post(`${API_BASE_URL}/split`, {
         originalBatchNumber: splitBatchNumber,
         splitCount,
-        splitWeights: splitWeights.map(w => parseFloat(w)), // Changed from splitWeight to splitWeights
+        splitWeights: splitWeights.map(w => parseFloat(w)),
         createdBy: session?.user?.name || 'Unknown',
+        scannedRfids: scannedRfids, // Add scanned RFIDs to the payload
       }, { timeout: 15000 });
 
       setSnackBarMessage(`Batch ${splitBatchNumber} split successfully into ${splitCount} batches with new RFIDs assigned.`);
