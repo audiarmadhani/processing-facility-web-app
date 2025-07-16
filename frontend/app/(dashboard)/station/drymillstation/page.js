@@ -92,6 +92,7 @@ const DryMillStation = () => {
   const [sampleWeightTaken, setSampleWeightTaken] = useState("");
   const [sampleHistory, setSampleHistory] = useState([]);
   const [openSampleHistoryDialog, setOpenSampleHistoryDialog] = useState(false);
+  const [sampleData, setSampleData] = useState([]);
   const rfidInputRef = useRef(null);
 
   const logError = (message, error) => {
@@ -285,6 +286,30 @@ const DryMillStation = () => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       setSampleHistory([]);
+    }
+  }, []);
+
+  const fetchSampleData = useCallback(async () => {
+    try {
+      const response = await axios.get("https://processing-facility-backend.onrender.com/api/sample-data");
+      const data = response.data.map((row) => ({
+        id: `${row.batchNumber}-${row.date_taken}-${Math.random().toString(36).substr(2, 9)}`,
+        batchNumber: row.batchNumber,
+        lotNumber: row.lotNumber,
+        referenceNumber: row.referenceNumber,
+        processingType: row.processingType,
+        dateTaken: row.date_taken,
+        weightTaken: parseFloat(row.weight_taken).toFixed(2),
+        totalCurrentWeight: parseFloat(row.total_current_weight).toFixed(2),
+      }));
+      setSampleData(data);
+    } catch (error) {
+      const message = error.response?.data?.error || "Failed to fetch sample data.";
+      logError(message, error);
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      setSampleData([]);
     }
   }, []);
 
@@ -833,6 +858,7 @@ const DryMillStation = () => {
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
       await fetchDryMillData();
+      await fetchSampleData();
     } catch (error) {
       const message = error.response?.data?.error || "Failed to add sample.";
       logError(message, error);
@@ -840,7 +866,7 @@ const DryMillStation = () => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
-  }, [selectedBatch, sampleDateTaken, sampleWeightTaken, sampleHistory, fetchDryMillData]);
+  }, [selectedBatch, sampleDateTaken, sampleWeightTaken, sampleHistory, fetchDryMillData, fetchSampleData]);
 
   const handleShowSampleHistory = useCallback(async (batchNumber) => {
     setSelectedBatch(parentBatches.find(b => b.batchNumber === batchNumber));
@@ -851,12 +877,14 @@ const DryMillStation = () => {
   useEffect(() => {
     fetchDryMillData();
     fetchLatestRfid();
+    fetchSampleData();
     const intervalId = setInterval(() => {
       fetchDryMillData();
       fetchLatestRfid();
+      fetchSampleData();
     }, 600000); // 10 minutes
     return () => clearInterval(intervalId);
-  }, [fetchDryMillData, fetchLatestRfid]);
+  }, [fetchDryMillData, fetchLatestRfid, fetchSampleData]);
 
   useEffect(() => {
     if (selectedBatch) {
@@ -879,6 +907,7 @@ const DryMillStation = () => {
   const handleRefreshData = () => {
     fetchDryMillData();
     fetchLatestRfid();
+    fetchSampleData();
   };
 
   const handleDetailsClick = (batch) => {
@@ -1079,8 +1108,9 @@ const DryMillStation = () => {
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "processingType", headerName: "Processing Type", width: 180 },
-      { field: "totalDryingWeight", headerName: "Total Drying Weight (kg)", width: 180 },
-      { field: "totalSampleWeight", headerName: "Total Sample Weight (kg)", width: 180 },
+      { field: "dateTaken", headerName: "Date Taken", width: 150 },
+      { field: "weightTaken", headerName: "Weight Taken (kg)", width: 150 },
+      { field: "totalCurrentWeight", headerName: "Total Current Weight (kg)", width: 180 },
       {
         field: "history",
         headerName: "History",
@@ -1126,26 +1156,6 @@ const DryMillStation = () => {
     [subBatches]
   );
 
-  const getSampleOverview = useCallback(() => {
-    const sampleData = {};
-    parentBatches.forEach(batch => {
-      const history = sampleHistory.filter(s => s.batchNumber === batch.batchNumber);
-      const totalSampleWeight = history.reduce((acc, s) => acc + parseFloat(s.weightTaken || 0), 0);
-      const dryingWeight = parseFloat(batch.drying_weight || 0);
-      const totalDryingWeight = dryingWeight - totalSampleWeight >= 0 ? dryingWeight - totalSampleWeight : 0;
-      sampleData[batch.batchNumber] = {
-        id: batch.id,
-        batchNumber: batch.batchNumber,
-        lotNumber: batch.lotNumber,
-        referenceNumber: batch.referenceNumber,
-        processingType: batch.processingType,
-        totalDryingWeight: totalDryingWeight.toFixed(2),
-        totalSampleWeight: totalSampleWeight.toFixed(2),
-      };
-    });
-    return Object.values(sampleData);
-  }, [parentBatches, sampleHistory]);
-
   const renderParentDataGrid = useMemo(
     () => (
       <DataGrid
@@ -1189,13 +1199,18 @@ const DryMillStation = () => {
       <DataGrid
         rows={rows}
         columns={subBatchColumns}
-        initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
-        pageSizeOptions={[5, 10, 20]}
+        initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
+        pageSizeOptions={[10, 50, 100]}
         disableRowSelectionOnClick
         getRowId={(row) => row.id}
         slots={{ toolbar: GridToolbar }}
         autosizeOnMount
-        autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
+        autosizeOptions={{
+          includeHeaders: true,
+          includeOutliers: true,
+          expand: true,
+        }}
+        rowHeight={35}
         sx={{ height: 600, width: "100%" }}
       />
     );
@@ -1204,19 +1219,24 @@ const DryMillStation = () => {
   const renderSampleOverviewDataGrid = useMemo(
     () => (
       <DataGrid
-        rows={getSampleOverview()}
+        rows={sampleData}
         columns={sampleOverviewColumns}
-        initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
-        pageSizeOptions={[5, 10, 20]}
+        initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
+        pageSizeOptions={[10, 50, 100]}
         disableRowSelectionOnClick
         getRowId={(row) => row.id}
         slots={{ toolbar: GridToolbar }}
         autosizeOnMount
-        autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
+        autosizeOptions={{
+          includeHeaders: true,
+          includeOutliers: true,
+          expand: true,
+        }}
+        rowHeight={35}
         sx={{ height: 400, width: "100%" }}
       />
     ),
-    [getSampleOverview, sampleOverviewColumns]
+    [sampleData, sampleOverviewColumns]
   );
 
   if (status === "loading") {
