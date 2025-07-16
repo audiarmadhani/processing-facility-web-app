@@ -937,9 +937,6 @@ const DryMillStation = () => {
       { field: "batchNumber", headerName: "Batch Number", width: 160 },
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
-      { field: "farmerName", headerName: "Farmer Name", width: 160 },
-      { field: "farmVarieties", headerName: "Farm Varieties", width: 160 },
-      { field: "type", headerName: "Type", width: 120 },
       { field: "processingType", headerName: "Processing Type", width: 180 },
       {
         field: "status",
@@ -961,22 +958,6 @@ const DryMillStation = () => {
         ),
       },
       {
-        field: "details",
-        headerName: "Track Weight",
-        width: 170,
-        sortable: false,
-        renderCell: (params) => (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handleDetailsClick(params.row)}
-            disabled={isLoading}
-          >
-            Track Weight
-          </Button>
-        ),
-      },
-      {
         field: "sampleTracking",
         headerName: "Sample Tracking",
         width: 170,
@@ -992,6 +973,25 @@ const DryMillStation = () => {
           </Button>
         ),
       },
+      {
+        field: "details",
+        headerName: "Track Weight",
+        width: 170,
+        sortable: false,
+        renderCell: (params) => (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleDetailsClick(params.row)}
+            disabled={isLoading}
+          >
+            Track Weight
+          </Button>
+        ),
+      },
+      { field: "farmerName", headerName: "Farmer Name", width: 160 },
+      { field: "farmVarieties", headerName: "Farm Varieties", width: 160 },
+      { field: "type", headerName: "Type", width: 120 },
       { field: "dryMillEntered", headerName: "Dry Mill Entered", width: 150 },
       { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
       { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 160 },
