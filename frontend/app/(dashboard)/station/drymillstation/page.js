@@ -107,32 +107,31 @@ const DryMillStation = () => {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
 
+      // Create a map to group batches by batchNumber and processingType
       const batchesMap = new Map();
       data.forEach((batch) => {
-        const key = `${batch.batchNumber}-${batch.processingType || "N/A"}`;
-        if (!batchesMap.has(key)) {
-          batchesMap.set(key, {
-            batchNumber: batch.batchNumber,
-            status: batch.status,
-            dryMillEntered: batch.dryMillEntered,
-            dryMillExited: batch.dryMillExited,
-            cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
-            drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
-            producer: batch.producer || "N/A",
-            farmerName: batch.farmerName || "N/A",
-            productLine: batch.productLine || "N/A",
-            processingType: batch.processingType || "N/A",
-            totalBags: batch.totalBags || "N/A",
-            notes: batch.notes || "N/A",
-            type: batch.type || "N/A",
-            farmVarieties: batch.farmVarieties || "N/A",
-            storedDate: batch.storeddatetrunc || null,
-            batchType: batch.batchType || "Cherry",
-            lotNumber: batch.lotNumber || "N/A",
-            referenceNumber: batch.referenceNumber || "N/A",
-            id: key,
-          });
-        }
+        const key = `${batch.batchNumber}-${batch.processingType}`;
+        batchesMap.set(key, {
+          batchNumber: batch.batchNumber,
+          status: batch.status,
+          dryMillEntered: batch.dryMillEntered,
+          dryMillExited: batch.dryMillExited,
+          cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
+          drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
+          producer: batch.producer || "N/A",
+          farmerName: batch.farmerName || "N/A",
+          productLine: batch.productLine || "N/A",
+          processingType: batch.processingType,
+          totalBags: batch.totalBags || "N/A",
+          notes: batch.notes || "N/A",
+          type: batch.type || "N/A",
+          farmVarieties: batch.farmVarieties || "N/A",
+          storedDate: batch.storeddatetrunc || null,
+          batchType: batch.batchType || "Cherry",
+          lotNumber: batch.lotNumber,
+          referenceNumber: batch.referenceNumber,
+          id: key,
+        });
       });
 
       const parentBatchesData = Array.from(batchesMap.values()).filter(
@@ -152,14 +151,14 @@ const DryMillStation = () => {
           producer: batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
-          processingType: batch.processingType || "N/A",
+          processingType: batch.processingType,
           quality: batch.quality || "N/A",
           totalBags: batch.totalBags || "N/A",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
           parentBatchNumber: batch.parentBatchNumber,
-          lotNumber: batch.lotNumber || "N/A",
-          referenceNumber: batch.referenceNumber || "N/A",
+          lotNumber: batch.lotNumber,
+          referenceNumber: batch.referenceNumber,
           bagWeights: batch.bagDetails || [],
         }));
 
