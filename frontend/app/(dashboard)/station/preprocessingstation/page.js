@@ -1454,7 +1454,7 @@ const PreprocessingStation = () => {
                   onClick={handleSplitBatches}
                   color="secondary"
                   variant="contained"
-                  disabled={!splitWeights.every(w => parseFloat(w) > 0) || scannedRfids.length < splitCount}
+                  disabled={!splitWeights.every(w => parseFloat(w) > 0) || scannedRfids.length < (splitCount - 1)}
                 >
                   Split
                 </Button>
