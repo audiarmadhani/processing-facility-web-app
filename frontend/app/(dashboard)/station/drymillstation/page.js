@@ -58,7 +58,7 @@ const formatLabelData = (
     { label: "Cherry Lot Number", value: cherryLotNumber },
     { label: "Farmer", value: farmerName },
     { label: "Type", value: batch?.type || "N/A" },
-    { label: "Processing Type", value: batch?.processingtypes || "N/A" },
+    { label: "Processing Type", value: batch?.processingType || "N/A" },
     { label: "Product Line", value: batch?.productLine || "N/A" },
     { label: "Grade", value: grade },
     { label: "Bag Weight", value: `${bagWeight} kg` },
@@ -107,11 +107,10 @@ const DryMillStation = () => {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
 
-      // Create a map to group batches by batchNumber and processingtypes
-      const batchesMap = new Map();
-      data.forEach((batch) => {
-        const key = `${batch.batchNumber}-${batch.processingtypes}`;
-        batchesMap.set(key, {
+      // Use an array to preserve all entries instead of overwriting with a Map
+      const parentBatchesData = data
+        .filter((batch) => !batch.parentBatchNumber && batch.status !== "Processed" && !batch.storeddatetrunc)
+        .map((batch) => ({
           batchNumber: batch.batchNumber,
           status: batch.status,
           dryMillEntered: batch.dryMillEntered,
@@ -121,7 +120,7 @@ const DryMillStation = () => {
           producer: batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
-          processingtypes: batch.processingtypes,
+          processingType: batch.processingType,
           totalBags: batch.totalBags || "N/A",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
@@ -130,18 +129,17 @@ const DryMillStation = () => {
           batchType: batch.batchType || "Cherry",
           lotNumber: batch.lotNumber,
           referenceNumber: batch.referenceNumber,
-          id: key,
-        });
-      });
-
-      const parentBatchesData = Array.from(batchesMap.values()).filter(
-        (batch) => batch.status !== "Processed" && !batch.storedDate
-      );
+          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`, // Unique ID for each row
+        }));
 
       const subBatchesData = data
         .filter((batch) => batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
         .map((batch) => ({
-          id: `${batch.batchNumber}-${batch.processingtypes || "unknown"}`,
+          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`, // Unique ID for each row
           batchNumber: batch.batchNumber,
           status: batch.status,
           dryMillEntered: batch.dryMillEntered,
@@ -151,7 +149,7 @@ const DryMillStation = () => {
           producer: batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
-          processingtypes: batch.processingtypes,
+          processingType: batch.processingType,
           quality: batch.quality || "N/A",
           totalBags: batch.totalBags || "N/A",
           notes: batch.notes || "N/A",
@@ -177,14 +175,14 @@ const DryMillStation = () => {
   }, []);
 
   const fetchExistingGrades = useCallback(
-    async (batchNumber, processingtypes) => {
+    async (batchNumber, processingType) => {
       try {
-        if (!batchNumber || !processingtypes) {
+        if (!batchNumber || !processingType) {
           throw new Error("Batch number or processing type is missing.");
         }
         const response = await axios.get(
           `https://processing-facility-backend.onrender.com/api/dry-mill-grades/${batchNumber}`,
-          { params: { processingtypes } }
+          { params: { processingType } }
         );
         const data = response.data;
         if (!Array.isArray(data)) {
@@ -310,7 +308,7 @@ const DryMillStation = () => {
         setOpenSnackbar(true);
         await fetchDryMillData();
         if (response.data.exited_at) {
-          setSelectedBatch({ batchNumber: response.data.batchNumber, processingtypes: response.data.processingtypes });
+          setSelectedBatch({ batchNumber: response.data.batchNumber, processingType: response.data.processingType });
           setOpenStorageDialog(true);
         }
       } catch (error) {
@@ -460,7 +458,7 @@ const DryMillStation = () => {
             bagged_at: today,
             tempSequence: g.tempSequence,
           })),
-          processingtypes: selectedBatch.processingtypes,
+          processingType: selectedBatch.processingType,
         };
         const response = await axios.post(
           `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/split`,
@@ -493,7 +491,7 @@ const DryMillStation = () => {
   );
 
   const handlePrintLabel = useCallback(
-    (batchNumber, processingtypes, grade, bagIndex, bagWeight) => {
+    (batchNumber, processingType, grade, bagIndex, bagWeight) => {
       if (!selectedBatch) {
         setSnackbarMessage("No batch selected.");
         setSnackbarSeverity("error");
@@ -505,7 +503,7 @@ const DryMillStation = () => {
         subBatches.find(
           (sb) =>
             sb.parentBatchNumber === selectedBatch.batchNumber &&
-            sb.processingtypes === processingtypes &&
+            sb.processingType === processingType &&
             sb.quality === grade
         ) ||
         grades.find((g) => g.grade === grade) ||
@@ -633,7 +631,7 @@ const DryMillStation = () => {
               bagWeights: updatedBagWeights,
               weight: totalWeight.toString(),
               bagged_at: new Date().toISOString().slice(0, 10),
-              processingtypes: selectedBatch.processingtypes,
+              processingType: selectedBatch.processingType,
             }
           );
           setGrades((prevGrades) => {
@@ -716,7 +714,7 @@ const DryMillStation = () => {
               bagWeights: updatedBagWeights,
               weight: totalWeight >= 0 ? totalWeight.toString() : "0",
               bagged_at: new Date().toISOString().slice(0, 10),
-              processingtypes: selectedBatch.processingtypes,
+              processingType: selectedBatch.processingType,
             }
           );
           setGrades((prevGrades) => {
@@ -783,7 +781,7 @@ const DryMillStation = () => {
             bagWeights: gradeData.bagWeights,
             weight: gradeData.weight.toString(),
             bagged_at: new Date().toISOString().slice(0, 10),
-            processingtypes: selectedBatch.processingtypes,
+            processingType: selectedBatch.processingType,
           }
         );
         setGrades((prevGrades) => {
@@ -857,7 +855,7 @@ const DryMillStation = () => {
   useEffect(() => {
     if (selectedBatch) {
       fetchSampleHistory(selectedBatch.batchNumber);
-      fetchExistingGrades(selectedBatch.batchNumber, selectedBatch.processingtypes).then(
+      fetchExistingGrades(selectedBatch.batchNumber, selectedBatch.processingType).then(
         (existingGrades) => {
           setGrades(existingGrades);
           setHasUnsavedChanges(false);
@@ -942,7 +940,7 @@ const DryMillStation = () => {
       { field: "farmerName", headerName: "Farmer Name", width: 160 },
       { field: "farmVarieties", headerName: "Farm Varieties", width: 160 },
       { field: "type", headerName: "Type", width: 120 },
-      { field: "processingtypes", headerName: "Processing Type", width: 180 },
+      { field: "processingType", headerName: "Processing Type", width: 180 },
       {
         field: "status",
         headerName: "Status",
@@ -1054,7 +1052,7 @@ const DryMillStation = () => {
       { field: "weight", headerName: "Weight (kg)", width: 140 },
       { field: "producer", headerName: "Producer", width: 120 },
       { field: "productLine", headerName: "Product Line", width: 160 },
-      { field: "processingtypes", headerName: "Processing Type", width: 180 },
+      { field: "processingType", headerName: "Processing Type", width: 180 },
       { field: "type", headerName: "Type", width: 140 },
       { field: "quality", headerName: "Quality", width: 120 },
       { field: "totalBags", headerName: "Bags Qty", width: 120 },
@@ -1194,7 +1192,7 @@ const DryMillStation = () => {
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
-          Batch {selectedBatch?.batchNumber} - {selectedBatch?.processingtypes} ({selectedBatch?.batchType})
+          Batch {selectedBatch?.batchNumber} - {selectedBatch?.processingType} ({selectedBatch?.batchType})
         </DialogTitle>
         <DialogContent>
           {selectedBatch?.batchType === "Green Beans" && (
@@ -1302,7 +1300,7 @@ const DryMillStation = () => {
                               onClick={() =>
                                 handlePrintLabel(
                                   selectedBatch?.batchNumber,
-                                  selectedBatch.processingtypes,
+                                  selectedBatch.processingType,
                                   grade.grade,
                                   0,
                                   grade.bagWeights[0]

@@ -1084,7 +1084,7 @@ router.get('/dry-mill-data', async (req, res) => {
           WHEN dm."exited_at" IS NOT NULL THEN 'Processed'
           ELSE 'Not Started'
         END AS status,
-        ARRAY_AGG(DISTINCT pd."processingType") FILTER (WHERE pd."processingType" IS NOT NULL) AS processingTypes,
+        ARRAY_AGG(DISTINCT pd."processingType") FILTER (WHERE pd."processingType" IS NOT NULL) AS "processingTypes",
         COUNT(DISTINCT bd.bag_number) AS totalBags,
         COALESCE(pp.notes, rd.notes) AS notes,
         ARRAY_AGG(bd.weight) FILTER (WHERE bd.weight IS NOT NULL) AS bagDetails,
