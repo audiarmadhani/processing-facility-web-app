@@ -91,6 +91,7 @@ const DryMillStation = () => {
   const [sampleDateTaken, setSampleDateTaken] = useState(new Date().toISOString().split("T")[0]);
   const [sampleWeightTaken, setSampleWeightTaken] = useState("");
   const [sampleHistory, setSampleHistory] = useState([]);
+  const [openSampleHistoryDialog, setOpenSampleHistoryDialog] = useState(false);
   const rfidInputRef = useRef(null);
 
   const logError = (message, error) => {
@@ -107,7 +108,6 @@ const DryMillStation = () => {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
 
-      // Use an array to preserve all entries instead of overwriting with a Map
       const parentBatchesData = data
         .filter((batch) => !batch.parentBatchNumber && batch.status !== "Processed" && !batch.storeddatetrunc)
         .map((batch) => ({
@@ -131,7 +131,7 @@ const DryMillStation = () => {
           referenceNumber: batch.referenceNumber,
           id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
-            .substr(2, 9)}`, // Unique ID for each row
+            .substr(2, 9)}`,
         }));
 
       const subBatchesData = data
@@ -139,7 +139,7 @@ const DryMillStation = () => {
         .map((batch) => ({
           id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
-            .substr(2, 9)}`, // Unique ID for each row
+            .substr(2, 9)}`,
           batchNumber: batch.batchNumber,
           status: batch.status,
           dryMillEntered: batch.dryMillEntered,
@@ -842,6 +842,12 @@ const DryMillStation = () => {
     }
   }, [selectedBatch, sampleDateTaken, sampleWeightTaken, sampleHistory, fetchDryMillData]);
 
+  const handleShowSampleHistory = useCallback(async (batchNumber) => {
+    setSelectedBatch(parentBatches.find(b => b.batchNumber === batchNumber));
+    await fetchSampleHistory(batchNumber);
+    setOpenSampleHistoryDialog(true);
+  }, [parentBatches, fetchSampleHistory]);
+
   useEffect(() => {
     fetchDryMillData();
     fetchLatestRfid();
@@ -919,6 +925,12 @@ const DryMillStation = () => {
     setSelectedBatch(null);
     setSampleDateTaken(new Date().toISOString().split("T")[0]);
     setSampleWeightTaken("");
+    setSampleHistory([]);
+  };
+
+  const handleCloseSampleHistoryDialog = () => {
+    setOpenSampleHistoryDialog(false);
+    setSelectedBatch(null);
     setSampleHistory([]);
   };
 
@@ -1061,6 +1073,34 @@ const DryMillStation = () => {
     [isLoading]
   );
 
+  const sampleOverviewColumns = useMemo(
+    () => [
+      { field: "batchNumber", headerName: "Batch Number", width: 160 },
+      { field: "lotNumber", headerName: "Lot Number", width: 180 },
+      { field: "referenceNumber", headerName: "Ref Number", width: 180 },
+      { field: "processingType", headerName: "Processing Type", width: 180 },
+      { field: "totalDryingWeight", headerName: "Total Drying Weight (kg)", width: 180 },
+      { field: "totalSampleWeight", headerName: "Total Sample Weight (kg)", width: 180 },
+      {
+        field: "history",
+        headerName: "History",
+        width: 120,
+        sortable: false,
+        renderCell: (params) => (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleShowSampleHistory(params.row.batchNumber)}
+            disabled={isLoading}
+          >
+            History
+          </Button>
+        ),
+      },
+    ],
+    [isLoading, handleShowSampleHistory]
+  );
+
   const getParentBatches = useCallback(
     () =>
       [...parentBatches].sort((a, b) => {
@@ -1086,6 +1126,26 @@ const DryMillStation = () => {
     [subBatches]
   );
 
+  const getSampleOverview = useCallback(() => {
+    const sampleData = {};
+    parentBatches.forEach(batch => {
+      const history = sampleHistory.filter(s => s.batchNumber === batch.batchNumber);
+      const totalSampleWeight = history.reduce((acc, s) => acc + parseFloat(s.weightTaken || 0), 0);
+      const dryingWeight = parseFloat(batch.drying_weight || 0);
+      const totalDryingWeight = dryingWeight - totalSampleWeight >= 0 ? dryingWeight - totalSampleWeight : 0;
+      sampleData[batch.batchNumber] = {
+        id: batch.id,
+        batchNumber: batch.batchNumber,
+        lotNumber: batch.lotNumber,
+        referenceNumber: batch.referenceNumber,
+        processingType: batch.processingType,
+        totalDryingWeight: totalDryingWeight.toFixed(2),
+        totalSampleWeight: totalSampleWeight.toFixed(2),
+      };
+    });
+    return Object.values(sampleData);
+  }, [parentBatches, sampleHistory]);
+
   const renderParentDataGrid = useMemo(
     () => (
       <DataGrid
@@ -1103,7 +1163,7 @@ const DryMillStation = () => {
           expand: true,
         }}
         rowHeight={35}
-        sx={{ height: 400, width: "100%" }}
+        sx={{ height: 600, width: "100%" }}
       />
     ),
     [getParentBatches, parentColumns]
@@ -1141,6 +1201,24 @@ const DryMillStation = () => {
     );
   }, [getSubBatches, subBatchColumns, dataGridError]);
 
+  const renderSampleOverviewDataGrid = useMemo(
+    () => (
+      <DataGrid
+        rows={getSampleOverview()}
+        columns={sampleOverviewColumns}
+        initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+        pageSizeOptions={[5, 10, 20]}
+        disableRowSelectionOnClick
+        getRowId={(row) => row.id}
+        slots={{ toolbar: GridToolbar }}
+        autosizeOnMount
+        autosizeOptions={{ includeHeaders: true, includeOutliers: true, expand: true }}
+        sx={{ height: 400, width: "100%" }}
+      />
+    ),
+    [getSampleOverview, sampleOverviewColumns]
+  );
+
   if (status === "loading") {
     return <Typography>Loading data...</Typography>;
   }
@@ -1175,6 +1253,17 @@ const DryMillStation = () => {
               {isLoading ? "Refreshing..." : "Refresh Data"}
             </Button>
             {renderParentDataGrid}
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Sample Overview
+            </Typography>
+            {renderSampleOverviewDataGrid}
           </CardContent>
         </Card>
       </Grid>
@@ -1541,6 +1630,47 @@ const DryMillStation = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseSampleTrackingDialog} disabled={isLoading}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openSampleHistoryDialog}
+        onClose={handleCloseSampleHistoryDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Sample History - Batch {selectedBatch?.batchNumber}</DialogTitle>
+        <DialogContent>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date Taken</TableCell>
+                <TableCell>Weight Taken (kg)</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sampleHistory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} align="center">No samples recorded.</TableCell>
+                </TableRow>
+              ) : (
+                sampleHistory.map((sample, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{new Date(sample.dateTaken).toLocaleDateString()}</TableCell>
+                    <TableCell>{parseFloat(sample.weightTaken).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Total Sample Weight Taken: {sampleHistory.reduce((acc, sample) => acc + parseFloat(sample.weightTaken || 0), 0).toFixed(2)} kg
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSampleHistoryDialog} disabled={isLoading}>
             Close
           </Button>
         </DialogActions>
