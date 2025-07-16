@@ -69,6 +69,13 @@ const PreprocessingStation = () => {
   const [selectedBatches, setSelectedBatches] = useState([]);
   const [mergeNotes, setMergeNotes] = useState('');
   const [newBatchNumber, setNewBatchNumber] = useState('');
+  const [openSplitDialog, setOpenSplitDialog] = useState(false);
+  const [splitBatchNumber, setSplitBatchNumber] = useState('');
+  const [splitCount, setSplitCount] = useState(2);
+  const [splitWeight, setSplitWeight] = useState('');
+  const [scannedRfids, setScannedRfids] = useState([]);
+  const [rfidScanIndex, setRfidScanIndex] = useState(0);
+  const [rfidScanMessage, setRfidScanMessage] = useState('');
 
   // Debug re-renders
   useEffect(() => {
@@ -95,6 +102,25 @@ const PreprocessingStation = () => {
     }
     return cleaned;
   };
+
+  const fetchRfid = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/get-rfid`, { timeout: 15000 });
+    const data = response.data;
+    if (data.rfid && data.rfid !== '') {
+      setScannedRfids((prev) => [...prev, data.rfid]);
+      await axios.delete(`${API_BASE_URL}/clear-rfid/Receiving`, { timeout: 15000 });
+      setRfidScanIndex((prev) => prev + 1);
+      setRfidScanMessage(`RFID ${rfidScanIndex + 1} scanned successfully.`);
+    } else {
+      setRfidScanMessage('Please scan a new RFID card.');
+    }
+  } catch (error) {
+    handleError('Error fetching RFID: ' + (error.response?.data?.error || error.message), error);
+  } finally {
+    setOpenSnackBar(true);
+  }
+};
 
   const fetchAvailableWeight = useCallback(async (batchNumber, totalWeight) => {
     try {
@@ -390,7 +416,7 @@ const PreprocessingStation = () => {
     }
 
     try {
-      const response = await axios.post(`${API_BASE_URL}//merge`, {
+      const response = await axios.post(`${API_BASE_URL}/merge`, {
         batchNumbers: selectedBatches,
         notes: mergeNotes.trim() || null,
         createdBy: session?.user?.name || 'Unknown',
@@ -406,6 +432,76 @@ const PreprocessingStation = () => {
     } finally {
       setOpenSnackBar(true);
     }
+  };
+
+  const handleOpenSplitDialog = (batchNumber) => {
+    setSplitBatchNumber(batchNumber);
+    setSplitCount(2);
+    setSplitWeight('');
+    setScannedRfids([]);
+    setRfidScanIndex(0);
+    setRfidScanMessage('');
+    setOpenSplitDialog(true);
+  };
+
+  const handleSplitBatches = async () => {
+    const availableWeight = parseFloat(unprocessedBatches.find(b => b.batchNumber === splitBatchNumber)?.availableWeight || 0);
+    const totalSplitWeight = splitCount * parseFloat(splitWeight || 0);
+
+    if (isNaN(totalSplitWeight) || totalSplitWeight <= 0) {
+      setSnackBarMessage('Please enter a valid weight per split.');
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+
+    if (totalSplitWeight > availableWeight) {
+      setSnackBarMessage(`Total split weight (${totalSplitWeight.toFixed(2)} kg) exceeds available weight (${availableWeight.toFixed(2)} kg).`);
+      setSnackBarSeverity('error');
+      setOpenSnackBar(true);
+      return;
+    }
+
+    // Validate RFID scans
+    const requiredScans = splitCount > 2 ? splitCount - 1 : splitCount - 1; // -1 because first uses original RFID
+    if (scannedRfids.length < requiredScans) {
+      setRfidScanMessage(`Please scan ${requiredScans - scannedRfids.length} more RFID card(s).`);
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/split`, {
+        originalBatchNumber: splitBatchNumber,
+        splitCount,
+        splitWeight: parseFloat(splitWeight),
+        createdBy: session?.user?.name || 'Unknown',
+      }, { timeout: 15000 });
+
+      setSnackBarMessage(`Batch ${splitBatchNumber} split successfully into ${splitCount} batches with new RFIDs assigned.`);
+      setSnackBarSeverity('success');
+      await fetchPreprocessingData();
+      setOpenSplitDialog(false);
+      setScannedRfids([]);
+      setRfidScanIndex(0);
+      setRfidScanMessage('');
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || `Failed to split batch: ${error.message}`;
+      handleError(errorMessage, error);
+    } finally {
+      setOpenSnackBar(true);
+    }
+  };
+
+  const handleCloseSplitDialog = () => {
+    setOpenSplitDialog(false);
+    setSplitBatchNumber('');
+    setSplitCount(2);
+    setSplitWeight('');
+    setScannedRfids([]);
+    setRfidScanIndex(0);
+    setRfidScanMessage('');
   };
 
   const handleSubmit = async (e) => {
@@ -807,6 +903,23 @@ const PreprocessingStation = () => {
           disabled={row.finished || parseFloat(row.availableWeight) <= 0}
         >
           Mark as Complete
+        </Button>
+      ),
+    },
+    {
+      field: 'split',
+      headerName: 'Split Batch',
+      width: 180,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <Button
+          variant="contained"
+          color="secondary"
+          size="small"
+          onClick={() => handleOpenSplitDialog(row.batchNumber)}
+          disabled={row.finished || parseFloat(row.availableWeight) <= 0}
+        >
+          Split Batch
         </Button>
       ),
     },
@@ -1273,6 +1386,65 @@ const PreprocessingStation = () => {
                 </Button>
               </DialogActions>
             </Dialog>
+
+            <Dialog
+              open={openSplitDialog}
+              onClose={handleCloseSplitDialog}
+            >
+              <DialogTitle>Split Batch {splitBatchNumber}</DialogTitle>
+              <DialogContent>
+                <Typography>Enter details to split batch into new batches with suffix -SB-xxx:</Typography>
+                <TextField
+                  label="Number of Splits"
+                  type="number"
+                  value={splitCount}
+                  onChange={(e) => setSplitCount(Math.max(2, parseInt(e.target.value) || 2))}
+                  fullWidth
+                  margin="normal"
+                  inputProps={{ min: 2 }}
+                />
+                <TextField
+                  label="Weight per Split (kg)"
+                  type="number"
+                  value={splitWeight}
+                  onChange={(e) => setSplitWeight(parseWeightInput(e.target.value))}
+                  fullWidth
+                  margin="normal"
+                  inputProps={{ step: 0.01, min: 0 }}
+                />
+                <Typography sx={{ mt: 2 }}>
+                  {`Scan ${splitCount > 2 ? splitCount - 1 : 1} new RFID card(s) for the split batches (first uses original RFID).`}
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={fetchRfid}
+                  sx={{ mt: 1 }}
+                  disabled={scannedRfids.length >= (splitCount > 2 ? splitCount - 1 : 1)}
+                >
+                  Scan Next RFID
+                </Button>
+                <Typography sx={{ mt: 1 }}>
+                  Scanned RFIDs: {scannedRfids.length > 0 ? scannedRfids.join(', ') : 'None'}
+                </Typography>
+                <Typography color={rfidScanMessage.includes('Please') ? 'error' : 'inherit'}>
+                  {rfidScanMessage}
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCloseSplitDialog} color="primary">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSplitBatches}
+                  color="secondary"
+                  variant="contained"
+                  disabled={!splitWeight || parseFloat(splitWeight) <= 0 || scannedRfids.length < (splitCount > 2 ? splitCount - 1 : 1)}
+                >
+                  Split
+                </Button>
+              </DialogActions>
+            </Dialog>
           </CardContent>
         </Card>
       </Grid>
@@ -1291,6 +1463,15 @@ const PreprocessingStation = () => {
                 disabled={selectedBatches.length < 2}
               >
                 Merge Batches
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => handleOpenSplitDialog(selectedBatches[0] || '')}
+                sx={{ ml: 2 }}
+                disabled={!selectedBatches.length || selectedBatches.length > 1}
+              >
+                Split Batch
               </Button>
             </Box>
             <Box sx={{ height: 600, width: '100%' }}>
