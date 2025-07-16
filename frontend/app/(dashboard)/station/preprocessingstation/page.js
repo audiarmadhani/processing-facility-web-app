@@ -105,7 +105,7 @@ const PreprocessingStation = () => {
 
   const fetchRfid = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/get-rfid`, { timeout: 15000 });
+    const response = await axios.get(`${API_BASE_URL}/get-rfid/Receiving`, { timeout: 15000 });
     const data = response.data;
     if (data.rfid && data.rfid !== '') {
       setScannedRfids((prev) => [...prev, data.rfid]);
