@@ -885,7 +885,7 @@ const PreprocessingStation = () => {
         />
       ),
     },
-    { field: 'batchNumber', headerName: 'Batch Number', width: 180, sortable: true },
+    { field: 'batchNumber', headerName: 'Batch Number', width: 200, sortable: true },
     { field: 'type', headerName: 'Type', width: 130, sortable: true },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150, sortable: true },
     { field: 'totalBags', headerName: 'Total Bags', width: 130, sortable: true },
