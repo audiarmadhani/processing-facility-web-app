@@ -1005,7 +1005,8 @@ const DryMillStation = () => {
         sortable: false,
         renderCell: (params) => (
           <Button
-            variant="outlined"
+            variant="contained"
+            color="secondary"
             size="small"
             onClick={() => handleSampleTrackingClick(params.row)}
             disabled={isLoading}
