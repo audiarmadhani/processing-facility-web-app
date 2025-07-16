@@ -463,8 +463,8 @@ const PreprocessingStation = () => {
       return;
     }
 
-    // Validate RFID scans (one per split)
-    if (scannedRfids.length < splitCount) {
+    // Validate RFID scans based on splitCount - 1 (since first uses original RFID)
+    if (scannedRfids.length < (splitCount - 1)) {
       setRfidScanMessage(`Please scan ${splitCount - scannedRfids.length} more RFID card(s).`);
       setSnackBarSeverity('warning');
       setOpenSnackBar(true);
@@ -1439,8 +1439,8 @@ const PreprocessingStation = () => {
                 >
                   Scan Next RFID
                 </Button>
-                <Typography sx={{ mt: 1 }}>
-                  Scanned RFIDs: {scannedRfids.length > 0 ? scannedRfids.join(', ') : 'None'}
+                <Typography sx={{ mt: 2 }}>
+                  {`Scan ${splitCount - 1} new RFID card(s) for the split batches (first uses original RFID).`}
                 </Typography>
                 <Typography color={rfidScanMessage.includes('Please') ? 'error' : 'inherit'}>
                   {rfidScanMessage}
