@@ -76,6 +76,7 @@ const PreprocessingStation = () => {
   const [scannedRfids, setScannedRfids] = useState([]);
   const [rfidScanIndex, setRfidScanIndex] = useState(0);
   const [rfidScanMessage, setRfidScanMessage] = useState('');
+  const [splitWeights, setSplitWeights] = useState([]);
 
   // Debug re-renders
   useEffect(() => {
@@ -437,7 +438,7 @@ const PreprocessingStation = () => {
   const handleOpenSplitDialog = (batchNumber) => {
     setSplitBatchNumber(batchNumber);
     setSplitCount(2);
-    setSplitWeight('');
+    setSplitWeights(Array(2).fill('')); // Initialize with 2 empty weights
     setScannedRfids([]);
     setRfidScanIndex(0);
     setRfidScanMessage('');
@@ -446,10 +447,10 @@ const PreprocessingStation = () => {
 
   const handleSplitBatches = async () => {
     const availableWeight = parseFloat(unprocessedBatches.find(b => b.batchNumber === splitBatchNumber)?.availableWeight || 0);
-    const totalSplitWeight = splitCount * parseFloat(splitWeight || 0);
+    const totalSplitWeight = splitWeights.reduce((sum, w) => sum + parseFloat(w || 0), 0);
 
-    if (isNaN(totalSplitWeight) || totalSplitWeight <= 0) {
-      setSnackBarMessage('Please enter a valid weight per split.');
+    if (totalSplitWeight <= 0) {
+      setSnackBarMessage('Please enter valid weights for all splits.');
       setSnackBarSeverity('warning');
       setOpenSnackBar(true);
       return;
@@ -462,10 +463,9 @@ const PreprocessingStation = () => {
       return;
     }
 
-    // Validate RFID scans
-    const requiredScans = splitCount > 2 ? splitCount - 1 : splitCount - 1; // -1 because first uses original RFID
-    if (scannedRfids.length < requiredScans) {
-      setRfidScanMessage(`Please scan ${requiredScans - scannedRfids.length} more RFID card(s).`);
+    // Validate RFID scans (one per split)
+    if (scannedRfids.length < splitCount) {
+      setRfidScanMessage(`Please scan ${splitCount - scannedRfids.length} more RFID card(s).`);
       setSnackBarSeverity('warning');
       setOpenSnackBar(true);
       return;
@@ -475,7 +475,7 @@ const PreprocessingStation = () => {
       const response = await axios.post(`${API_BASE_URL}/split`, {
         originalBatchNumber: splitBatchNumber,
         splitCount,
-        splitWeight: parseFloat(splitWeight),
+        splitWeight: splitWeights.map(w => parseFloat(w)), // Send array of weights
         createdBy: session?.user?.name || 'Unknown',
       }, { timeout: 15000 });
 
@@ -498,7 +498,7 @@ const PreprocessingStation = () => {
     setOpenSplitDialog(false);
     setSplitBatchNumber('');
     setSplitCount(2);
-    setSplitWeight('');
+    setSplitWeights([]);
     setScannedRfids([]);
     setRfidScanIndex(0);
     setRfidScanMessage('');
@@ -1398,29 +1398,44 @@ const PreprocessingStation = () => {
                   label="Number of Splits"
                   type="number"
                   value={splitCount}
-                  onChange={(e) => setSplitCount(Math.max(2, parseInt(e.target.value) || 2))}
+                  onChange={(e) => {
+                    const newCount = Math.max(2, parseInt(e.target.value) || 2);
+                    setSplitCount(newCount);
+                    setSplitWeights(Array(newCount).fill('')); // Reset weights array
+                    setScannedRfids([]); // Reset RFIDs when split count changes
+                    setRfidScanIndex(0);
+                    setRfidScanMessage('');
+                  }}
                   fullWidth
                   margin="normal"
                   inputProps={{ min: 2 }}
                 />
-                <TextField
-                  label="Weight per Split (kg)"
-                  type="number"
-                  value={splitWeight}
-                  onChange={(e) => setSplitWeight(parseWeightInput(e.target.value))}
-                  fullWidth
-                  margin="normal"
-                  inputProps={{ step: 0.01, min: 0 }}
-                />
+                {Array.from({ length: splitCount }, (_, index) => (
+                  <TextField
+                    key={index}
+                    label={`Weight for Split ${index + 1} (kg)`}
+                    type="number"
+                    value={splitWeights[index] || ''}
+                    onChange={(e) => {
+                      const newWeights = [...splitWeights];
+                      newWeights[index] = parseWeightInput(e.target.value);
+                      setSplitWeights(newWeights);
+                    }}
+                    fullWidth
+                    margin="normal"
+                    inputProps={{ step: 0.01, min: 0 }}
+                    helperText={index === 0 ? `Total available weight: ${weightAvailable} kg` : ''}
+                  />
+                ))}
                 <Typography sx={{ mt: 2 }}>
-                  {`Scan ${splitCount > 2 ? splitCount - 1 : 1} new RFID card(s) for the split batches (first uses original RFID).`}
+                  {`Scan ${splitCount - 1} new RFID card(s) for the split batches (first uses original RFID).`}
                 </Typography>
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={fetchRfid}
                   sx={{ mt: 1 }}
-                  disabled={scannedRfids.length >= (splitCount > 2 ? splitCount - 1 : 1)}
+                  disabled={scannedRfids.length >= (splitCount - 1)}
                 >
                   Scan Next RFID
                 </Button>
@@ -1439,7 +1454,7 @@ const PreprocessingStation = () => {
                   onClick={handleSplitBatches}
                   color="secondary"
                   variant="contained"
-                  disabled={!splitWeight || parseFloat(splitWeight) <= 0 || scannedRfids.length < (splitCount > 2 ? splitCount - 1 : 1)}
+                  disabled={!splitWeights.every(w => parseFloat(w) > 0) || scannedRfids.length < splitCount}
                 >
                   Split
                 </Button>
