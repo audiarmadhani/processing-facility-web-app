@@ -239,7 +239,7 @@ const DryingStation = () => {
           };
         })
         .sort((a, b) => {
-          const statusOrder = { 'In Drying': 0, 'Not in Drying': 1, 'Dried': 2 };
+          const statusOrder = { 'In Drying': 0, 'Dried': 1 };
           const statusA = statusOrder[a.status] || 3;
           const statusB = statusOrder[b.status] || 3;
           if (statusA !== statusB) return statusA - statusB;
