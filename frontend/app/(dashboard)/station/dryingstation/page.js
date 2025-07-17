@@ -217,8 +217,7 @@ const DryingStation = () => {
         .map(batch => {
           const batchDryingData = dryingDataRaw.filter(data => 
             data.batchNumber === batch.batchNumber && data.dryingArea === area);
-          const latestEntry = batchDryingData.sort((a, b) => 
-            new Date(b.created_at) - new Date(a.created_at))[0];
+          const latestEntry = batchDryingData[0];
   
           return {
             ...batch,
