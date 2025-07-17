@@ -237,19 +237,19 @@ const DryingStation = () => {
             rfid: latestEntry?.rfid || 'N/A',
           };
         })
-        .sort((a, b) => {
-          const statusOrder = { 'In Drying': 0, 'Dried': 1 };
-          const statusA = statusOrder[a.status] || 3;
-          const statusB = statusOrder[b.status] || 3;
-          if (statusA !== statusB) return statusA - statusB;
-          const dateA = a.startDryingDate === 'N/A' ? '' : a.startDryingDate;
-          const dateB = b.startDryingDate === 'N/A' ? '' : b.startDryingDate;
-          if (dateA !== dateB) return dateA.localeCompare(dateB);
-          const typeOrder = { 'Arabica': 0, 'Robusta': 1 };
-          const typeA = typeOrder[a.type] ?? 2;
-          const typeB = typeOrder[b.type] ?? 2;
-          return typeA - typeB;
-        });
+        // .sort((a, b) => {
+        //   const statusOrder = { 'In Drying': 0, 'Dried': 1 };
+        //   const statusA = statusOrder[a.status] || 3;
+        //   const statusB = statusOrder[b.status] || 3;
+        //   if (statusA !== statusB) return statusA - statusB;
+        //   const dateA = a.startDryingDate === 'N/A' ? '' : a.startDryingDate;
+        //   const dateB = b.startDryingDate === 'N/A' ? '' : b.startDryingDate;
+        //   if (dateA !== dateB) return dateA.localeCompare(dateB);
+        //   const typeOrder = { 'Arabica': 0, 'Robusta': 1 };
+        //   const typeA = typeOrder[a.type] ?? 2;
+        //   const typeB = typeOrder[b.type] ?? 2;
+        //   return typeA - typeB;
+        // });
   
       const totalWeight = ghweightResult.find(item => item.dryingArea === area)?.total_weight || 0;
   
