@@ -893,7 +893,7 @@ const PreprocessingStation = () => {
     {
       field: 'action',
       headerName: 'Action',
-      width: 180,
+      width: 120,
       sortable: false,
       renderCell: ({ row }) => (
         <Button
@@ -903,27 +903,27 @@ const PreprocessingStation = () => {
           onClick={() => openFinishConfirmation(row.batchNumber)}
           disabled={row.finished || parseFloat(row.availableWeight) <= 0}
         >
-          Mark as Complete
+          Complete
         </Button>
       ),
     },
-    {
-      field: 'split',
-      headerName: 'Split Batch',
-      width: 180,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Button
-          variant="contained"
-          color="secondary"
-          size="small"
-          onClick={() => handleOpenSplitDialog(row.batchNumber)}
-          disabled={row.finished || parseFloat(row.availableWeight) <= 0}
-        >
-          Split Batch
-        </Button>
-      ),
-    },
+    // {
+    //   field: 'split',
+    //   headerName: 'Split Batch',
+    //   width: 180,
+    //   sortable: false,
+    //   renderCell: ({ row }) => (
+    //     <Button
+    //       variant="contained"
+    //       color="secondary"
+    //       size="small"
+    //       onClick={() => handleOpenSplitDialog(row.batchNumber)}
+    //       disabled={row.finished || parseFloat(row.availableWeight) <= 0}
+    //     >
+    //       Split Batch
+    //     </Button>
+    //   ),
+    // },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
     { field: 'totalProcessedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
