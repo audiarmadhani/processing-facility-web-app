@@ -638,7 +638,7 @@ function ReceivingStation() {
                         value={selectedFarmerDetails}
                         onChange={handleFarmerChange}
                         renderInput={(params) => (
-                          <TextField {...params(params)} label="Farmer Name" required fullWidth />
+                          <TextField {...params} label="Farmer Name" required fullWidth /> // Corrected line
                         )}
                       />
                     </Grid>
