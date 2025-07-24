@@ -734,6 +734,9 @@ const Dashboard = () => {
         shippingMethod: order.shipping_method || 'Self',
         items: order.items || [],
         customer_address: order.customer_address || 'N/A',
+        customer_city: order.customer_city || 'N/A',
+        customer_state: order.customer_state || 'N/A',
+        customer_zip_code: order.customer_zip_code || 'N/A',
         driver_name: order.driver_name || 'N/A',
         driver_vehicle_number: order.driver_vehicle_number || 'N/A',
         driver_vehicle_type: order.driver_vehicle_type || 'N/A',
@@ -1048,11 +1051,11 @@ const Dashboard = () => {
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
 
-    doc.text(`Order ID          : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer          : ${order.customerName || 'Unknown Customer'}`, 20, 45);
-    doc.text(`Date              : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
+    doc.text(`Order ID              : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Customer            : ${order.customerName || 'Unknown Customer'}`, 20, 45);
+    doc.text(`Date                   : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
     doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 55);
-    doc.text(`Status            : ${order.status || 'Pending'}`, 20, 60); // Show current status in SPK
+    doc.text(`Status                 : ${order.status || 'Pending'}`, 20, 60); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 90);
@@ -1096,10 +1099,10 @@ const Dashboard = () => {
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
 
-    doc.text(`Order ID.   : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Order ID  : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer : ${order.customerName || 'Unknown Customer'}`, 20, 45);
-    doc.text(`Date      : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
-    doc.text(`Status    : ${order.status || 'Pending'}`, 20, 55); // Show current status in SPM
+    doc.text(`Date        : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
+    doc.text(`Status     : ${order.status || 'Pending'}`, 20, 55); // Show current status in SPM
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 70);
@@ -1146,9 +1149,9 @@ const Dashboard = () => {
     doc.text(`Order ID               : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer             : ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Address               : ${order.customer_address || 'N/A'}`, 20, 55);
-    doc.text(`City               : ${order.customer_city || 'N/A'}`, 20, 60);
-    doc.text(`State                : ${order.customer_state || 'N/A'}`, 20, 65);
-    doc.text(`Zip Code            : ${order.customer_zip_code || 'N/A'}`, 20, 70);
+    doc.text(`City                    : ${order.customer_city || 'N/A'}`, 20, 60);
+    doc.text(`State                    : ${order.customer_state || 'N/A'}`, 20, 65);
+    doc.text(`Zip Code              : ${order.customer_zip_code || 'N/A'}`, 20, 70);
     doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 80);
     doc.text(`Driver Name        : ${order.driver_name || 'N/A'}`, 20, 85);
     doc.text(`Number Plate      : ${order.driver_vehicle_number || 'N/A'}`, 20, 90);
