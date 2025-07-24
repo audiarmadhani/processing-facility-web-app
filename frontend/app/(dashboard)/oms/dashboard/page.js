@@ -1058,10 +1058,10 @@ const Dashboard = () => {
     doc.text(`Status                 : ${order.status || 'Pending'}`, 20, 60); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
-      doc.text('No items available', 20, 90);
+      doc.text('No items available', 20, 70);
     } else {
       doc.autoTable({
-        startY: 90,
+        startY: 70,
         head: [['Product', 'Quantity (kg)', 'Price (IDR)']],
         body: order.items.map(item => [
           item.product || 'N/A',
@@ -1105,10 +1105,10 @@ const Dashboard = () => {
     doc.text(`Status     : ${order.status || 'Pending'}`, 20, 55); // Show current status in SPM
 
     if (!order.items || !Array.isArray(order.items)) {
-      doc.text('No items available', 20, 70);
+      doc.text('No items available', 20, 65);
     } else {
       doc.autoTable({
-        startY: 70,
+        startY: 65,
         head: [['Product', 'Quantity (kg)', 'Required By']],
         body: order.items.map(item => [
           item.product || 'N/A',
@@ -1159,10 +1159,10 @@ const Dashboard = () => {
     doc.text(`Status                  : ${order.status || 'Pending'}`, 20, 100); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
-      doc.text('No items available', 20, 120);
+      doc.text('No items available', 20, 110);
     } else {
       doc.autoTable({
-        startY: 120,
+        startY: 110,
         head: [['Product', 'Quantity (kg)', 'Delivery Date']],
         body: order.items.map(item => [
           item.product || 'N/A',
