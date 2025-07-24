@@ -1267,8 +1267,10 @@ const Dashboard = () => {
 
     // Header: Left-aligned company details, Right-aligned title on the same line
     doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
+    doc.setFont('Helvetica', 'normal');
     doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
     doc.text('Telp. 085175027797', 20, 30);
+    doc.setFont('Helvetica', 'bold');
     doc.setFontSize(20); // Larger font for "SURAT JALAN"
     doc.text('SURAT JALAN', 190, 20, { align: 'right' });
     doc.setFontSize(10); // Reset font size
@@ -1283,7 +1285,7 @@ const Dashboard = () => {
     doc.text('Alamat:', 20, 50);
 
     // Truncate and split address into multiple lines if too long
-    const address = `${order.customer_address}, ${order.customer_city}, ${order.customer_state}, ${order.customer_zip_code}` || 'N/A';
+    const address = `${order.customer_address}` || 'N/A';
     const maxWidth = 200; // Available width for address (from x: 45 to x: 190)
     const fontSize = 10; // Current font size
     const lines = doc.splitTextToSize(address, maxWidth / (fontSize / 2)); // Split text to fit width, approximate scaling
@@ -1291,8 +1293,11 @@ const Dashboard = () => {
       doc.text(line, 45, 50 + (index * 5)); // 5mm line height, starting at y: 50
     });
 
-    doc.text('Telp:', 20, 50 + (lines.length * 5));
-    doc.text('N/A', 45, 50 + (lines.length * 5)); // Placeholder, replace with order.customer_phone if available
+    doc.text(`${order.customer_city || 'N/A'}`, 45, 50 + (lines.length * 5));
+    doc.text(`${order.customer_state || 'N/A'}`, 45, 55 + (lines.length * 5));
+    doc.text(`${order.customer_zip_code || 'N/A'}`, 45, 60 + (lines.length * 5));
+    doc.text('Telp:', 20, 65 + (lines.length * 5));
+    doc.text(`${order.customer_phone || 'N/A'}`, 45, 65 + (lines.length * 5));
 
     // Right-aligned document details on the same line as "Kepada Yth."
     const expedition = order.shippingMethod === 'Self' ? 'Warehouse arranged' : 'Customer arranged';
@@ -1397,16 +1402,19 @@ const Dashboard = () => {
 
     doc.text('Alamat', 20, 85);
     doc.text(':', 40, 85);
-    doc.text(`${order.customer_address}, ${order.customer_city}, ${order.customer_state}, ${order.customer_zip_code}` || 'Unknown Customer', 45, 85);
+    doc.text(`${order.customer_address}` || 'N/A', 45, 85);
+    doc.text(`${order.customer_city || 'N/A'}`, 45, 90);
+    doc.text(`${order.customer_state || 'N/A'}`, 45, 95);
+    doc.text(`${order.customer_zip_code || 'N/A'}`, 45, 100);
 
-    doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 90);
+    doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 105);
 
     // Statement
-    doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 100);
+    doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 110);
 
     // Items Table (Updated to match OCR, removing Merk Barang column)
     doc.autoTable({
-      startY: 110,
+      startY: 120,
       head: [['No.', 'Jenis Barang', 'Berat Total (kg)', 'Keterangan']],
       body: order.items.map((item, index) => [
         (index + 1).toString(),
