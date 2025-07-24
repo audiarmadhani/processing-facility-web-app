@@ -220,6 +220,9 @@ const Dashboard = () => {
       if (!customerRes.ok) throw new Error('Failed to fetch customer details');
       const customer = await customerRes.json();
       order.customer_address = customer.address || order.shipping_address || 'N/A'; // Use customer address or fallback
+      order.customer_city = customer.city || order.customer_city || 'N/A'; // Use customer address or fallback
+      order.customer_zip_code = customer.zip_code || order.customer_zip_code || 'N/A'; // Use customer address or fallback
+      order.customer_state = customer.state || order.customer_state || 'N/A'; // Use customer address or fallback
 
       // Fetch driver details if shipping method is 'Self'
       if (order.shipping_method === 'Self' && order.driver_id) {
@@ -1053,9 +1056,9 @@ const Dashboard = () => {
 
     doc.text(`Order ID              : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer            : ${order.customerName || 'Unknown Customer'}`, 20, 45);
-    doc.text(`Date                   : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
+    doc.text(`Date                     : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
     doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 55);
-    doc.text(`Status                 : ${order.status || 'Pending'}`, 20, 60); // Show current status in SPK
+    doc.text(`Status                   : ${order.status || 'Pending'}`, 20, 60); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 70);
@@ -1099,10 +1102,10 @@ const Dashboard = () => {
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
 
-    doc.text(`Order ID  : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Order ID   : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer : ${order.customerName || 'Unknown Customer'}`, 20, 45);
-    doc.text(`Date        : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
-    doc.text(`Status     : ${order.status || 'Pending'}`, 20, 55); // Show current status in SPM
+    doc.text(`Date         : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
+    doc.text(`Status       : ${order.status || 'Pending'}`, 20, 55); // Show current status in SPM
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 65);
@@ -1149,7 +1152,7 @@ const Dashboard = () => {
     doc.text(`Order ID               : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
     doc.text(`Customer             : ${order.customerName || 'Unknown Customer'}`, 20, 50);
     doc.text(`Address               : ${order.customer_address || 'N/A'}`, 20, 55);
-    doc.text(`City                    : ${order.customer_city || 'N/A'}`, 20, 60);
+    doc.text(`City                      : ${order.customer_city || 'N/A'}`, 20, 60);
     doc.text(`State                    : ${order.customer_state || 'N/A'}`, 20, 65);
     doc.text(`Zip Code              : ${order.customer_zip_code || 'N/A'}`, 20, 70);
     doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 80);
