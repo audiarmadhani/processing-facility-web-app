@@ -226,7 +226,10 @@ const Dashboard = () => {
           status: 'Processing',
           driver_id: order.driver_id, // Reuse existing driver_id
           shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+          driver_name: order.driver_name,
+          driver_vehicle_number: order.driver_vehicle_number,
+          driver_vehicle_type: order.driver_vehicle_type,
+          driver_max_capacity: order.driver_max_capacity,
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
           items: order.items,
@@ -336,7 +339,10 @@ const Dashboard = () => {
           status: 'Ready for Shipment',
           driver_id: order.driver_id, // Reuse existing driver_id
           shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+          driver_name: order.driver_name,
+          driver_vehicle_number: order.driver_vehicle_number,
+          driver_vehicle_type: order.driver_vehicle_type,
+          driver_max_capacity: order.driver_max_capacity,
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
           items: order.items
@@ -439,7 +445,10 @@ const Dashboard = () => {
           status: 'In Transit',
           driver_id: order.driver_id, // Reuse existing driver_id
           shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
+          driver_name: order.driver_name,
+          driver_vehicle_number: order.driver_vehicle_number,
+          driver_vehicle_type: order.driver_vehicle_type,
+          driver_max_capacity: order.driver_max_capacity,
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
           items: order.items
@@ -790,7 +799,10 @@ const Dashboard = () => {
           status: 'Rejected',
           driver_id: selectedOrder.driver_id, // Reuse existing driver_id
           shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
+          driver_name: order.driver_name,
+          driver_vehicle_number: order.driver_vehicle_number,
+          driver_vehicle_type: order.driver_vehicle_type,
+          driver_max_capacity: order.driver_max_capacity,
           price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
           items: selectedOrder.items
@@ -834,7 +846,10 @@ const Dashboard = () => {
           status: 'Delivered',
           driver_id: selectedOrder.driver_id, // Reuse existing driver_id
           shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
+          driver_name: order.driver_name,
+          driver_vehicle_number: order.driver_vehicle_number,
+          driver_vehicle_type: order.driver_vehicle_type,
+          driver_max_capacity: order.driver_max_capacity,
           price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
           items: selectedOrder.items
@@ -915,7 +930,10 @@ const Dashboard = () => {
           payment_status: 'Paid', // Update only payment_status
           driver_id: selectedOrder.driver_id, // Reuse existing driver_id
           shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
+          driver_name: order.driver_name,
+          driver_vehicle_number: order.driver_vehicle_number,
+          driver_vehicle_type: order.driver_vehicle_type,
+          driver_max_capacity: order.driver_max_capacity,
           price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
           items: selectedOrder.items
@@ -1000,10 +1018,10 @@ const Dashboard = () => {
       format: [210, 297], // A4 size
     });
 
-    doc.setFont('Arial', 'bold');
+    doc.setFont('Helvetica', 'bold');
     doc.setFontSize(16);
     doc.text('Surat Perintah Kerja (SPK)', 105, 20, { align: 'center' });
-    doc.setFont('Arial', 'normal');
+    doc.setFont('Helvetica', 'normal');
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
@@ -1023,7 +1041,7 @@ const Dashboard = () => {
           item.quantity || 0,
           (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
         ]),
-        styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
+        styles: { font: 'Helvetica', fontSize: 10, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
         margin: { left: 20, right: 20 },
       });
@@ -1048,10 +1066,10 @@ const Dashboard = () => {
       format: [210, 297], // A4 size
     });
 
-    doc.setFont('Arial', 'bold');
+    doc.setFont('Helvetica', 'bold');
     doc.setFontSize(16);
     doc.text('Surat Permintaan Material (SPM)', 105, 20, { align: 'center' });
-    doc.setFont('Arial', 'normal');
+    doc.setFont('Helvetica', 'normal');
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
@@ -1070,7 +1088,7 @@ const Dashboard = () => {
           item.quantity || 0,
           dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
         ]),
-        styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
+        styles: { font: 'Helvetica', fontSize: 10, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
         margin: { left: 20, right: 20 },
       });
@@ -1095,31 +1113,33 @@ const Dashboard = () => {
       format: [210, 297], // A4 size
     });
 
-    doc.setFont('Arial', 'bold');
+    doc.setFont('Helvetica', 'bold');
     doc.setFontSize(16);
     doc.text('Delivery Order (DO)', 105, 20, { align: 'center' });
-    doc.setFont('Arial', 'normal');
+    doc.setFont('Helvetica', 'normal');
     doc.setFontSize(12);
 
     doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
-    doc.text(`Address: ${order.customer_address || 'N/A'}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 70);
-    doc.text(`Driver: ${order.driver_name || JSON.parse(order.driver_details || '{}').name || 'N/A'}`, 20, 80);
-    doc.text(`Status: ${order.status || 'Pending'}`, 20, 90); // Show current status in DO
+    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 45);
+    doc.text(`Address: ${order.customer_address || 'N/A'}`, 20, 50);
+    doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 55);
+    doc.text(`Driver Name: ${order.driver_name || 'N/A'}`, 20, 60);
+    doc.text(`Vehicle Number Plate: ${order.driver_vehicle_number || 'N/A'}`, 20, 65);
+    doc.text(`Vehicle Type: ${order.driver_vehicle_type || 'N/A'}`, 20, 70);
+    doc.text(`Status: ${order.status || 'Pending'}`, 20, 75); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 100);
     } else {
       doc.autoTable({
-        startY: 100,
+        startY: 90,
         head: [['Product', 'Quantity (kg)', 'Delivery Date']],
         body: order.items.map(item => [
           item.product || 'N/A',
           item.quantity || 0,
           dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
         ]),
-        styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
+        styles: { font: 'Helvetica', fontSize: 10, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
         margin: { left: 20, right: 20 },
       });
@@ -1228,7 +1248,7 @@ const Dashboard = () => {
   
     doc.line(positions[1] - 20, signatureY, positions[1] + 20, signatureY); // Line for Bagian Pengiriman (75mm wide)
     doc.text('Pengantar/Supir', positions[1], signatureY + 5, { align: 'center' });
-    doc.text(`${order.driver || 'Pengantar/Supir'}`, positions[1], signatureY + 10, { align: 'center' });
+    doc.text(`${order.driver_name || 'Pengantar/Supir'}`, positions[1], signatureY + 10, { align: 'center' });
   
     doc.line(positions[2] - 20, signatureY, positions[2] + 20, signatureY); // Line for Petugas Gudang (75mm wide)
     doc.text('Manager', positions[2], signatureY + 5, { align: 'center' });
