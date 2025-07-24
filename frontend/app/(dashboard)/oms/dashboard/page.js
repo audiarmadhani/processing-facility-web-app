@@ -366,6 +366,7 @@ const Dashboard = () => {
       order.customer_city = customer.city || order.customer_city || 'N/A'; // Use customer address or fallback
       order.customer_zip_code = customer.zip_code || order.customer_zip_code || 'N/A'; // Use customer address or fallback
       order.customer_state = customer.state || order.customer_state || 'N/A'; // Use customer address or fallback
+      order.customer_phone = customer.phone || order.customer_phone || 'N/A'; // Use customer address or fallback
 
       // Fetch driver details if shipping method is 'Self'
       if (order.shipping_method === 'Self' && order.driver_id) {
@@ -1295,8 +1296,8 @@ const Dashboard = () => {
     });
 
     doc.text(`${order.customer_city || 'N/A'}, ${order.customer_state || 'N/A'}, ${order.customer_zip_code || 'N/A'}`, 45, 50 + (lines.length * 5));
-    doc.text('Telp:', 20, 65 + (lines.length * 5));
-    doc.text(`${order.customer_phone || 'N/A'}`, 45, 65 + (lines.length * 5));
+    doc.text('Telp:', 20, 55 + (lines.length * 5));
+    doc.text(`${order.customer_phone || 'N/A'}`, 45, 55 + (lines.length * 5));
 
     // Right-aligned document details on the same line as "Kepada Yth."
     const expedition = order.shippingMethod === 'Self' ? 'Warehouse arranged' : 'Customer arranged';
@@ -1305,8 +1306,8 @@ const Dashboard = () => {
     doc.text(`Ekspedisi: ${expedition}`, 190, 55, { align: 'right' });
 
     // Items Table
-    let tableStartY = 75 + (lines.length * 5); // Adjust table start based on address lines
-    if (tableStartY < 75) tableStartY = 75; // Ensure table doesn’t start too early
+    let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
+    if (tableStartY < 65) tableStartY = 65; // Ensure table doesn’t start too early
 
     doc.autoTable({
       startY: tableStartY,
