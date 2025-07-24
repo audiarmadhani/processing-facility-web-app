@@ -229,7 +229,9 @@ const Dashboard = () => {
           driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-          items: order.items
+          items: order.items,
+          shipping_address: order.shipping_address,
+          billing_address: order.billing_address
         }),
       });
 
@@ -246,6 +248,8 @@ const Dashboard = () => {
         status: updatedProcessingOrder.status || 'Processing', // Should be "Processing" now
         shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
         items: updatedProcessingOrder.items || order.items, // Default to empty array if missing
+        shipping_address: updatedProcessingOrder.shipping_address || order.shipping_address,
+        billing_address: updatedProcessingOrder.billing_address || order.billing_address,
         created_at: updatedProcessingOrder.created_at || order.created_at || null,
       };
 
