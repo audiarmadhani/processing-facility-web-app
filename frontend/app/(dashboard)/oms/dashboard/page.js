@@ -1163,7 +1163,7 @@ const Dashboard = () => {
           item.quantity || 0,
           dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
         ]),
-        styles: { font: 'Helvetica', fontSize: 10, cellPadding: 2 },
+        styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
         margin: { left: 20, right: 20 },
       });
