@@ -384,12 +384,19 @@ const Dashboard = () => {
       // Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "Ready for Shipment" update
       order = {
         ...updatedReadyOrder,
-        order_id: updatedReadyOrder.order_id || order.order_id, // Ensure order_id is always present
+        order_id: updatedReadyOrder.order_id || order.order_id,
         customer_id: updatedReadyOrder.customer_id || order.customer_id,
-        customer_name: updatedReadyOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
-        status: updatedReadyOrder.status || 'Ready for Shipment', // Should be "Ready for Shipment" now
-        shipping_method: updatedReadyOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
-        items: updatedReadyOrder.items || order.items, // Default to empty array if missing
+        customer_name: updatedReadyOrder.customer_name || order.customer_name || 'Unknown Customer',
+        status: updatedReadyOrder.status || 'Processing',
+        shipping_method: updatedReadyOrder.shipping_method || order.shipping_method || 'Self',
+        items: updatedReadyOrder.items || order.items,
+        customer_address: updatedReadyOrder.shipping_address || order.customer_address || 'N/A',
+        customer_city: updatedReadyOrder.customer_city || order.customer_city || 'N/A',
+        customer_state: updatedReadyOrder.customer_state || order.customer_state || 'N/A',
+        customer_zip_code: updatedReadyOrder.customer_zip_code || order.customer_zip_code || 'N/A',
+        driver_name: updatedReadyOrder.driver_name || order.driver_name || 'N/A',
+        driver_vehicle_number: updatedReadyOrder.driver_vehicle_number || order.driver_vehicle_number || 'N/A',
+        driver_vehicle_type: updatedReadyOrder.driver_vehicle_type || order.driver_vehicle_type || 'N/A',
         created_at: updatedReadyOrder.created_at || order.created_at || null,
       };
 
@@ -400,7 +407,7 @@ const Dashboard = () => {
       // Generate Surat Jalan and BAST PDFs
       const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name });
       const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-
+      
       // Save PDFs locally using jsPDF.save()
       suratJalanDoc.save(`SuratJalan_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
       bastDoc.save(`BAST_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
