@@ -1244,7 +1244,7 @@ const Dashboard = () => {
     doc.text('Alamat:', 20, 50);
 
     // Truncate and split address into multiple lines if too long
-    const address = order.customer_address || 'N/A';
+    const address = `${order.customer_address}, ${order.customer_city}, ${order.customer_state}, ${order.customer_zip_code}` || 'N/A';
     const maxWidth = 200; // Available width for address (from x: 45 to x: 190)
     const fontSize = 10; // Current font size
     const lines = doc.splitTextToSize(address, maxWidth / (fontSize / 2)); // Split text to fit width, approximate scaling
@@ -1359,7 +1359,7 @@ const Dashboard = () => {
 
     doc.text('Alamat', 20, 85);
     doc.text(':', 40, 85);
-    doc.text(`${order.customer_address || 'Unknown Customer'}`, 45, 85);
+    doc.text(`${order.customer_address}, ${order.customer_city}, ${order.customer_state}, ${order.customer_zip_code}` || 'Unknown Customer', 45, 85);
 
     doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 90);
 
