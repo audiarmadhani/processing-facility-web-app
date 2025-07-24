@@ -356,6 +356,38 @@ const Dashboard = () => {
         throw new Error('Invalid order_id fetched: ' + order.order_id);
       }
 
+      // Fetch customer details to ensure address is included
+      const customerRes = await fetch(`https://processing-facility-backend.onrender.com/api/customers/${order.customer_id}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!customerRes.ok) throw new Error('Failed to fetch customer details');
+      const customer = await customerRes.json();
+      order.customer_address = customer.address || order.shipping_address || 'N/A'; // Use customer address or fallback
+      order.customer_city = customer.city || order.customer_city || 'N/A'; // Use customer address or fallback
+      order.customer_zip_code = customer.zip_code || order.customer_zip_code || 'N/A'; // Use customer address or fallback
+      order.customer_state = customer.state || order.customer_state || 'N/A'; // Use customer address or fallback
+
+      // Fetch driver details if shipping method is 'Self'
+      if (order.shipping_method === 'Self' && order.driver_id) {
+        const driverRes = await fetch(`https://processing-facility-backend.onrender.com/api/drivers/${order.driver_id}`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!driverRes.ok) throw new Error('Failed to fetch driver details');
+        const driver = await driverRes.json();
+        order.driver_name = driver.name || 'N/A';
+        order.driver_vehicle_number = driver.vehicle_number || 'N/A';
+        order.driver_vehicle_type = driver.vehicle_type || 'N/A';
+      } else if (order.shipping_method === 'Customer' && order.driver_details) {
+        const driverDetails = JSON.parse(order.driver_details);
+        order.driver_name = driverDetails.name || 'N/A';
+        order.driver_vehicle_number = driverDetails.vehicle_number_plate || 'N/A';
+        order.driver_vehicle_type = driverDetails.vehicle_type || 'N/A';
+      } else {
+        order.driver_name = 'N/A';
+        order.driver_vehicle_number = 'N/A';
+        order.driver_vehicle_type = 'N/A';
+      }
+
       // Update status to "Ready for Shipment" before generating documents
       const readyUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
