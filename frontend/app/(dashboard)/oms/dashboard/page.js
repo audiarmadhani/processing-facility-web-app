@@ -1149,17 +1149,28 @@ const Dashboard = () => {
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
 
-    doc.text(`Order ID               : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer             : ${order.customerName || 'Unknown Customer'}`, 20, 50);
-    doc.text(`Address               : ${order.customer_address || 'N/A'}`, 20, 55);
-    doc.text(`City                      : ${order.customer_city || 'N/A'}`, 20, 60);
-    doc.text(`State                    : ${order.customer_state || 'N/A'}`, 20, 65);
-    doc.text(`Zip Code              : ${order.customer_zip_code || 'N/A'}`, 20, 70);
-    doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 80);
-    doc.text(`Driver Name        : ${order.driver_name || 'N/A'}`, 20, 85);
-    doc.text(`Number Plate      : ${order.driver_vehicle_number || 'N/A'}`, 20, 90);
-    doc.text(`Vehicle Type       : ${order.driver_vehicle_type || 'N/A'}`, 20, 95);
-    doc.text(`Status                  : ${order.status || 'Pending'}`, 20, 100); // Show current status in DO
+    doc.text(`Order ID`, 20, 40);
+    doc.text(`: ${String(order.order_id).padStart(4, '0')}`, 50, 40);
+    doc.text(`Customer`, 20, 50);
+    doc.text(`: ${order.customerName || 'Unknown Customer'}`, 50, 50);
+    doc.text(`Address`, 20, 55);
+    doc.text(`: ${order.customer_address || 'N/A'}`, 50, 55);
+    doc.text(`City`, 20, 60);
+    doc.text(`: ${order.customer_city || 'N/A'}`, 50, 60);
+    doc.text(`State`, 20, 65);
+    doc.text(`: ${order.customer_state || 'N/A'}`, 50, 65);
+    doc.text(`Zip Code`, 20, 70);
+    doc.text(`: ${order.customer_zip_code || 'N/A'}`, 50, 70);
+    doc.text(`Shipping Method`, 20, 80);
+    doc.text(`: ${order.shippingMethod || 'Self'}`, 50, 80);
+    doc.text(`Driver Name`, 20, 85);
+    doc.text(`: ${order.driver_name || 'N/A'}`, 50, 85);
+    doc.text(`Number Plate`, 20, 90);
+    doc.text(`: ${order.driver_vehicle_number || 'N/A'}`, 50, 90);
+    doc.text(`Vehicle Type`, 20, 95);
+    doc.text(`: ${order.driver_vehicle_type || 'N/A'}`, 50, 95);
+    doc.text(`Status`, 20, 100); // Show current status in DO
+    doc.text(`: ${order.status || 'Pending'}`, 50, 100); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 110);
