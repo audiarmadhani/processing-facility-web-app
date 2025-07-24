@@ -1046,13 +1046,13 @@ const Dashboard = () => {
     doc.setFontSize(16);
     doc.text('Surat Perintah Kerja (SPK)', 105, 20, { align: 'center' });
     doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(12);
+    doc.setFontSize(11);
 
-    doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
-    doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
-    doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 70);
-    doc.text(`Status: ${order.status || 'Pending'}`, 20, 80); // Show current status in SPK
+    doc.text(`Order ID          : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Customer          : ${order.customerName || 'Unknown Customer'}`, 20, 45);
+    doc.text(`Date              : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
+    doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 55);
+    doc.text(`Status            : ${order.status || 'Pending'}`, 20, 60); // Show current status in SPK
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 90);
@@ -1065,7 +1065,7 @@ const Dashboard = () => {
           item.quantity || 0,
           (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
         ]),
-        styles: { font: 'Helvetica', fontSize: 10, cellPadding: 2 },
+        styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
         margin: { left: 20, right: 20 },
       });
@@ -1094,25 +1094,25 @@ const Dashboard = () => {
     doc.setFontSize(16);
     doc.text('Surat Permintaan Material (SPM)', 105, 20, { align: 'center' });
     doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(12);
+    doc.setFontSize(11);
 
-    doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 50);
-    doc.text(`Date: ${dayjs().format('YYYY-MM-DD')}`, 20, 60);
-    doc.text(`Status: ${order.status || 'Pending'}`, 20, 70); // Show current status in SPM
+    doc.text(`Order ID.   : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Customer : ${order.customerName || 'Unknown Customer'}`, 20, 45);
+    doc.text(`Date      : ${dayjs().format('YYYY-MM-DD')}`, 20, 50);
+    doc.text(`Status    : ${order.status || 'Pending'}`, 20, 55); // Show current status in SPM
 
     if (!order.items || !Array.isArray(order.items)) {
-      doc.text('No items available', 20, 80);
+      doc.text('No items available', 20, 70);
     } else {
       doc.autoTable({
-        startY: 80,
+        startY: 70,
         head: [['Product', 'Quantity (kg)', 'Required By']],
         body: order.items.map(item => [
           item.product || 'N/A',
           item.quantity || 0,
           dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
         ]),
-        styles: { font: 'Helvetica', fontSize: 10, cellPadding: 2 },
+        styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
         margin: { left: 20, right: 20 },
       });
@@ -1143,20 +1143,23 @@ const Dashboard = () => {
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
 
-    doc.text(`Order ID             : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer           : ${order.customerName || 'Unknown Customer'}`, 20, 45);
-    doc.text(`Address              : ${order.customer_address || 'N/A'}`, 20, 50);
-    doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 55);
-    doc.text(`Driver Name        : ${order.driver_name || 'N/A'}`, 20, 60);
-    doc.text(`Number Plate      : ${order.driver_vehicle_number || 'N/A'}`, 20, 65);
-    doc.text(`Vehicle Type        : ${order.driver_vehicle_type || 'N/A'}`, 20, 70);
-    doc.text(`Status                : ${order.status || 'Pending'}`, 20, 75); // Show current status in DO
+    doc.text(`Order ID               : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Customer             : ${order.customerName || 'Unknown Customer'}`, 20, 50);
+    doc.text(`Address               : ${order.customer_address || 'N/A'}`, 20, 55);
+    doc.text(`City               : ${order.customer_city || 'N/A'}`, 20, 60);
+    doc.text(`State                : ${order.customer_state || 'N/A'}`, 20, 65);
+    doc.text(`Zip Code            : ${order.customer_zip_code || 'N/A'}`, 20, 70);
+    doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 80);
+    doc.text(`Driver Name        : ${order.driver_name || 'N/A'}`, 20, 85);
+    doc.text(`Number Plate      : ${order.driver_vehicle_number || 'N/A'}`, 20, 90);
+    doc.text(`Vehicle Type       : ${order.driver_vehicle_type || 'N/A'}`, 20, 95);
+    doc.text(`Status                  : ${order.status || 'Pending'}`, 20, 100); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
-      doc.text('No items available', 20, 100);
+      doc.text('No items available', 20, 120);
     } else {
       doc.autoTable({
-        startY: 90,
+        startY: 120,
         head: [['Product', 'Quantity (kg)', 'Delivery Date']],
         body: order.items.map(item => [
           item.product || 'N/A',
