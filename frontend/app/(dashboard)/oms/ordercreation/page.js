@@ -31,14 +31,12 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
 import CloseIcon from '@mui/icons-material/Close';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 const OrderCreation = () => {
   const { data: session, status } = useSession();
   const [customers, setCustomers] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [stock, setStock] = useState([]); // Now stores /batches data
   const [formData, setFormData] = useState({
     customer_id: '',
     driver_id: '',
@@ -56,7 +54,6 @@ const OrderCreation = () => {
     billing_address: '',
   });
   const [loading, setLoading] = useState(false);
-  const [stockLoading, setStockLoading] = useState(true);
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [openDriverModal, setOpenDriverModal] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -72,35 +69,29 @@ const OrderCreation = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
-      setStockLoading(true);
       try {
-        const [customersRes, driversRes, ordersRes, batchesRes] = await Promise.all([
+        const [customersRes, driversRes, ordersRes] = await Promise.all([
           fetch('https://processing-facility-backend.onrender.com/api/customers'),
           fetch('https://processing-facility-backend.onrender.com/api/drivers'),
           fetch('https://processing-facility-backend.onrender.com/api/orders'),
-          fetch('https://processing-facility-backend.onrender.com/api/batches'), // Changed to /batches
         ]);
 
-        if (!customersRes.ok || !driversRes.ok || !ordersRes.ok || !batchesRes.ok) {
+        if (!customersRes.ok || !driversRes.ok || !ordersRes.ok) {
           throw new Error('Failed to fetch initial data');
         }
 
         const customersData = await customersRes.json();
         const driversData = await driversRes.json();
         const ordersData = await ordersRes.json();
-        const batchesData = await batchesRes.json();
 
         setCustomers(Array.isArray(customersData) ? customersData : []);
         setDrivers(Array.isArray(driversData) ? driversData : []);
         setOrders(Array.isArray(ordersData) ? ordersData : []);
-        setStock(Array.isArray(batchesData) ? batchesData : []); // Store batches data
       } catch (error) {
         console.error('Fetch Error:', error);
         setSnackbar({ open: true, message: error.message, severity: 'error' });
-        setStock([]);
       } finally {
         setLoading(false);
-        setStockLoading(false);
       }
     };
     fetchInitialData();
@@ -169,33 +160,6 @@ const OrderCreation = () => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
 
-    if (field === 'batch_number') {
-      const batch = stock.find((s) => s.batchNumber === value);
-      newItems[index].product = batch
-        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}`
-        : '';
-    }
-
-    if (field === 'quantity' && newItems[index].batch_number) {
-      const batch = stock.find((s) => s.batchNumber === newItems[index].batch_number);
-      const remainingQuantity = batch ? parseFloat(batch.remaining_quantity) || 0 : 0;
-      const totalUsedInForm = newItems.reduce((sum, item, i) => {
-        if (i !== index && item.batch_number === newItems[index].batch_number) {
-          return sum + (parseFloat(item.quantity) || 0);
-        }
-        return sum;
-      }, 0);
-      const availableAfterForm = remainingQuantity - totalUsedInForm;
-      if (parseFloat(value) > availableAfterForm) {
-        setSnackbar({
-          open: true,
-          message: `Quantity exceeds available stock (${availableAfterForm.toFixed(2)} kg for ${newItems[index].batch_number})`,
-          severity: 'error',
-        });
-        newItems[index].quantity = '';
-      }
-    }
-
     setFormData((prev) => ({ ...prev, items: newItems }));
     const subtotal = newItems.reduce(
       (sum, item) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)),
@@ -228,33 +192,6 @@ const OrderCreation = () => {
   const handleEditItemChange = (index, field, value) => {
     const newItems = [...editOrder.items];
     newItems[index][field] = value;
-
-    if (field === 'batch_number') {
-      const batch = stock.find((s) => s.batchNumber === value);
-      newItems[index].product = batch
-        ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}`
-        : '';
-    }
-
-    if (field === 'quantity' && newItems[index].batch_number) {
-      const batch = stock.find((s) => s.batchNumber === newItems[index].batch_number);
-      const remainingQuantity = batch ? parseFloat(batch.remaining_quantity) || 0 : 0;
-      const totalUsedInForm = newItems.reduce((sum, item, i) => {
-        if (i !== index && item.batch_number === newItems[index].batch_number) {
-          return sum + (parseFloat(item.quantity) || 0);
-        }
-        return sum;
-      }, 0);
-      const availableAfterForm = remainingQuantity - totalUsedInForm;
-      if (parseFloat(value) > availableAfterForm) {
-        setSnackbar({
-          open: true,
-          message: `Quantity exceeds available stock (${availableAfterForm.toFixed(2)} kg for ${newItems[index].batch_number})`,
-          severity: 'error',
-        });
-        newItems[index].quantity = '';
-      }
-    }
 
     setEditOrder((prev) => ({ ...prev, items: newItems }));
     const subtotal = newItems.reduce(
@@ -294,8 +231,8 @@ const OrderCreation = () => {
       });
       if (!res.ok) throw new Error('Failed to add customer');
       const customer = await res.json();
-      setCustomers(prev => [...prev, customer]);
-      setFormData(prev => ({
+      setCustomers((prev) => [...prev, customer]);
+      setFormData((prev) => ({
         ...prev,
         customer_id: customer.customer_id,
         shipping_address: customer.address || '',
@@ -303,7 +240,7 @@ const OrderCreation = () => {
       }));
       setSelectedCustomer(customer);
       setShowCustomerDetails(true);
-      setRefreshCounter(prev => prev + 1);
+      setRefreshCounter((prev) => prev + 1);
       setSnackbar({ open: true, message: 'Customer added successfully', severity: 'success' });
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -320,9 +257,9 @@ const OrderCreation = () => {
       });
       if (!res.ok) throw new Error('Failed to add driver');
       const driver = await res.json();
-      setDrivers(prev => [...prev, driver]);
-      setFormData(prev => ({ ...prev, driver_id: driver.driver_id }));
-      setRefreshCounter(prev => prev + 1);
+      setDrivers((prev) => [...prev, driver]);
+      setFormData((prev) => ({ ...prev, driver_id: driver.driver_id }));
+      setRefreshCounter((prev) => prev + 1);
       setSnackbar({ open: true, message: 'Driver added successfully', severity: 'success' });
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -344,7 +281,7 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!formData.items.every(item => item.batch_number && item.quantity && item.price && item.product)) {
+    if (!formData.items.every((item) => item.batch_number && item.quantity && item.price && item.product)) {
       setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
       return;
     }
@@ -369,28 +306,17 @@ const OrderCreation = () => {
       return;
     }
 
-    for (let i = 0; i < formData.items.length; i++) {
-      const item = formData.items[i];
+    for (const item of formData.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const remainingWeight = getRemainingWeight(item.batch_number, formData.items, i);
-      if (isNaN(itemPrice) || itemPrice <= 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
+      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
-        return;
-      }
-      if (itemQuantity > remainingWeight) {
-        setSnackbar({ 
-          open: true, 
-          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight.toFixed(2)} kg)`, 
-          severity: 'error' 
-        });
         return;
       }
     }
 
     setLoading(true);
     try {
-      // Construct JSON payload
       const orderData = {
         customer_id: formData.customer_id,
         driver_id: formData.shipping_method === 'Self' ? formData.driver_id : null,
@@ -400,12 +326,12 @@ const OrderCreation = () => {
         tax_percentage: formData.tax_percentage || '0',
         shipping_address: formData.shipping_address,
         billing_address: formData.billing_address,
-        items: formData.items.map(item => ({
+        items: formData.items.map((item) => ({
           batch_number: item.batch_number,
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
-          product: item.product
-        }))
+          product: item.product,
+        })),
       };
 
       const orderRes = await fetch('https://processing-facility-backend.onrender.com/api/orders', {
@@ -428,17 +354,20 @@ const OrderCreation = () => {
       const orderListFormData = new FormData();
       orderListFormData.append('order_id', orderId);
       orderListFormData.append('type', 'Order List');
-      orderListFormData.append('details', JSON.stringify({
-        customer_id: formData.customer_id,
-        items: formData.items,
-        shipping_method: formData.shipping_method,
-        driver_id: formData.driver_id || null,
-        driver_details: formData.driver_details || null,
-        price: formData.price || null,
-        tax_percentage: formData.tax_percentage || null,
-        shipping_address: formData.shipping_address,
-        billing_address: formData.billing_address,
-      }));
+      orderListFormData.append(
+        'details',
+        JSON.stringify({
+          customer_id: formData.customer_id,
+          items: formData.items,
+          shipping_method: formData.shipping_method,
+          driver_id: formData.driver_id || null,
+          driver_details: formData.driver_details || null,
+          price: formData.price || null,
+          tax_percentage: formData.tax_percentage || null,
+          shipping_address: formData.shipping_address,
+          billing_address: formData.billing_address,
+        })
+      );
       orderListFormData.append('file', orderListBlob, `OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
       const docRes = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
@@ -454,13 +383,13 @@ const OrderCreation = () => {
       orderListDoc.save(`OrderList-${String(orderId).padStart(4, '0')}.pdf`);
 
       setSnackbar({ open: true, message: 'Order and Order List created successfully', severity: 'success' });
-      setFormData({ 
-        customer_id: '', 
-        driver_id: '', 
-        items: [{ batch_number: '', quantity: '', price: '', product: '' }], 
-        shipping_method: 'Customer', 
-        driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' }, 
-        price: '', 
+      setFormData({
+        customer_id: '',
+        driver_id: '',
+        items: [{ batch_number: '', quantity: '', price: '', product: '' }],
+        shipping_method: 'Customer',
+        driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
+        price: '',
         tax_percentage: '',
         shipping_address: '',
         billing_address: '',
@@ -468,7 +397,7 @@ const OrderCreation = () => {
       setShowCustomerDetails(false);
       setSelectedCustomer(null);
       setSameBillingAddress(true);
-      setRefreshCounter(prev => prev + 1);
+      setRefreshCounter((prev) => prev + 1);
     } catch (error) {
       console.error('Submit Error:', error);
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -486,10 +415,11 @@ const OrderCreation = () => {
       format: [241.3, 279.4],
     });
 
-    const customer = customers.find(c => c.customer_id === formData.customer_id);
-    const driver = formData.shipping_method === 'Self' 
-      ? drivers.find(d => d.driver_id === formData.driver_id) 
-      : formData.driver_details;
+    const customer = customers.find((c) => c.customer_id === formData.customer_id);
+    const driver =
+      formData.shipping_method === 'Self'
+        ? drivers.find((d) => d.driver_id === formData.driver_id)
+        : formData.driver_details;
 
     const addText = (text, x, y, options = {}) => {
       doc.setFont('Arial', options.bold ? 'bold' : 'normal');
@@ -498,8 +428,12 @@ const OrderCreation = () => {
       else doc.text(text, x, y);
     };
 
-    addText("PT. Berkas Tuaian Melimpah", doc.internal.pageSize.getWidth() / 2, 15, { align: 'center', bold: true, size: 16 });
-    addText("Order List", doc.internal.pageSize.getWidth() / 2, 23, { align: 'center', bold: true, size: 14 });
+    addText('PT. Berkas Tuaian Melimpah', doc.internal.pageSize.getWidth() / 2, 15, {
+      align: 'center',
+      bold: true,
+      size: 16,
+    });
+    addText('Order List', doc.internal.pageSize.getWidth() / 2, 23, { align: 'center', bold: true, size: 14 });
     addText(`Date: ${dayjs().format('YYYY-MM-DD')}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
     addText(`Time: ${dayjs().format('HH:mm:ss')}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
     doc.line(14, 28, doc.internal.pageSize.getWidth() - 14, 28);
@@ -508,54 +442,57 @@ const OrderCreation = () => {
     let yOffset = 43;
     const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2;
 
-    addText("Customer Information:", 14, yOffset, { bold: true });
+    addText('Customer Information:', 14, yOffset, { bold: true });
     yOffset += 8;
-    addText(`Name: ${customer ? customer.name : '-'}`, 14, yOffset);
+    addText(`Name: ${customer ? customer.name : '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`Default Address: ${customer ? customer.address : '-'}`, 14, yOffset);
+    addText(`Default Address: ${customer ? customer.address : '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`Shipping Address: ${formData.shipping_address || '-'}`, 14, yOffset);
+    addText(`Shipping Address: ${formData.shipping_address || '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`Billing Address: ${formData.billing_address || '-'}`, 14, yOffset);
+    addText(`Billing Address: ${formData.billing_address || '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`Phone: ${customer ? customer.phone : '-'}`, 14, yOffset);
+    addText(`Phone: ${customer ? customer.phone : '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`Email: ${customer ? customer.email || '-' : '-'}`, 14, yOffset);
+    addText(`Email: ${customer ? customer.email || '-' : '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`Country: ${customer ? customer.country || '-' : '-'}`, 14, yOffset);
+    addText(`Country: ${customer ? customer.country || '-' : '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`State: ${customer ? customer.state || '-' : '-'}`, 14, yOffset);
+    addText(`State: ${customer ? customer.state || '-' : '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`City: ${customer ? customer.city || '-' : '-'}`, 14, yOffset);
+    addText(`City: ${customer ? customer.city || '-' : '-'}` , 14, yOffset);
     yOffset += 6;
-    addText(`Zip Code: ${customer ? customer.zip_code || '-' : '-'}`, 14, yOffset);
+    addText(`Zip Code: ${customer ? customer.zip_code || '-' : '-'}` , 14, yOffset);
 
     let shippingOffset = 43;
-    addText("Shipping Information:", 14 + columnWidth + 10, shippingOffset, { bold: true });
+    addText('Shipping Information:', 14 + columnWidth + 10, shippingOffset, { bold: true });
     shippingOffset += 8;
-    addText(`Method: ${formData.shipping_method}`, 14 + columnWidth + 10, shippingOffset);
+    addText(`Method: ${formData.shipping_method}` , 14 + columnWidth + 10, shippingOffset);
     shippingOffset += 6;
     if (driver) {
-      addText(`Driver Name: ${driver.name || '-'}`, 14 + columnWidth + 10, shippingOffset);
+      addText(`Driver Name: ${driver.name || '-'}` , 14 + columnWidth + 10, shippingOffset);
       shippingOffset += 6;
-      addText(`Vehicle No.: ${driver.vehicle_number_plate || driver.vehicle_number || '-'}`, 14 + columnWidth + 10, shippingOffset);
+      addText(`Vehicle No.: ${driver.vehicle_number_plate || driver.vehicle_number || '-'}` , 14 + columnWidth + 10, shippingOffset);
       shippingOffset += 6;
-      addText(`Vehicle Type: ${driver.vehicle_type || '-'}`, 14 + columnWidth + 10, shippingOffset);
+      addText(`Vehicle Type: ${driver.vehicle_type || '-'}` , 14 + columnWidth + 10, shippingOffset);
       shippingOffset += 6;
-      addText(`Max Capacity: ${driver.max_capacity ? driver.max_capacity + ' kg' : '-'}`, 14 + columnWidth + 10, shippingOffset);
+      addText(`Max Capacity: ${driver.max_capacity ? driver.max_capacity + ' kg' : '-'}` , 14 + columnWidth + 10, shippingOffset);
     }
 
     let tableOffset = Math.max(yOffset, driver ? shippingOffset + 6 : shippingOffset) + 10;
-    addText("Items:", 14, tableOffset, { bold: true });
+    addText('Items:', 14, tableOffset, { bold: true });
     doc.autoTable({
       startY: tableOffset + 8,
       head: [['Batch Number', 'Product', 'Quantity (kg)', 'Price (IDR)', 'Subtotal (IDR)']],
-      body: formData.items.map(item => [
+      body: formData.items.map((item) => [
         item.batch_number,
         item.product,
         item.quantity,
         item.price || '0',
-        (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+        (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)).toLocaleString('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+        }),
       ]),
       styles: { font: 'Arial', fontSize: 10, cellPadding: 2 },
       headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -568,17 +505,17 @@ const OrderCreation = () => {
     const labelY = signatureY + 6;
     const signatureLength = 30;
 
-    addText("_".repeat(signatureLength), 14, signatureY);
-    addText("Order Staff", 14, labelY);
+    addText('_'.repeat(signatureLength), 14, signatureY);
+    addText('Order Staff', 14, labelY);
     addText(session.user.name || '-', 14, labelY + 6);
 
-    addText("_".repeat(signatureLength), 80, signatureY);
-    addText("Manager", 80, labelY);
+    addText('_'.repeat(signatureLength), 80, signatureY);
+    addText('Manager', 80, labelY);
     addText('(..................)', 80, labelY + 12);
 
     if (driver) {
-      addText("_".repeat(signatureLength), 146, signatureY);
-      addText("Driver", 146, labelY);
+      addText('_'.repeat(signatureLength), 146, signatureY);
+      addText('Driver', 146, labelY);
       addText(driver.name || '-', 146, labelY + 6);
     }
 
@@ -629,7 +566,7 @@ const OrderCreation = () => {
 
       if (!response.ok) throw new Error('Failed to update order');
       const updatedOrder = await response.json();
-      setOrders(orders.map(order => order.order_id === newRow.order_id ? updatedOrder : order));
+      setOrders((orders) => orders.map((order) => (order.order_id === newRow.order_id ? updatedOrder : order)));
       setSnackbar({ open: true, message: 'Order updated successfully', severity: 'success' });
       return updatedOrder;
     } catch (error) {
@@ -674,35 +611,36 @@ const OrderCreation = () => {
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'shipping_method') {
-      setEditOrder(prev => ({
+      setEditOrder((prev) => ({
         ...prev,
         shipping_method: value,
         driver_id: value === 'Self' ? '' : prev.driver_id,
-        driver_details: value === 'Self' 
-          ? { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' } 
-          : prev.driver_details
+        driver_details:
+          value === 'Self'
+            ? { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' }
+            : prev.driver_details,
       }));
     } else if (name.startsWith('driver_details.')) {
       const field = name.split('.')[1];
-      setEditOrder(prev => ({
+      setEditOrder((prev) => ({
         ...prev,
-        driver_details: { ...prev.driver_details, [field]: value }
+        driver_details: { ...prev.driver_details, [field]: value },
       }));
     } else if (name === 'shipping_address' && sameBillingAddress) {
-      setEditOrder(prev => ({
+      setEditOrder((prev) => ({
         ...prev,
         shipping_address: value,
         billing_address: value,
       }));
     } else {
-      setEditOrder(prev => ({ ...prev, [name]: value }));
+      setEditOrder((prev) => ({ ...prev, [name]: value }));
     }
 
     if (name === 'customer_id' && value) {
-      const customer = customers.find(c => c.customer_id === value);
+      const customer = customers.find((c) => c.customer_id === value);
       setSelectedCustomer(customer);
       setShowCustomerDetails(true);
-      setEditOrder(prev => ({
+      setEditOrder((prev) => ({
         ...prev,
         shipping_address: customer?.address || '',
         billing_address: sameBillingAddress ? customer?.address || '' : prev.billing_address,
@@ -710,7 +648,7 @@ const OrderCreation = () => {
     } else if (name === 'customer_id' && !value) {
       setShowCustomerDetails(false);
       setSelectedCustomer(null);
-      setEditOrder(prev => ({
+      setEditOrder((prev) => ({
         ...prev,
         shipping_address: '',
         billing_address: sameBillingAddress ? '' : prev.billing_address,
@@ -722,57 +660,12 @@ const OrderCreation = () => {
     const checked = e.target.checked;
     setSameBillingAddress(checked);
     if (checked) {
-      setEditOrder(prev => ({
+      setEditOrder((prev) => ({
         ...prev,
         billing_address: prev.shipping_address,
       }));
     }
   };
-
-  // const handleEditItemChange = (index, field, value) => {
-  //   const newItems = [...editOrder.items];
-  //   newItems[index][field] = value;
-
-  //   if (field === 'batch_number') {
-  //     const batch = stock.find(s => s.batchNumber === value);
-  //     newItems[index].product = batch 
-  //       ? `Green Beans - ${batch.quality || 'Standard'} - ${batch.processingType || 'Unknown'}` 
-  //       : '';
-  //   }
-
-  //   if (field === 'quantity' && newItems[index].batch_number) {
-  //     const remainingWeight = getRemainingWeight(newItems[index].batch_number, newItems, index);
-  //     if (parseFloat(value) > remainingWeight) {
-  //       setSnackbar({ 
-  //         open: true, 
-  //         message: `Quantity exceeds available stock (${remainingWeight.toFixed(2)} kg for ${newItems[index].batch_number})`, 
-  //         severity: 'error' 
-  //       });
-  //       newItems[index].quantity = '';
-  //     }
-  //   }
-
-  //   setEditOrder(prev => ({ ...prev, items: newItems }));
-  //   const subtotal = newItems.reduce((sum, item) => 
-  //     sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-  //   setEditOrder(prev => ({ ...prev, price: subtotal.toString() }));
-  // };
-
-  // const addEditItem = () => {
-  //   setEditOrder(prev => ({ ...prev, items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }] }));
-  // };
-
-  // const removeEditItem = (index) => {
-  //   if (editOrder.items.length === 1) {
-  //     setSnackbar({ open: true, message: 'At least one item is required', severity: 'warning' });
-  //     return;
-  //   }
-  //   const newItems = editOrder.items.filter((_, i) => i !== index);
-  //   setEditOrder(prev => ({ ...prev, items: newItems }));
-  //   const subtotal = newItems.reduce((sum, item) => 
-  //     sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
-  //   setEditOrder(prev => ({ ...prev, price: subtotal.toString() }));
-  // };
 
   const handleSaveEdit = async () => {
     if (!editOrder.customer_id) {
@@ -787,7 +680,7 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!editOrder.items.every(item => item.batch_number && item.quantity && item.price && item.product)) {
+    if (!editOrder.items.every((item) => item.batch_number && item.quantity && item.price && item.product)) {
       setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
       return;
     }
@@ -812,21 +705,11 @@ const OrderCreation = () => {
       return;
     }
 
-    for (let i = 0; i < editOrder.items.length; i++) {
-      const item = editOrder.items[i];
+    for (const item of editOrder.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const remainingWeight = getRemainingWeight(item.batch_number, editOrder.items, i);
-      if (isNaN(itemPrice) || itemPrice <= 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
+      if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
-        return;
-      }
-      if (itemQuantity > remainingWeight) {
-        setSnackbar({ 
-          open: true, 
-          message: `Quantity for ${item.batch_number} exceeds stock (${remainingWeight.toFixed(2)} kg)`, 
-          severity: 'error' 
-        });
         return;
       }
     }
@@ -842,12 +725,12 @@ const OrderCreation = () => {
         tax_percentage: editOrder.tax_percentage || '0',
         shipping_address: editOrder.shipping_address,
         billing_address: editOrder.billing_address,
-        items: editOrder.items.map(item => ({
+        items: editOrder.items.map((item) => ({
           batch_number: item.batch_number,
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
-          product: item.product
-        }))
+          product: item.product,
+        })),
       };
 
       const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${editOrder.order_id}`, {
@@ -861,10 +744,10 @@ const OrderCreation = () => {
         throw new Error(updatedOrder.error || 'Failed to update order');
       }
 
-      setOrders(orders.map(order => order.order_id === updatedOrder.order_id ? updatedOrder : order));
+      setOrders((orders) => orders.map((order) => (order.order_id === updatedOrder.order_id ? updatedOrder : order)));
       setSnackbar({ open: true, message: 'Order updated successfully', severity: 'success' });
       handleCloseOrderModal();
-      setRefreshCounter(prev => prev + 1);
+      setRefreshCounter((prev) => prev + 1);
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
     } finally {
@@ -874,21 +757,21 @@ const OrderCreation = () => {
 
   const ordersColumns = [
     { field: 'order_id', headerName: 'Order ID', width: 100, sortable: true, editable: true },
-    { 
-      field: 'details', 
-      headerName: 'Details', 
-      width: 130, 
-      sortable: false, 
+    {
+      field: 'details',
+      headerName: 'Details',
+      width: 130,
+      sortable: false,
       renderCell: (params) => (
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="outlined"
           size="small"
           onClick={() => handleOpenOrderModal(params.row)}
           sx={{ height: '24px', minWidth: '80px', padding: '0 8px', fontSize: '0.75rem' }}
         >
           View Details
         </Button>
-      )
+      ),
     },
     { field: 'customer_name', headerName: 'Customer Name', width: 220, sortable: true, editable: false },
     { field: 'shipping_method', headerName: 'Shipping Method', width: 150, sortable: true, editable: true },
@@ -903,10 +786,10 @@ const OrderCreation = () => {
     { field: 'document_url', headerName: 'Document', width: 120, sortable: true, editable: false },
   ];
 
-  const ordersRows = (Array.isArray(orders) ? orders : []).map(order => ({
+  const ordersRows = (Array.isArray(orders) ? orders : []).map((order) => ({
     id: order?.order_id || '-',
     order_id: order?.order_id || '-',
-    customer_name: customers.find(c => c.customer_id === order.customer_id)?.name || '-',
+    customer_name: customers.find((c) => c.customer_id === order.customer_id)?.name || '-',
     shipping_method: order?.shipping_method || '-',
     price: order?.price || '0',
     tax_percentage: order?.tax_percentage || '0',
@@ -916,7 +799,7 @@ const OrderCreation = () => {
     status: order?.status || 'Pending',
     shipping_address: order?.shipping_address || '-',
     billing_address: order?.billing_address || '-',
-    document_url: order?.documents?.find(doc => doc.type === 'Order List')?.drive_url || '-',
+    document_url: order?.documents?.find((doc) => doc.type === 'Order List')?.drive_url || '-',
   }));
 
   const customerListColumns = [
@@ -929,7 +812,7 @@ const OrderCreation = () => {
     { field: 'zip_code', headerName: 'Zip Code', width: 80, sortable: true },
   ];
 
-  const customerListRows = (Array.isArray(customers) ? customers : []).map(customer => ({
+  const customerListRows = (Array.isArray(customers) ? customers : []).map((customer) => ({
     id: customer?.customer_id || '-',
     name: customer?.name || '-',
     email: customer?.email || '-',
@@ -948,7 +831,7 @@ const OrderCreation = () => {
     { field: 'availability_status', headerName: 'Availability', width: 100, sortable: true },
   ];
 
-  const driversListRows = (Array.isArray(drivers) ? drivers : []).map(driver => ({
+  const driversListRows = (Array.isArray(drivers) ? drivers : []).map((driver) => ({
     id: driver?.driver_id || '-',
     name: driver?.name || '-',
     vehicle_number: driver?.vehicle_number || '-',
@@ -977,7 +860,7 @@ const OrderCreation = () => {
                   onChange={handleInputChange}
                   label="Customer"
                 >
-                  {(Array.isArray(customers) ? customers : []).map(customer => (
+                  {(Array.isArray(customers) ? customers : []).map((customer) => (
                     <MenuItem key={customer.customer_id} value={customer.customer_id}>
                       {customer.name}
                     </MenuItem>
@@ -1110,8 +993,8 @@ const OrderCreation = () => {
                     >
                       <MenuItem value="">None</MenuItem>
                       {(Array.isArray(drivers) ? drivers : [])
-                        .filter(d => d.availability_status === 'Available')
-                        .map(driver => (
+                        .filter((d) => d.availability_status === 'Available')
+                        .map((driver) => (
                           <MenuItem key={driver.driver_id} value={driver.driver_id}>
                             {driver.name} ({driver.vehicle_number})
                           </MenuItem>
@@ -1129,33 +1012,33 @@ const OrderCreation = () => {
                     </Select>
                   </FormControl>
                 )}
-                {formData.shipping_method === 'Self' && formData.driver_id && drivers.find(d => d.driver_id === formData.driver_id) && (
+                {formData.shipping_method === 'Self' && formData.driver_id && drivers.find((d) => d.driver_id === formData.driver_id) && (
                   <>
                     <TextField
                       fullWidth
                       label="Driver Name"
-                      value={drivers.find(d => d.driver_id === formData.driver_id)?.name || ''}
+                      value={drivers.find((d) => d.driver_id === formData.driver_id)?.name || ''}
                       InputProps={{ readOnly: true }}
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       fullWidth
                       label="Vehicle Number Plate"
-                      value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_number || ''}
+                      value={drivers.find((d) => d.driver_id === formData.driver_id)?.vehicle_number || ''}
                       InputProps={{ readOnly: true }}
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       fullWidth
                       label="Vehicle Type"
-                      value={drivers.find(d => d.driver_id === formData.driver_id)?.vehicle_type || ''}
+                      value={drivers.find((d) => d.driver_id === formData.driver_id)?.vehicle_type || ''}
                       InputProps={{ readOnly: true }}
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       fullWidth
                       label="Max Capacity (kg)"
-                      value={drivers.find(d => d.driver_id === formData.driver_id)?.max_capacity || ''}
+                      value={drivers.find((d) => d.driver_id === formData.driver_id)?.max_capacity || ''}
                       InputProps={{ readOnly: true }}
                       sx={{ mb: 2 }}
                     />
@@ -1205,28 +1088,12 @@ const OrderCreation = () => {
               <Box sx={{ mb: 3 }}>
                 {formData.items.map((item, index) => (
                   <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <FormControl sx={{ mr: 2, flex: 1 }}>
-                      <InputLabel>Batch Number</InputLabel>
-                      <Select
-                        value={item.batch_number}
-                        onChange={(e) => handleItemChange(index, 'batch_number', e.target.value)}
-                        label="Batch Number"
-                        disabled={stockLoading}
-                      >
-                        <MenuItem value="">Select Batch</MenuItem>
-                        {stockLoading ? (
-                          <MenuItem disabled>Loading...</MenuItem>
-                        ) : Array.isArray(stock) && stock.length > 0 ? (
-                          stock.map((batch) => (
-                            <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                              {`${batch.batchNumber} (${batch.quality || 'Standard'}, ${batch.processingType || 'Unknown'}, ${batch.remaining_quantity.toFixed(2)} kg)`}
-                            </MenuItem>
-                          ))
-                        ) : (
-                          <MenuItem disabled>No stock available</MenuItem>
-                        )}
-                      </Select>
-                    </FormControl>
+                    <TextField
+                      label="Batch Number"
+                      value={item.batch_number}
+                      onChange={(e) => handleItemChange(index, 'batch_number', e.target.value)}
+                      sx={{ mr: 2, flex: 1 }}
+                    />
                     <TextField
                       label="Quantity (kg)"
                       type="number"
@@ -1242,6 +1109,12 @@ const OrderCreation = () => {
                       onChange={(e) => handleItemChange(index, 'price', e.target.value)}
                       sx={{ mr: 2, width: 150 }}
                       inputProps={{ min: 0, step: 0.01 }}
+                    />
+                    <TextField
+                      label="Product"
+                      value={item.product}
+                      onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                      sx={{ mr: 2, flex: 1 }}
                     />
                     <IconButton
                       onClick={() => removeItem(index)}
@@ -1288,10 +1161,9 @@ const OrderCreation = () => {
                   label="Grand Total (IDR)"
                   value={
                     formData.price && formData.tax_percentage
-                      ? (Number(formData.price || 0) * (1 + Number(formData.tax_percentage || 0) / 100)).toLocaleString(
-                          'id-ID',
-                          { style: 'currency', currency: 'IDR' }
-                        )
+                      ? (
+                          Number(formData.price || 0) * (1 + Number(formData.tax_percentage || 0) / 100)
+                        ).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
                       : ''
                   }
                   InputProps={{ readOnly: true }}
@@ -1643,43 +1515,33 @@ const OrderCreation = () => {
                 <Box sx={{ mb: 3 }}>
                   {editOrder.items.map((item, index) => (
                     <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <FormControl sx={{ mr: 2, flex: 1 }}>
-                        <InputLabel>Batch Number</InputLabel>
-                        <Select
-                          value={item.batch_number}
-                          onChange={(e) => handleEditItemChange(index, 'batch_number', e.target.value)}
-                          label="Batch Number"
-                          disabled={stockLoading}
-                        >
-                          <MenuItem value="">Select Batch</MenuItem>
-                          {stockLoading ? (
-                            <MenuItem disabled>Loading...</MenuItem>
-                          ) : Array.isArray(stock) && stock.length > 0 ? (
-                            stock.map((batch) => (
-                              <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                {`${batch.batchNumber} (${batch.quality || 'Standard'}, ${batch.processingType || 'Unknown'}, ${batch.remaining_quantity.toFixed(2)} kg)`}
-                              </MenuItem>
-                            ))
-                          ) : (
-                            <MenuItem disabled>No stock available</MenuItem>
-                          )}
-                        </Select>
-                      </FormControl>
+                      <TextField
+                        label="Batch Number"
+                        value={item.batch_number}
+                        onChange={(e) => handleEditItemChange(index, 'batch_number', e.target.value)}
+                        sx={{ mr: 2, flex: 1 }}
+                      />
                       <TextField
                         label="Quantity (kg)"
                         type="number"
                         value={item.quantity}
                         onChange={(e) => handleEditItemChange(index, 'quantity', e.target.value)}
-                        sx={{ mr: 1, width: '120px' }}
+                        sx={{ mr: 2, width: 120 }}
                         inputProps={{ min: 0, step: 0.01 }}
                       />
                       <TextField
-                        label="Price per Unit (IDR)"
+                        label="Price (IDR)"
                         type="number"
                         value={item.price}
                         onChange={(e) => handleEditItemChange(index, 'price', e.target.value)}
-                        sx={{ mr: 1, width: '120px' }}
+                        sx={{ mr: 2, width: 150 }}
                         inputProps={{ min: 0, step: 0.01 }}
+                      />
+                      <TextField
+                        label="Product"
+                        value={item.product}
+                        onChange={(e) => handleEditItemChange(index, 'product', e.target.value)}
+                        sx={{ mr: 2, flex: 1 }}
                       />
                       <IconButton
                         onClick={() => removeEditItem(index)}
