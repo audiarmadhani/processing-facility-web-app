@@ -203,78 +203,100 @@ const Dashboard = () => {
     try {
       // Fetch the current order details with enhanced error handling
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-        headers: { 'Accept': 'application/json' }, // Ensure JSON response
+        headers: { 'Accept': 'application/json' },
       });
       if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
-      const data = await res.json();
-      console.log('Order Fetch Response:', data); // Log the response for debugging
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid order data received');
-      }
-      let order = data;
+      let order = await res.json();
+      console.log('Order Fetch Response:', order);
 
       if (!order.order_id || typeof order.order_id !== 'number') {
         throw new Error('Invalid order_id fetched: ' + order.order_id);
       }
 
-      // Update status to "Processing" before uploading documents
+      // Fetch customer details to ensure address is included
+      const customerRes = await fetch(`https://processing-facility-backend.onrender.com/api/customers/${order.customer_id}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!customerRes.ok) throw new Error('Failed to fetch customer details');
+      const customer = await customerRes.json();
+      order.customer_address = customer.address || order.shipping_address || 'N/A'; // Use customer address or fallback
+
+      // Fetch driver details if shipping method is 'Self'
+      if (order.shipping_method === 'Self' && order.driver_id) {
+        const driverRes = await fetch(`https://processing-facility-backend.onrender.com/api/drivers/${order.driver_id}`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!driverRes.ok) throw new Error('Failed to fetch driver details');
+        const driver = await driverRes.json();
+        order.driver_name = driver.name || 'N/A';
+        order.driver_vehicle_number = driver.vehicle_number || 'N/A';
+        order.driver_vehicle_type = driver.vehicle_type || 'N/A';
+      } else if (order.shipping_method === 'Customer' && order.driver_details) {
+        const driverDetails = JSON.parse(order.driver_details);
+        order.driver_name = driverDetails.name || 'N/A';
+        order.driver_vehicle_number = driverDetails.vehicle_number_plate || 'N/A';
+        order.driver_vehicle_type = driverDetails.vehicle_type || 'N/A';
+      } else {
+        order.driver_name = 'N/A';
+        order.driver_vehicle_number = 'N/A';
+        order.driver_vehicle_type = 'N/A';
+      }
+
+      // Update status to "Processing" with all relevant fields
       const processingUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           customer_id: order.customer_id,
           status: 'Processing',
-          driver_id: order.driver_id, // Reuse existing driver_id
-          shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
+          driver_id: order.driver_id || null,
+          shipping_method: order.shipping_method || 'Self',
           driver_name: order.driver_name,
           driver_vehicle_number: order.driver_vehicle_number,
           driver_vehicle_type: order.driver_vehicle_type,
-          driver_max_capacity: order.driver_max_capacity,
-          price: order.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
+          price: order.price?.toString() || '0',
+          tax_percentage: order.tax_percentage?.toString() || '0',
           items: order.items,
-          shipping_address: order.shipping_address,
-          billing_address: order.billing_address
+          shipping_address: order.customer_address, // Ensure shipping address is set
+          billing_address: order.billing_address,
         }),
       });
 
       if (!processingUpdateRes.ok) throw new Error('Failed to update order status to Processing: ' + (await processingUpdateRes.text()));
       const updatedProcessingOrder = await processingUpdateRes.json();
-      console.log('Updated Order (Processing):', updatedProcessingOrder); // Log the updated order for debugging
+      console.log('Updated Order (Processing):', updatedProcessingOrder);
 
-      // Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "Processing" update
+      // Ensure all fields are preserved or defaulted
       order = {
         ...updatedProcessingOrder,
-        order_id: updatedProcessingOrder.order_id || order.order_id, // Ensure order_id is always present
+        order_id: updatedProcessingOrder.order_id || order.order_id,
         customer_id: updatedProcessingOrder.customer_id || order.customer_id,
-        customer_name: updatedProcessingOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
-        status: updatedProcessingOrder.status || 'Processing', // Should be "Processing" now
-        shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
-        items: updatedProcessingOrder.items || order.items, // Default to empty array if missing
-        shipping_address: updatedProcessingOrder.shipping_address || order.shipping_address,
-        billing_address: updatedProcessingOrder.billing_address || order.billing_address,
+        customer_name: updatedProcessingOrder.customer_name || order.customer_name || 'Unknown Customer',
+        status: updatedProcessingOrder.status || 'Processing',
+        shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self',
+        items: updatedProcessingOrder.items || order.items,
+        customer_address: updatedProcessingOrder.shipping_address || order.customer_address || 'N/A',
+        driver_name: updatedProcessingOrder.driver_name || order.driver_name || 'N/A',
+        driver_vehicle_number: updatedProcessingOrder.driver_vehicle_number || order.driver_vehicle_number || 'N/A',
+        driver_vehicle_type: updatedProcessingOrder.driver_vehicle_type || order.driver_vehicle_type || 'N/A',
         created_at: updatedProcessingOrder.created_at || order.created_at || null,
       };
 
-      if (!order.order_id || typeof order.order_id !== 'number') {
-        throw new Error('Invalid order_id after Processing update: ' + order.order_id);
-      }
-
       // Generate SPK, SPM, and DO PDFs
-      const spkDoc = generateSPKPDF({ ...order, customerName: order.customer_name, customerAddress: order.customer_address, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, customerAddress: order.customer_address, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, customerAddress: order.customer_address, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const spkDoc = generateSPKPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
 
-      // Save PDFs locally using jsPDF.save()
+      // Save PDFs locally
       spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
-      // Upload each document to Google Drive
+      // Upload PDFs to Google Drive
       const uploadDocument = async (doc, type, filename) => {
         const blob = doc.output('blob');
         const formData = new FormData();
-        formData.append('order_id', orderId.toString()); // Use validated orderId as string
+        formData.append('order_id', orderId.toString());
         formData.append('type', type);
         formData.append('file', blob, filename);
 
@@ -283,20 +305,18 @@ const Dashboard = () => {
           body: formData,
         });
 
-        if (!res.ok) throw new Error(`Failed to upload ${type} document: ' + (await res.text())`);
-        return await res.json(); // No need to return drive_url since we’re saving locally
+        if (!res.ok) throw new Error(`Failed to upload ${type} document: ${await res.text()}`);
+        return await res.json();
       };
 
-      // Upload PDFs to Google Drive (without storing URLs for download)
       await Promise.all([
         uploadDocument(spkDoc, 'SPK', `SPK_${String(order.order_id).padStart(4, '0')}.pdf`),
         uploadDocument(spmDoc, 'SPM', `SPM_${String(order.order_id).padStart(4, '0')}.pdf`),
         uploadDocument(doDoc, 'DO', `DO_${String(order.order_id).padStart(4, '0')}.pdf`),
       ]);
 
-      // Update the orders state safely with the current "Processing" status
+      // Update the orders state
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
-
       setSelectedOrder(order);
 
       setSnackbar({ open: true, message: 'Documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
@@ -1123,14 +1143,14 @@ const Dashboard = () => {
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
 
-    doc.text(`Order ID        : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer        : ${order.customerName || 'Unknown Customer'}`, 20, 45);
-    doc.text(`Address         : ${order.customer_address || 'N/A'}`, 20, 50);
+    doc.text(`Order ID             : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Customer           : ${order.customerName || 'Unknown Customer'}`, 20, 45);
+    doc.text(`Address              : ${order.customer_address || 'N/A'}`, 20, 50);
     doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 55);
-    doc.text(`Driver Name     : ${order.driver_name || 'N/A'}`, 20, 60);
-    doc.text(`Number Plate    : ${order.driver_vehicle_number || 'N/A'}`, 20, 65);
-    doc.text(`Vehicle Type    : ${order.driver_vehicle_type || 'N/A'}`, 20, 70);
-    doc.text(`Status          : ${order.status || 'Pending'}`, 20, 75); // Show current status in DO
+    doc.text(`Driver Name        : ${order.driver_name || 'N/A'}`, 20, 60);
+    doc.text(`Number Plate      : ${order.driver_vehicle_number || 'N/A'}`, 20, 65);
+    doc.text(`Vehicle Type        : ${order.driver_vehicle_type || 'N/A'}`, 20, 70);
+    doc.text(`Status                : ${order.status || 'Pending'}`, 20, 75); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 100);
