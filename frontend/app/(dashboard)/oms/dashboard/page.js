@@ -1268,6 +1268,7 @@ const Dashboard = () => {
     // Header: Left-aligned company details, Right-aligned title on the same line
     doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
     doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(11);
     doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
     doc.text('Telp. 085175027797', 20, 30);
     doc.setFont('Helvetica', 'bold');
@@ -1293,9 +1294,7 @@ const Dashboard = () => {
       doc.text(line, 45, 50 + (index * 5)); // 5mm line height, starting at y: 50
     });
 
-    doc.text(`${order.customer_city || 'N/A'}`, 45, 50 + (lines.length * 5));
-    doc.text(`${order.customer_state || 'N/A'}`, 45, 55 + (lines.length * 5));
-    doc.text(`${order.customer_zip_code || 'N/A'}`, 45, 60 + (lines.length * 5));
+    doc.text(`${order.customer_city || 'N/A'}, ${order.customer_state || 'N/A'}, ${order.customer_zip_code || 'N/A'}`, 45, 50 + (lines.length * 5));
     doc.text('Telp:', 20, 65 + (lines.length * 5));
     doc.text(`${order.customer_phone || 'N/A'}`, 45, 65 + (lines.length * 5));
 
@@ -1306,8 +1305,8 @@ const Dashboard = () => {
     doc.text(`Ekspedisi: ${expedition}`, 190, 55, { align: 'right' });
 
     // Items Table
-    let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
-    if (tableStartY < 65) tableStartY = 65; // Ensure table doesn’t start too early
+    let tableStartY = 75 + (lines.length * 5); // Adjust table start based on address lines
+    if (tableStartY < 75) tableStartY = 75; // Ensure table doesn’t start too early
 
     doc.autoTable({
       startY: tableStartY,
@@ -1353,7 +1352,7 @@ const Dashboard = () => {
   
     doc.line(positions[2] - 20, signatureY, positions[2] + 20, signatureY); // Line for Petugas Gudang (75mm wide)
     doc.text('Manager', positions[2], signatureY + 5, { align: 'center' });
-    doc.text(`( Haris Ariansyah )`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
+    doc.text(`Haris Ariansyah`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
   
     return doc;
   };
@@ -1403,18 +1402,16 @@ const Dashboard = () => {
     doc.text('Alamat', 20, 85);
     doc.text(':', 40, 85);
     doc.text(`${order.customer_address}` || 'N/A', 45, 85);
-    doc.text(`${order.customer_city || 'N/A'}`, 45, 90);
-    doc.text(`${order.customer_state || 'N/A'}`, 45, 95);
-    doc.text(`${order.customer_zip_code || 'N/A'}`, 45, 100);
+    doc.text(`${order.customer_city}, ${order.customer_state}, ${order.customer_zip_code}` || 'N/A', 45, 90);
 
-    doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 105);
+    doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 95);
 
     // Statement
-    doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 110);
+    doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 100);
 
     // Items Table (Updated to match OCR, removing Merk Barang column)
     doc.autoTable({
-      startY: 120,
+      startY: 110,
       head: [['No.', 'Jenis Barang', 'Berat Total (kg)', 'Keterangan']],
       body: order.items.map((item, index) => [
         (index + 1).toString(),
@@ -1438,7 +1435,7 @@ const Dashboard = () => {
     doc.text('PIHAK KEDUA', 140, tableEndY + 30, { align: 'center' });
   
     doc.setFont('Helvetica', 'normal');
-    doc.text(`( Haris Ariansyah )`, 50, tableEndY + 60, { align: 'center' });
+    doc.text(`Haris Ariansyah`, 50, tableEndY + 60, { align: 'center' });
     doc.text(`Manager`, 50, tableEndY + 65, { align: 'center' });
     doc.text(`${order.customerName || 'Unknown Customer'}`, 140, tableEndY + 60, { align: 'center' });
 
