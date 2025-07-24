@@ -261,9 +261,9 @@ const Dashboard = () => {
       }
 
       // Generate SPK, SPM, and DO PDFs
-      const spkDoc = generateSPKPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const spkDoc = generateSPKPDF({ ...order, customerName: order.customer_name, customerAddress: order.customer_address, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, customerAddress: order.customer_address, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, customerAddress: order.customer_address, status: order.status, shippingMethod: order.shipping_method, items: order.items });
 
       // Save PDFs locally using jsPDF.save()
       spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -713,6 +713,10 @@ const Dashboard = () => {
         status: order.status || 'Processing',
         shippingMethod: order.shipping_method || 'Self',
         items: order.items || [],
+        customer_address: order.customer_address || 'N/A',
+        driver_name: order.driver_name || 'N/A',
+        driver_vehicle_number: order.driver_vehicle_number || 'N/A',
+        driver_vehicle_type: order.driver_vehicle_type || 'N/A',
       });
 
       // Save PDFs locally using jsPDF.save()
@@ -1117,16 +1121,16 @@ const Dashboard = () => {
     doc.setFontSize(16);
     doc.text('Delivery Order (DO)', 105, 20, { align: 'center' });
     doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(12);
+    doc.setFontSize(11);
 
-    doc.text(`Order ID: ${String(order.order_id).padStart(4, '0')}`, 20, 40);
-    doc.text(`Customer: ${order.customerName || 'Unknown Customer'}`, 20, 45);
-    doc.text(`Address: ${order.customer_address || 'N/A'}`, 20, 50);
-    doc.text(`Shipping Method: ${order.shippingMethod || 'Self'}`, 20, 55);
-    doc.text(`Driver Name: ${order.driver_name || 'N/A'}`, 20, 60);
-    doc.text(`Vehicle Number Plate: ${order.driver_vehicle_number || 'N/A'}`, 20, 65);
-    doc.text(`Vehicle Type: ${order.driver_vehicle_type || 'N/A'}`, 20, 70);
-    doc.text(`Status: ${order.status || 'Pending'}`, 20, 75); // Show current status in DO
+    doc.text(`Order ID        : ${String(order.order_id).padStart(4, '0')}`, 20, 40);
+    doc.text(`Customer        : ${order.customerName || 'Unknown Customer'}`, 20, 45);
+    doc.text(`Address         : ${order.customer_address || 'N/A'}`, 20, 50);
+    doc.text(`Shipping Method : ${order.shippingMethod || 'Self'}`, 20, 55);
+    doc.text(`Driver Name     : ${order.driver_name || 'N/A'}`, 20, 60);
+    doc.text(`Number Plate    : ${order.driver_vehicle_number || 'N/A'}`, 20, 65);
+    doc.text(`Vehicle Type    : ${order.driver_vehicle_type || 'N/A'}`, 20, 70);
+    doc.text(`Status          : ${order.status || 'Pending'}`, 20, 75); // Show current status in DO
 
     if (!order.items || !Array.isArray(order.items)) {
       doc.text('No items available', 20, 100);
