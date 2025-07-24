@@ -1274,11 +1274,10 @@ const Dashboard = () => {
 
     doc.autoTable({
       startY: tableStartY,
-      head: [['Nama Barang', 'Qty', 'Berat Jml (kg)', 'Keterangan']],
+      head: [['Nama Barang', 'Berat Total (kg)', 'Keterangan']],
       body: order.items.map((item, index) => [
         item.product || 'N/A',
         item.quantity || 0,
-        item.quantity || 0, // Assuming weight equals quantity in kg for simplicity, adjust if needed
         'Barang Pesanan Pelanggan', // Description
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1317,7 +1316,7 @@ const Dashboard = () => {
   
     doc.line(positions[2] - 20, signatureY, positions[2] + 20, signatureY); // Line for Petugas Gudang (75mm wide)
     doc.text('Manager', positions[2], signatureY + 5, { align: 'center' });
-    doc.text(`(....................................)`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
+    doc.text(`( Haris Ariansyah )`, positions[2], signatureY + 10, { align: 'center' }); // Placeholder for warehouse staff, adjust if available
   
     return doc;
   };
@@ -1376,11 +1375,11 @@ const Dashboard = () => {
     // Items Table (Updated to match OCR, removing Merk Barang column)
     doc.autoTable({
       startY: 110,
-      head: [['No.', 'Jenis Barang', 'Jumlah', 'Keterangan']],
+      head: [['No.', 'Jenis Barang', 'Berat Total (kg)', 'Keterangan']],
       body: order.items.map((item, index) => [
         (index + 1).toString(),
         item.product || 'N/A',
-        `${item.quantity || 0} (kg)`, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
+        item.quantity || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
         'Barang Pesanan Pelanggan', // Description, match OCR
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1399,7 +1398,7 @@ const Dashboard = () => {
     doc.text('PIHAK KEDUA', 140, tableEndY + 30, { align: 'center' });
   
     doc.setFont('Helvetica', 'normal');
-    doc.text(`(....................................)`, 50, tableEndY + 60, { align: 'center' });
+    doc.text(`( Haris Ariansyah )`, 50, tableEndY + 60, { align: 'center' });
     doc.text(`Manager`, 50, tableEndY + 65, { align: 'center' });
     doc.text(`${order.customerName || 'Unknown Customer'}`, 140, tableEndY + 60, { align: 'center' });
 
