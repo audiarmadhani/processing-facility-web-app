@@ -1322,8 +1322,8 @@ const Dashboard = () => {
     doc.text(`No. Surat Jalan : SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
     doc.text(`Tanggal : ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
     doc.text(`Ekspedisi : ${expedition}`, 190, 55, { align: 'right' });
-    doc.text(`Nama Driver : ${driver}`, 190, 60, { align: 'right' });
-    doc.text(`TNKB : ${vehicle_number}`, 190, 65, { align: 'right' });
+    doc.text(`Nama Driver : ${order.driver_name}`, 190, 60, { align: 'right' });
+    doc.text(`TNKB : ${order.vehicle_number_plate}`, 190, 65, { align: 'right' });
 
     // Items Table
     let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
