@@ -1204,6 +1204,7 @@ const Dashboard = () => {
     });
 
     // Header: Left-aligned company details, Right-aligned title on the same line
+    doc.setFont('Helvetica', 'bold');
     doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
@@ -1213,6 +1214,7 @@ const Dashboard = () => {
     doc.setFontSize(20); // Larger font for "SURAT JALAN"
     doc.text('Delivery Order (DO)', 190, 20, { align: 'right' });
     doc.setFontSize(11); // Reset font size
+    doc.setFont('Helvetica', 'normal');
 
     // Divider
     doc.line(20, 35, 190, 35); // Horizontal line
