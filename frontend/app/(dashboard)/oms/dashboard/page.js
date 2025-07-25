@@ -1117,10 +1117,12 @@ const Dashboard = () => {
     } else {
       doc.autoTable({
         startY: 70,
-        head: [['Product', 'Quantity (kg)', 'Price (IDR)']],
+        head: [['Product', 'Reference', 'Quantity (kg)', 'No of Bags', 'Price (IDR)']],
         body: order.items.map(item => [
           item.product || 'N/A',
+          item.batch_number || 'N/A',
           item.quantity || 0,
+          item.quantity/50 || 0,
           (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1168,10 +1170,12 @@ const Dashboard = () => {
     } else {
       doc.autoTable({
         startY: 65,
-        head: [['Product', 'Quantity (kg)', 'Required By']],
+        head: [['Product', 'Reference', 'Quantity (kg)', 'No of Bags', 'Required By']],
         body: order.items.map(item => [
           item.product || 'N/A',
+          item.batch_number || 'N/A',
           item.quantity || 0,
+          item.quantity/50 || 0,
           dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1199,11 +1203,19 @@ const Dashboard = () => {
       format: [210, 297], // A4 size
     });
 
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('Delivery Order (DO)', 105, 20, { align: 'center' });
+    // Header: Left-aligned company details, Right-aligned title on the same line
+    doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
+    doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
+    doc.text('Telp. 085175027797', 20, 30);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(20); // Larger font for "SURAT JALAN"
+    doc.text('Delivery Order (DO)', 190, 20, { align: 'right' });
+    doc.setFontSize(11); // Reset font size
+
+    // Divider
+    doc.line(20, 35, 190, 35); // Horizontal line
 
     doc.text(`Order ID`, 20, 40);
     doc.text(`: ${String(order.order_id).padStart(4, '0')}`, 50, 40);
@@ -1233,10 +1245,12 @@ const Dashboard = () => {
     } else {
       doc.autoTable({
         startY: 110,
-        head: [['Product', 'Quantity (kg)', 'Delivery Date']],
+        head: [['Product', 'Reference', 'Quantity (kg)', 'No of Bags', 'Delivery Date']],
         body: order.items.map(item => [
           item.product || 'N/A',
+          item.batch_number || 'N/A',
           item.quantity || 0,
+          item.quantity/50 || 0,
           dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1303,9 +1317,11 @@ const Dashboard = () => {
 
     // Right-aligned document details on the same line as "Kepada Yth."
     const expedition = order.shippingMethod === 'Self' ? 'Warehouse arranged' : 'Customer arranged';
-    doc.text(`No. Surat Jalan: SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
-    doc.text(`Tanggal: ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
-    doc.text(`Ekspedisi: ${expedition}`, 190, 55, { align: 'right' });
+    doc.text(`No. Surat Jalan : SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
+    doc.text(`Tanggal : ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
+    doc.text(`Ekspedisi : ${expedition}`, 190, 55, { align: 'right' });
+    doc.text(`Nama Driver : ${driver_name}`, 190, 60, { align: 'right' });
+    doc.text(`TNKB : ${driver_vehicle_number}`, 190, 65, { align: 'right' });
 
     // Items Table
     let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
@@ -1313,10 +1329,12 @@ const Dashboard = () => {
 
     doc.autoTable({
       startY: tableStartY,
-      head: [['Nama Barang', 'Berat Total (kg)', 'Keterangan']],
+      head: [['Nama Barang', 'Reference', 'Berat Total (kg)', 'Jumlah Karung', 'Keterangan']],
       body: order.items.map((item, index) => [
         item.product || 'N/A',
+        item.batch_number || 'N/A',
         item.quantity || 0,
+        item.quantity/50 || 0,
         'Barang Pesanan Pelanggan', // Description
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1415,11 +1433,13 @@ const Dashboard = () => {
     // Items Table (Updated to match OCR, removing Merk Barang column)
     doc.autoTable({
       startY: 110,
-      head: [['No.', 'Jenis Barang', 'Berat Total (kg)', 'Keterangan']],
+      head: [['No.', 'Jenis Barang', 'Product Reference', 'Berat Total (kg)', 'Jumlah Karung', 'Keterangan']],
       body: order.items.map((item, index) => [
         (index + 1).toString(),
         item.product || 'N/A',
+        item.batch_number || 'N/A',
         item.quantity || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
+        item.quantity/50 || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
         'Barang Pesanan Pelanggan', // Description, match OCR
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
