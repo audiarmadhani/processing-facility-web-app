@@ -440,7 +440,7 @@ const Dashboard = () => {
       }
 
       // Generate Surat Jalan and BAST PDFs
-      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name });
+      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name, vehicle_number: order.vehicle_number_plate });
       const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
       
       // Save PDFs locally using jsPDF.save()
@@ -1322,8 +1322,8 @@ const Dashboard = () => {
     doc.text(`No. Surat Jalan : SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
     doc.text(`Tanggal : ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
     doc.text(`Ekspedisi : ${expedition}`, 190, 55, { align: 'right' });
-    doc.text(`Nama Driver : ${driver_name}`, 190, 60, { align: 'right' });
-    doc.text(`TNKB : ${driver_vehicle_number}`, 190, 65, { align: 'right' });
+    doc.text(`Nama Driver : ${driver}`, 190, 60, { align: 'right' });
+    doc.text(`TNKB : ${vehicle_number}`, 190, 65, { align: 'right' });
 
     // Items Table
     let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
