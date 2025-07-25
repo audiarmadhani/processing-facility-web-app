@@ -282,7 +282,7 @@ const Dashboard = () => {
         customer_city: updatedProcessingOrder.customer_city || order.customer_city || 'N/A',
         customer_state: updatedProcessingOrder.customer_state || order.customer_state || 'N/A',
         customer_zip_code: updatedProcessingOrder.customer_zip_code || order.customer_zip_code || 'N/A',
-        customer_phone: updatedReadyOrder.customer_phone || order.customer_phone || 'N/A',
+        customer_phone: updatedProcessingOrder.customer_phone || order.customer_phone || 'N/A',
         driver_name: updatedProcessingOrder.driver_name || order.driver_name || 'N/A',
         driver_vehicle_number: updatedProcessingOrder.driver_vehicle_number || order.driver_vehicle_number || 'N/A',
         driver_vehicle_type: updatedProcessingOrder.driver_vehicle_type || order.driver_vehicle_type || 'N/A',
