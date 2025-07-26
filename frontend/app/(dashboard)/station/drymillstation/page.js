@@ -199,7 +199,7 @@ const DryMillStation = () => {
           const normalizedQuality = selectedBatch.quality?.trim();
           const gradeData = data.find((grade) => grade.grade?.trim() === normalizedQuality) || {
             grade: normalizedQuality || "Grade 1",
-            weight: "0",
+            weight: "0", // Default to string "0" to ensure parseFloat works
             bagWeights: [],
             bagged_at: new Date().toISOString().split("T")[0],
             tempSequence: "0001",
@@ -210,6 +210,7 @@ const DryMillStation = () => {
           return [
             {
               ...gradeData,
+              weight: parseFloat(gradeData.weight) || 0, // Ensure weight is a number
               storedDate: gradeData.storedDate || null,
             },
           ];
@@ -219,7 +220,7 @@ const DryMillStation = () => {
           data.forEach((grade) => {
             fetchedGradesMap[grade.grade] = {
               grade: grade.grade,
-              weight: parseFloat(grade.weight) || 0,
+              weight: parseFloat(grade.weight) || 0, // Ensure weight is a number
               bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map((w) => String(w)) : [],
               bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
               tempSequence: grade.tempSequence || "0001",
@@ -232,7 +233,7 @@ const DryMillStation = () => {
           return gradeOrder.map((grade) =>
             fetchedGradesMap[grade] || {
               grade,
-              weight: 0,
+              weight: 0, // Default to 0
               bagWeights: [],
               bagged_at: new Date().toISOString().split("T")[0],
               tempSequence: "0001",
@@ -251,7 +252,7 @@ const DryMillStation = () => {
         return [
           {
             grade: selectedBatch?.parentBatchNumber ? selectedBatch?.quality?.trim() || "Grade 1" : "Grade 1",
-            weight: 0,
+            weight: 0, // Default to 0 to avoid toFixed error
             bagWeights: [],
             bagged_at: new Date().toISOString().split("T")[0],
             tempSequence: "0001",
