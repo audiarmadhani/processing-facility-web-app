@@ -136,9 +136,9 @@ const DryMillStation = () => {
             .substr(2, 9)}`,
         }));
 
-      // Include all sub-batches without dryMillExited or not Processed in subBatches
+      // Include all sub-batches, including those with status "Processed"
       const subBatchesData = data
-        .filter((batch) => batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber && (!batch.dryMillExited || batch.status !== "Processed"))
+        .filter((batch) => batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
         .map((batch) => ({
           id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)

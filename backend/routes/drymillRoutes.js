@@ -460,7 +460,7 @@ router.post('/dry-mill/:batchNumber/split', async (req, res) => {
         )
         ON CONFLICT ("subBatchId") DO UPDATE SET
           weight = :weight,
-          bagged_at = :bagged_at,
+          bagged_at = :bagged_at
       `, {
         replacements: {
           batchNumber,
@@ -512,9 +512,9 @@ router.post('/dry-mill/:batchNumber/split', async (req, res) => {
           :batchNumber, :lotNumber, :referenceNumber, :processingType, :weight, :totalBags, 
           :notes, :quality, :producer, :parentBatchNumber, NOW(), NOW()
         )
-        ON CONFLICT ("batchNumber", "quality") DO UPDATE SET
-          weight = weight,
-          "totalBags" = "totalBags",
+        ON CONFLICT ("batchNumber", "quality", "processingType") DO UPDATE SET
+          weight = :weight,
+          "totalBags" = :totalBags,
           "updatedAt" = NOW()
       `, {
         replacements: {
@@ -826,19 +826,6 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
           transaction: t
         });
 
-        // Insert default grade if none exist
-        if (grades.length === 0) {
-          await sequelize.query(`
-            INSERT INTO "DryMillGrades" ("batchNumber", processing_type, grade, weight, bagged_at, "lotNumber")
-            VALUES (:batchNumber, :processingType, 'Default', 0, NULL, :lotNumber)
-          `, {
-            replacements: { batchNumber, processingType: pt, lotNumber: batch.lotNumber || 'ID-BTM-A-N' },
-            type: sequelize.QueryTypes.INSERT,
-            transaction: t
-          });
-          grades.push({ grade: 'Default', weight: 0, bagged_at: null, storedDate: null });
-        }
-
         const hasValidSplits = grades.some(g => 
           (parseFloat(g.weight) >= 0 && g.bagged_at && !g.storedDate) || // Valid split or default with bagged_at
           (g.grade === 'Default' && parseFloat(g.weight) === 0 && !g.bagged_at && !g.storedDate) // Default placeholder
@@ -876,27 +863,27 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
         transaction: t
       });
 
-      if (grades.length === 0) {
-        await sequelize.query(`
-          INSERT INTO "DryMillGrades" ("batchNumber", processing_type, grade, weight, bagged_at, "lotNumber")
-          VALUES (:batchNumber, 'Dry', 'Default', 0, NULL, :lotNumber)
-        `, {
-          replacements: { batchNumber, lotNumber: batch.lotNumber || 'ID-BTM-A-N' },
-          type: sequelize.QueryTypes.INSERT,
-          transaction: t
-        });
-        grades.push({ grade: 'Default', weight: 0, bagged_at: null, storedDate: null });
-      }
+      // if (grades.length === 0) {
+      //   await sequelize.query(`
+      //     INSERT INTO "DryMillGrades" ("batchNumber", processing_type, grade, weight, bagged_at, "lotNumber")
+      //     VALUES (:batchNumber, 'Dry', 'Default', 0, NULL, :lotNumber)
+      //   `, {
+      //     replacements: { batchNumber, lotNumber: batch.lotNumber || 'ID-BTM-A-N' },
+      //     type: sequelize.QueryTypes.INSERT,
+      //     transaction: t
+      //   });
+      //   grades.push({ grade: 'Default', weight: 0, bagged_at: null, storedDate: null });
+      // }
 
-      const hasValidSplits = grades.some(g => 
-        (parseFloat(g.weight) >= 0 && g.bagged_at && !g.storedDate) || // Valid split or default with bagged_at
-        (g.grade === 'Default' && parseFloat(g.weight) === 0 && !g.bagged_at && !g.storedDate) // Default placeholder
-      );
-      if (!hasValidSplits) {
-        await t.rollback();
-        logger.warn('No valid splits for green beans', { batchNumber, user: createdBy });
-        return res.status(400).json({ error: 'No valid splits for green beans.' });
-      }
+      // const hasValidSplits = grades.some(g => 
+      //   (parseFloat(g.weight) >= 0 && g.bagged_at && !g.storedDate) || // Valid split or default with bagged_at
+      //   (g.grade === 'Default' && parseFloat(g.weight) === 0 && !g.bagged_at && !g.storedDate) // Default placeholder
+      // );
+      // if (!hasValidSplits) {
+      //   await t.rollback();
+      //   logger.warn('No valid splits for green beans', { batchNumber, user: createdBy });
+      //   return res.status(400).json({ error: 'No valid splits for green beans.' });
+      // }
 
       for (const grade of grades) {
         if (!validateLotNumber(grade.lotNumber)) {
@@ -910,23 +897,6 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
           return res.status(400).json({ error: `Invalid reference number in grade: ${grade.referenceNumber}` });
         }
       }
-    }
-
-    const [cherryInventory] = await sequelize.query(`
-      SELECT status, orderId
-      FROM "CherryInventoryStatus"
-      WHERE "batchNumber" = :batchNumber
-      AND "exitedAt" IS NULL
-    `, {
-      replacements: { batchNumber },
-      type: sequelize.QueryTypes.SELECT,
-      transaction: t
-    });
-
-    if (cherryInventory && cherryInventory.orderId) {
-      await t.rollback();
-      logger.warn('Batch reserved for order', { batchNumber, orderId: cherryInventory.orderId, user: createdBy });
-      return res.status(400).json({ error: 'Cannot complete batch: cherry batch is reserved for an order.' });
     }
 
     const exitedAt = dryMillExited || new Date().toISOString();
@@ -949,7 +919,7 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
 
     await sequelize.query(`
       UPDATE "ReceivingData"
-      SET rfid = NULL, "currentAssign" = FALSE, "updatedAt" = NOW()
+      SET rfid = NULL, "currentAssign" = 0, "updatedAt" = NOW()
       WHERE "batchNumber" = :batchNumber
     `, {
       replacements: { batchNumber },
@@ -1030,30 +1000,6 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
           transaction: t
         });
       }
-    }
-
-    if (cherryInventory) {
-      await sequelize.query(`
-        UPDATE "CherryInventoryStatus"
-        SET status = 'Picked', "exitedAt" = NOW(), "updatedAt" = NOW(), "updatedBy" = :updatedBy
-        WHERE "batchNumber" = :batchNumber AND "exitedAt" IS NULL
-      `, {
-        replacements: { batchNumber, updatedBy },
-        type: sequelize.QueryTypes.UPDATE,
-        transaction: t
-      });
-
-      await sequelize.query(`
-        INSERT INTO "CherryInventoryMovements" (
-          "batchNumber", "movementType", "movedAt", "createdBy"
-        ) VALUES (
-          :batchNumber, 'Exit', NOW(), :createdBy
-        )
-      `, {
-        replacements: { batchNumber, createdBy },
-        type: sequelize.QueryTypes.INSERT,
-        transaction: t
-      });
     }
 
     await t.commit();
@@ -1218,7 +1164,7 @@ router.post('/warehouse/scan', async (req, res) => {
       FROM "ReceivingData"
       WHERE rfid = :rfid
       AND "batchNumber" = :batchNumber
-      AND "currentAssign" = TRUE
+      AND "currentAssign" = 1
       LIMIT 1
     `, {
       replacements: { rfid: validator.trim(rfid).toUpperCase(), batchNumber },
@@ -1378,7 +1324,7 @@ router.post('/warehouse/scan', async (req, res) => {
 
     await sequelize.query(`
       UPDATE "ReceivingData"
-      SET rfid = NULL, "currentAssign" = FALSE, "updatedAt" = NOW()
+      SET rfid = NULL, "currentAssign" = 0, "updatedAt" = NOW()
       WHERE "batchNumber" = :batchNumber
     `, {
       replacements: { batchNumber },
@@ -1463,7 +1409,7 @@ router.post('/rfid/reuse', async (req, res) => {
 
     await sequelize.query(`
       UPDATE "ReceivingData"
-      SET rfid = :rfid, "currentAssign" = TRUE, "updatedAt" = NOW()
+      SET rfid = :rfid, "currentAssign" = 1, "updatedAt" = NOW()
       WHERE "batchNumber" = :batchNumber
     `, {
       replacements: { rfid: validator.trim(rfid).toUpperCase(), batchNumber },
