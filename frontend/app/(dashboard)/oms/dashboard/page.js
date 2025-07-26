@@ -1122,7 +1122,7 @@ const Dashboard = () => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          item.quantity/50 || 0,
+          Math.ceil(item.quantity / 50) || 0,
           (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1175,7 +1175,7 @@ const Dashboard = () => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          item.quantity/50 || 0,
+          Math.ceil(item.quantity / 50) || 0,
           dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1252,7 +1252,7 @@ const Dashboard = () => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          item.quantity/50 || 0,
+          Math.ceil(item.quantity / 50) || 0,
           dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1336,7 +1336,7 @@ const Dashboard = () => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0,
-        Math.round(item.quantity / 50) || 0,
+        Math.ceil(item.quantity / 50) || 0,
         'Barang Pesanan Pelanggan', // Description
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1441,7 +1441,7 @@ const Dashboard = () => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
-        Math.round(item.quantity / 50) || 0,
+        Math.ceil(item.quantity / 50) || 0,
         'Barang Pesanan Pelanggan', // Description, match OCR
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
