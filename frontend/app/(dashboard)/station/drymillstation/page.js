@@ -363,12 +363,19 @@ const DryMillStation = () => {
           throw new Error("No sub-batches found");
         }
 
-        return subBatches.every(
+        // Check if at least one sub-batch has valid splits
+        const hasValidSplits = subBatches.some(
           (sb) =>
-            parseFloat(sb.weight) > 0 &&
+            parseFloat(sb.weight) >= 0 && // Allow weight = 0 for default grades
             sb.bagged_at &&
             !sb.storedDate
         );
+
+        if (!hasValidSplits) {
+          throw new Error("No sub-batches have valid weighed and bagged splits.");
+        }
+
+        return true;
       } catch (error) {
         const message = error.response?.data?.error || "Failed to check completion eligibility.";
         logError(message, error);

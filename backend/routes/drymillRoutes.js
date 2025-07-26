@@ -822,6 +822,7 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
         return res.status(400).json({ error: `Missing sub-batches for processing types: ${missingTypes.join(', ')}` });
       }
 
+      let hasAnyValidOrDefaultSplits = false;
       for (const pt of processingTypes) {
         const grades = await sequelize.query(`
           SELECT grade, weight, bagged_at, "storedDate", "lotNumber", "referenceNumber"
@@ -834,12 +835,24 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
           transaction: t
         });
 
-        const hasValidSplits = grades.some(g => parseFloat(g.weight) > 0 && g.bagged_at && !g.storedDate);
-        if (!hasValidSplits) {
-          await t.rollback();
-          logger.warn('No valid splits for processing type', { batchNumber, processingType: pt, user: createdBy });
-          return res.status(400).json({ error: `No valid splits for processing type: ${pt}` });
+        // Insert default grade if none exist
+        if (grades.length === 0) {
+          await sequelize.query(`
+            INSERT INTO "DryMillGrades" ("batchNumber", processing_type, grade, weight, bagged_at, "lotNumber")
+            VALUES (:batchNumber, :processingType, 'Default', 0, NULL, :lotNumber)
+          `, {
+            replacements: { batchNumber, processingType: pt, lotNumber: batch.lotNumber || 'ID-BTM-A-N' },
+            type: sequelize.QueryTypes.INSERT,
+            transaction: t
+          });
+          grades.push({ grade: 'Default', weight: 0, bagged_at: null, storedDate: null });
         }
+
+        const hasValidSplits = grades.some(g => 
+          (parseFloat(g.weight) >= 0 && g.bagged_at && !g.storedDate) || // Valid split or default with bagged_at
+          (g.grade === 'Default' && parseFloat(g.weight) === 0 && !g.bagged_at && !g.storedDate) // Default placeholder
+        );
+        if (hasValidSplits) hasAnyValidOrDefaultSplits = true;
 
         for (const grade of grades) {
           if (!validateLotNumber(grade.lotNumber)) {
@@ -854,6 +867,12 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
           }
         }
       }
+
+      if (!hasAnyValidOrDefaultSplits) {
+        await t.rollback();
+        logger.warn('No valid or default splits for any processing type', { batchNumber, user: createdBy });
+        return res.status(400).json({ error: 'No valid or default splits for any processing type.' });
+      }
     } else {
       const grades = await sequelize.query(`
         SELECT grade, weight, bagged_at, "storedDate", "lotNumber", "referenceNumber"
@@ -866,7 +885,22 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
         transaction: t
       });
 
-      const hasValidSplits = grades.some(g => parseFloat(g.weight) > 0 && g.bagged_at && !g.storedDate);
+      if (grades.length === 0) {
+        await sequelize.query(`
+          INSERT INTO "DryMillGrades" ("batchNumber", processing_type, grade, weight, bagged_at, "lotNumber")
+          VALUES (:batchNumber, 'Dry', 'Default', 0, NULL, :lotNumber)
+        `, {
+          replacements: { batchNumber, lotNumber: batch.lotNumber || 'ID-BTM-A-N' },
+          type: sequelize.QueryTypes.INSERT,
+          transaction: t
+        });
+        grades.push({ grade: 'Default', weight: 0, bagged_at: null, storedDate: null });
+      }
+
+      const hasValidSplits = grades.some(g => 
+        (parseFloat(g.weight) >= 0 && g.bagged_at && !g.storedDate) || // Valid split or default with bagged_at
+        (g.grade === 'Default' && parseFloat(g.weight) === 0 && !g.bagged_at && !g.storedDate) // Default placeholder
+      );
       if (!hasValidSplits) {
         await t.rollback();
         logger.warn('No valid splits for green beans', { batchNumber, user: createdBy });
@@ -904,7 +938,7 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
       return res.status(400).json({ error: 'Cannot complete batch: cherry batch is reserved for an order.' });
     }
 
-    const exitedAt = dryMillExited || new Date().toISOString(); // Use frontend-provided timestamp or default to current time
+    const exitedAt = dryMillExited || new Date().toISOString();
     const [result] = await sequelize.query(`
       UPDATE "DryMillData"
       SET exited_at = :exitedAt, status = 'Processed'
@@ -1079,7 +1113,7 @@ router.get('/dry-mill-data', async (req, res) => {
           rd."farmerName" AS "farmerName",
           pp."productLine" AS "productLine",
           COALESCE(pp."processingType", pd."processingType") AS "processingType",
-          COALESCE(pp."lotNumber", pd."lotNumber") AS "lotNumber",
+          pd."lotNumber" AS "lotNumber",
           COALESCE(pp."referenceNumber", pd."referenceNumber") AS "referenceNumber",
           CASE
             WHEN dm."entered_at" IS NOT NULL AND dm."exited_at" IS NULL THEN 'In Dry Mill'
@@ -1115,7 +1149,7 @@ router.get('/dry-mill-data', async (req, res) => {
           pp.weight, rd.weight, pp.quality,
           pp.producer, rd.producer, rd."farmerName",
           pp."productLine", COALESCE(pp."processingType", pd."processingType"),
-          COALESCE(pp."lotNumber", pd."lotNumber"), COALESCE(pp."referenceNumber", pd."referenceNumber"),
+          pd."lotNumber", COALESCE(pp."referenceNumber", pd."referenceNumber"),
           pp.notes, rd.notes,
           pp."storedDate", rd.rfid,
           fm."farmVarieties",
