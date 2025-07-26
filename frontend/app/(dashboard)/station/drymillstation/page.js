@@ -1469,7 +1469,7 @@ const DryMillStation = () => {
         <DialogTitle>Confirm Mark as Processed</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Confirm marking Batch {selectedBatch?.batchNumber} as processed. All sub-batches must be weighed and bagged.
+            Confirm marking Batch {selectedBatch?.batchNumber} as processed.
           </Typography>
         </DialogContent>
         <DialogActions>
