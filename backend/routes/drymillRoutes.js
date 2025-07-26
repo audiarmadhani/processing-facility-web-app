@@ -453,10 +453,10 @@ router.post('/dry-mill/:batchNumber/split', async (req, res) => {
       await sequelize.query(`
         INSERT INTO "DryMillGrades" (
           "batchNumber", "subBatchId", grade, weight, split_at, bagged_at, "storedDate", processing_type, temp_sequence, 
-          "lotNumber", "referenceNumber", "createdAt", "updatedAt"
+          "lotNumber", "referenceNumber"
         ) VALUES (
           :batchNumber, :subBatchId, :grade, :weight, NOW(), :bagged_at, NULL, :processingType, :tempSequence, 
-          :lotNumber, :referenceNumber, NOW(), NOW()
+          :lotNumber, :referenceNumber
         )
         ON CONFLICT ("subBatchId") DO UPDATE SET
           weight = :weight,
@@ -464,8 +464,7 @@ router.post('/dry-mill/:batchNumber/split', async (req, res) => {
           "storedDate" = NULL,
           processing_type = :processingType,
           "lotNumber" = :lotNumber,
-          "referenceNumber" = :referenceNumber,
-          "updatedAt" = NOW()
+          "referenceNumber" = :referenceNumber
       `, {
         replacements: {
           batchNumber,
@@ -493,9 +492,9 @@ router.post('/dry-mill/:batchNumber/split', async (req, res) => {
       for (let i = 0; i < weights.length; i++) {
         await sequelize.query(`
           INSERT INTO "BagDetails" (
-            grade_id, bag_number, weight, bagged_at, "storedDate", "createdAt", "updatedAt"
+            grade_id, bag_number, weight, bagged_at
           ) VALUES (
-            :gradeId, :bagNumber, :weight, :baggedAt, NULL, NOW(), NOW()
+            :gradeId, :bagNumber, :weight, :baggedAt
           )
         `, {
           replacements: {
@@ -512,10 +511,10 @@ router.post('/dry-mill/:batchNumber/split', async (req, res) => {
       await sequelize.query(`
         INSERT INTO "PostprocessingData" (
           "batchNumber", "lotNumber", "referenceNumber", "processingType", weight, "totalBags", 
-          notes, quality, producer, "farmerName", "parentBatchNumber", "createdAt", "updatedAt"
+          notes, quality, producer, "parentBatchNumber", "createdAt", "updatedAt"
         ) VALUES (
           :batchNumber, :lotNumber, :referenceNumber, :processingType, :weight, :totalBags, 
-          :notes, :quality, :producer, :farmerName, :parentBatchNumber, NOW(), NOW()
+          :notes, :quality, :producer, :parentBatchNumber, NOW(), NOW()
         )
         ON CONFLICT ("batchNumber") DO UPDATE SET
           "lotNumber" = :lotNumber,
@@ -534,7 +533,6 @@ router.post('/dry-mill/:batchNumber/split', async (req, res) => {
           notes: '',
           quality: grade,
           producer,
-          farmerName: batch.farmerName,
           parentBatchNumber: batchNumber
         },
         type: sequelize.QueryTypes.INSERT,
@@ -669,10 +667,10 @@ router.post('/dry-mill/:batchNumber/update-bags', async (req, res) => {
     await sequelize.query(`
       INSERT INTO "DryMillGrades" (
         "batchNumber", "subBatchId", grade, weight, split_at, bagged_at, "storedDate", processing_type, 
-        "lotNumber", "referenceNumber", "createdAt", "updatedAt"
+        "lotNumber", "referenceNumber"
       ) VALUES (
-        :parentBatchNumber, :subBatchId, :grade, :weight, NOW(), :bagged_at, NULL, :processingType, 
-        :lotNumber, :referenceNumber, NOW(), NOW()
+        :parentBatchNumber, :subBatchId, :grade, :weight, NOW(), :bagged_at, NOW(), :processingType, 
+        :lotNumber, :referenceNumber
       )
       ON CONFLICT ("subBatchId") DO UPDATE SET
         weight = :weight,
@@ -680,8 +678,7 @@ router.post('/dry-mill/:batchNumber/update-bags', async (req, res) => {
         "storedDate" = NULL,
         processing_type = :processingType,
         "lotNumber" = :lotNumber,
-        "referenceNumber" = :referenceNumber,
-        "updatedAt" = NOW()
+        "referenceNumber" = :referenceNumber
     `, {
       replacements: {
         parentBatchNumber,
@@ -700,9 +697,9 @@ router.post('/dry-mill/:batchNumber/update-bags', async (req, res) => {
     for (let i = 0; i < weights.length; i++) {
       await sequelize.query(`
         INSERT INTO "BagDetails" (
-          grade_id, bag_number, weight, bagged_at, "storedDate", "createdAt", "updatedAt"
+          grade_id, bag_number, weight, bagged_at
         ) VALUES (
-          :gradeId, :bagNumber, :weight, :baggedAt, NULL, NOW(), NOW()
+          :gradeId, :bagNumber, :weight, :baggedAt
         )
       `, {
         replacements: {
@@ -909,7 +906,7 @@ router.post('/dry-mill/:batchNumber/complete', async (req, res) => {
 
     const [result] = await sequelize.query(`
       UPDATE "DryMillData"
-      SET exited_at = NOW(), "updatedAt" = NOW()
+      SET exited_at = NOW()
       WHERE "batchNumber" = :batchNumber
       RETURNING exited_at
     `, {
@@ -1059,67 +1056,98 @@ router.get('/dry-mill-data', async (req, res) => {
         FROM "DryingWeightMeasurements"
         GROUP BY "batchNumber", "processingType", producer
         ORDER BY "batchNumber" ASC
+      ),
+      BaseData AS (
+        SELECT 
+          rd."batchNumber" AS original_batch_number,
+          COALESCE(pp."batchNumber", rd."batchNumber") AS batch_number,
+          COALESCE(pp."parentBatchNumber", rd."batchNumber") AS parent_batch_number,
+          rd."type",
+          CASE
+            WHEN rd."type" = 'Green Beans' THEN 'Green Beans'
+            ELSE COALESCE(pp."batchNumber", rd."batchNumber")
+          END AS batch_type,
+          dm."entered_at" AS "dryMillEntered",
+          dm."exited_at" AS "dryMillExited",
+          pp."storedDate" AS storeddatetrunc,
+          COALESCE(pp.weight, rd.weight) AS weight,
+          COALESCE(pp.quality, 'N/A') AS quality,
+          rd.weight AS cherry_weight,
+          COALESCE(ldw.drying_weight, 0.00) AS drying_weight,
+          COALESCE(pp.producer, rd.producer) AS producer,
+          rd."farmerName" AS "farmerName",
+          pp."productLine" AS "productLine",
+          COALESCE(pp."processingType", pd."processingType") AS "processingType",
+          COALESCE(pp."lotNumber", pd."lotNumber") AS "lotNumber",
+          COALESCE(pp."referenceNumber", pd."referenceNumber") AS "referenceNumber",
+          CASE
+            WHEN dm."entered_at" IS NOT NULL AND dm."exited_at" IS NULL THEN 'In Dry Mill'
+            WHEN dm."exited_at" IS NOT NULL THEN 'Processed'
+            ELSE 'Not Started'
+          END AS status,
+          ARRAY_AGG(DISTINCT pd."processingType") FILTER (WHERE pd."processingType" IS NOT NULL) AS "processingTypes",
+          COUNT(DISTINCT bd.bag_number) AS total_bags,
+          COALESCE(pp.notes, rd.notes) AS notes,
+          ARRAY_AGG(bd.weight) FILTER (WHERE bd.weight IS NOT NULL) AS bag_details,
+          pp."storedDate" AS stored_date,
+          rd.rfid,
+          fm."farmVarieties"
+        FROM "ReceivingData" rd
+        LEFT JOIN "DryMillData" dm ON rd."batchNumber" = dm."batchNumber"
+        LEFT JOIN "PostprocessingData" pp ON rd."batchNumber" = pp."parentBatchNumber" OR rd."batchNumber" = pp."batchNumber"
+        LEFT JOIN "PreprocessingData" pd ON rd."batchNumber" = pd."batchNumber"
+        LEFT JOIN "DryMillGrades" dg ON (
+          (pp."batchNumber" IS NOT NULL AND LOWER(dg."subBatchId") = LOWER(CONCAT(pp."parentBatchNumber", '-', REPLACE(pp.quality, ' ', '-'))))
+          OR (pp."batchNumber" IS NULL AND dg."batchNumber" = rd."batchNumber")
+        )
+        LEFT JOIN "BagDetails" bd ON LOWER(dg."subBatchId") = LOWER(bd.grade_id)
+        LEFT JOIN "Farmers" fm ON rd."farmerID" = fm."farmerID"
+        LEFT JOIN LatestDryingWeights ldw 
+          ON COALESCE(pp."batchNumber", rd."batchNumber") = ldw."batchNumber" 
+          AND COALESCE(pp."processingType", pd."processingType") = ldw."processingType" 
+          AND COALESCE(pp.producer, rd.producer, 'Unknown') = COALESCE(ldw.producer, 'Unknown')
+        WHERE dm."entered_at" IS NOT NULL
+        GROUP BY 
+          rd."batchNumber", pp."batchNumber", pp."parentBatchNumber",
+          rd."type",
+          dm."entered_at", dm."exited_at", pp."storedDate",
+          pp.weight, rd.weight, pp.quality,
+          pp.producer, rd.producer, rd."farmerName",
+          pp."productLine", COALESCE(pp."processingType", pd."processingType"),
+          COALESCE(pp."lotNumber", pd."lotNumber"), COALESCE(pp."referenceNumber", pd."referenceNumber"),
+          pp.notes, rd.notes,
+          pp."storedDate", rd.rfid,
+          fm."farmVarieties",
+          ldw.drying_weight
       )
       SELECT 
-        rd."batchNumber",
-        COALESCE(pp."parentBatchNumber", rd."batchNumber") AS parentBatchNumber,
-        rd."type",
-        CASE
-          WHEN rd."type" = 'Green Beans' THEN 'Green Beans'
-          ELSE COALESCE(pp."batchNumber", rd."batchNumber")
-        END AS batchType,
-        dm."entered_at" AS "dryMillEntered",
-        dm."exited_at" AS "dryMillExited",
-        pp."storedDate" AS storeddatetrunc,
-        COALESCE(pp.weight, rd.weight) AS weight,
-        COALESCE(pp.quality, 'N/A') AS quality,
-        rd.weight AS cherry_weight,
-        COALESCE(ldw.drying_weight, 0.00) AS drying_weight,
-        COALESCE(pp.producer, rd.producer) AS producer,
-        rd."farmerName" AS "farmerName",
-        pp."productLine" AS "productLine",
-        COALESCE(pp."processingType", pd."processingType") AS "processingType",
-        pd."lotNumber",
-        pd."referenceNumber",
-        CASE
-          WHEN dm."entered_at" IS NOT NULL AND dm."exited_at" IS NULL THEN 'In Dry Mill'
-          WHEN dm."exited_at" IS NOT NULL THEN 'Processed'
-          ELSE 'Not Started'
-        END AS status,
-        ARRAY_AGG(DISTINCT pd."processingType") FILTER (WHERE pd."processingType" IS NOT NULL) AS "processingTypes",
-        COUNT(DISTINCT bd.bag_number) AS totalBags,
-        COALESCE(pp.notes, rd.notes) AS notes,
-        ARRAY_AGG(bd.weight) FILTER (WHERE bd.weight IS NOT NULL) AS bagDetails,
-        pp."storedDate" AS storedDate,
-        rd.rfid,
-        fm."farmVarieties"
-      FROM "ReceivingData" rd
-      LEFT JOIN "DryMillData" dm ON rd."batchNumber" = dm."batchNumber"
-      LEFT JOIN "PostprocessingData" pp ON rd."batchNumber" = pp."parentBatchNumber"
-      LEFT JOIN "PreprocessingData" pd ON rd."batchNumber" = pd."batchNumber"
-      LEFT JOIN "DryMillGrades" dg ON (
-        pp."batchNumber" IS NOT NULL AND LOWER(dg."subBatchId") = LOWER(CONCAT(pp."parentBatchNumber", '-', REPLACE(pp.quality, ' ', '-')))
-        OR (pp."batchNumber" IS NULL AND dg."batchNumber" = rd."batchNumber")
-      )
-      LEFT JOIN "BagDetails" bd ON LOWER(dg."subBatchId") = LOWER(bd.grade_id)
-      LEFT JOIN "Farmers" fm ON rd."farmerID" = fm."farmerID"
-      LEFT JOIN LatestDryingWeights ldw 
-        ON rd."batchNumber" = ldw."batchNumber" 
-        AND COALESCE(pp."processingType", pd."processingType") = ldw."processingType" 
-        AND COALESCE(pp.producer, rd.producer, 'Unknown') = COALESCE(ldw.producer, 'Unknown')
-      WHERE dm."entered_at" IS NOT NULL
-      GROUP BY 
-        rd."batchNumber", pp."batchNumber", pp."parentBatchNumber",
-        rd."type",
-        dm."entered_at", dm."exited_at", pp."storedDate",
-        pp.weight, rd.weight, pp.quality,
-        pp.producer, rd.producer, rd."farmerName",
-        pp."productLine", COALESCE(pp."processingType", pd."processingType"),
-        pd."lotNumber", pd."referenceNumber", pp.notes, rd.notes,
-        pp."storedDate", rd.rfid,
-        fm."farmVarieties",
-        ldw.drying_weight
-      ORDER BY dm."entered_at" DESC
+        batch_number AS "batchNumber",
+        parent_batch_number AS "parentBatchNumber",
+        type,
+        batch_type AS "batchType",
+        "dryMillEntered",
+        "dryMillExited",
+        storeddatetrunc,
+        weight,
+        quality,
+        cherry_weight,
+        drying_weight,
+        producer,
+        "farmerName",
+        "productLine",
+        "processingType",
+        "lotNumber",
+        "referenceNumber",
+        status,
+        "processingTypes",
+        total_bags AS "totalBags",
+        notes,
+        bag_details AS "bagDetails",
+        stored_date AS "storedDate",
+        rfid,
+        "farmVarieties"
+      FROM BaseData
+      ORDER BY "dryMillEntered" DESC
     `, {
       type: sequelize.QueryTypes.SELECT,
       transaction: t
@@ -1259,7 +1287,7 @@ router.post('/warehouse/scan', async (req, res) => {
 
     await sequelize.query(`
       UPDATE "DryMillGrades"
-      SET "storedDate" = NOW(), "updatedAt" = NOW()
+      SET "storedDate" = NOW()
       WHERE "subBatchId" = :subBatchId
       AND processing_type = :processingType
     `, {
@@ -1273,7 +1301,7 @@ router.post('/warehouse/scan', async (req, res) => {
 
     await sequelize.query(`
       UPDATE "BagDetails"
-      SET "storedDate" = NOW(), "updatedAt" = NOW()
+      SET bagged_at = NOW()
       WHERE grade_id = :subBatchId
     `, {
       replacements: { subBatchId: dryMillGrade.subBatchId },

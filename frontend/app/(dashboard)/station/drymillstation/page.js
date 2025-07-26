@@ -1352,6 +1352,7 @@ const DryMillStation = () => {
                   variant="contained"
                   color="primary"
                   onClick={() => handleAddBag(currentWeight)}
+                  size="small"
                   disabled={isLoading || !currentWeight || isNaN(parseFloat(currentWeight)) || parseFloat(currentWeight) <= 0 || selectedBatch?.storedDate}
                 >
                   Add Bag
