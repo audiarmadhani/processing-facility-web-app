@@ -209,7 +209,7 @@ const DryMillStation = () => {
             },
           ];
         } else {
-          const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"];
+          const gradeOrder = ["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Asalan"];
           const fetchedGradesMap = {};
           data.forEach((grade) => {
             fetchedGradesMap[grade.grade] = {
@@ -1330,7 +1330,7 @@ const DryMillStation = () => {
                 fullWidth
                 disabled={isLoading || selectedBatch?.storedDate}
               >
-                {["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"].map((grade) => (
+                {["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Asalan"].map((grade) => (
                   <MenuItem key={grade} value={grade}>
                     {grade}
                   </MenuItem>
