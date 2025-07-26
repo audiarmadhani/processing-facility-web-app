@@ -109,8 +109,9 @@ const DryMillStation = () => {
       const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
       const data = response.data;
 
+      // Include all batches without dryMillExited or not Processed in parentBatches
       const parentBatchesData = data
-        .filter((batch) => !batch.parentBatchNumber && batch.status !== "Processed" && !batch.storeddatetrunc)
+        .filter((batch) => !batch.dryMillExited || batch.status !== "Processed")
         .map((batch) => ({
           batchNumber: batch.batchNumber,
           status: batch.status,
@@ -135,8 +136,9 @@ const DryMillStation = () => {
             .substr(2, 9)}`,
         }));
 
+      // Include all sub-batches without dryMillExited or not Processed in subBatches
       const subBatchesData = data
-        .filter((batch) => batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
+        .filter((batch) => batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber && (!batch.dryMillExited || batch.status !== "Processed"))
         .map((batch) => ({
           id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
@@ -408,6 +410,7 @@ const DryMillStation = () => {
           {
             createdBy: session.user.email,
             updatedBy: session.user.email,
+            dryMillExited: new Date().toISOString(), // Set dryMillExited to current timestamp
           }
         );
         setSnackbarMessage(response.data.message);
@@ -1110,7 +1113,7 @@ const DryMillStation = () => {
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "processingType", headerName: "Processing Type", width: 180 },
       { field: "dateTaken", headerName: "Date Taken", width: 150 },
-      { field: "weightTaken", headerName: "Weight Taken (kg)", weight: 150 },
+      { field: "weightTaken", headerName: "Weight Taken (kg)", width: 150 },
       { field: "totalCurrentWeight", headerName: "Total Current Weight (kg)", width: 180 },
       {
         field: "history",
