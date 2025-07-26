@@ -93,8 +93,6 @@ const DryMillStation = () => {
   const [sampleHistory, setSampleHistory] = useState([]);
   const [openSampleHistoryDialog, setOpenSampleHistoryDialog] = useState(false);
   const [sampleData, setSampleData] = useState([]);
-  const [openCustomWeightDialog, setOpenCustomWeightDialog] = useState(false);
-  const [customWeight, setCustomWeight] = useState("");
   const rfidInputRef = useRef(null);
 
   const logError = (message, error) => {
@@ -648,7 +646,6 @@ const DryMillStation = () => {
       });
       setCurrentWeight("");
       setHasUnsavedChanges(true);
-      setOpenCustomWeightDialog(false);
 
       if (selectedBatch.parentBatchNumber) {
         try {
@@ -916,7 +913,6 @@ const DryMillStation = () => {
   const handleDetailsClick = (batch) => {
     setSelectedBatch(batch);
     setOpenDialog(true);
-    setOpenCustomWeightDialog(false); // Reset custom weight dialog state
   };
 
   const handleSampleTrackingClick = (batch) => {
@@ -965,11 +961,6 @@ const DryMillStation = () => {
     setOpenSampleHistoryDialog(false);
     setSelectedBatch(null);
     setSampleHistory([]);
-  };
-
-  const handleCloseCustomWeightDialog = () => {
-    setOpenCustomWeightDialog(false);
-    setCustomWeight("");
   };
 
   const handleCloseSnackbar = () => {
@@ -1329,25 +1320,25 @@ const DryMillStation = () => {
               </Typography>
             </Box>
           )}
-          <form onSubmit={(e) => { e.preventDefault(); handleAddBag(currentWeight); }}>
-            <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-              <Grid item xs={4}>
-                <TextField
-                  label="Grade"
-                  value={selectedGrade}
-                  onChange={(e) => setSelectedGrade(e.target.value)}
-                  select
-                  fullWidth
-                  disabled={isLoading || selectedBatch?.storedDate}
-                >
-                  {["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"].map((grade) => (
-                    <MenuItem key={grade} value={grade}>
-                      {grade}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={4}>
+          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Grid item xs={4}>
+              <TextField
+                label="Grade"
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value)}
+                select
+                fullWidth
+                disabled={isLoading || selectedBatch?.storedDate}
+              >
+                {["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4"].map((grade) => (
+                  <MenuItem key={grade} value={grade}>
+                    {grade}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={4}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <TextField
                   label="Weight (kg)"
                   value={currentWeight}
@@ -1357,37 +1348,37 @@ const DryMillStation = () => {
                   fullWidth
                   disabled={isLoading || selectedBatch?.storedDate}
                 />
-              </Grid>
-              <Grid item xs={4}>
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleAddBag("50")}
-                    disabled={isLoading || selectedBatch?.storedDate}
-                  >
-                    50 kg
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleAddBag("60")}
-                    disabled={isLoading || selectedBatch?.storedDate}
-                  >
-                    60 kg
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => setOpenCustomWeightDialog(true)}
-                    disabled={isLoading || selectedBatch?.storedDate}
-                  >
-                    Custom
-                  </Button>
-                </Box>
-              </Grid>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddBag(currentWeight)}
+                  disabled={isLoading || !currentWeight || isNaN(parseFloat(currentWeight)) || parseFloat(currentWeight) <= 0 || selectedBatch?.storedDate}
+                >
+                  Add Bag
+                </Button>
+              </Box>
             </Grid>
-          </form>
+            <Grid item xs={4}>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddBag("50")}
+                  disabled={isLoading || selectedBatch?.storedDate}
+                >
+                  50 kg
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddBag("60")}
+                  disabled={isLoading || selectedBatch?.storedDate}
+                >
+                  60 kg
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
           <Typography variant="h6" gutterBottom>Grades Overview</Typography>
           <Table>
             <TableHead>
@@ -1710,40 +1701,6 @@ const DryMillStation = () => {
         <DialogActions>
           <Button onClick={handleCloseSampleHistoryDialog} disabled={isLoading}>
             Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={openCustomWeightDialog}
-        onClose={handleCloseCustomWeightDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Enter Custom Weight</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Custom Weight (kg)"
-            value={customWeight}
-            onChange={(e) => setCustomWeight(e.target.value)}
-            type="number"
-            inputProps={{ min: 0, step: 0.1 }}
-            fullWidth
-            autoFocus
-            disabled={isLoading || selectedBatch?.storedDate}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCustomWeightDialog} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => handleAddBag(customWeight)}
-            disabled={isLoading || !customWeight || isNaN(parseFloat(customWeight)) || parseFloat(customWeight) <= 0 || selectedBatch?.storedDate}
-          >
-            Add
           </Button>
         </DialogActions>
       </Dialog>
