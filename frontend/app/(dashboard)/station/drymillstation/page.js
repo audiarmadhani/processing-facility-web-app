@@ -136,9 +136,12 @@ const DryMillStation = () => {
             .substr(2, 9)}`,
         }));
 
-      // Include all sub-batches, including those with status "Processed"
+      // Include all sub-batches, including those with quality and totalBags > 0
       const subBatchesData = data
-        .filter((batch) => batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
+        .filter((batch) => 
+          (batch.quality && batch.quality !== "N/A" && parseInt(batch.totalBags, 10) > 0) || 
+          (batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
+        )
         .map((batch) => ({
           id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
@@ -157,7 +160,7 @@ const DryMillStation = () => {
           totalBags: batch.totalBags || "N/A",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
-          parentBatchNumber: batch.parentBatchNumber,
+          parentBatchNumber: batch.parentBatchNumber || batch.batchNumber, // Use self as parent if none
           lotNumber: batch.lotNumber,
           referenceNumber: batch.referenceNumber,
           bagWeights: batch.bagDetails || [],
