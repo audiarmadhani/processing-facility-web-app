@@ -93,6 +93,8 @@ const DryMillStation = () => {
   const [sampleHistory, setSampleHistory] = useState([]);
   const [openSampleHistoryDialog, setOpenSampleHistoryDialog] = useState(false);
   const [sampleData, setSampleData] = useState([]);
+  const [openCustomWeightDialog, setOpenCustomWeightDialog] = useState(false);
+  const [customWeight, setCustomWeight] = useState("");
   const rfidInputRef = useRef(null);
 
   const logError = (message, error) => {
@@ -646,6 +648,7 @@ const DryMillStation = () => {
       });
       setCurrentWeight("");
       setHasUnsavedChanges(true);
+      setOpenCustomWeightDialog(false);
 
       if (selectedBatch.parentBatchNumber) {
         try {
@@ -913,6 +916,7 @@ const DryMillStation = () => {
   const handleDetailsClick = (batch) => {
     setSelectedBatch(batch);
     setOpenDialog(true);
+    setOpenCustomWeightDialog(false); // Reset custom weight dialog state
   };
 
   const handleSampleTrackingClick = (batch) => {
@@ -961,6 +965,11 @@ const DryMillStation = () => {
     setOpenSampleHistoryDialog(false);
     setSelectedBatch(null);
     setSampleHistory([]);
+  };
+
+  const handleCloseCustomWeightDialog = () => {
+    setOpenCustomWeightDialog(false);
+    setCustomWeight("");
   };
 
   const handleCloseSnackbar = () => {
@@ -1110,7 +1119,7 @@ const DryMillStation = () => {
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "processingType", headerName: "Processing Type", width: 180 },
       { field: "dateTaken", headerName: "Date Taken", width: 150 },
-      { field: "weightTaken", headerName: "Weight Taken (kg)", width: 150 },
+      { field: "weightTaken", headerName: "Weight Taken (kg)", weight: 150 },
       { field: "totalCurrentWeight", headerName: "Total Current Weight (kg)", width: 180 },
       {
         field: "history",
@@ -1366,6 +1375,14 @@ const DryMillStation = () => {
                     disabled={isLoading || selectedBatch?.storedDate}
                   >
                     60 kg
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setOpenCustomWeightDialog(true)}
+                    disabled={isLoading || selectedBatch?.storedDate}
+                  >
+                    Custom
                   </Button>
                 </Box>
               </Grid>
@@ -1693,6 +1710,40 @@ const DryMillStation = () => {
         <DialogActions>
           <Button onClick={handleCloseSampleHistoryDialog} disabled={isLoading}>
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openCustomWeightDialog}
+        onClose={handleCloseCustomWeightDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Enter Custom Weight</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Custom Weight (kg)"
+            value={customWeight}
+            onChange={(e) => setCustomWeight(e.target.value)}
+            type="number"
+            inputProps={{ min: 0, step: 0.1 }}
+            fullWidth
+            autoFocus
+            disabled={isLoading || selectedBatch?.storedDate}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCustomWeightDialog} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleAddBag(customWeight)}
+            disabled={isLoading || !customWeight || isNaN(parseFloat(customWeight)) || parseFloat(customWeight) <= 0 || selectedBatch?.storedDate}
+          >
+            Add
           </Button>
         </DialogActions>
       </Dialog>
