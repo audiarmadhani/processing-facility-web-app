@@ -1336,7 +1336,7 @@ const Dashboard = () => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0,
-        item.quantity/50 || 0,
+        Math.round(item.quantity / 50) || 0,
         'Barang Pesanan Pelanggan', // Description
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1441,7 +1441,7 @@ const Dashboard = () => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
-        item.quantity/50 || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
+        Math.round(item.quantity / 50) || 0,
         'Barang Pesanan Pelanggan', // Description, match OCR
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
