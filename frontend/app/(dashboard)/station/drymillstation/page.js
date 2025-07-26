@@ -129,7 +129,7 @@ const DryMillStation = () => {
           farmVarieties: batch.farmVarieties || "N/A",
           storedDate: batch.storeddatetrunc || null,
           batchType: batch.batchType || "Cherry",
-          lotNumber: batch.lotNumber,
+          lotNumber: batch.lotNumber === "ID-BTM-A-N-AS" && !batch.dryMillExited ? "ID-BTM-A-N" : batch.lotNumber,
           referenceNumber: batch.referenceNumber,
           id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
@@ -351,43 +351,6 @@ const DryMillStation = () => {
     [rfid, fetchDryMillData]
   );
 
-  const checkCompletionEligibility = useCallback(
-    async (batchNumber) => {
-      try {
-        const response = await axios.get(
-          `https://processing-facility-backend.onrender.com/api/postprocessing-data/${batchNumber}`
-        );
-        const subBatches = response.data;
-
-        if (!subBatches || subBatches.length === 0) {
-          throw new Error("No sub-batches found");
-        }
-
-        // Check if at least one sub-batch has valid splits
-        const hasValidSplits = subBatches.some(
-          (sb) =>
-            parseFloat(sb.weight) >= 0 && // Allow weight = 0 for default grades
-            sb.bagged_at &&
-            !sb.storedDate
-        );
-
-        if (!hasValidSplits) {
-          throw new Error("No sub-batches have valid weighed and bagged splits.");
-        }
-
-        return true;
-      } catch (error) {
-        const message = error.response?.data?.error || "Failed to check completion eligibility.";
-        logError(message, error);
-        setSnackbarMessage(message);
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
-        return false;
-      }
-    },
-    []
-  );
-
   const handleConfirmComplete = useCallback(
     async () => {
       if (!selectedBatch || !session?.user?.email) {
@@ -398,15 +361,6 @@ const DryMillStation = () => {
       }
       if (!["admin", "manager"].includes(session.user.role)) {
         setSnackbarMessage("Only admins or managers can mark batches as complete.");
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
-        return;
-      }
-      const isEligible = await checkCompletionEligibility(selectedBatch.batchNumber);
-      if (!isEligible) {
-        setSnackbarMessage(
-          "All sub-batches must have weighed and bagged splits before marking complete."
-        );
         setSnackbarSeverity("error");
         setOpenSnackbar(true);
         return;
