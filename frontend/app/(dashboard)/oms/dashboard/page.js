@@ -1413,7 +1413,7 @@ const Dashboard = () => {
 
     doc.text('Alamat', 20, 65);
     doc.text(':', 40, 65);
-    doc.text('Jalan Perak Timur No.110, Surabaya, Jawa Timur 60164', 45, 65); // Example address, adjust as needed
+    doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 45, 65); // Example address, adjust as needed
 
     doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, 70);
 
@@ -1460,7 +1460,7 @@ const Dashboard = () => {
     doc.text('PIHAK KEDUA', 140, tableEndY + 30, { align: 'center' });
   
     doc.setFont('Helvetica', 'normal');
-    doc.text(`Audi Armadhani`, 50, tableEndY + 60, { align: 'center' });
+    doc.text(`Haris Ariansyah`, 50, tableEndY + 60, { align: 'center' });
     doc.text(`Manager`, 50, tableEndY + 65, { align: 'center' });
     doc.text(`${order.customerName || 'Unknown Customer'}`, 140, tableEndY + 60, { align: 'center' });
 
