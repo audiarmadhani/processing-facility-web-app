@@ -430,7 +430,7 @@ function Dashboard() {
           </Grid>
 
           {/* Batch Tracking Filter */}
-          <Grid item xs={6} md={2.4}>
+          {/* <Grid item xs={6} md={2.4}>
             <TextField
               label="Filter Batch Numbers (comma-separated)"
               value={batchFilter}
@@ -443,10 +443,10 @@ function Dashboard() {
               fullWidth
               variant="outlined"
             />
-          </Grid>
+          </Grid> */}
 
           {/* Batch Tracking Table */}
-          <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+          {/* <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
             <Card variant="outlined" sx={{ height: '100%' }}>
               <CardContent sx={{ height: '100%' }}>
                 <Typography variant="h6" gutterBottom>
@@ -550,10 +550,10 @@ function Dashboard() {
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Grid> */}
 
           {/* Batch Tracking Dialog */}
-          <Dialog
+          {/* <Dialog
             open={openDialog}
             onClose={handleCloseDialog}
             maxWidth="lg"
@@ -604,7 +604,7 @@ function Dashboard() {
                 Close
               </Button>
             </DialogContent>
-          </Dialog>
+          </Dialog> */}
 
           {/* Arabica Section */}
           <Grid item xs={12} md={12}>
