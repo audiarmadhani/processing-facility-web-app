@@ -613,14 +613,14 @@ function Dashboard() {
             <Grid container spacing={3}>
 
               {/* Land Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '650px', sm: '650px', md: '650px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
                       Land Target Achievement
                     </Typography>
                     {isLoadingTargets ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '90%' }}>
                         <CircularProgress />
                       </Box>
                     ) : landTargets.length === 0 ? (
@@ -1039,7 +1039,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1154,8 +1154,8 @@ function Dashboard() {
                 </Card>
               </Grid>
 
-              {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+              {/* Heqa Target Achievement */}
+              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
