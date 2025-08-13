@@ -1147,8 +1147,18 @@ function Dashboard() {
                           rows={heqaTargets}
                           columns={[
                             { 
+                              field: 'type', 
+                              headerName: 'Type', 
+                              width: 150,
+                            },
+                            { 
                               field: 'productLine', 
                               headerName: 'Product Line', 
+                              width: 180,
+                            },
+                            { 
+                              field: 'processingType', 
+                              headerName: 'Processing Type', 
                               width: 180,
                             },
                             { 
