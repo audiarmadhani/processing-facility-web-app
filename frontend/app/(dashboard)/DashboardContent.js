@@ -220,6 +220,8 @@ function Dashboard() {
       const formattedData = data.heqaTarget.map((row, index) => ({
         id: index,
         productLine: row.productLine,
+        type: row.type,
+        type: row.processingType,
         cherryNow: parseFloat(row.cherryNow) || null,
         projectedGB: parseFloat(row.projectedGB) || null,
         cherryTarget: parseFloat(row.cherryTarget) || null,
