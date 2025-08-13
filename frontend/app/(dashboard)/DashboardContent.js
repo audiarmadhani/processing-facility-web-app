@@ -705,17 +705,17 @@ function Dashboard() {
                               const totalDifference = landTargets.reduce((sum, row) => sum + (row.difference || 0), 0);
 
                               return (
-                                <Box sx={{ padding: '8px 16px', borderTop: '1px solid rgba(0,0,0,0.12)', backgroundColor: '#f5f5f5' }}>
+                                <Box sx={{ padding: '8px 16px', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
                                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                                     Totals:
                                   </Typography>
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                                    <Typography>{new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalContractValue)} Rp</Typography>
-                                    <Typography>{new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCherryEstimate)} kg</Typography>
-                                    <Typography>{new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalGbEstimate)} kg</Typography>
-                                    <Typography>{new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCurrentCherryTotal)} kg</Typography>
+                                  <Box sx={{ mt: 1 }}>
+                                    <Typography>Contract Value (Rp): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalContractValue)} Rp</Typography>
+                                    <Typography>Cherry Estimate (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCherryEstimate)} kg</Typography>
+                                    <Typography>GB Estimate (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalGbEstimate)} kg</Typography>
+                                    <Typography>Current Cherry Total (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCurrentCherryTotal)} kg</Typography>
                                     <Typography sx={{ color: totalDifference < 0 ? 'red' : 'inherit', fontWeight: totalDifference < 0 ? 'bold' : 'normal' }}>
-                                      {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalDifference)} kg
+                                      Deficit (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalDifference)} kg
                                     </Typography>
                                   </Box>
                                 </Box>
