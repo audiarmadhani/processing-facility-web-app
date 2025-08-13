@@ -1127,14 +1127,14 @@ function Dashboard() {
               </Grid>
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
                       HEQA Target Achievement
                     </Typography>
                     {isLoadingTargets ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                         <CircularProgress />
                       </Box>
                     ) : heqaTargets.length === 0 ? (
@@ -1214,10 +1214,10 @@ function Dashboard() {
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                           ]}
-                          pageSizeOptions={[5]}
+                          pageSizeOptions={[50]}
                           slots={{ toolbar: GridToolbar }}
                           sx={{
-                            height: '80%',
+                            height: '100%',
                             border: '1px solid rgba(0,0,0,0.12)',
                             '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
                             '& .negative-deficit': { color: 'red', fontWeight: 'bold' },
@@ -1227,10 +1227,10 @@ function Dashboard() {
                           rowHeight={32}
                           disableRowSelectionOnClick
                           initialState={{
-                            pagination: { paginationModel: { pageSize: 5 } },
-                            sorting: {
-                              sortModel: [{ field: 'productLine', sort: 'asc' }],
-                            },
+                            pagination: { paginationModel: { pageSize: 50 } },
+                            // sorting: {
+                            //   sortModel: [{ field: 'productLine', sort: 'asc' }],
+                            // },
                           }}
                           localeText={{
                             noRowsLabel: 'No data available for HEQA targets'
