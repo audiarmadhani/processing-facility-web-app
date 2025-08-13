@@ -221,7 +221,7 @@ function Dashboard() {
         id: index,
         productLine: row.productLine,
         type: row.type,
-        type: row.processingType,
+        processingType: row.processingType,
         cherryNow: parseFloat(row.cherryNow) || null,
         projectedGB: parseFloat(row.projectedGB) || null,
         cherryTarget: parseFloat(row.cherryTarget) || null,
