@@ -219,6 +219,7 @@ function Dashboard() {
       }
       const formattedData = data.heqaTarget.map((row, index) => ({
         id: index,
+        lotNumber: row.lotNumber,
         productLine: row.productLine,
         type: row.type,
         processingType: row.processingType,
@@ -1174,6 +1175,11 @@ function Dashboard() {
                         <DataGrid
                           rows={heqaTargets}
                           columns={[
+                            { 
+                              field: 'lotNumber', 
+                              headerName: 'Lot Number', 
+                              width: 150,
+                            },
                             { 
                               field: 'type', 
                               headerName: 'Type', 
