@@ -1159,7 +1159,7 @@ function Dashboard() {
               </Grid>
 
               {/* Heqa Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '700px', sm: '700px', md: '700px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1272,7 +1272,7 @@ function Dashboard() {
                             { 
                               field: 'gbDeficitForecast', 
                               headerName: 'GB Deficit Forecast (kg)', 
-                              width: 150,
+                              width: 170,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
@@ -1282,7 +1282,7 @@ function Dashboard() {
                             { 
                               field: 'gbActualDeficit', 
                               headerName: 'GB Deficit Actual (kg)', 
-                              width: 150,
+                              width: 170,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
