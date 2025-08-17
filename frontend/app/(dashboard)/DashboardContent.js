@@ -1159,7 +1159,7 @@ function Dashboard() {
               </Grid>
 
               {/* Heqa Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
+              <Grid item xs={12} md={12} sx={{ height: { xs: '450px', sm: '450px', md: '450px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
