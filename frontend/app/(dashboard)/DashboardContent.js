@@ -223,12 +223,15 @@ function Dashboard() {
         productLine: row.productLine,
         type: row.type,
         processingType: row.processingType,
-        cherryNow: parseFloat(row.cherryNow) || null,
-        projectedGB: parseFloat(row.projectedGB) || null,
+        cherryNow: parseFloat(row.cherryActualWeight) || null,
         cherryTarget: parseFloat(row.cherryTarget) || null,
-        gbTarget: parseFloat(row.gbTarget) || null,
         cherryDeficit: parseFloat(row.cherryDeficit) || null,
-        cherryperdTarget: parseFloat(row.cherryperdTarget) || null,
+        dryingWeight: parseFloat(row.dryingWeight) || null,
+        projectedGB: parseFloat(row.gbWeightForecast) || null,
+        actualGB: parseFloat(row.gbActualWeight) || null,
+        gbTarget: parseFloat(row.gbTarget) || null,
+        gbDeficitForecast: parseFloat(row.gbDeficitForecast) || null,
+        gbActualDeficit: parseFloat(row.gbActualDeficit) || null,
       }));
       console.log('Setting heqaTargets:', formattedData);
       setHeqaTargets(formattedData);
@@ -1206,28 +1209,8 @@ function Dashboard() {
                                   : 'N/A',
                             },
                             { 
-                              field: 'projectedGB', 
-                              headerName: 'Projected GB (kg)', 
-                              width: 150,
-                              type: 'number',
-                              valueFormatter: (value) => 
-                                value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
-                                  : 'N/A',
-                            },
-                            { 
                               field: 'cherryTarget', 
                               headerName: 'Cherry Target (kg)', 
-                              width: 150,
-                              type: 'number',
-                              valueFormatter: (value) => 
-                                value != null 
-                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
-                                  : 'N/A',
-                            },
-                            { 
-                              field: 'gbTarget', 
-                              headerName: 'GB Target (kg)', 
                               width: 150,
                               type: 'number',
                               valueFormatter: (value) => 
@@ -1247,15 +1230,64 @@ function Dashboard() {
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
                             { 
-                              field: 'cherryperdTarget', 
-                              headerName: 'Cherry/Day Target (kg)', 
-                              width: 250,
+                              field: 'dryingWeight', 
+                              headerName: 'Drying Weight (kg)', 
+                              width: 150,
                               type: 'number',
                               valueFormatter: (value) => 
                                 value != null 
                                   ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
                                   : 'N/A',
-                              cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
+                            },
+                            { 
+                              field: 'projectedGB', 
+                              headerName: 'Projected GB (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'actualGB', 
+                              headerName: 'Actual GB (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'gbTarget', 
+                              headerName: 'GB Target (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'gbDeficitForecast', 
+                              headerName: 'GB Deficit Forecast (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
+                            { 
+                              field: 'gbActualDeficit', 
+                              headerName: 'GB Deficit Actual (kg)', 
+                              width: 150,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
                             },
                           ]}
                           pageSizeOptions={[50]}
