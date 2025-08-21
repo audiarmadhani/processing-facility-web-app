@@ -29,7 +29,6 @@ import {
   TableRow,
   TableCell,
   TableHead,
-  Menu,
 } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Alert from '@mui/material/Alert';
@@ -51,38 +50,95 @@ const FermentationStation = () => {
   const [batchNumber, setBatchNumber] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [experimentNumber, setExperimentNumber] = useState('');
-  const [processingType, setProcessingType] = useState('natural');
+  const [processingType, setProcessingType] = useState('');
   const [description, setDescription] = useState('');
   const [farmerName, setFarmerName] = useState('');
-  const [type, setType] = useState('arabica');
-  const [variety, setVariety] = useState('cobra');
-  const [preStorage, setPreStorage] = useState('no');
+  const [type, setType] = useState('');
+  const [variety, setVariety] = useState('');
+  const [harvestDate, setHarvestDate] = useState('');
+  const [harvestAt, setHarvestAt] = useState('');
+  const [receivedAt, setReceivedAt] = useState('');
+  const [SLA, setSLA] = useState('');
+  const [receivedWeight, setReceivedWeight] = useState('');
+  const [rejectWeight, setRejectWeight] = useState('');
+  const [defectWeight, setDefectWeight] = useState('');
+  const [damagedWeight, setDamagedWeight] = useState('');
+  const [lostWeight, setLostWeight] = useState('');
+  const [preprocessingWeight, setPreprocessingWeight] = useState('');
+  const [quality, setQuality] = useState('');
+  const [brix, setBrix] = useState('');
+  const [preStorage, setPreStorage] = useState('');
   const [preStorageCondition, setPreStorageCondition] = useState('');
-  const [prePulped, setPrePulped] = useState('no');
-  const [prePulpedDelva, setPrePulpedDelva] = useState('no');
-  const [bulkDensity, setBulkDensity] = useState('0.62');
-  const [gas, setGas] = useState('air');
+  const [prePulped, setPrePulped] = useState('');
+  const [prePulpedDelva, setPrePulpedDelva] = useState('');
+  const [prePulpedWeight, setPrePulpedWeight] = useState('');
+  const [cherryType, setCherryType] = useState('');
+  const [fermentation, setFermentation] = useState('');
+  const [fermentationTank, setFermentationTank] = useState('');
+  const [starterType, setStarterType] = useState('');
+  const [gas, setGas] = useState('');
   const [pressure, setPressure] = useState('');
-  const [isSubmerged, setIsSubmerged] = useState('no');
-  const [pH, setPH] = useState('4');
-  const [fermentationTimeTarget, setFermentationTimeTarget] = useState('48');
-  const [fermentation, setFermentation] = useState('yes');
-  const [fermentationTank, setFermentationTank] = useState('biomaster');
-  const [secondFermentation, setSecondFermentation] = useState('no');
-  const [secondFermentationTank, setSecondFermentationTank] = useState('biomaster');
-  const [secondFermentationTimeTarget, setSecondFermentationTimeTarget] = useState('0');
-  const [secondGas, setSecondGas] = useState('air');
+  const [isSubmerged, setIsSubmerged] = useState('');
+  const [totalVolume, setTotalVolume] = useState('');
+  const [waterUsed, setWaterUsed] = useState('');
+  const [starterUsed, setStarterUsed] = useState('');
+  const [bulkDensity, setBulkDensity] = useState('');
+  const [stirring, setStirring] = useState('');
+  const [fermentationTemperature, setFermentationTemperature] = useState('');
+  const [pH, setPH] = useState('');
+  const [fermentationTimeTarget, setFermentationTimeTarget] = useState('');
+  const [fermentationStart, setFermentationStart] = useState('');
+  const [fermentationEnd, setFermentationEnd] = useState('');
+  const [fermentationTimeActual, setFermentationTimeActual] = useState('');
+  const [finalPH, setFinalPH] = useState('');
+  const [finalTDS, setFinalTDS] = useState('');
+  const [finalTemperature, setFinalTemperature] = useState('');
+  const [postWeight, setPostWeight] = useState('');
+  const [postPulped, setPostPulped] = useState('');
+  const [secondFermentation, setSecondFermentation] = useState('');
+  const [washedDelva, setWashedDelva] = useState('');
+  const [washed, setWashed] = useState('');
+  const [postPulpedWeight, setPostPulpedWeight] = useState('');
+  const [ratio, setRatio] = useState('');
+  const [secondFermentationTank, setSecondFermentationTank] = useState('');
+  const [secondStarterType, setSecondStarterType] = useState('');
+  const [secondGas, setSecondGas] = useState('');
   const [secondPressure, setSecondPressure] = useState('');
-  const [secondIsSubmerged, setSecondIsSubmerged] = useState('no');
-  const [secondBulkDensity, setSecondBulkDensity] = useState('0.62');
-  const [dryingArea, setDryingArea] = useState('greenhouse');
-  const [secondDrying, setSecondDrying] = useState('no');
-  const [secondDryingArea, setSecondDryingArea] = useState('greenhouse');
-  const [rehydration, setRehydration] = useState('no');
-  const [storage, setStorage] = useState('no');
-  const [tank, setTank] = useState('');
-  const [blueBarrelCode, setBlueBarrelCode] = useState('');
-  const [startDate, setStartDate] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
+  const [secondIsSubmerged, setSecondIsSubmerged] = useState('');
+  const [secondTotalVolume, setSecondTotalVolume] = useState('');
+  const [secondWaterUsed, setSecondWaterUsed] = useState('');
+  const [secondMosstoUsed, setSecondMosstoUsed] = useState('');
+  const [secondBulkDensity, setSecondBulkDensity] = useState('');
+  const [secondActualVolume, setSecondActualVolume] = useState('');
+  const [secondTemperature, setSecondTemperature] = useState('');
+  const [secondFermentationTimeTarget, setSecondFermentationTimeTarget] = useState('');
+  const [secondFermentationStart, setSecondFermentationStart] = useState('');
+  const [secondFermentationEnd, setSecondFermentationEnd] = useState('');
+  const [secondFermentationTimeActual, setSecondFermentationTimeActual] = useState('');
+  const [dryingArea, setDryingArea] = useState('');
+  const [avgTemperature, setAvgTemperature] = useState('');
+  const [preDryingWeight, setPreDryingWeight] = useState('');
+  const [finalMoisture, setFinalMoisture] = useState('');
+  const [postDryingWeight, setPostDryingWeight] = useState('');
+  const [dryingStart, setDryingStart] = useState('');
+  const [dryingEnd, setDryingEnd] = useState('');
+  const [totalDryingTime, setTotalDryingTime] = useState('');
+  const [secondDrying, setSecondDrying] = useState('');
+  const [secondDryingArea, setSecondDryingArea] = useState('');
+  const [rehydration, setRehydration] = useState('');
+  const [secondAverageTemperature, setSecondAverageTemperature] = useState('');
+  const [secondFinalMoisture, setSecondFinalMoisture] = useState('');
+  const [secondPostDryingWeight, setSecondPostDryingWeight] = useState('');
+  const [secondDryingStart, setSecondDryingStart] = useState('');
+  const [secondDryingEnd, setSecondDryingEnd] = useState('');
+  const [secondTotalDryingTime, setSecondTotalDryingTime] = useState('');
+  const [storage, setStorage] = useState('');
+  const [storageTemperature, setStorageTemperature] = useState('');
+  const [hullingTime, setHullingTime] = useState('');
+  const [bagType, setBagType] = useState('');
+  const [postHullingWeight, setPostHullingWeight] = useState('');
+  const [cherryDryRatio, setCherryDryRatio] = useState('');
+  const [sortedCherryDryRatio, setSortedCherryDryRatio] = useState('');
   const [fermentationData, setFermentationData] = useState([]);
   const [availableBatches, setAvailableBatches] = useState([]);
   const [availableTanks, setAvailableTanks] = useState([]);
@@ -261,11 +317,54 @@ const FermentationStation = () => {
     }
   };
 
+  const fetchBatchDetails = async (batchNumber) => {
+    if (!batchNumber) return;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/receiving/${batchNumber}`);
+      const data = response.data;
+      if (data) {
+        setFarmerName(data.farmerName || '');
+        setType(data.type || '');
+        setHarvestDate(data.harvestDate ? dayjs(data.harvestDate).format('YYYY-MM-DD') : '');
+        setHarvestAt(data.harvestAt ? dayjs(data.harvestAt).tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss') : '');
+        setReceivedAt(data.receivedAt ? dayjs(data.receivedAt).tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss') : '');
+        setSLA(data.SLA || '');
+        setReceivedWeight(data.receivedWeight || '');
+        setRejectWeight(data.rejectWeight || '');
+        setDefectWeight(data.defectWeight || '');
+        setDamagedWeight(data.damagedWeight || '');
+        setLostWeight(data.lostWeight || '');
+        setPreprocessingWeight(data.preprocessingWeight || '');
+        setQuality(data.quality || '');
+        setBrix(data.brix || '');
+      }
+    } catch (error) {
+      console.error('Error fetching batch details:', error);
+      setSnackbarMessage('Failed to fetch batch details.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  };
+
   useEffect(() => {
     fetchFermentationData();
     fetchAvailableBatches();
     fetchAvailableTanks();
   }, []);
+
+  useEffect(() => {
+    if (batchNumber) {
+      fetchBatchDetails(batchNumber);
+    } else {
+      resetForm();
+    }
+  }, [batchNumber]);
+
+  useEffect(() => {
+    if (prePulped) {
+      setBulkDensity(prePulped === 'yes' ? '0.7' : '0.62');
+    }
+  }, [prePulped]);
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
@@ -281,8 +380,8 @@ const FermentationStation = () => {
       return;
     }
 
-    if (!batchNumber || !referenceNumber || !experimentNumber || !processingType || !farmerName || !type || !variety || !tank || (tank === 'Blue Barrel' && !blueBarrelCode)) {
-      setSnackbarMessage('All required fields must be filled.');
+    if (!batchNumber || !fermentationTank || !startDate) {
+      setSnackbarMessage('batchNumber, fermentationTank, and startDate are required.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -297,37 +396,97 @@ const FermentationStation = () => {
       farmerName,
       type,
       variety,
+      harvestDate,
+      harvestAt,
+      receivedAt,
+      SLA,
+      receivedWeight: receivedWeight ? parseFloat(receivedWeight) : null,
+      rejectWeight: rejectWeight ? parseFloat(rejectWeight) : null,
+      defectWeight: defectWeight ? parseFloat(defectWeight) : null,
+      damagedWeight: damagedWeight ? parseFloat(damagedWeight) : null,
+      lostWeight: lostWeight ? parseFloat(lostWeight) : null,
+      preprocessingWeight: preprocessingWeight ? parseFloat(preprocessingWeight) : null,
+      quality: quality ? parseFloat(quality) : null,
+      brix: brix ? parseFloat(brix) : null,
       preStorage,
       preStorageCondition,
       prePulped,
       prePulpedDelva,
-      bulkDensity: parseFloat(bulkDensity),
+      prePulpedWeight: prePulpedWeight ? parseFloat(prePulpedWeight) : null,
+      cherryType,
+      fermentation,
+      fermentationTank,
+      starterType,
       gas,
       pressure: pressure ? parseFloat(pressure) : null,
       isSubmerged,
-      pH: parseFloat(pH),
-      fermentationTimeTarget: parseInt(fermentationTimeTarget),
-      fermentation,
-      fermentationTank: tank === 'Blue Barrel' ? blueBarrelCode : tank,
+      totalVolume: totalVolume ? parseFloat(totalVolume) : null,
+      waterUsed: waterUsed ? parseFloat(waterUsed) : null,
+      starterUsed: starterUsed ? parseFloat(starterUsed) : null,
+      bulkDensity: bulkDensity ? parseFloat(bulkDensity) : null,
+      stirring: stirring ? parseFloat(stirring) : null,
+      fermentationTemperature,
+      pH: pH ? parseFloat(pH) : null,
+      fermentationTimeTarget: fermentationTimeTarget ? parseInt(fermentationTimeTarget) : null,
+      fermentationStart,
+      fermentationEnd,
+      fermentationTimeActual,
+      finalPH: finalPH ? parseFloat(finalPH) : null,
+      finalTDS: finalTDS ? parseFloat(finalTDS) : null,
+      finalTemperature,
+      postWeight: postWeight ? parseFloat(postWeight) : null,
+      postPulped,
       secondFermentation,
+      washedDelva,
+      washed,
+      postPulpedWeight: postPulpedWeight ? parseFloat(postPulpedWeight) : null,
+      ratio: ratio ? parseFloat(ratio) : null,
       secondFermentationTank,
-      secondFermentationTimeTarget: parseInt(secondFermentationTimeTarget),
+      secondStarterType,
       secondGas,
       secondPressure: secondPressure ? parseFloat(secondPressure) : null,
       secondIsSubmerged,
-      secondBulkDensity: parseFloat(secondBulkDensity),
+      secondTotalVolume: secondTotalVolume ? parseFloat(secondTotalVolume) : null,
+      secondWaterUsed: secondWaterUsed ? parseFloat(secondWaterUsed) : null,
+      secondMosstoUsed: secondMosstoUsed ? parseFloat(secondMosstoUsed) : null,
+      secondBulkDensity: secondBulkDensity ? parseFloat(secondBulkDensity) : null,
+      secondActualVolume: secondActualVolume ? parseFloat(secondActualVolume) : null,
+      secondTemperature,
+      secondFermentationTimeTarget: secondFermentationTimeTarget ? parseInt(secondFermentationTimeTarget) : null,
+      secondFermentationStart,
+      secondFermentationEnd,
+      secondFermentationTimeActual,
       dryingArea,
+      avgTemperature: avgTemperature ? parseFloat(avgTemperature) : null,
+      preDryingWeight: preDryingWeight ? parseFloat(preDryingWeight) : null,
+      finalMoisture: finalMoisture ? parseFloat(finalMoisture) : null,
+      postDryingWeight: postDryingWeight ? parseFloat(postDryingWeight) : null,
+      dryingStart,
+      dryingEnd,
+      totalDryingTime,
       secondDrying,
       secondDryingArea,
       rehydration,
+      secondAverageTemperature: secondAverageTemperature ? parseFloat(secondAverageTemperature) : null,
+      secondFinalMoisture: secondFinalMoisture ? parseFloat(secondFinalMoisture) : null,
+      secondPostDryingWeight: secondPostDryingWeight ? parseFloat(secondPostDryingWeight) : null,
+      secondDryingStart,
+      secondDryingEnd,
+      secondTotalDryingTime,
       storage,
-      startDate: dayjs(startDate).tz('Asia/Makassar', true).toISOString(),
+      storageTemperature: storageTemperature ? parseFloat(storageTemperature) : null,
+      hullingTime,
+      bagType,
+      postHullingWeight: postHullingWeight ? parseFloat(postHullingWeight) : null,
+      cherryDryRatio: cherryDryRatio ? parseFloat(cherryDryRatio) : null,
+      sortedCherryDryRatio: sortedCherryDryRatio ? parseFloat(sortedCherryDryRatio) : null,
+      startDate: startDate ? dayjs(startDate).tz('Asia/Makassar', true).toISOString() : null,
       createdBy: session.user.name,
     };
 
     try {
       await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
-      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${payload.fermentationTank}.`);
+      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${fermentationTank}.`);
       setSnackbarSeverity('success');
       resetForm();
       await fetchFermentationData();
@@ -346,39 +505,97 @@ const FermentationStation = () => {
     setBatchNumber('');
     setReferenceNumber('');
     setExperimentNumber('');
-    setProcessingType('natural');
+    setProcessingType('');
     setDescription('');
     setFarmerName('');
-    setType('arabica');
-    setVariety('cobra');
-    setPreStorage('no');
+    setType('');
+    setVariety('');
+    setHarvestDate('');
+    setHarvestAt('');
+    setReceivedAt('');
+    setSLA('');
+    setReceivedWeight('');
+    setRejectWeight('');
+    setDefectWeight('');
+    setDamagedWeight('');
+    setLostWeight('');
+    setPreprocessingWeight('');
+    setQuality('');
+    setBrix('');
+    setPreStorage('');
     setPreStorageCondition('');
-    setPrePulped('no');
-    setPrePulpedDelva('no');
-    setBulkDensity('0.62');
-    setGas('air');
+    setPrePulped('');
+    setPrePulpedDelva('');
+    setPrePulpedWeight('');
+    setCherryType('');
+    setFermentation('');
+    setFermentationTank('');
+    setStarterType('');
+    setGas('');
     setPressure('');
-    setIsSubmerged('no');
-    setPH('4');
-    setFermentationTimeTarget('48');
-    setFermentation('yes');
-    setFermentationTank('biomaster');
-    setSecondFermentation('no');
-    setSecondFermentationTank('biomaster');
-    setSecondFermentationTimeTarget('0');
-    setSecondGas('air');
+    setIsSubmerged('');
+    setTotalVolume('');
+    setWaterUsed('');
+    setStarterUsed('');
+    setBulkDensity('');
+    setStirring('');
+    setFermentationTemperature('');
+    setPH('');
+    setFermentationTimeTarget('');
+    setFermentationStart('');
+    setFermentationEnd('');
+    setFermentationTimeActual('');
+    setFinalPH('');
+    setFinalTDS('');
+    setFinalTemperature('');
+    setPostWeight('');
+    setPostPulped('');
+    setSecondFermentation('');
+    setWashedDelva('');
+    setWashed('');
+    setPostPulpedWeight('');
+    setRatio('');
+    setSecondFermentationTank('');
+    setSecondStarterType('');
+    setSecondGas('');
     setSecondPressure('');
-    setSecondIsSubmerged('no');
-    setSecondBulkDensity('0.62');
-    setDryingArea('greenhouse');
-    setSecondDrying('no');
-    setSecondDryingArea('greenhouse');
-    setRehydration('no');
-    setStorage('no');
-    setTank('');
-    setBlueBarrelCode('');
-    setStartDate(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
-  };
+    setSecondIsSubmerged('');
+    setSecondTotalVolume('');
+    setSecondWaterUsed('');
+    setSecondMosstoUsed('');
+    setSecondBulkDensity('');
+    setSecondActualVolume('');
+    setSecondTemperature('');
+    setSecondFermentationTimeTarget('');
+    setSecondFermentationStart('');
+    setSecondFermentationEnd('');
+    setSecondFermentationTimeActual('');
+    setDryingArea('');
+    setAvgTemperature('');
+    setPreDryingWeight('');
+    setFinalMoisture('');
+    setPostDryingWeight('');
+    setDryingStart('');
+    setDryingEnd('');
+    setTotalDryingTime('');
+    setSecondDrying('');
+    setSecondDryingArea('');
+    setRehydration('');
+    setSecondAverageTemperature('');
+    setSecondFinalMoisture('');
+    setSecondPostDryingWeight('');
+    setSecondDryingStart('');
+    setSecondDryingEnd('');
+    setSecondTotalDryingTime('');
+    setStorage('');
+    setStorageTemperature('');
+    setHullingTime('');
+    setBagType('');
+    setPostHullingWeight('');
+    setCherryDryRatio('');
+    setSortedCherryDryRatio('');
+    setStartDate('');
+    };
 
   const handleFinishFermentation = async () => {
     try {
@@ -474,7 +691,7 @@ const FermentationStation = () => {
         batchNumber: selectedBatch.batchNumber,
         processingType: newProcessingType,
         weight: parseFloat(newWeight),
-        measurement_date: newWeightDate,
+        measurement_date: dayjs(newWeightDate).tz('Asia/Makassar', true).toISOString(),
         producer: newProducer,
       };
       const response = await axios.post(`${API_BASE_URL}/api/fermentation-weight-measurement`, payload);
@@ -773,170 +990,6 @@ const FermentationStation = () => {
                   value={gas}
                   onChange={(e) => setGas(e.target.value)}
                   input={<OutlinedInput label="Gas" />}
-                  MenuProps={MenuProps}
-                >
-                  <MenuItem value="air">Air</MenuItem>
-                  <MenuItem value="co2">CO2</MenuItem>
-                  <MenuItem value="n2">N2</MenuItem>
-                  <MenuItem value="pure o2">Pure O2</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                label="Pressure (psi)"
-                type="number"
-                value={pressure}
-                onChange={(e) => setPressure(e.target.value)}
-                fullWidth
-                margin="normal"
-              />
-              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                <InputLabel id="is-submerged-label">Is Submerged</InputLabel>
-                <Select
-                  labelId="is-submerged-label"
-                  value={isSubmerged}
-                  onChange={(e) => setIsSubmerged(e.target.value)}
-                  input={<OutlinedInput label="Is Submerged" />}
-                  MenuProps={MenuProps}
-                >
-                  <MenuItem value="yes">Yes</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                label="pH"
-                type="number"
-                value={pH}
-                onChange={(e) => setPH(e.target.value)}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Fermentation Time Target (hours)"
-                type="number"
-                value={fermentationTimeTarget}
-                onChange={(e) => setFermentationTimeTarget(e.target.value)}
-                fullWidth
-                margin="normal"
-              />
-
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Fermentation Section</Typography>
-              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                <InputLabel id="fermentation-label">Fermentation</InputLabel>
-                <Select
-                  labelId="fermentation-label"
-                  value={fermentation}
-                  onChange={(e) => setFermentation(e.target.value)}
-                  input={<OutlinedInput label="Fermentation" />}
-                  MenuProps={MenuProps}
-                >
-                  <MenuItem value="yes">Yes</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                <InputLabel id="fermentation-tank-label">Fermentation Tank</InputLabel>
-                <Select
-                  labelId="fermentation-tank-label"
-                  value={fermentationTank}
-                  onChange={(e) => {
-                    setTank(e.target.value);
-                    if (e.target.value !== 'Blue Barrel') setBlueBarrelCode('');
-                  }}
-                  input={<OutlinedInput label="Fermentation Tank" />}
-                  MenuProps={MenuProps}
-                  disabled={isLoadingTanks || tankError}
-                >
-                  <MenuItem value="Biomaster" disabled={!availableTanks.includes('Biomaster')}>
-                    Biomaster {availableTanks.includes('Biomaster') ? '' : '(In Use)'}
-                  </MenuItem>
-                  <MenuItem value="Carrybrew" disabled={!availableTanks.includes('Carrybrew')}>
-                    Carrybrew {availableTanks.includes('Carrybrew') ? '' : '(In Use)'}
-                  </MenuItem>
-                  <MenuItem value="Washing Track" disabled={!availableTanks.includes('Washing Track')}>
-                    Washing Track {availableTanks.includes('Washing Track') ? '' : '(In Use)'}
-                  </MenuItem>
-                  <MenuItem value="Blue Barrel" disabled={!availableTanks.some(tank => tank.startsWith('BB-HQ-'))}>
-                    Blue Barrel {availableTanks.some(tank => tank.startsWith('BB-HQ-')) ? '' : '(All In Use)'}
-                  </MenuItem>
-                  <MenuItem value="Fermentation Bucket">
-                    Fermentation Bucket
-                  </MenuItem>
-                </Select>
-              </FormControl>
-              {fermentationTank === 'Blue Barrel' && (
-                <Autocomplete
-                  options={blueBarrelCodes.filter(code => availableTanks.includes(code))}
-                  value={blueBarrelCode}
-                  onChange={(e, newValue) => setBlueBarrelCode(newValue || '')}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Blue Barrel Code"
-                      required
-                      margin="normal"
-                      error={!blueBarrelCode && fermentationTank === 'Blue Barrel'}
-                      helperText={!blueBarrelCode && fermentationTank === 'Blue Barrel' ? 'Please select a Blue Barrel code' : ''}
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <>
-                            {isLoadingTanks ? <CircularProgress color="inherit" size={20} /> : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                  sx={{ marginTop: '16px' }}
-                  noOptionsText="No available Blue Barrels"
-                  disabled={isLoadingTanks || tankError}
-                />
-              )}
-
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Post-fermentation Section</Typography>
-              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                <InputLabel id="second-fermentation-label">Second Fermentation</InputLabel>
-                <Select
-                  labelId="second-fermentation-label"
-                  value={secondFermentation}
-                  onChange={(e) => setSecondFermentation(e.target.value)}
-                  input={<OutlinedInput label="Second Fermentation" />}
-                  MenuProps={MenuProps}
-                >
-                  <MenuItem value="yes">Yes</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
-                <Select
-                  labelId="second-fermentation-tank-label"
-                  value={secondFermentationTank}
-                  onChange={(e) => setSecondFermentationTank(e.target.value)}
-                  input={<OutlinedInput label="Second Fermentation Tank" />}
-                  MenuProps={MenuProps}
-                >
-                  <MenuItem value="Biomaster">Biomaster</MenuItem>
-                  <MenuItem value="Carrybrew">Carrybrew</MenuItem>
-                  <MenuItem value="Blue Barrel">Blue Barrel</MenuItem>
-                  <MenuItem value="Fermentation Bucket">Fermentation Bucket</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                label="Second Fermentation Time Target (hours)"
-                type="number"
-                value={secondFermentationTimeTarget}
-                onChange={(e) => setSecondFermentationTimeTarget(e.target.value)}
-                fullWidth
-                margin="normal"
-              />
-              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                <InputLabel id="second-gas-label">Second Gas</InputLabel>
-                <Select
-                  labelId="second-gas-label"
-                  value={secondGas}
-                  onChange={(e) => setSecondGas(e.target.value)}
-                  input={<OutlinedInput label="Second Gas" />}
                   MenuProps={MenuProps}
                 >
                   <MenuItem value="air">Air</MenuItem>
@@ -1257,197 +1310,197 @@ const FermentationStation = () => {
 
       <Dialog open={openDetailsDialog} onClose={() => setOpenDetailsDialog(false)} maxWidth="lg" fullWidth>
         <DialogTitle>Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
-        <DialogContent>
-          <Typography variant="h6" gutterBottom>Harvest Details</Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField label="Harvest Date" value={detailsData.harvestDate || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Harvest At" value={detailsData.harvestAt ? dayjs(detailsData.harvestAt).format('YYYY-MM-DD HH:mm:ss') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Received At" value={detailsData.receivedAt ? dayjs(detailsData.receivedAt).format('YYYY-MM-DD HH:mm:ss') : ''} fullWidth disabled />
-            </Grid>
-          </Grid>
-          <Typography variant="h6" gutterBottom>Weight Details</Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField label="Received Weight (kg)" value={detailsData.receivedWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Reject Weight (kg)" value={detailsData.rejectWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Defect Weight (kg)" value={detailsData.defectWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Damaged Weight (kg)" value={detailsData.damagedWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Lost Weight (kg)" value={detailsData.lostWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Pre-processing Weight (kg)" value={detailsData.preprocessingWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Quality (%)" value={detailsData.quality || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Brix" value={detailsData.brix || ''} fullWidth disabled />
-            </Grid>
-          </Grid>
-          <Typography variant="h6" gutterBottom>Pre-fermentation Details</Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField label="Pre-pulped Weight (kg)" value={detailsData.prePulpedWeight || ''} fullWidth disabled />
-            </Grid>
-          </Grid>
-          <Typography variant="h6" gutterBottom>Fermentation Details</Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField label="Cherry Type" value={detailsData.cherryType || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Starter Type" value={detailsData.starterType || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Total Volume" value={detailsData.totalVolume || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Water Used (L)" value={detailsData.waterUsed || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Starter Used" value={detailsData.starterUsed || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Stirring (Hz)" value={detailsData.stirring || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Fermentation Temperature" value={detailsData.fermentationTemperature || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Fermentation Start" value={detailsData.fermentationStart ? dayjs(detailsData.fermentationStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Fermentation End" value={detailsData.fermentationEnd ? dayjs(detailsData.fermentationEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Fermentation Time Actual" value={detailsData.fermentationTimeActual || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Final pH" value={detailsData.finalPH || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Final TDS" value={detailsData.finalTDS || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Final Temperature" value={detailsData.finalTemperature || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Post Weight (kg)" value={detailsData.postWeight || ''} fullWidth disabled />
-            </Grid>
-          </Grid>
-          <Typography variant="h6" gutterBottom>Post-fermentation Details</Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField label="Post-pulped Weight (kg)" value={detailsData.postPulpedWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Ratio" value={detailsData.ratio || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Starter Type" value={detailsData.secondStarterType || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Total Volume" value={detailsData.secondTotalVolume || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Water Used (L)" value={detailsData.secondWaterUsed || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Mossto Used" value={detailsData.secondMosstoUsed || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Actual Volume" value={detailsData.secondActualVolume || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Temperature" value={detailsData.secondTemperature || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Fermentation Start" value={detailsData.secondFermentationStart ? dayjs(detailsData.secondFermentationStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Fermentation End" value={detailsData.secondFermentationEnd ? dayjs(detailsData.secondFermentationEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Fermentation Time Actual" value={detailsData.secondFermentationTimeActual || ''} fullWidth disabled />
-            </Grid>
-          </Grid>
-          <Typography variant="h6" gutterBottom>Drying Details</Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField label="Average Temperature (°C)" value={detailsData.avgTemperature || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Pre-drying Weight (kg)" value={detailsData.preDryingWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Final Moisture (%)" value={detailsData.finalMoisture || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Post-drying Weight (kg)" value={detailsData.postDryingWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Drying Start" value={detailsData.dryingStart ? dayjs(detailsData.dryingStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Drying End" value={detailsData.dryingEnd ? dayjs(detailsData.dryingEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Total Drying Time" value={detailsData.totalDryingTime || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Average Temperature (°C)" value={detailsData.secondAverageTemperature || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Final Moisture (%)" value={detailsData.secondFinalMoisture || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Post-drying Weight (kg)" value={detailsData.secondPostDryingWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Drying Start" value={detailsData.secondDryingStart ? dayjs(detailsData.secondDryingStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Drying End" value={detailsData.secondDryingEnd ? dayjs(detailsData.secondDryingEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Second Total Drying Time" value={detailsData.secondTotalDryingTime || ''} fullWidth disabled />
-            </Grid>
-          </Grid>
-          <Typography variant="h6" gutterBottom>Post-drying Details</Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField label="Storage Temperature (°C)" value={detailsData.storageTemperature || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Hulling Time" value={detailsData.hullingTime ? dayjs(detailsData.hullingTime).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Bag Type" value={detailsData.bagType || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Post-hulling Weight (kg)" value={detailsData.postHullingWeight || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Cherry Dry Ratio" value={detailsData.cherryDryRatio || ''} fullWidth disabled />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField label="Sorted Cherry Dry Ratio" value={detailsData.sortedCherryDryRatio || ''} fullWidth disabled />
-            </Grid>
-          </Grid>
-        </DialogContent>
+          <DialogContent>
+            <Typography variant="h6" gutterBottom>Harvest Details</Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Harvest Date" value={detailsData.harvestDate || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Harvest At" value={detailsData.harvestAt ? dayjs(detailsData.harvestAt).format('YYYY-MM-DD HH:mm:ss') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Received At" value={detailsData.receivedAt ? dayjs(detailsData.receivedAt).format('YYYY-MM-DD HH:mm:ss') : ''} fullWidth disabled />
+                </Grid>
+              </Grid>
+            <Typography variant="h6" gutterBottom>Weight Details</Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Received Weight (kg)" value={detailsData.receivedWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Reject Weight (kg)" value={detailsData.rejectWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Defect Weight (kg)" value={detailsData.defectWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Damaged Weight (kg)" value={detailsData.damagedWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Lost Weight (kg)" value={detailsData.lostWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Pre-processing Weight (kg)" value={detailsData.preprocessingWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Quality (%)" value={detailsData.quality || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Brix" value={detailsData.brix || ''} fullWidth disabled />
+                </Grid>
+              </Grid>
+            <Typography variant="h6" gutterBottom>Pre-fermentation Details</Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Pre-pulped Weight (kg)" value={detailsData.prePulpedWeight || ''} fullWidth disabled />
+                </Grid>
+              </Grid>
+            <Typography variant="h6" gutterBottom>Fermentation Details</Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Cherry Type" value={detailsData.cherryType || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Starter Type" value={detailsData.starterType || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Total Volume" value={detailsData.totalVolume || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Water Used (L)" value={detailsData.waterUsed || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Starter Used" value={detailsData.starterUsed || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Stirring (Hz)" value={detailsData.stirring || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Fermentation Temperature" value={detailsData.fermentationTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Fermentation Start" value={detailsData.fermentationStart ? dayjs(detailsData.fermentationStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Fermentation End" value={detailsData.fermentationEnd ? dayjs(detailsData.fermentationEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Fermentation Time Actual" value={detailsData.fermentationTimeActual || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Final pH" value={detailsData.finalPH || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Final TDS" value={detailsData.finalTDS || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Final Temperature" value={detailsData.finalTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Post Weight (kg)" value={detailsData.postWeight || ''} fullWidth disabled />
+                </Grid>
+              </Grid>
+            <Typography variant="h6" gutterBottom>Post-fermentation Details</Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Post-pulped Weight (kg)" value={detailsData.postPulpedWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Ratio" value={detailsData.ratio || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Starter Type" value={detailsData.secondStarterType || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Total Volume" value={detailsData.secondTotalVolume || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Water Used (L)" value={detailsData.secondWaterUsed || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Mossto Used" value={detailsData.secondMosstoUsed || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Actual Volume" value={detailsData.secondActualVolume || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Temperature" value={detailsData.secondTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Fermentation Start" value={detailsData.secondFermentationStart ? dayjs(detailsData.secondFermentationStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Fermentation End" value={detailsData.secondFermentationEnd ? dayjs(detailsData.secondFermentationEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Fermentation Time Actual" value={detailsData.secondFermentationTimeActual || ''} fullWidth disabled />
+                </Grid>
+              </Grid>
+            <Typography variant="h6" gutterBottom>Drying Details</Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Average Temperature (°C)" value={detailsData.avgTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Pre-drying Weight (kg)" value={detailsData.preDryingWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Final Moisture (%)" value={detailsData.finalMoisture || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Post-drying Weight (kg)" value={detailsData.postDryingWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Drying Start" value={detailsData.dryingStart ? dayjs(detailsData.dryingStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Drying End" value={detailsData.dryingEnd ? dayjs(detailsData.dryingEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Total Drying Time" value={detailsData.totalDryingTime || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Average Temperature (°C)" value={detailsData.secondAverageTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Final Moisture (%)" value={detailsData.secondFinalMoisture || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Post-drying Weight (kg)" value={detailsData.secondPostDryingWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Drying Start" value={detailsData.secondDryingStart ? dayjs(detailsData.secondDryingStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Drying End" value={detailsData.secondDryingEnd ? dayjs(detailsData.secondDryingEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Total Drying Time" value={detailsData.secondTotalDryingTime || ''} fullWidth disabled />
+                </Grid>
+              </Grid>
+            <Typography variant="h6" gutterBottom>Post-drying Details</Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Storage Temperature (°C)" value={detailsData.storageTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Hulling Time" value={detailsData.hullingTime ? dayjs(detailsData.hullingTime).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Bag Type" value={detailsData.bagType || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Post-hulling Weight (kg)" value={detailsData.postHullingWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Cherry Dry Ratio" value={detailsData.cherryDryRatio || ''} fullWidth disabled/>
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Sorted Cherry Dry Ratio" value={detailsData.sortedCherryDryRatio || ''} fullWidth disabled />
+                </Grid>
+              </Grid>
+          </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDetailsDialog(false)}>Close</Button>
         </DialogActions>
