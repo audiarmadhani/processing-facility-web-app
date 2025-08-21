@@ -14,6 +14,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Menu,
   OutlinedInput,
   Tabs,
   Tab,
@@ -139,6 +140,7 @@ const FermentationStation = () => {
   const [postHullingWeight, setPostHullingWeight] = useState('');
   const [cherryDryRatio, setCherryDryRatio] = useState('');
   const [sortedCherryDryRatio, setSortedCherryDryRatio] = useState('');
+  const [startDate, setStartDate] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
   const [fermentationData, setFermentationData] = useState([]);
   const [availableBatches, setAvailableBatches] = useState([]);
   const [availableTanks, setAvailableTanks] = useState([]);
