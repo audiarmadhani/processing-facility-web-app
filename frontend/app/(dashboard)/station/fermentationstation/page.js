@@ -932,6 +932,108 @@ const FermentationStation = () => {
                   <MenuItem value="yellow caturra">Yellow Caturra</MenuItem>
                 </Select>
               </FormControl>
+              <TextField
+                label="Harvest Date"
+                type="date"
+                value={harvestDate}
+                onChange={(e) => setHarvestDate(e.target.value)}
+                fullWidth
+                required
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Harvest At"
+                type="datetime-local"
+                value={harvestAt}
+                onChange={(e) => setHarvestAt(e.target.value)}
+                fullWidth
+                required
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Received At"
+                type="datetime-local"
+                value={receivedAt}
+                onChange={(e) => setReceivedAt(e.target.value)}
+                fullWidth
+                required
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="SLA"
+                value={SLA}
+                onChange={(e) => setSLA(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Received Weight (kg)"
+                type="number"
+                value={receivedWeight}
+                onChange={(e) => setReceivedWeight(e.target.value)}
+                fullWidth
+                required
+                margin="normal"
+              />
+              <TextField
+                label="Reject Weight (kg)"
+                type="number"
+                value={rejectWeight}
+                onChange={(e) => setRejectWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Defect Weight (kg)"
+                type="number"
+                value={defectWeight}
+                onChange={(e) => setDefectWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Damaged Weight (kg)"
+                type="number"
+                value={damagedWeight}
+                onChange={(e) => setDamagedWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Lost Weight (kg)"
+                type="number"
+                value={lostWeight}
+                onChange={(e) => setLostWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Preprocessing Weight (kg)"
+                type="number"
+                value={preprocessingWeight}
+                onChange={(e) => setPreprocessingWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Quality (%)"
+                type="number"
+                value={quality}
+                onChange={(e) => setQuality(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Brix"
+                type="number"
+                value={brix}
+                onChange={(e) => setBrix(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
               <FormControl fullWidth sx={{ marginTop: '16px' }}>
                 <InputLabel id="pre-storage-label">Pre-storage</InputLabel>
                 <Select
@@ -979,12 +1081,69 @@ const FermentationStation = () => {
                 </Select>
               </FormControl>
               <TextField
-                label="Bulk Density"
-                value={bulkDensity}
-                onChange={(e) => setBulkDensity(e.target.value)}
+                label="Pre-pulped Weight (kg)"
+                type="number"
+                value={prePulpedWeight}
+                onChange={(e) => setPrePulpedWeight(e.target.value)}
                 fullWidth
                 margin="normal"
               />
+              <TextField
+                label="Cherry Type"
+                value={cherryType}
+                onChange={(e) => setCherryType(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Fermentation Section</Typography>
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="fermentation-label">Fermentation</InputLabel>
+                <Select
+                  labelId="fermentation-label"
+                  value={fermentation}
+                  onChange={(e) => setFermentation(e.target.value)}
+                  input={<OutlinedInput label="Fermentation" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                <InputLabel id="fermentation-tank-label">Fermentation Tank</InputLabel>
+                <Select
+                  labelId="fermentation-tank-label"
+                  value={fermentationTank}
+                  onChange={(e) => setFermentationTank(e.target.value)}
+                  input={<OutlinedInput label="Fermentation Tank" />}
+                  MenuProps={MenuProps}
+                >
+                  {isLoadingTanks ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={24} />
+                    </MenuItem>
+                  ) : (
+                    availableTanks.map(tank => (
+                      <MenuItem key={tank} value={tank}>{tank}</MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="starter-type-label">Starter Type</InputLabel>
+                <Select
+                  labelId="starter-type-label"
+                  value={starterType}
+                  onChange={(e) => setStarterType(e.target.value)}
+                  input={<OutlinedInput label="Starter Type" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yeast">Yeast</MenuItem>
+                  <MenuItem value="bacteria">Bacteria</MenuItem>
+                  <MenuItem value="mixed">Mixed</MenuItem>
+                </Select>
+              </FormControl>
               <FormControl fullWidth sx={{ marginTop: '16px' }}>
                 <InputLabel id="gas-label">Gas</InputLabel>
                 <Select
@@ -992,6 +1151,220 @@ const FermentationStation = () => {
                   value={gas}
                   onChange={(e) => setGas(e.target.value)}
                   input={<OutlinedInput label="Gas" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="air">Air</MenuItem>
+                  <MenuItem value="co2">CO2</MenuItem>
+                  <MenuItem value="n2">N2</MenuItem>
+                  <MenuItem value="pure o2">Pure O2</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="Pressure (psi)"
+                type="number"
+                value={pressure}
+                onChange={(e) => setPressure(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="is-submerged-label">Is Submerged</InputLabel>
+                <Select
+                  labelId="is-submerged-label"
+                  value={isSubmerged}
+                  onChange={(e) => setIsSubmerged(e.target.value)}
+                  input={<OutlinedInput label="Is Submerged" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="Total Volume (L)"
+                type="number"
+                value={totalVolume}
+                onChange={(e) => setTotalVolume(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Water Used (L)"
+                type="number"
+                value={waterUsed}
+                onChange={(e) => setWaterUsed(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Starter Used"
+                type="number"
+                value={starterUsed}
+                onChange={(e) => setStarterUsed(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Bulk Density"
+                type="number"
+                value={bulkDensity}
+                onChange={(e) => setBulkDensity(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Stirring (Hz)"
+                type="number"
+                value={stirring}
+                onChange={(e) => setStirring(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Fermentation Temperature (°C)"
+                type="number"
+                value={fermentationTemperature}
+                onChange={(e) => setFermentationTemperature(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="pH"
+                type="number"
+                value={pH}
+                onChange={(e) => setPH(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Fermentation Time Target (hours)"
+                type="number"
+                value={fermentationTimeTarget}
+                onChange={(e) => setFermentationTimeTarget(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Fermentation Start"
+                type="datetime-local"
+                value={fermentationStart}
+                onChange={(e) => setFermentationStart(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Fermentation End"
+                type="datetime-local"
+                value={fermentationEnd}
+                onChange={(e) => setFermentationEnd(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Fermentation Time Actual (hours)"
+                type="number"
+                value={fermentationTimeActual}
+                onChange={(e) => setFermentationTimeActual(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Final pH"
+                type="number"
+                value={finalPH}
+                onChange={(e) => setFinalPH(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Final TDS"
+                type="number"
+                value={finalTDS}
+                onChange={(e) => setFinalTDS(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Final Temperature (°C)"
+                type="number"
+                value={finalTemperature}
+                onChange={(e) => setFinalTemperature(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Post Weight (kg)"
+                type="number"
+                value={postWeight}
+                onChange={(e) => setPostWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="post-pulped-label">Post-pulped</InputLabel>
+                <Select
+                  labelId="post-pulped-label"
+                  value={postPulped}
+                  onChange={(e) => setPostPulped(e.target.value)}
+                  input={<OutlinedInput label="Post-pulped" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Second Fermentation Section</Typography>
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="second-fermentation-label">Second Fermentation</InputLabel>
+                <Select
+                  labelId="second-fermentation-label"
+                  value={secondFermentation}
+                  onChange={(e) => setSecondFermentation(e.target.value)}
+                  input={<OutlinedInput label="Second Fermentation" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
+                <Select
+                  labelId="second-fermentation-tank-label"
+                  value={secondFermentationTank}
+                  onChange={(e) => setSecondFermentationTank(e.target.value)}
+                  input={<OutlinedInput label="Second Fermentation Tank" />}
+                  MenuProps={MenuProps}
+                >
+                  {availableTanks.map(tank => (
+                    <MenuItem key={tank} value={tank}>{tank}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="second-starter-type-label">Second Starter Type</InputLabel>
+                <Select
+                  labelId="second-starter-type-label"
+                  value={secondStarterType}
+                  onChange={(e) => setSecondStarterType(e.target.value)}
+                  input={<OutlinedInput label="Second Starter Type" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yeast">Yeast</MenuItem>
+                  <MenuItem value="bacteria">Bacteria</MenuItem>
+                  <MenuItem value="mixed">Mixed</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="second-gas-label">Second Gas</InputLabel>
+                <Select
+                  labelId="second-gas-label"
+                  value={secondGas}
+                  onChange={(e) => setSecondGas(e.target.value)}
+                  input={<OutlinedInput label="Second Gas" />}
                   MenuProps={MenuProps}
                 >
                   <MenuItem value="air">Air</MenuItem>
@@ -1022,9 +1395,126 @@ const FermentationStation = () => {
                 </Select>
               </FormControl>
               <TextField
+                label="Second Total Volume (L)"
+                type="number"
+                value={secondTotalVolume}
+                onChange={(e) => setSecondTotalVolume(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Water Used (L)"
+                type="number"
+                value={secondWaterUsed}
+                onChange={(e) => setSecondWaterUsed(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Mossto Used"
+                type="number"
+                value={secondMosstoUsed}
+                onChange={(e) => setSecondMosstoUsed(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
                 label="Second Bulk Density"
+                type="number"
                 value={secondBulkDensity}
                 onChange={(e) => setSecondBulkDensity(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Actual Volume (L)"
+                type="number"
+                value={secondActualVolume}
+                onChange={(e) => setSecondActualVolume(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Temperature (°C)"
+                type="number"
+                value={secondTemperature}
+                onChange={(e) => setSecondTemperature(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Fermentation Time Target (hours)"
+                type="number"
+                value={secondFermentationTimeTarget}
+                onChange={(e) => setSecondFermentationTimeTarget(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Fermentation Start"
+                type="datetime-local"
+                value={secondFermentationStart}
+                onChange={(e) => setSecondFermentationStart(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Second Fermentation End"
+                type="datetime-local"
+                value={secondFermentationEnd}
+                onChange={(e) => setSecondFermentationEnd(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Second Fermentation Time Actual (hours)"
+                type="number"
+                value={secondFermentationTimeActual}
+                onChange={(e) => setSecondFermentationTimeActual(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="washed-delva-label">Washed Delva</InputLabel>
+                <Select
+                  labelId="washed-delva-label"
+                  value={washedDelva}
+                  onChange={(e) => setWashedDelva(e.target.value)}
+                  input={<OutlinedInput label="Washed Delva" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="washed-label">Washed</InputLabel>
+                <Select
+                  labelId="washed-label"
+                  value={washed}
+                  onChange={(e) => setWashed(e.target.value)}
+                  input={<OutlinedInput label="Washed" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="Post-pulped Weight (kg)"
+                type="number"
+                value={postPulpedWeight}
+                onChange={(e) => setPostPulpedWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Ratio"
+                type="number"
+                value={ratio}
+                onChange={(e) => setRatio(e.target.value)}
                 fullWidth
                 margin="normal"
               />
@@ -1044,6 +1534,64 @@ const FermentationStation = () => {
                   <MenuItem value="drying room">Drying Room</MenuItem>
                 </Select>
               </FormControl>
+              <TextField
+                label="Average Temperature (°C)"
+                type="number"
+                value={avgTemperature}
+                onChange={(e) => setAvgTemperature(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Pre-drying Weight (kg)"
+                type="number"
+                value={preDryingWeight}
+                onChange={(e) => setPreDryingWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Final Moisture (%)"
+                type="number"
+                value={finalMoisture}
+                onChange={(e) => setFinalMoisture(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Post-drying Weight (kg)"
+                type="number"
+                value={postDryingWeight}
+                onChange={(e) => setPostDryingWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Drying Start"
+                type="datetime-local"
+                value={dryingStart}
+                onChange={(e) => setDryingStart(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Drying End"
+                type="datetime-local"
+                value={dryingEnd}
+                onChange={(e) => setDryingEnd(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Total Drying Time (hours)"
+                type="number"
+                value={totalDryingTime}
+                onChange={(e) => setTotalDryingTime(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
               <FormControl fullWidth sx={{ marginTop: '16px' }}>
                 <InputLabel id="second-drying-label">Second Drying</InputLabel>
                 <Select
@@ -1071,6 +1619,56 @@ const FermentationStation = () => {
                   <MenuItem value="drying room">Drying Room</MenuItem>
                 </Select>
               </FormControl>
+              <TextField
+                label="Second Average Temperature (°C)"
+                type="number"
+                value={secondAverageTemperature}
+                onChange={(e) => setSecondAverageTemperature(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Final Moisture (%)"
+                type="number"
+                value={secondFinalMoisture}
+                onChange={(e) => setSecondFinalMoisture(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Post-drying Weight (kg)"
+                type="number"
+                value={secondPostDryingWeight}
+                onChange={(e) => setSecondPostDryingWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Second Drying Start"
+                type="datetime-local"
+                value={secondDryingStart}
+                onChange={(e) => setSecondDryingStart(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Second Drying End"
+                type="datetime-local"
+                value={secondDryingEnd}
+                onChange={(e) => setSecondDryingEnd(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Second Total Drying Time (hours)"
+                type="number"
+                value={secondTotalDryingTime}
+                onChange={(e) => setSecondTotalDryingTime(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
               <FormControl fullWidth sx={{ marginTop: '16px' }}>
                 <InputLabel id="rehydration-label">Rehydration</InputLabel>
                 <Select
@@ -1099,6 +1697,61 @@ const FermentationStation = () => {
                   <MenuItem value="no">No</MenuItem>
                 </Select>
               </FormControl>
+              <TextField
+                label="Storage Temperature (°C)"
+                type="number"
+                value={storageTemperature}
+                onChange={(e) => setStorageTemperature(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Hulling Time"
+                type="datetime-local"
+                value={hullingTime}
+                onChange={(e) => setHullingTime(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                <InputLabel id="bag-type-label">Bag Type</InputLabel>
+                <Select
+                  labelId="bag-type-label"
+                  value={bagType}
+                  onChange={(e) => setBagType(e.target.value)}
+                  input={<OutlinedInput label="Bag Type" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value="jute">Jute</MenuItem>
+                  <MenuItem value="plastic">Plastic</MenuItem>
+                  <MenuItem value="paper">Paper</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="Post-hulling Weight (kg)"
+                type="number"
+                value={postHullingWeight}
+                onChange={(e) => setPostHullingWeight(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Cherry Dry Ratio"
+                type="number"
+                value={cherryDryRatio}
+                onChange={(e) => setCherryDryRatio(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                label="Sorted Cherry Dry Ratio"
+                type="number"
+                value={sortedCherryDryRatio}
+                onChange={(e) => setSortedCherryDryRatio(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
 
               <TextField
                 label="Start Date and Time"
@@ -1123,8 +1776,7 @@ const FermentationStation = () => {
                   !farmerName ||
                   !type ||
                   !variety ||
-                  !tank ||
-                  (tank === 'Blue Barrel' && !blueBarrelCode) ||
+                  !fermentationTank ||
                   isLoadingTanks ||
                   tankError
                 }
@@ -1357,17 +2009,29 @@ const FermentationStation = () => {
                 <Grid item xs={4}>
                   <TextField label="Pre-pulped Weight (kg)" value={detailsData.prePulpedWeight || ''} fullWidth disabled />
                 </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Cherry Type" value={detailsData.cherryType || ''} fullWidth disabled />
+                </Grid>
               </Grid>
             <Typography variant="h6" gutterBottom>Fermentation Details</Typography>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
-                  <TextField label="Cherry Type" value={detailsData.cherryType || ''} fullWidth disabled />
+                  <TextField label="Fermentation Tank" value={detailsData.fermentationTank || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Starter Type" value={detailsData.starterType || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Total Volume" value={detailsData.totalVolume || ''} fullWidth disabled />
+                  <TextField label="Gas" value={detailsData.gas || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Pressure (psi)" value={detailsData.pressure || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Is Submerged" value={detailsData.isSubmerged || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Total Volume (L)" value={detailsData.totalVolume || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Water Used (L)" value={detailsData.waterUsed || ''} fullWidth disabled />
@@ -1376,10 +2040,19 @@ const FermentationStation = () => {
                   <TextField label="Starter Used" value={detailsData.starterUsed || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
+                  <TextField label="Bulk Density" value={detailsData.bulkDensity || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
                   <TextField label="Stirring (Hz)" value={detailsData.stirring || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Fermentation Temperature" value={detailsData.fermentationTemperature || ''} fullWidth disabled />
+                  <TextField label="Fermentation Temperature (°C)" value={detailsData.fermentationTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="pH" value={detailsData.pH || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Fermentation Time Target (hours)" value={detailsData.fermentationTimeTarget || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Fermentation Start" value={detailsData.fermentationStart ? dayjs(detailsData.fermentationStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
@@ -1388,7 +2061,7 @@ const FermentationStation = () => {
                   <TextField label="Fermentation End" value={detailsData.fermentationEnd ? dayjs(detailsData.fermentationEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Fermentation Time Actual" value={detailsData.fermentationTimeActual || ''} fullWidth disabled />
+                  <TextField label="Fermentation Time Actual (hours)" value={detailsData.fermentationTimeActual || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Final pH" value={detailsData.finalPH || ''} fullWidth disabled />
@@ -1397,25 +2070,34 @@ const FermentationStation = () => {
                   <TextField label="Final TDS" value={detailsData.finalTDS || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Final Temperature" value={detailsData.finalTemperature || ''} fullWidth disabled />
+                  <TextField label="Final Temperature (°C)" value={detailsData.finalTemperature || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Post Weight (kg)" value={detailsData.postWeight || ''} fullWidth disabled />
                 </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Post-pulped" value={detailsData.postPulped || ''} fullWidth disabled />
+                </Grid>
               </Grid>
-            <Typography variant="h6" gutterBottom>Post-fermentation Details</Typography>
+            <Typography variant="h6" gutterBottom>Second Fermentation Details</Typography>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
-                  <TextField label="Post-pulped Weight (kg)" value={detailsData.postPulpedWeight || ''} fullWidth disabled />
-                </Grid>
-                <Grid item xs={4}>
-                  <TextField label="Ratio" value={detailsData.ratio || ''} fullWidth disabled />
+                  <TextField label="Second Fermentation Tank" value={detailsData.secondFermentationTank || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Second Starter Type" value={detailsData.secondStarterType || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Second Total Volume" value={detailsData.secondTotalVolume || ''} fullWidth disabled />
+                  <TextField label="Second Gas" value={detailsData.secondGas || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Pressure (psi)" value={detailsData.secondPressure || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Is Submerged" value={detailsData.secondIsSubmerged || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Total Volume (L)" value={detailsData.secondTotalVolume || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Second Water Used (L)" value={detailsData.secondWaterUsed || ''} fullWidth disabled />
@@ -1424,10 +2106,16 @@ const FermentationStation = () => {
                   <TextField label="Second Mossto Used" value={detailsData.secondMosstoUsed || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Second Actual Volume" value={detailsData.secondActualVolume || ''} fullWidth disabled />
+                  <TextField label="Second Bulk Density" value={detailsData.secondBulkDensity || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Second Temperature" value={detailsData.secondTemperature || ''} fullWidth disabled />
+                  <TextField label="Second Actual Volume (L)" value={detailsData.secondActualVolume || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Temperature (°C)" value={detailsData.secondTemperature || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Fermentation Time Target (hours)" value={detailsData.secondFermentationTimeTarget || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Second Fermentation Start" value={detailsData.secondFermentationStart ? dayjs(detailsData.secondFermentationStart).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
@@ -1436,11 +2124,26 @@ const FermentationStation = () => {
                   <TextField label="Second Fermentation End" value={detailsData.secondFermentationEnd ? dayjs(detailsData.secondFermentationEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Second Fermentation Time Actual" value={detailsData.secondFermentationTimeActual || ''} fullWidth disabled />
+                  <TextField label="Second Fermentation Time Actual (hours)" value={detailsData.secondFermentationTimeActual || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Washed Delva" value={detailsData.washedDelva || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Washed" value={detailsData.washed || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Post-pulped Weight (kg)" value={detailsData.postPulpedWeight || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Ratio" value={detailsData.ratio || ''} fullWidth disabled />
                 </Grid>
               </Grid>
             <Typography variant="h6" gutterBottom>Drying Details</Typography>
               <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Drying Area" value={detailsData.dryingArea || ''} fullWidth disabled />
+                </Grid>
                 <Grid item xs={4}>
                   <TextField label="Average Temperature (°C)" value={detailsData.avgTemperature || ''} fullWidth disabled />
                 </Grid>
@@ -1460,7 +2163,13 @@ const FermentationStation = () => {
                   <TextField label="Drying End" value={detailsData.dryingEnd ? dayjs(detailsData.dryingEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Total Drying Time" value={detailsData.totalDryingTime || ''} fullWidth disabled />
+                  <TextField label="Total Drying Time (hours)" value={detailsData.totalDryingTime || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Drying" value={detailsData.secondDrying || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Second Drying Area" value={detailsData.secondDryingArea || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Second Average Temperature (°C)" value={detailsData.secondAverageTemperature || ''} fullWidth disabled />
@@ -1478,11 +2187,17 @@ const FermentationStation = () => {
                   <TextField label="Second Drying End" value={detailsData.secondDryingEnd ? dayjs(detailsData.secondDryingEnd).format('DD-MM-YYYY HH:mm') : ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Second Total Drying Time" value={detailsData.secondTotalDryingTime || ''} fullWidth disabled />
+                  <TextField label="Second Total Drying Time (hours)" value={detailsData.secondTotalDryingTime || ''} fullWidth disabled />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField label="Rehydration" value={detailsData.rehydration || ''} fullWidth disabled />
                 </Grid>
               </Grid>
             <Typography variant="h6" gutterBottom>Post-drying Details</Typography>
               <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <TextField label="Storage" value={detailsData.storage || ''} fullWidth disabled />
+                </Grid>
                 <Grid item xs={4}>
                   <TextField label="Storage Temperature (°C)" value={detailsData.storageTemperature || ''} fullWidth disabled />
                 </Grid>
@@ -1496,7 +2211,7 @@ const FermentationStation = () => {
                   <TextField label="Post-hulling Weight (kg)" value={detailsData.postHullingWeight || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
-                  <TextField label="Cherry Dry Ratio" value={detailsData.cherryDryRatio || ''} fullWidth disabled/>
+                  <TextField label="Cherry Dry Ratio" value={detailsData.cherryDryRatio || ''} fullWidth disabled />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField label="Sorted Cherry Dry Ratio" value={detailsData.sortedCherryDryRatio || ''} fullWidth disabled />
@@ -1519,6 +2234,6 @@ const FermentationStation = () => {
       </Snackbar>
     </Grid>
   );
-};
+}
 
 export default FermentationStation;
