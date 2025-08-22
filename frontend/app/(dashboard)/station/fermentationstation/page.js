@@ -34,6 +34,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Alert from '@mui/material/Alert';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import axios from "axios";
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
@@ -769,8 +770,10 @@ const FermentationStation = () => {
 
   const generateOrderSheet = () => {
     const doc = new jsPDF();
-    doc.setFontSize(12);
-    doc.text('HEQA Fermentation Order Sheet', 20, 20);
+    
+    // Set title
+    doc.setFontSize(18);
+    doc.text('HEQA Fermentation Order Sheet', 105, 20, { align: 'center' });
 
     const fermentationEndGoal = fermentationStart && fermentationTimeTarget
       ? dayjs(fermentationStart).tz('Asia/Makassar').add(parseInt(fermentationTimeTarget), 'hour').format('DD/MM/YYYY HH:mm:ss')
@@ -820,10 +823,18 @@ const FermentationStation = () => {
       { label: 'Special note', value: description || 'N/A' },
     ];
 
-    let y = 30;
-    fields.forEach(field => {
-      doc.text(`${field.label}: ${field.value}`, 20, y);
-      y += 10;
+    // Create table
+    doc.autoTable({
+      startY: 30,
+      head: [['Label', 'Value']],
+      body: fields.map(field => [field.label, field.value]),
+      styles: { fontSize: 10, cellPadding: 2 },
+      headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 80 }, // Label column
+        1: { cellWidth: 100 }, // Value column
+      },
+      margin: { left: 20, right: 20 },
     });
 
     doc.save(`HEQA_Fermentation_Order_Sheet_${batchNumber || 'Untitled'}.pdf`);
