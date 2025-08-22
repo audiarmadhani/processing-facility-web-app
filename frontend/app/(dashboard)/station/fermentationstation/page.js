@@ -170,6 +170,7 @@ const FermentationStation = () => {
   const [openFinishDialog, setOpenFinishDialog] = useState(false);
   const [endDateTime, setEndDateTime] = useState(dayjs().tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss'));
   const [detailsData, setDetailsData] = useState({});
+  const [referenceMappings, setReferenceMappings] = useState([]);
 
   const derivedDate = fermentationStart
     ? dayjs(fermentationStart).tz('Asia/Makassar').format('DD/MM/YYYY HH:mm:ss')
@@ -219,6 +220,20 @@ const FermentationStation = () => {
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       setAvailableBatches([]);
+    }
+  };
+
+  const fetchReferenceMappings = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/reference-mappings`);
+      const data = Array.isArray(response.data) ? response.data : response.data ? [response.data] : [];
+      setReferenceMappings(data);
+    } catch (error) {
+      console.error('Error fetching reference mappings:', error, 'Response:', error.response);
+      setSnackbarMessage(error.response?.data?.error || 'Failed to fetch reference mappings.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      setReferenceMappings([]);
     }
   };
 
@@ -334,6 +349,7 @@ const FermentationStation = () => {
     fetchFermentationData();
     fetchAvailableBatches();
     fetchAvailableTanks();
+    fetchReferenceMappings();
   }, []);
 
   const handleBatchNumberChange = async (batchNumber) => {
@@ -1057,13 +1073,22 @@ const FermentationStation = () => {
                       </Select>
                     </FormControl>
 
-                    <TextField
-                      label="Reference Number"
-                      value={referenceNumber}
-                      onChange={(e) => setReferenceNumber(e.target.value)}
-                      fullWidth
-                      margin="normal"
-                    />
+                    <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                      <InputLabel id="reference-number-label">Reference Number</InputLabel>
+                      <Select
+                        labelId="reference-number-label"
+                        value={referenceNumber}
+                        onChange={(e) => setReferenceNumber(e.target.value)}
+                        input={<OutlinedInput label="Reference Number" />}
+                        MenuProps={MenuProps}
+                      >
+                        {referenceMappings.map(mapping => (
+                          <MenuItem key={mapping.id} value={mapping.referenceNumber}>
+                            {mapping.referenceNumber}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
 
                     <TextField
                       label="Experiment Number"
@@ -1106,19 +1131,13 @@ const FermentationStation = () => {
                       margin="normal"
                     />
 
-                    <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                      <InputLabel id="type-label">Type</InputLabel>
-                      <Select
-                        labelId="type-label"
-                        value={type}
-                        disabled
-                        input={<OutlinedInput label="Type" />}
-                        MenuProps={MenuProps}
-                      >
-                        <MenuItem value="arabica">Arabica</MenuItem>
-                        <MenuItem value="robusta">Robusta</MenuItem>
-                      </Select>
-                    </FormControl>
+                    <TextField
+                      label="Type"
+                      value={type}
+                      disabled
+                      fullWidth
+                      margin="normal"
+                    />
 
                     <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                       <InputLabel id="variety-label">Variety</InputLabel>
@@ -1848,12 +1867,21 @@ const FermentationStation = () => {
               />
             </Grid>
             <Grid item xs={4}>
-              <TextField
-                label="Reference Number"
-                value={detailsData.referenceNumber || ''}
-                onChange={(e) => setDetailsData({ ...detailsData, referenceNumber: e.target.value })}
-                fullWidth
-              />
+              <FormControl fullWidth>
+                <InputLabel id="reference-number-details-label">Reference Number</InputLabel>
+                <Select
+                  labelId="reference-number-details-label"
+                  value={detailsData.referenceNumber || ''}
+                  onChange={(e) => setDetailsData({ ...detailsData, referenceNumber: e.target.value })}
+                  label="Reference Number"
+                >
+                  {referenceMappings.map(mapping => (
+                    <MenuItem key={mapping.id} value={mapping.referenceNumber}>
+                      {mapping.referenceNumber}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={4}>
               <TextField
