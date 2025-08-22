@@ -1665,7 +1665,7 @@ const FermentationStation = () => {
                   style={{ marginTop: '16px', marginRight: '16px' }}
                   disabled={
                     !batchNumber ||
-                    !experimentNumber ||
+                    !experimentNumber
                   }
                 >
                   Generate Order Sheet
