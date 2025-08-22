@@ -1666,11 +1666,6 @@ const FermentationStation = () => {
                   disabled={
                     !batchNumber ||
                     !experimentNumber ||
-                    !processingType ||
-                    !farmerName ||
-                    !variety ||
-                    !fermentationTank ||
-                    !fermentationStart
                   }
                 >
                   Generate Order Sheet
@@ -1684,10 +1679,6 @@ const FermentationStation = () => {
                   disabled={
                     !batchNumber ||
                     !experimentNumber ||
-                    !processingType ||
-                    !farmerName ||
-                    !variety ||
-                    !fermentationTank ||
                     isLoadingTanks ||
                     tankError
                   }
