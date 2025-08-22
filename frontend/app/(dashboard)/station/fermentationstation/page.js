@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import {
   Typography,
@@ -330,47 +330,27 @@ const FermentationStation = () => {
     }
   };
 
-  const fetchBatchDetails = async (batchNumber) => {
-    if (!batchNumber) return;
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/receiving/${batchNumber}`);
-      const data = response.data;
-      if (data) {
-        setFarmerName(data.farmerName || '');
-        setType(data.type || '');
-        setHarvestDate(data.harvestDate ? dayjs(data.harvestDate).format('YYYY-MM-DD') : '');
-        setHarvestAt(data.harvestAt ? dayjs(data.harvestAt).tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss') : '');
-        setReceivedAt(data.receivedAt ? dayjs(data.receivedAt).tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm:ss') : '');
-        setReceivedWeight(data.receivedWeight || '');
-        setRejectWeight(data.rejectWeight || '');
-        setDefectWeight(data.defectWeight || '');
-        setDamagedWeight(data.damagedWeight || '');
-        setLostWeight(data.lostWeight || '');
-        setPreprocessingWeight(data.preprocessingWeight || '');
-        setQuality(data.quality || '');
-        setBrix(data.brix || '');
-      }
-    } catch (error) {
-      console.error('Error fetching batch details:', error);
-      setSnackbarMessage('Failed to fetch batch details.');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-    }
-  };
-
   useEffect(() => {
     fetchFermentationData();
     fetchAvailableBatches();
     fetchAvailableTanks();
   }, []);
 
-  useEffect(() => {
-    if (batchNumber) {
-      fetchBatchDetails(batchNumber);
-    } else {
+  const handleBatchNumberChange = (batchNumber) => {
+    setBatchNumber(batchNumber);
+    if (!batchNumber) {
       resetForm();
+      return;
     }
-  }, [batchNumber]);
+    const selectedBatch = availableBatches.find(batch => batch.batchNumber === batchNumber);
+    if (selectedBatch) {
+      setFarmerName(selectedBatch.farmerName || '');
+      setType(selectedBatch.type || '');
+    } else {
+      setFarmerName('');
+      setType('');
+    }
+  };
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
@@ -753,7 +733,7 @@ const FermentationStation = () => {
       { label: 'Variety', value: variety || 'N/A' },
       { label: 'Product line', value: productLine || 'N/A' },
       { label: 'Experiment', value: experimentNumber || 'N/A' },
-      { label: 'Received coffee cherry', value: receivedWeight ? `${receivedWeight} kg` : 'N/A' },
+      { label: 'Received coffee cherry', value: 'N/A' }, // Second step
       { label: 'Process', value: processingType || 'N/A' },
       { label: 'Pre-fermentation in bag', value: preStorage || 'N/A' },
       { label: 'Pre-fermentation time', value: preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : 'N/A' },
@@ -768,25 +748,25 @@ const FermentationStation = () => {
       { label: 'Leachate target', value: leachateTarget ? `${leachateTarget} L` : 'N/A' },
       { label: 'Starter type', value: fermentationStarter || 'N/A' },
       { label: 'Starter target', value: fermentationStarterAmount ? `${fermentationStarterAmount} L` : 'N/A' },
-      { label: 'Coffee weight', value: fermentationCherryWeight ? `${fermentationCherryWeight} kg` : 'N/A' },
-      { label: 'Water amount', value: waterUsed ? `${waterUsed} L` : 'N/A' },
-      { label: 'Starter amount', value: starterUsed ? `${starterUsed} L` : 'N/A' },
-      { label: 'Leachate', value: leachate ? `${leachate} L` : 'N/A' },
+      { label: 'Coffee weight', value: 'N/A' }, // Second step
+      { label: 'Water amount', value: 'N/A' }, // Second step
+      { label: 'Starter amount', value: 'N/A' }, // Second step
+      { label: 'Leachate', value: 'N/A' }, // Second step
       { label: 'Set fermentation time', value: fermentationTimeTarget ? `${fermentationTimeTarget} h` : 'N/A' },
       { label: 'Gas', value: gas || 'N/A' },
       { label: 'Set temperature', value: fermentationTemperature || 'ambient' },
       { label: 'Set temperature/Brew tank', value: brewTankTemperature ? `${brewTankTemperature} °C` : 'N/A' },
-      { label: 'Water temperature', value: waterTemperature ? `${waterTemperature} °C` : 'N/A' },
-      { label: 'Cooler temperature', value: coolerTemperature ? `${coolerTemperature} °C` : 'N/A' },
+      { label: 'Water temperature', value: 'N/A' }, // Second step
+      { label: 'Cooler temperature', value: 'N/A' }, // Second step
       { label: 'Set pH', value: pH || 'N/A' },
       { label: 'Set pressure', value: pressure ? `${pressure} psi` : 'N/A' },
-      { label: 'Fermentation start', value: fermentationStart ? dayjs(fermentationStart).tz('Asia/Makassar').format('DD/MM/YYYY HH:mm:ss') : 'N/A' },
+      { label: 'Fermentation start', value: 'N/A' }, // Second step
       { label: 'Fermentation end date goal', value: fermentationEndGoal },
-      { label: 'Fermentation end date', value: fermentationEnd ? dayjs(fermentationEnd).tz('Asia/Makassar').format('DD/MM/YYYY HH:mm:ss') : 'N/A' },
-      { label: 'Post fermentation weight', value: postFermentationWeight ? `${postFermentationWeight} kg` : 'N/A' },
+      { label: 'Fermentation end date', value: 'N/A' }, // Second step
+      { label: 'Post fermentation weight', value: 'N/A' }, // Second step
       { label: 'Post fermentation pulped', value: postPulped || 'N/A' },
       { label: 'Drying', value: drying || 'N/A' },
-      { label: 'Drying Area', value: dryingArea || 'N/A' },
+      { label: 'Drying Area', value: 'N/A' }, // Second step
       { label: 'Special note', value: description || 'N/A' },
     ];
 
@@ -1027,13 +1007,16 @@ const FermentationStation = () => {
     <Grid container spacing={3}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={12}>
+          <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+            Fermentation Station Form (First User)
+          </Typography>
           {tankError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {tankError}
             </Alert>
           )}
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={2} sx={{ mt: 2, ml: 2 }}>
+            <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
@@ -1044,7 +1027,7 @@ const FermentationStation = () => {
                         labelId="batch-number-label"
                         id="batch-number"
                         value={batchNumber}
-                        onChange={(e) => setBatchNumber(e.target.value)}
+                        onChange={(e) => handleBatchNumberChange(e.target.value)}
                         input={<OutlinedInput label="Batch Number" />}
                         MenuProps={MenuProps}
                       >
@@ -1053,7 +1036,7 @@ const FermentationStation = () => {
                             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                               <Typography variant="body1">{batch.batchNumber}</Typography>
                               <Typography variant="body2" color="text.secondary">
-                                Farmer: {batch.farmerName}, {batch.weight}kg
+                                Farmer: {batch.farmerName}, {batch.weight}kg, Type: {batch.type}
                               </Typography>
                             </Box>
                           </MenuItem>
