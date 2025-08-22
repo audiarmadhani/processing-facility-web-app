@@ -381,6 +381,27 @@ const FermentationStation = () => {
     }
   };
 
+  // Add handlers for referenceNumber and processingType linkage
+  const handleReferenceNumberChange = (value) => {
+    setReferenceNumber(value);
+    const selectedMapping = referenceMappings.find(mapping => mapping.referenceNumber === value);
+    if (selectedMapping) {
+      setProcessingType(selectedMapping.processingType || '');
+    } else {
+      setProcessingType('');
+    }
+  };
+
+  const handleProcessingTypeChange = (value) => {
+    setProcessingType(value);
+    const matchingReferences = referenceMappings.filter(mapping => mapping.processingType === value);
+    if (matchingReferences.length > 0) {
+      setReferenceNumber(matchingReferences[0].referenceNumber);
+    } else {
+      setReferenceNumber('');
+    }
+  };
+
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
   };
@@ -1078,14 +1099,31 @@ const FermentationStation = () => {
                       <Select
                         labelId="reference-number-label"
                         value={referenceNumber}
-                        onChange={(e) => setReferenceNumber(e.target.value)}
+                        onChange={(e) => handleReferenceNumberChange(e.target.value)}
                         input={<OutlinedInput label="Reference Number" />}
                         MenuProps={MenuProps}
                       >
-                        {referenceMappings.map(mapping => (
-                          <MenuItem key={mapping.id} value={mapping.referenceNumber}>
-                            {mapping.referenceNumber}
-                          </MenuItem>
+                        {referenceMappings
+                          .filter(mapping => !processingType || mapping.processingType === processingType)
+                          .map(mapping => (
+                            <MenuItem key={mapping.id} value={mapping.referenceNumber}>
+                              {mapping.referenceNumber}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                      <InputLabel id="processing-type-label">Processing Type</InputLabel>
+                      <Select
+                        labelId="processing-type-label"
+                        value={processingType}
+                        onChange={(e) => handleProcessingTypeChange(e.target.value)}
+                        input={<OutlinedInput label="Processing Type" />}
+                        MenuProps={MenuProps}
+                      >
+                        {[...new Set(referenceMappings.map(mapping => mapping.processingType))].map(type => (
+                          <MenuItem key={type} value={type}>{type}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
@@ -1099,21 +1137,6 @@ const FermentationStation = () => {
                       required
                       margin="normal"
                     />
-
-                    <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                      <InputLabel id="processing-type-label">Processing Type</InputLabel>
-                      <Select
-                        labelId="processing-type-label"
-                        value={processingType}
-                        onChange={(e) => setProcessingType(e.target.value)}
-                        input={<OutlinedInput label="Processing Type" />}
-                        MenuProps={MenuProps}
-                      >
-                        {defaultProcessingTypes.map(type => (
-                          <MenuItem key={type} value={type}>{type}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
 
                     <TextField
                       label="Description"
@@ -1872,13 +1895,46 @@ const FermentationStation = () => {
                 <Select
                   labelId="reference-number-details-label"
                   value={detailsData.referenceNumber || ''}
-                  onChange={(e) => setDetailsData({ ...detailsData, referenceNumber: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const selectedMapping = referenceMappings.find(mapping => mapping.referenceNumber === value);
+                    setDetailsData({
+                      ...detailsData,
+                      referenceNumber: value,
+                      processingType: selectedMapping ? selectedMapping.processingType : detailsData.processingType
+                    });
+                  }}
                   label="Reference Number"
                 >
-                  {referenceMappings.map(mapping => (
-                    <MenuItem key={mapping.id} value={mapping.referenceNumber}>
-                      {mapping.referenceNumber}
-                    </MenuItem>
+                  {referenceMappings
+                    .filter(mapping => !detailsData.processingType || mapping.processingType === detailsData.processingType)
+                    .map(mapping => (
+                      <MenuItem key={mapping.id} value={mapping.referenceNumber}>
+                        {mapping.referenceNumber}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={4}>
+              <FormControl fullWidth>
+                <InputLabel id="processing-type-details-label">Processing Type</InputLabel>
+                <Select
+                  labelId="processing-type-details-label"
+                  value={detailsData.processingType || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const matchingReferences = referenceMappings.filter(mapping => mapping.processingType === value);
+                    setDetailsData({
+                      ...detailsData,
+                      processingType: value,
+                      referenceNumber: matchingReferences.length > 0 ? matchingReferences[0].referenceNumber : detailsData.referenceNumber
+                    });
+                  }}
+                  label="Processing Type"
+                >
+                  {[...new Set(referenceMappings.map(mapping => mapping.processingType))].map(type => (
+                    <MenuItem key={type} value={type}>{type}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -1891,21 +1947,6 @@ const FermentationStation = () => {
                 onChange={(e) => setDetailsData({ ...detailsData, experimentNumber: e.target.value })}
                 fullWidth
               />
-            </Grid>
-            <Grid item xs={4}>
-              <FormControl fullWidth>
-                <InputLabel id="processing-type-details-label">Processing Type</InputLabel>
-                <Select
-                  labelId="processing-type-details-label"
-                  value={detailsData.processingType || ''}
-                  onChange={(e) => setDetailsData({ ...detailsData, processingType: e.target.value })}
-                  label="Processing Type"
-                >
-                  {defaultProcessingTypes.map(type => (
-                    <MenuItem key={type} value={type}>{type}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
             </Grid>
             <Grid item xs={4}>
               <TextField
