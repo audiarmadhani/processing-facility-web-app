@@ -1033,7 +1033,7 @@ const FermentationStation = () => {
             </Alert>
           )}
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={2}>
+            <Grid container spacing={2} sx={{ mt: 2, ml: 2 }}>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
@@ -1656,7 +1656,7 @@ const FermentationStation = () => {
                 >
                   Start Fermentation
                 </Button>
-                
+
               </Grid>
             </Grid>
           </form>
