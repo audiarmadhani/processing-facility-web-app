@@ -336,19 +336,32 @@ const FermentationStation = () => {
     fetchAvailableTanks();
   }, []);
 
-  const handleBatchNumberChange = (batchNumber) => {
+  const handleBatchNumberChange = async (batchNumber) => {
     setBatchNumber(batchNumber);
     if (!batchNumber) {
       resetForm();
       return;
     }
-    const selectedBatch = availableBatches.find(batch => batch.batchNumber === batchNumber);
-    if (selectedBatch) {
-      setFarmerName(selectedBatch.farmerName || '');
-      setType(selectedBatch.type || '');
-    } else {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/receiving/${batchNumber}`);
+      const data = Array.isArray(response.data) ? response.data[0] : response.data;
+      if (data) {
+        setFarmerName(data.farmerName || '');
+        setType(data.type || '');
+      } else {
+        setFarmerName('');
+        setType('');
+        setSnackbarMessage('No data found for selected batch.');
+        setSnackbarSeverity('warning');
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Error fetching batch details:', error, 'Response:', error.response);
       setFarmerName('');
       setType('');
+      setSnackbarMessage(error.response?.data?.message || 'Failed to fetch batch details.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
     }
   };
 
