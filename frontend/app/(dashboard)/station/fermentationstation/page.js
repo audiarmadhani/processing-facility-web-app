@@ -1639,7 +1639,7 @@ const FermentationStation = () => {
                   variant="contained"
                   color="secondary"
                   onClick={generateOrderSheet}
-                  style={{ marginTop: '16px', marginLeft: '16px' }}
+                  style={{ marginTop: '16px', marginRight: '16px' }}
                   disabled={
                     !batchNumber ||
                     !experimentNumber ||
