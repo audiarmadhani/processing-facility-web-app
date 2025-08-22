@@ -814,20 +814,20 @@ const FermentationStation = () => {
   return (
     <Grid container spacing={3}>
       <Grid item xs={12} md={12}>
-        <Card variant="outlined">
-          <CardContent>
 
-            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-              Fermentation Station Form
-            </Typography>
-            {tankError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {tankError}
-              </Alert>
-            )}
-            <form onSubmit={handleSubmit}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+          Fermentation Station Form
+        </Typography>
+        {tankError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {tankError}
+          </Alert>
+        )}
+        <form onSubmit={handleSubmit}>
 
-              <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4}>
+            <Card variant="outlined">
+              <CardContent>
                 <Typography variant="h6" gutterBottom>Cherry Information</Typography>
                 <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                   <InputLabel id="batch-number-label">Batch Number</InputLabel>
@@ -1020,9 +1020,13 @@ const FermentationStation = () => {
                   fullWidth
                   margin="normal"
                 />
-              </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
 
-              <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4}>
+            <Card variant="outlined">
+              <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Pre-Fermentation Section</Typography>
 
                 <FormControl fullWidth sx={{ marginTop: '16px' }}>
@@ -1371,9 +1375,13 @@ const FermentationStation = () => {
                     <MenuItem value="no">No</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
 
-              <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4}>
+            <Card variant="outlined">
+              <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Second Fermentation Section</Typography>
 
                 <FormControl fullWidth sx={{ marginTop: '16px' }}>
@@ -1814,10 +1822,10 @@ const FermentationStation = () => {
                 >
                   Start Fermentation
                 </Button>
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </Grid>
+        </form>
       </Grid>
 
       <Grid item xs={12} md={12}>
