@@ -1027,9 +1027,6 @@ const FermentationStation = () => {
     <Grid container spacing={3}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={12}>
-          <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
-            Fermentation Station Form (First User)
-          </Typography>
           {tankError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {tankError}
@@ -1149,13 +1146,7 @@ const FermentationStation = () => {
                       margin="normal"
                       placeholder="Enter product line or N/A"
                     />
-                  </CardContent>
-                </Card>
-              </Grid>
 
-              <Grid item xs={12} md={4}>
-                <Card variant="outlined">
-                  <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Pre-Fermentation Section</Typography>
 
                     <TextField
@@ -1578,13 +1569,7 @@ const FermentationStation = () => {
                       fullWidth
                       margin="normal"
                     />
-                  </CardContent>
-                </Card>
-              </Grid>
 
-              <Grid item xs={12} md={4}>
-                <Card variant="outlined">
-                  <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Drying Section</Typography>
 
                     <FormControl fullWidth sx={{ marginTop: '16px' }}>
@@ -1634,6 +1619,25 @@ const FermentationStation = () => {
               </Grid>
 
               <Grid item xs={12}>
+              
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={generateOrderSheet}
+                  style={{ marginTop: '16px', marginLeft: '16px' }}
+                  disabled={
+                    !batchNumber ||
+                    !experimentNumber ||
+                    !processingType ||
+                    !farmerName ||
+                    !variety ||
+                    !fermentationTank ||
+                    !fermentationStart
+                  }
+                >
+                  Generate Order Sheet
+                </Button>
+
                 <Button
                   type="submit"
                   variant="contained"
@@ -1652,23 +1656,7 @@ const FermentationStation = () => {
                 >
                   Start Fermentation
                 </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={generateOrderSheet}
-                  style={{ marginTop: '16px', marginLeft: '16px' }}
-                  disabled={
-                    !batchNumber ||
-                    !experimentNumber ||
-                    !processingType ||
-                    !farmerName ||
-                    !variety ||
-                    !fermentationTank ||
-                    !fermentationStart
-                  }
-                >
-                  Generate Order Sheet
-                </Button>
+                
               </Grid>
             </Grid>
           </form>
