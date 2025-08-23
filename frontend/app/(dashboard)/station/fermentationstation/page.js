@@ -333,14 +333,17 @@ const FermentationStation = () => {
     }
   };
 
-  const fetchDetailsData = async (batchNumber) => {
+  const fetchDetailsData = async (batchNumber, referenceNumber, experimentNumber) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/fermentation/details/${batchNumber}`);
+      const queryParams = new URLSearchParams();
+      if (referenceNumber) queryParams.append('referenceNumber', referenceNumber);
+      if (experimentNumber) queryParams.append('experimentNumber', experimentNumber);
+      const response = await axios.get(`${API_BASE_URL}/api/fermentation/details/${batchNumber}?${queryParams.toString()}`);
       setDetailsData(response.data || {});
     } catch (error) {
       console.error('Error fetching details data:', error, 'Response:', error.response);
       setDetailsData({});
-      setSnackbarMessage('Failed to fetch details data.');
+      setSnackbarMessage(error.response?.data?.error || 'Failed to fetch details data.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
@@ -967,7 +970,7 @@ const FermentationStation = () => {
 
   const handleDetailsClick = async (row) => {
     setSelectedBatch(row);
-    await fetchDetailsData(row.batchNumber);
+    await fetchDetailsData(row.batchNumber, row.referenceNumber, row.experimentNumber);
     setOpenDetailsDialog(true);
     setAnchorEl(null);
   };
