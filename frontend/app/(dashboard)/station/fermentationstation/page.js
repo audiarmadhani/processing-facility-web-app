@@ -1075,6 +1075,9 @@ const FermentationStation = () => {
       <Grid item xs={12} md={12}>
         <Card variant="outlined">
           <CardContent>
+            <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+              Fermentation Station Form
+            </Typography>
             {tankError && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {tankError}
@@ -1083,7 +1086,7 @@ const FermentationStation = () => {
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={4}>
-                  <Card variant="outlined">
+                  <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>Cherry Information</Typography>
                       <FormControl fullWidth required sx={{ marginTop: '16px' }}>
@@ -1276,7 +1279,7 @@ const FermentationStation = () => {
                 </Grid>
 
                 <Grid item xs={12} md={4}>
-                  <Card variant="outlined">
+                  <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Fermentation Section</Typography>
 
@@ -1493,7 +1496,7 @@ const FermentationStation = () => {
                 </Grid>
 
                 <Grid item xs={12} md={4}>
-                  <Card variant="outlined">
+                  <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Second Fermentation Section</Typography>
 
