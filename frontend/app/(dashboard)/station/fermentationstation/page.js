@@ -781,46 +781,46 @@ const FermentationStation = () => {
 
     const fields = [
       { label: 'Date', value: derivedDate },
-      { label: 'Batch number', value: batchNumber || 'N/A' },
-      { label: 'Farmer', value: farmerName || 'N/A' },
-      { label: 'Variety', value: variety || 'N/A' },
-      { label: 'Product line', value: productLine || 'N/A' },
-      { label: 'Experiment', value: experimentNumber || 'N/A' },
-      { label: 'Received coffee cherry', value: 'N/A' }, // Second step
-      { label: 'Process', value: processingType || 'N/A' },
-      { label: 'Pre-fermentation in bag', value: preStorage || 'N/A' },
-      { label: 'Pre-fermentation time', value: preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : 'N/A' },
-      { label: 'Wesorter', value: wesorter || 'N/A' },
-      { label: 'Pre-classifier', value: preClassifier || 'N/A' },
-      { label: 'Fermentation', value: fermentation || 'N/A' },
-      { label: 'Fermentation tank', value: fermentationTank || 'N/A' },
-      { label: 'Airlock', value: airlock || 'N/A' },
-      { label: 'Tank amount', value: tankAmount || 'N/A' },
-      { label: 'Pulped', value: prePulped || 'N/A' },
-      { label: 'Submerged', value: isSubmerged || 'N/A' },
-      { label: 'Leachate target', value: leachateTarget ? `${leachateTarget} L` : 'N/A' },
-      { label: 'Starter type', value: fermentationStarter || 'N/A' },
-      { label: 'Starter target', value: fermentationStarterAmount ? `${fermentationStarterAmount} L` : 'N/A' },
-      { label: 'Coffee weight', value: 'N/A' }, // Second step
-      { label: 'Water amount', value: 'N/A' }, // Second step
-      { label: 'Starter amount', value: 'N/A' }, // Second step
-      { label: 'Leachate', value: 'N/A' }, // Second step
-      { label: 'Set fermentation time', value: fermentationTimeTarget ? `${fermentationTimeTarget} h` : 'N/A' },
-      { label: 'Gas', value: gas || 'N/A' },
+      { label: 'Batch number', value: batchNumber || '' },
+      { label: 'Farmer', value: farmerName || '' },
+      { label: 'Variety', value: variety || '' },
+      { label: 'Product line', value: productLine || '' },
+      { label: 'Experiment', value: experimentNumber || '' },
+      { label: 'Received coffee cherry', value: '' }, // Second step
+      { label: 'Process', value: processingType || '' },
+      { label: 'Pre-fermentation in bag', value: preStorage || '' },
+      { label: 'Pre-fermentation time', value: preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : '' },
+      { label: 'Wesorter', value: wesorter || '' },
+      { label: 'Pre-classifier', value: preClassifier || '' },
+      { label: 'Fermentation', value: fermentation || '' },
+      { label: 'Fermentation tank', value: fermentationTank || '' },
+      { label: 'Airlock', value: airlock || '' },
+      { label: 'Tank amount', value: tankAmount || '' },
+      { label: 'Pulped', value: prePulped || '' },
+      { label: 'Submerged', value: isSubmerged || '' },
+      { label: 'Leachate target', value: leachateTarget ? `${leachateTarget} L` : '' },
+      { label: 'Starter type', value: fermentationStarter || '' },
+      { label: 'Starter target', value: fermentationStarterAmount ? `${fermentationStarterAmount} L` : '' },
+      { label: 'Coffee weight', value: '' }, // Second step
+      { label: 'Water amount', value: '' }, // Second step
+      { label: 'Starter amount', value: '' }, // Second step
+      { label: 'Leachate', value: '' }, // Second step
+      { label: 'Set fermentation time', value: fermentationTimeTarget ? `${fermentationTimeTarget} h` : '' },
+      { label: 'Gas', value: gas || '' },
       { label: 'Set temperature', value: fermentationTemperature || 'ambient' },
-      { label: 'Set temperature/Brew tank', value: brewTankTemperature ? `${brewTankTemperature} °C` : 'N/A' },
-      { label: 'Water temperature', value: 'N/A' }, // Second step
-      { label: 'Cooler temperature', value: 'N/A' }, // Second step
-      { label: 'Set pH', value: pH || 'N/A' },
-      { label: 'Set pressure', value: pressure ? `${pressure} psi` : 'N/A' },
-      { label: 'Fermentation start', value: 'N/A' }, // Second step
+      { label: 'Set temperature/Brew tank', value: brewTankTemperature ? `${brewTankTemperature} °C` : '' },
+      { label: 'Water temperature', value: '' }, // Second step
+      { label: 'Cooler temperature', value: '' }, // Second step
+      { label: 'Set pH', value: pH || '' },
+      { label: 'Set pressure', value: pressure ? `${pressure} psi` : '' },
+      { label: 'Fermentation start', value: '' }, // Second step
       { label: 'Fermentation end date goal', value: fermentationEndGoal },
-      { label: 'Fermentation end date', value: 'N/A' }, // Second step
-      { label: 'Post fermentation weight', value: 'N/A' }, // Second step
-      { label: 'Post fermentation pulped', value: postPulped || 'N/A' },
-      { label: 'Drying', value: drying || 'N/A' },
-      { label: 'Drying Area', value: 'N/A' }, // Second step
-      { label: 'Special note', value: description || 'N/A' },
+      { label: 'Fermentation end date', value: '' }, // Second step
+      { label: 'Post fermentation weight', value: '' }, // Second step
+      { label: 'Post fermentation pulped', value: postPulped || '' },
+      { label: 'Drying', value: drying || '' },
+      { label: 'Drying Area', value: '' }, // Second step
+      { label: 'Special note', value: description || '' },
     ];
 
     // Create table
@@ -1184,14 +1184,19 @@ const FermentationStation = () => {
                       </Select>
                     </FormControl>
 
-                    <TextField
-                      label="Product Line"
-                      value={productLine}
-                      onChange={(e) => setProductLine(e.target.value)}
-                      fullWidth
-                      margin="normal"
-                      placeholder="Enter product line or N/A"
-                    />
+                    <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                      <InputLabel id="product-line-label">Product</InputLabel>
+                      <Select
+                        labelId="product-line-label"
+                        value={productLine}
+                        onChange={(e) => setProductLine(e.target.value)}
+                        input={<OutlinedInput label="Product" />}
+                        MenuProps={MenuProps}
+                      >
+                        <MenuItem value="production lot">Production Lot</MenuItem>
+                        <MenuItem value="experiment lot">Experiment Lot</MenuItem>
+                      </Select>
+                    </FormControl>
 
                     <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Pre-Fermentation Section</Typography>
 
