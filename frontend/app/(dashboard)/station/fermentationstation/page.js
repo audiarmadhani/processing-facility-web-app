@@ -987,6 +987,9 @@ const FermentationStation = () => {
 
   const fermentationColumns = [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
+    { field: 'referenceNumber', headerName: 'Reference Number', width: 180 },
+    { field: 'experimentNumber', headerName: 'Experiment Number', width: 180 },
+    { field: 'processingType', headerName: 'Processing Type', width: 180 },
     {
       field: 'actions',
       headerName: 'Actions',
