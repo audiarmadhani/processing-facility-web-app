@@ -1120,7 +1120,6 @@ const FermentationStation = () => {
                           ))}
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="reference-number-label">Reference Number</InputLabel>
                         <Select
@@ -1139,7 +1138,6 @@ const FermentationStation = () => {
                             ))}
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                         <InputLabel id="processing-type-label">Processing Type</InputLabel>
                         <Select
@@ -1154,7 +1152,6 @@ const FermentationStation = () => {
                           ))}
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Experiment Number"
                         type="number"
@@ -1164,7 +1161,6 @@ const FermentationStation = () => {
                         required
                         margin="normal"
                       />
-
                       <TextField
                         label="Description"
                         value={description}
@@ -1172,7 +1168,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Farmer Name"
                         value={farmerName}
@@ -1180,7 +1175,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Type"
                         value={type}
@@ -1188,7 +1182,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                         <InputLabel id="variety-label">Variety</InputLabel>
                         <Select
@@ -1202,7 +1195,6 @@ const FermentationStation = () => {
                           <MenuItem value="yellow caturra">Yellow Caturra</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                         <InputLabel id="product-line-label">Product</InputLabel>
                         <Select
@@ -1216,9 +1208,7 @@ const FermentationStation = () => {
                           <MenuItem value="experiment lot">Experiment Lot</MenuItem>
                         </Select>
                       </FormControl>
-
                       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Pre-Fermentation Section</Typography>
-
                       <TextField
                         label="Pre-Fermentation Storage Goal (h)"
                         type="number"
@@ -1227,7 +1217,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="pre-pulped-label">Pre-pulped</InputLabel>
                         <Select
@@ -1241,7 +1230,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="pre-pulped-delva-label">Pre-pulped Delva</InputLabel>
                         <Select
@@ -1255,7 +1243,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="wesorter-label">Wesorter</InputLabel>
                         <Select
@@ -1269,7 +1256,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="pre-classifier-label">Pre-classifier</InputLabel>
                         <Select
@@ -1286,12 +1272,10 @@ const FermentationStation = () => {
                     </CardContent>
                   </Card>
                 </Grid>
-
                 <Grid item xs={12} md={4}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Fermentation Section</Typography>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="cherry-type-label">Cherry Type</InputLabel>
                         <Select
@@ -1305,7 +1289,6 @@ const FermentationStation = () => {
                           <MenuItem value="pulped">Pulped</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="fermentation-label">Fermentation</InputLabel>
                         <Select
@@ -1319,13 +1302,12 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                         <InputLabel id="fermentation-tank-label">Fermentation Tank</InputLabel>
                         <Select
                           labelId="fermentation-tank-label"
                           value={fermentationTank}
-                          onChange={(e) => setFermentationTank(e.target.value)}
+                          onChange={(e) => handleFermentationTankChange(e.target.value)}
                           input={<OutlinedInput label="Fermentation Tank" />}
                           MenuProps={MenuProps}
                         >
@@ -1340,7 +1322,6 @@ const FermentationStation = () => {
                           )}
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Starter"
                         value={fermentationStarter}
@@ -1348,7 +1329,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="gas-label">Gas</InputLabel>
                         <Select
@@ -1364,7 +1344,6 @@ const FermentationStation = () => {
                           <MenuItem value="pure o2">Pure O2</MenuItem>
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Pressure (psi)"
                         type="number"
@@ -1373,7 +1352,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="is-submerged-label">Is Submerged</InputLabel>
                         <Select
@@ -1387,7 +1365,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Total Volume (L)"
                         type="number"
@@ -1396,7 +1373,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Stirring (Hz)"
                         type="number"
@@ -1405,7 +1381,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Fermentation Temperature (°C)"
                         type="number"
@@ -1414,7 +1389,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="pH"
                         type="number"
@@ -1423,7 +1397,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Fermentation Time Target (h)"
                         type="number"
@@ -1432,7 +1405,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="post-pulped-label">Post-pulped</InputLabel>
                         <Select
@@ -1446,7 +1418,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Airlock"
                         value={airlock}
@@ -1455,7 +1426,6 @@ const FermentationStation = () => {
                         margin="normal"
                         placeholder="e.g., lid open"
                       />
-
                       <TextField
                         label="Tank Amount"
                         type="number"
@@ -1464,7 +1434,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Leachate Target (L)"
                         type="number"
@@ -1472,8 +1441,8 @@ const FermentationStation = () => {
                         onChange={(e) => setLeachateTarget(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={fermentationTank !== 'Carrybrew'}
                       />
-
                       <TextField
                         label="Brew Tank Temperature (°C)"
                         type="number"
@@ -1481,8 +1450,8 @@ const FermentationStation = () => {
                         onChange={(e) => setBrewTankTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={fermentationTank !== 'Carrybrew'}
                       />
-
                       <TextField
                         label="Water Temperature (°C)"
                         type="number"
@@ -1490,8 +1459,8 @@ const FermentationStation = () => {
                         onChange={(e) => setWaterTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={fermentationTank !== 'Carrybrew'}
                       />
-
                       <TextField
                         label="Cooler Temperature (°C)"
                         type="number"
@@ -1499,16 +1468,15 @@ const FermentationStation = () => {
                         onChange={(e) => setCoolerTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={fermentationTank !== 'Carrybrew'}
                       />
                     </CardContent>
                   </Card>
                 </Grid>
-
                 <Grid item xs={12} md={4}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Second Fermentation Section</Typography>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-fermentation-label">Second Fermentation</InputLabel>
                         <Select
@@ -1522,7 +1490,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
                         <Select
@@ -1537,7 +1504,6 @@ const FermentationStation = () => {
                           ))}
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-washed-delva-label">Washed with Delva</InputLabel>
                         <Select
@@ -1551,7 +1517,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-washed-label">Washed</InputLabel>
                         <Select
@@ -1565,7 +1530,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Starter"
                         value={secondStarterType}
@@ -1573,7 +1537,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-gas-label">Second Gas</InputLabel>
                         <Select
@@ -1589,7 +1552,6 @@ const FermentationStation = () => {
                           <MenuItem value="pure o2">Pure O2</MenuItem>
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Second Pressure (psi)"
                         type="number"
@@ -1598,7 +1560,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-is-submerged-label">Second Is Submerged</InputLabel>
                         <Select
@@ -1612,7 +1573,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <TextField
                         label="Second Total Volume (L)"
                         type="number"
@@ -1621,7 +1581,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Second Temperature (°C)"
                         type="number"
@@ -1630,7 +1589,6 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <TextField
                         label="Second Fermentation Time Target (h)"
                         type="number"
@@ -1639,9 +1597,7 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-
                       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Drying Section</Typography>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-drying-label">Second Drying</InputLabel>
                         <Select
@@ -1655,7 +1611,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="rehydration-label">Rehydration</InputLabel>
                         <Select
@@ -1669,7 +1624,6 @@ const FermentationStation = () => {
                           <MenuItem value="no">No</MenuItem>
                         </Select>
                       </FormControl>
-
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="drying-label">Drying Method</InputLabel>
                         <Select
@@ -1687,37 +1641,33 @@ const FermentationStation = () => {
                     </CardContent>
                   </Card>
                 </Grid>
-
                 <Grid item xs={12}>
-                
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={generateOrderSheet}
-                    style={{ marginTop: '16px', marginRight: '16px' }}
-                    disabled={
-                      !batchNumber ||
-                      !experimentNumber
-                    }
-                  >
-                    Generate Order Sheet
-                  </Button>
-
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    style={{ marginTop: '16px' }}
-                    disabled={
-                      !batchNumber ||
-                      !experimentNumber ||
-                      isLoadingTanks ||
-                      tankError
-                    }
-                  >
-                    Start Fermentation
-                  </Button>
-
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={generateOrderSheet}
+                      disabled={
+                        !batchNumber ||
+                        !experimentNumber
+                      }
+                    >
+                      Generate Order Sheet
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      disabled={
+                        !batchNumber ||
+                        !experimentNumber ||
+                        isLoadingTanks ||
+                        tankError
+                      }
+                    >
+                      Start Fermentation
+                    </Button>
+                  </Box>
                 </Grid>
               </Grid>
             </form>
