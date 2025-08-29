@@ -406,6 +406,16 @@ const FermentationStation = () => {
     }
   };
 
+  const handleFermentationTankChange = (value) => {
+    setFermentationTank(value);
+    if (value !== 'Carrybrew') {
+      setLeachateTarget('');
+      setBrewTankTemperature('');
+      setWaterTemperature('');
+      setCoolerTemperature('');
+    }
+  };
+
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
   };
@@ -644,7 +654,6 @@ const FermentationStation = () => {
     setAirlock('');
     setTankAmount('');
     setLeachateTarget('');
-    setLeachate('');
     setBrewTankTemperature('');
     setWaterTemperature('');
     setCoolerTemperature('');
@@ -2595,11 +2604,11 @@ const FermentationStation = () => {
               <TextField
                 label="Leachate Target (L)"
                 type="number"
-                value={detailsData.leachateTarget || ''}
-                onChange={(e) => setDetailsData({ ...detailsData, leachateTarget: e.target.value })}
+                value={leachateTarget}
+                onChange={(e) => setLeachateTarget(e.target.value)}
                 fullWidth
-                variant="filled"
-                sx={{ mt: 1 }}
+                margin="normal"
+                disabled={fermentationTank !== 'Carrybrew'}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2622,6 +2631,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={fermentationTank !== 'Carrybrew'}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2633,6 +2643,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={fermentationTank !== 'Carrybrew'}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2644,6 +2655,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={fermentationTank !== 'Carrybrew'}
               />
             </Grid>
           </Grid>
