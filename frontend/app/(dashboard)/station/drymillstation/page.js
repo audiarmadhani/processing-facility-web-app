@@ -24,6 +24,11 @@ import {
   TableHead,
   TableRow,
   MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
@@ -36,12 +41,7 @@ const SCAN_LOCATIONS = {
 };
 
 // Utility to format label data using backend-provided lotNumber and referenceNumber
-const formatLabelData = (
-  batch,
-  grade,
-  bagWeight,
-  bagIndex
-) => {
+const formatLabelData = (batch, grade, bagWeight, bagIndex) => {
   const farmerName = batch?.farmerName || "Unknown Farmer";
   const companyName = batch?.producer === "BTM" ? "PT Berkas Tuaian Melimpah" : "HEQA";
   const productionDate =
@@ -93,6 +93,11 @@ const DryMillStation = () => {
   const [sampleHistory, setSampleHistory] = useState([]);
   const [openSampleHistoryDialog, setOpenSampleHistoryDialog] = useState(false);
   const [sampleData, setSampleData] = useState([]);
+  const [openMergeDialog, setOpenMergeDialog] = useState(false);
+  const [selectedBatches, setSelectedBatches] = useState([]);
+  const [mergeNotes, setMergeNotes] = useState("");
+  const [newBatchNumber, setNewBatchNumber] = useState("");
+  const [totalSelectedWeight, setTotalSelectedWeight] = useState(0);
   const rfidInputRef = useRef(null);
 
   const logError = (message, error) => {
@@ -131,6 +136,7 @@ const DryMillStation = () => {
           batchType: batch.batchType || "Cherry",
           lotNumber: batch.lotNumber === "ID-BTM-A-N-AS" && !batch.dryMillExited ? "ID-BTM-A-N" : batch.lotNumber,
           referenceNumber: batch.referenceNumber,
+          dryMillMerged: batch.dryMillMerged ? "Merged" : "Not Merged",
           id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
             .substr(2, 9)}`,
@@ -160,7 +166,7 @@ const DryMillStation = () => {
           totalBags: batch.totalBags || "N/A",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
-          parentBatchNumber: batch.parentBatchNumber || batch.batchNumber, // Use self as parent if none
+          parentBatchNumber: batch.parentBatchNumber || batch.batchNumber,
           lotNumber: batch.lotNumber,
           referenceNumber: batch.referenceNumber,
           bagWeights: batch.bagDetails || [],
@@ -199,7 +205,7 @@ const DryMillStation = () => {
           const normalizedQuality = selectedBatch.quality?.trim();
           const gradeData = data.find((grade) => grade.grade?.trim() === normalizedQuality) || {
             grade: normalizedQuality || "Grade 1",
-            weight: "0", // Default to string "0" to ensure parseFloat works
+            weight: "0",
             bagWeights: [],
             bagged_at: new Date().toISOString().split("T")[0],
             tempSequence: "0001",
@@ -210,7 +216,7 @@ const DryMillStation = () => {
           return [
             {
               ...gradeData,
-              weight: parseFloat(gradeData.weight) || 0, // Ensure weight is a number
+              weight: parseFloat(gradeData.weight) || 0,
               storedDate: gradeData.storedDate || null,
             },
           ];
@@ -220,7 +226,7 @@ const DryMillStation = () => {
           data.forEach((grade) => {
             fetchedGradesMap[grade.grade] = {
               grade: grade.grade,
-              weight: parseFloat(grade.weight) || 0, // Ensure weight is a number
+              weight: parseFloat(grade.weight) || 0,
               bagWeights: Array.isArray(grade.bagWeights) ? grade.bagWeights.map((w) => String(w)) : [],
               bagged_at: grade.bagged_at || new Date().toISOString().split("T")[0],
               tempSequence: grade.tempSequence || "0001",
@@ -233,7 +239,7 @@ const DryMillStation = () => {
           return gradeOrder.map((grade) =>
             fetchedGradesMap[grade] || {
               grade,
-              weight: 0, // Default to 0
+              weight: 0,
               bagWeights: [],
               bagged_at: new Date().toISOString().split("T")[0],
               tempSequence: "0001",
@@ -252,7 +258,7 @@ const DryMillStation = () => {
         return [
           {
             grade: selectedBatch?.parentBatchNumber ? selectedBatch?.quality?.trim() || "Grade 1" : "Grade 1",
-            weight: 0, // Default to 0 to avoid toFixed error
+            weight: 0,
             bagWeights: [],
             bagged_at: new Date().toISOString().split("T")[0],
             tempSequence: "0001",
@@ -355,6 +361,76 @@ const DryMillStation = () => {
     [rfid, fetchDryMillData]
   );
 
+  const handleOpenMergeDialog = async () => {
+    if (!["admin", "manager"].includes(session.user.role)) {
+      setSnackbarMessage("Only admins or managers can merge batches.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    try {
+      const response = await axios.get("https://processing-facility-backend.onrender.com/api/new-batch-number");
+      setNewBatchNumber(response.data.newBatchNumber);
+      setOpenMergeDialog(true);
+    } catch (error) {
+      logError("Failed to fetch new batch number for merging.", error);
+      setSnackbarMessage("Failed to fetch new batch number for merging.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleCloseMergeDialog = () => {
+    setOpenMergeDialog(false);
+    setSelectedBatches([]);
+    setMergeNotes("");
+    setNewBatchNumber("");
+    setTotalSelectedWeight(0);
+  };
+
+  const handleMergeBatches = async () => {
+    if (selectedBatches.length < 2) {
+      setSnackbarMessage("Please select at least two batches to merge.");
+      setSnackbarSeverity("warning");
+      setOpenSnackbar(true);
+      return;
+    }
+    if (totalSelectedWeight < 1000) {
+      setSnackbarMessage("Total weight must be at least 1000 kg to merge.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    const selectedBatchDetails = parentBatches.filter((b) => selectedBatches.includes(b.batchNumber));
+    const processingType = selectedBatchDetails[0]?.processingType;
+    if (!selectedBatchDetails.every((b) => b.processingType === processingType)) {
+      setSnackbarMessage("All selected batches must have the same processing type.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    try {
+      const response = await axios.post("https://processing-facility-backend.onrender.com/api/dry-mill/merge", {
+        batchNumbers: selectedBatches,
+        notes: mergeNotes.trim() || null,
+        createdBy: session?.user?.email || "Unknown",
+      });
+      setSnackbarMessage(
+        `Batches merged successfully into ${response.data.newBatchNumber} with total weight ${response.data.totalWeight} kg.`
+      );
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
+      await fetchDryMillData();
+      handleCloseMergeDialog();
+    } catch (error) {
+      const message = error.response?.data?.error || "Failed to merge batches.";
+      logError(message, error);
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
+
   const handleConfirmComplete = useCallback(
     async () => {
       if (!selectedBatch || !session?.user?.email) {
@@ -375,7 +451,7 @@ const DryMillStation = () => {
           {
             createdBy: session.user.email,
             updatedBy: session.user.email,
-            dryMillExited: new Date().toISOString(), // Set dryMillExited to current timestamp
+            dryMillExited: new Date().toISOString(),
           }
         );
         setSnackbarMessage(response.data.message);
@@ -837,7 +913,7 @@ const DryMillStation = () => {
   }, [selectedBatch, sampleDateTaken, sampleWeightTaken, sampleHistory, fetchDryMillData, fetchSampleData]);
 
   const handleShowSampleHistory = useCallback(async (batchNumber) => {
-    setSelectedBatch(parentBatches.find(b => b.batchNumber === batchNumber));
+    setSelectedBatch(parentBatches.find((b) => b.batchNumber === batchNumber));
     await fetchSampleHistory(batchNumber);
     setOpenSampleHistoryDialog(true);
   }, [parentBatches, fetchSampleHistory]);
@@ -943,6 +1019,30 @@ const DryMillStation = () => {
 
   const parentColumns = useMemo(
     () => [
+      {
+        field: "select",
+        headerName: "Select",
+        width: 100,
+        sortable: false,
+        renderCell: ({ row }) => (
+          <Checkbox
+            checked={selectedBatches.includes(row.batchNumber)}
+            onChange={(e) => {
+              const newSelected = e.target.checked
+                ? [...selectedBatches, row.batchNumber]
+                : selectedBatches.filter((b) => b !== row.batchNumber);
+              setSelectedBatches(newSelected);
+              const selectedBatchDetails = parentBatches.filter((b) => newSelected.includes(b.batchNumber));
+              const totalWeight = selectedBatchDetails.reduce(
+                (sum, b) => sum + parseFloat(b.drying_weight || 0),
+                0
+              );
+              setTotalSelectedWeight(totalWeight);
+            }}
+            disabled={row.status !== "In Dry Mill" || row.dryMillExited || row.storedDate}
+          />
+        ),
+      },
       { field: "batchNumber", headerName: "Batch Number", width: 160 },
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
@@ -961,6 +1061,19 @@ const DryMillStation = () => {
                 ? "success"
                 : "default"
             }
+            size="small"
+            sx={{ borderRadius: "16px", fontWeight: "bold" }}
+          />
+        ),
+      },
+      {
+        field: "dryMillMerged",
+        headerName: "Merge Status",
+        width: 150,
+        renderCell: ({ value }) => (
+          <Chip
+            label={value}
+            color={value === "Merged" ? "warning" : "default"}
             size="small"
             sx={{ borderRadius: "16px", fontWeight: "bold" }}
           />
@@ -1012,7 +1125,7 @@ const DryMillStation = () => {
       { field: "totalBags", headerName: "Total Bags", width: 120 },
       { field: "notes", headerName: "Notes", width: 180 },
     ],
-    [isLoading]
+    [isLoading, selectedBatches, parentBatches]
   );
 
   const subBatchColumns = useMemo(
@@ -1231,16 +1344,25 @@ const DryMillStation = () => {
             <Typography variant="h5" gutterBottom>
               Dry Mill Station - Active Batches
             </Typography>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleRefreshData}
-              disabled={isLoading}
-              sx={{ mb: 2, ml: 0 }}
-              startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
-            >
-              {isLoading ? "Refreshing..." : "Refresh Data"}
-            </Button>
+            <Box sx={{ mb: 2, display: "flex", gap: 1 }}>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleRefreshData}
+                disabled={isLoading}
+                startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
+              >
+                {isLoading ? "Refreshing..." : "Refresh Data"}
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleOpenMergeDialog}
+                disabled={selectedBatches.length < 2 || totalSelectedWeight < 1000}
+              >
+                Merge Batches
+              </Button>
+            </Box>
             {renderParentDataGrid}
           </CardContent>
         </Card>
@@ -1670,6 +1792,82 @@ const DryMillStation = () => {
         <DialogActions>
           <Button onClick={handleCloseSampleHistoryDialog} disabled={isLoading}>
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openMergeDialog} onClose={handleCloseMergeDialog} maxWidth="md" fullWidth>
+        <DialogTitle>Merge Batches</DialogTitle>
+        <DialogContent>
+          <Typography>New Batch Number: {newBatchNumber}</Typography>
+          <Typography>Total Weight: {totalSelectedWeight.toFixed(2)} kg</Typography>
+          {totalSelectedWeight < 1000 && (
+            <Typography color="error">
+              Total weight must be at least 1000 kg to merge.
+            </Typography>
+          )}
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="merge-batches-label">Selected Batches</InputLabel>
+            <Select
+              labelId="merge-batches-label"
+              multiple
+              value={selectedBatches}
+              onChange={(e) => {
+                const newSelected = e.target.value;
+                setSelectedBatches(newSelected);
+                const selectedBatchDetails = parentBatches.filter((b) => newSelected.includes(b.batchNumber));
+                const totalWeight = selectedBatchDetails.reduce(
+                  (sum, b) => sum + parseFloat(b.drying_weight || 0),
+                  0
+                );
+                setTotalSelectedWeight(totalWeight);
+              }}
+              input={<OutlinedInput label="Selected Batches" />}
+              renderValue={(selected) => selected.join(", ")}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 48 * 4.5 + 8,
+                    width: 250,
+                  },
+                },
+              }}
+            >
+              {parentBatches.map((batch) => (
+                <MenuItem
+                  key={batch.batchNumber}
+                  value={batch.batchNumber}
+                  disabled={batch.status !== "In Dry Mill" || batch.dryMillExited || batch.storedDate}
+                >
+                  <Checkbox checked={selectedBatches.includes(batch.batchNumber)} />
+                  <ListItemText
+                    primary={`${batch.batchNumber} (${batch.processingType}, ${batch.drying_weight} kg, ${batch.dryMillMerged})`}
+                  />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            label="Merge Notes"
+            multiline
+            rows={4}
+            value={mergeNotes}
+            onChange={(e) => setMergeNotes(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMergeDialog} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleMergeBatches}
+            color="primary"
+            variant="contained"
+            disabled={selectedBatches.length < 2 || totalSelectedWeight < 1000}
+          >
+            Merge
           </Button>
         </DialogActions>
       </Dialog>
