@@ -129,16 +129,16 @@ const DryMillStation = () => {
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
           processingType: batch.processingType,
-          totalBags: batch.totalBags || "N/A",
+          totalBags: batch.totalBags || "0",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
           farmVarieties: batch.farmVarieties || "N/A",
           storedDate: batch.storeddatetrunc || null,
           batchType: batch.batchType || "Cherry",
           lotNumber: batch.lotNumber === "ID-BTM-A-N-AS" && !batch.dryMillExited ? "ID-BTM-A-N" : batch.lotNumber,
-          referenceNumber: batch.referenceNumber,
+          referenceNumber: batch.referenceNumber || "N/A",
           dryMillMerged: batch.dryMillMerged ? "Merged" : "Not Merged",
-          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
+          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${batch.producer || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
             .substr(2, 9)}`,
         }));
@@ -150,7 +150,7 @@ const DryMillStation = () => {
           (batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
         )
         .map((batch) => ({
-          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${Date.now()}-${Math.random()
+          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${batch.producer || "unknown"}-${Date.now()}-${Math.random()
             .toString(36)
             .substr(2, 9)}`,
           batchNumber: batch.batchNumber,
@@ -164,12 +164,12 @@ const DryMillStation = () => {
           productLine: batch.productLine || "N/A",
           processingType: batch.processingType,
           quality: batch.quality || "N/A",
-          totalBags: batch.totalBags || "N/A",
+          totalBags: batch.totalBags || "0",
           notes: batch.notes || "N/A",
           type: batch.type || "N/A",
           parentBatchNumber: batch.parentBatchNumber || batch.batchNumber,
           lotNumber: batch.lotNumber,
-          referenceNumber: batch.referenceNumber,
+          referenceNumber: batch.referenceNumber || "N/A",
           bagWeights: batch.bagDetails || [],
         }));
 
@@ -396,16 +396,19 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
-    if (totalSelectedWeight < 1000) {
-      setSnackbarMessage("Total weight must be at least 1000 kg to merge.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-      return;
-    }
     const selectedBatchDetails = parentBatches.filter((b) => selectedBatches.includes(b.batchNumber));
+    const batchNumber = selectedBatchDetails[0]?.batchNumber;
     const processingType = selectedBatchDetails[0]?.processingType;
-    if (!selectedBatchDetails.every((b) => b.processingType === processingType)) {
-      setSnackbarMessage("All selected batches must have the same processing type.");
+    const producer = selectedBatchDetails[0]?.producer;
+    if (
+      !selectedBatchDetails.every(
+        (b) =>
+          b.batchNumber === batchNumber &&
+          b.processingType === processingType &&
+          b.producer === producer
+      )
+    ) {
+      setSnackbarMessage("All selected batches must have the same batch number, processing type, and producer.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return;
@@ -1048,6 +1051,7 @@ const DryMillStation = () => {
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "processingType", headerName: "Processing Type", width: 180 },
+      { field: "producer", headerName: "Producer", width: 120 },
       {
         field: "status",
         headerName: "Status",
@@ -1120,7 +1124,6 @@ const DryMillStation = () => {
       { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
       { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 160 },
       { field: "drying_weight", headerName: "Drying Weight (kg)", width: 160 },
-      { field: "producer", headerName: "Producer", width: 120 },
       { field: "productLine", headerName: "Product Line", width: 160 },
       { field: "batchType", headerName: "Batch Type", width: 120 },
       { field: "totalBags", headerName: "Total Bags", width: 120 },
@@ -1135,6 +1138,7 @@ const DryMillStation = () => {
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "parentBatchNumber", headerName: "Parent Batch", width: 160 },
+      { field: "producer", headerName: "Producer", width: 120 },
       {
         field: "status",
         headerName: "Status",
@@ -1174,7 +1178,6 @@ const DryMillStation = () => {
       { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
       { field: "storedDate", headerName: "Stored Date", width: 150 },
       { field: "weight", headerName: "Weight (kg)", width: 140 },
-      { field: "producer", headerName: "Producer", width: 120 },
       { field: "productLine", headerName: "Product Line", width: 160 },
       { field: "processingType", headerName: "Processing Type", width: 180 },
       { field: "type", headerName: "Type", width: 140 },
@@ -1359,7 +1362,7 @@ const DryMillStation = () => {
                 variant="contained"
                 color="primary"
                 onClick={handleOpenMergeDialog}
-                disabled={selectedBatches.length < 2 || totalSelectedWeight < 1000}
+                disabled={selectedBatches.length < 2}
               >
                 Merge Batches
               </Button>
@@ -1802,11 +1805,6 @@ const DryMillStation = () => {
         <DialogContent>
           <Typography>New Batch Number: {newBatchNumber}</Typography>
           <Typography>Total Weight: {totalSelectedWeight.toFixed(2)} kg</Typography>
-          {totalSelectedWeight < 1000 && (
-            <Typography color="error">
-              Total weight must be at least 1000 kg to merge.
-            </Typography>
-          )}
           <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel id="merge-batches-label">Selected Batches</InputLabel>
             <Select
@@ -1836,13 +1834,13 @@ const DryMillStation = () => {
             >
               {parentBatches.map((batch) => (
                 <MenuItem
-                  key={batch.batchNumber}
+                  key={`${batch.batchNumber}-${batch.processingType}-${batch.producer}`}
                   value={batch.batchNumber}
                   disabled={batch.status !== "In Dry Mill" || batch.dryMillExited || batch.storedDate}
                 >
                   <Checkbox checked={selectedBatches.includes(batch.batchNumber)} />
                   <ListItemText
-                    primary={`${batch.batchNumber} (${batch.processingType}, ${batch.drying_weight} kg, ${batch.dryMillMerged})`}
+                    primary={`${batch.batchNumber} (${batch.processingType}, ${batch.producer}, ${batch.drying_weight} kg, ${batch.dryMillMerged})`}
                   />
                 </MenuItem>
               ))}
@@ -1866,7 +1864,7 @@ const DryMillStation = () => {
             onClick={handleMergeBatches}
             color="primary"
             variant="contained"
-            disabled={selectedBatches.length < 2 || totalSelectedWeight < 1000}
+            disabled={selectedBatches.length < 2}
           >
             Merge
           </Button>
