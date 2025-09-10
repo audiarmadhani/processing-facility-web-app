@@ -125,7 +125,7 @@ const DryMillStation = () => {
           dryMillExited: batch.dryMillExited,
           cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
           drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
-          producer: batch.producer || "N/A",
+          producer: batch.producer === "HQ" ? "HEQA" : batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
           processingType: batch.processingType,
@@ -145,8 +145,8 @@ const DryMillStation = () => {
 
       // Include all sub-batches, including those with quality and totalBags > 0
       const subBatchesData = data
-        .filter((batch) => 
-          (batch.quality && batch.quality !== "N/A" && parseInt(batch.totalBags, 10) > 0) || 
+        .filter((batch) =>
+          (batch.quality && batch.quality !== "N/A" && parseInt(batch.totalBags, 10) > 0) ||
           (batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
         )
         .map((batch) => ({
@@ -159,7 +159,7 @@ const DryMillStation = () => {
           dryMillExited: batch.dryMillExited,
           storedDate: batch.storeddatetrunc || "N/A",
           weight: parseFloat(batch.weight || 0).toFixed(2),
-          producer: batch.producer || "N/A",
+          producer: batch.producer === "HQ" ? "HEQA" : batch.producer || "N/A",
           farmerName: batch.farmerName || "N/A",
           productLine: batch.productLine || "N/A",
           processingType: batch.processingType,
@@ -201,7 +201,6 @@ const DryMillStation = () => {
         if (!Array.isArray(data)) {
           throw new Error("Invalid response format: grades data is not an array");
         }
-
         if (selectedBatch?.parentBatchNumber) {
           const normalizedQuality = selectedBatch.quality?.trim();
           const gradeData = data.find((grade) => grade.grade?.trim() === normalizedQuality) || {
@@ -236,7 +235,6 @@ const DryMillStation = () => {
               referenceNumber: grade.referenceNumber || selectedBatch?.referenceNumber || "N/A",
             };
           });
-
           return gradeOrder.map((grade) =>
             fetchedGradesMap[grade] || {
               grade,
@@ -396,26 +394,27 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
-    const selectedBatchDetails = parentBatches.filter((b) => selectedBatches.includes(b.batchNumber));
-    const batchNumber = selectedBatchDetails[0]?.batchNumber;
-    const processingType = selectedBatchDetails[0]?.processingType;
-    const producer = selectedBatchDetails[0]?.producer;
+    const selectedBatchDetails = parentBatches.filter((b) => 
+      selectedBatches.includes(`${b.batchNumber}-${b.producer}-${b.processingType}`)
+    );
+    const [batchNumber, producer, processingType] = selectedBatches[0].split('-');
     if (
       !selectedBatchDetails.every(
         (b) =>
           b.batchNumber === batchNumber &&
-          b.processingType === processingType &&
-          b.producer === producer
+          b.producer === producer &&
+          b.processingType === processingType
       )
     ) {
-      setSnackbarMessage("All selected batches must have the same batch number, processing type, and producer.");
+      setSnackbarMessage("All selected batches must have the same batch number, producer, and processing type.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return;
     }
+    const batchNumbers = selectedBatchDetails.map(b => b.batchNumber);
     try {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/dry-mill/merge", {
-        batchNumbers: selectedBatches,
+        batchNumbers,
         notes: mergeNotes.trim() || null,
         createdBy: session?.user?.email || "Unknown",
       });
@@ -456,6 +455,7 @@ const DryMillStation = () => {
             createdBy: session.user.email,
             updatedBy: session.user.email,
             dryMillExited: new Date().toISOString(),
+            processingType: selectedBatch.processingType,
           }
         );
         setSnackbarMessage(response.data.message);
@@ -492,6 +492,7 @@ const DryMillStation = () => {
             rfid,
             scanned_at: SCAN_LOCATIONS.WAREHOUSE,
             batchNumber: selectedBatch.batchNumber,
+            processingType: selectedBatch.processingType,
           }
         );
         setRfid("");
@@ -571,22 +572,19 @@ const DryMillStation = () => {
         setOpenSnackbar(true);
         return;
       }
-
       const subBatch =
         subBatches.find(
           (sb) =>
             sb.parentBatchNumber === selectedBatch.batchNumber &&
-            sb.processingType === processingType &&
+            sb.processingType === selectedBatch.processingType &&
             sb.quality === grade
         ) ||
         grades.find((g) => g.grade === grade) ||
         selectedBatch;
-
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [100, 150] });
       const labels = formatLabelData(subBatch, grade, bagWeight, bagIndex);
       const maxLabelLength = Math.max(...labels.map((l) => l.label.length));
       const padding = " ".repeat(maxLabelLength);
-
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
       doc.setFillColor(240, 240, 240);
@@ -595,7 +593,6 @@ const DryMillStation = () => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.text(subBatch?.producer === "BTM" ? "PT Berkas Tuaian Melimpah" : "HEQA", 10, 20);
-
       doc.setFont("courier", "normal");
       doc.setFontSize(10);
       doc.rect(5, 30, 90, 115, "S");
@@ -605,7 +602,6 @@ const DryMillStation = () => {
         doc.text(`${paddedLabel} : ${value}`, 10, y);
         y += 7;
       });
-
       const pdfDataUri = doc.output("datauristring");
       const printWindow = window.open("", "_blank", "width=600,height=400");
       if (!printWindow) {
@@ -614,7 +610,6 @@ const DryMillStation = () => {
         setOpenSnackbar(true);
         return;
       }
-
       printWindow.document.write(`
         <html>
           <head>
@@ -668,7 +663,6 @@ const DryMillStation = () => {
       const updatedGrade = grades[gradeIndex] || { grade: selectedGrade, weight: 0, bagWeights: [] };
       const updatedBagWeights = [...updatedGrade.bagWeights, newWeight];
       const totalWeight = parseFloat(updatedGrade.weight || 0) + parsedWeight;
-
       setGrades((prevGrades) => {
         const newGrades = [...prevGrades];
         const index = newGrades.findIndex((g) => g.grade === selectedGrade);
@@ -694,7 +688,6 @@ const DryMillStation = () => {
       });
       setCurrentWeight("");
       setHasUnsavedChanges(true);
-
       if (selectedBatch.parentBatchNumber) {
         try {
           const response = await axios.post(
@@ -766,7 +759,6 @@ const DryMillStation = () => {
       const removedWeight = parseFloat(grades[gradeIndex].bagWeights[bagIndex]);
       const updatedBagWeights = grades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex);
       const totalWeight = parseFloat(grades[gradeIndex].weight || 0) - removedWeight;
-
       setGrades((prevGrades) => {
         const newGrades = [...prevGrades];
         newGrades[gradeIndex] = {
@@ -777,7 +769,6 @@ const DryMillStation = () => {
         return newGrades;
       });
       setHasUnsavedChanges(true);
-
       if (selectedBatch.parentBatchNumber) {
         try {
           const response = await axios.post(
@@ -898,6 +889,7 @@ const DryMillStation = () => {
         {
           dateTaken: sampleDateTaken,
           weightTaken: parseFloat(sampleWeightTaken),
+          processingType: selectedBatch.processingType,
         }
       );
       setSampleHistory([...sampleHistory, response.data]);
@@ -916,8 +908,9 @@ const DryMillStation = () => {
     }
   }, [selectedBatch, sampleDateTaken, sampleWeightTaken, sampleHistory, fetchDryMillData, fetchSampleData]);
 
-  const handleShowSampleHistory = useCallback(async (batchNumber) => {
-    setSelectedBatch(parentBatches.find((b) => b.batchNumber === batchNumber));
+  const handleShowSampleHistory = useCallback(async (batchNumber, processingType) => {
+    const batch = parentBatches.find((b) => b.batchNumber === batchNumber && b.processingType === processingType);
+    setSelectedBatch(batch);
     await fetchSampleHistory(batchNumber);
     setOpenSampleHistoryDialog(true);
   }, [parentBatches, fetchSampleHistory]);
@@ -958,19 +951,19 @@ const DryMillStation = () => {
     fetchSampleData();
   };
 
-  const handleDetailsClick = (batch) => {
+  const handleDetailsClick = useCallback((batch) => {
     setSelectedBatch(batch);
     setOpenDialog(true);
-  };
+  }, []);
 
-  const handleSampleTrackingClick = (batch) => {
+  const handleSampleTrackingClick = useCallback((batch) => {
     setSelectedBatch(batch);
     setSampleDateTaken(new Date().toISOString().split("T")[0]);
     setSampleWeightTaken("");
     setSampleHistory([]);
     fetchSampleHistory(batch.batchNumber);
     setOpenSampleTrackingDialog(true);
-  };
+  }, [fetchSampleHistory]);
 
   const handleCloseDialog = () => {
     if (hasUnsavedChanges) {
@@ -1030,13 +1023,16 @@ const DryMillStation = () => {
         sortable: false,
         renderCell: ({ row }) => (
           <Checkbox
-            checked={selectedBatches.includes(row.batchNumber)}
+            checked={selectedBatches.includes(`${row.batchNumber}-${row.producer}-${row.processingType}`)}
             onChange={(e) => {
+              const uniqueId = `${row.batchNumber}-${row.producer}-${row.processingType}`;
               const newSelected = e.target.checked
-                ? [...selectedBatches, row.batchNumber]
-                : selectedBatches.filter((b) => b !== row.batchNumber);
+                ? [...selectedBatches, uniqueId]
+                : selectedBatches.filter((b) => b !== uniqueId);
               setSelectedBatches(newSelected);
-              const selectedBatchDetails = parentBatches.filter((b) => newSelected.includes(b.batchNumber));
+              const selectedBatchDetails = parentBatches.filter((b) =>
+                newSelected.includes(`${b.batchNumber}-${b.producer}-${b.processingType}`)
+              );
               const totalWeight = selectedBatchDetails.reduce(
                 (sum, b) => sum + parseFloat(b.drying_weight || 0),
                 0
@@ -1206,7 +1202,7 @@ const DryMillStation = () => {
           <Button
             variant="outlined"
             size="small"
-            onClick={() => handleShowSampleHistory(params.row.batchNumber)}
+            onClick={() => handleShowSampleHistory(params.row.batchNumber, params.row.processingType)}
             disabled={isLoading}
           >
             History
@@ -1371,7 +1367,6 @@ const DryMillStation = () => {
           </CardContent>
         </Card>
       </Grid>
-
       <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
@@ -1382,7 +1377,6 @@ const DryMillStation = () => {
           </CardContent>
         </Card>
       </Grid>
-
       <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
@@ -1393,7 +1387,6 @@ const DryMillStation = () => {
           </CardContent>
         </Card>
       </Grid>
-
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           Batch {selectedBatch?.batchNumber} - {selectedBatch?.processingType} ({selectedBatch?.batchType})
@@ -1589,7 +1582,6 @@ const DryMillStation = () => {
           )}
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={openCompleteDialog}
         onClose={handleCloseCompleteDialog}
@@ -1616,7 +1608,6 @@ const DryMillStation = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={openStorageDialog}
         onClose={handleCloseStorageDialog}
@@ -1654,7 +1645,6 @@ const DryMillStation = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={openSampleTrackingDialog}
         onClose={handleCloseSampleTrackingDialog}
@@ -1758,7 +1748,6 @@ const DryMillStation = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={openSampleHistoryDialog}
         onClose={handleCloseSampleHistoryDialog}
@@ -1799,7 +1788,6 @@ const DryMillStation = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={openMergeDialog} onClose={handleCloseMergeDialog} maxWidth="md" fullWidth>
         <DialogTitle>Merge Batches</DialogTitle>
         <DialogContent>
@@ -1814,7 +1802,9 @@ const DryMillStation = () => {
               onChange={(e) => {
                 const newSelected = e.target.value;
                 setSelectedBatches(newSelected);
-                const selectedBatchDetails = parentBatches.filter((b) => newSelected.includes(b.batchNumber));
+                const selectedBatchDetails = parentBatches.filter((b) =>
+                  newSelected.includes(`${b.batchNumber}-${b.producer}-${b.processingType}`)
+                );
                 const totalWeight = selectedBatchDetails.reduce(
                   (sum, b) => sum + parseFloat(b.drying_weight || 0),
                   0
@@ -1822,7 +1812,7 @@ const DryMillStation = () => {
                 setTotalSelectedWeight(totalWeight);
               }}
               input={<OutlinedInput label="Selected Batches" />}
-              renderValue={(selected) => selected.join(", ")}
+              renderValue={(selected) => selected.map(s => s.split('-')[0]).join(", ")}
               MenuProps={{
                 PaperProps: {
                   style: {
@@ -1834,11 +1824,13 @@ const DryMillStation = () => {
             >
               {parentBatches.map((batch) => (
                 <MenuItem
-                  key={`${batch.batchNumber}-${batch.processingType}-${batch.producer}`}
-                  value={batch.batchNumber}
+                  key={`${batch.batchNumber}-${batch.producer}-${batch.processingType}`}
+                  value={`${batch.batchNumber}-${batch.producer}-${batch.processingType}`}
                   disabled={batch.status !== "In Dry Mill" || batch.dryMillExited || batch.storedDate}
                 >
-                  <Checkbox checked={selectedBatches.includes(batch.batchNumber)} />
+                  <Checkbox
+                    checked={selectedBatches.includes(`${batch.batchNumber}-${batch.producer}-${batch.processingType}`)}
+                  />
                   <ListItemText
                     primary={`${batch.batchNumber} (${batch.processingType}, ${batch.producer}, ${batch.drying_weight} kg, ${batch.dryMillMerged})`}
                   />
@@ -1870,7 +1862,6 @@ const DryMillStation = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
