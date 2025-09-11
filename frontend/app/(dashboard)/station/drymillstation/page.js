@@ -401,12 +401,11 @@ const DryMillStation = () => {
     if (
       !selectedBatchDetails.every(
         (b) =>
-          b.batchNumber === batchNumber &&
           b.producer === producer &&
           b.processingType === processingType
       )
     ) {
-      setSnackbarMessage("All selected batches must have the same batch number, producer, and processing type.");
+      setSnackbarMessage("All selected batches must have the same producer, and processing type.");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
       return;
