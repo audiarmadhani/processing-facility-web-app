@@ -1027,7 +1027,7 @@ const DryMillStation = () => {
                 : selectedBatches.filter((b) => b !== uniqueId);
               setSelectedBatches(newSelected);
               const selectedBatchDetails = parentBatches.filter((b) =>
-                newSelected.includes(`${b.batchNumber}-${b.producer}-${b.processingType}`)
+                newSelected.includes(`${b.batchNumber},${b.producer},${b.processingType}`)
               );
               const totalWeight = selectedBatchDetails.reduce(
                 (sum, b) => sum + parseFloat(b.drying_weight || 0),
