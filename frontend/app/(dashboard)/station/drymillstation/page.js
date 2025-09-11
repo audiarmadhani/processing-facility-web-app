@@ -138,7 +138,7 @@ const DryMillStation = () => {
           lotNumber: batch.lotNumber === "ID-BTM-A-N-AS" && !batch.dryMillExited ? "ID-BTM-A-N" : batch.lotNumber,
           referenceNumber: batch.referenceNumber || "N/A",
           dryMillMerged: batch.dryMillMerged ? "Merged" : "Not Merged",
-          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${batch.producer || "unknown"}-${Date.now()}-${Math.random()
+          id: `${batch.batchNumber},${batch.processingType || "unknown"},${batch.producer || "unknown"},${Date.now()},${Math.random()
             .toString(36)
             .substr(2, 9)}`,
         }));
@@ -150,7 +150,7 @@ const DryMillStation = () => {
           (batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
         )
         .map((batch) => ({
-          id: `${batch.batchNumber}-${batch.processingType || "unknown"}-${batch.producer || "unknown"}-${Date.now()}-${Math.random()
+          id: `${batch.batchNumber},${batch.processingType || "unknown"},${batch.producer || "unknown"},${Date.now()},${Math.random()
             .toString(36)
             .substr(2, 9)}`,
           batchNumber: batch.batchNumber,
@@ -1019,9 +1019,9 @@ const DryMillStation = () => {
         sortable: false,
         renderCell: ({ row }) => (
           <Checkbox
-            checked={selectedBatches.includes(`${row.batchNumber}-${row.producer}-${row.processingType}`)}
+            checked={selectedBatches.includes(`${row.batchNumber},${row.producer},${row.processingType}`)}
             onChange={(e) => {
-              const uniqueId = `${row.batchNumber}-${row.producer}-${row.processingType}`;
+              const uniqueId = `${row.batchNumber},${row.producer},${row.processingType}`;
               const newSelected = e.target.checked
                 ? [...selectedBatches, uniqueId]
                 : selectedBatches.filter((b) => b !== uniqueId);
