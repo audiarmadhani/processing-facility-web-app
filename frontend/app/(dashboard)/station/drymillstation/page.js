@@ -412,7 +412,7 @@ const DryMillStation = () => {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/dry-mill/merge", {
         batchNumbers: selectedBatches, // Send full identifiers with commas
         notes: mergeNotes.trim() || null,
-        createdBy: session?.user?.email || "Unknown",
+        createdBy: session?.user?.name || "Unknown",
       });
       setSnackbarMessage(
         `Batches merged successfully into ${response.data.newBatchNumber} with total weight ${response.data.totalWeight} kg.`
@@ -448,8 +448,8 @@ const DryMillStation = () => {
         const response = await axios.post(
           `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/complete`,
           {
-            createdBy: session.user.email,
-            updatedBy: session.user.email,
+            createdBy: session.user.name,
+            updatedBy: session.user.name,
             dryMillExited: new Date().toISOString(),
             processingType: selectedBatch.processingType,
           }
