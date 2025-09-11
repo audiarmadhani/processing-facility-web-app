@@ -395,10 +395,9 @@ const DryMillStation = () => {
       return;
     }
     const selectedBatchDetails = parentBatches.filter((b) =>
-      selectedBatches.includes(`${b.batchNumber}-${b.producer}-${b.processingType}`)
+      selectedBatches.includes(`${b.batchNumber},${b.producer},${b.processingType}`)
     );
-    const [, producer, ...processingTypeParts] = selectedBatches[0].split('-');
-    const processingType = processingTypeParts.join('-'); // Rejoin processingType parts in case it contains hyphens
+    const [, producer, processingType] = selectedBatches[0].split(',');
     // if (
     //   !selectedBatchDetails.every(
     //     (b) => b.producer === producer && b.processingType === processingType
@@ -411,7 +410,7 @@ const DryMillStation = () => {
     // }
     try {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/dry-mill/merge", {
-        batchNumbers: selectedBatches, // Send full identifiers
+        batchNumbers: selectedBatches, // Send full identifiers with commas
         notes: mergeNotes.trim() || null,
         createdBy: session?.user?.email || "Unknown",
       });
@@ -1799,7 +1798,7 @@ const DryMillStation = () => {
               onChange={(e) => {
                 const newSelected = e.target.value;
                 setSelectedBatches(newSelected);
-                const selectedBatchDetails = parentBatches.filter((b) => newSelected.includes(`${b.batchNumber}-${b.producer}-${b.processingType}`));
+                const selectedBatchDetails = parentBatches.filter((b) => newSelected.includes(`${b.batchNumber},${b.producer},${b.processingType}`));
                 const totalWeight = selectedBatchDetails.reduce(
                   (sum, b) => sum + parseFloat(b.drying_weight || 0),
                   0
@@ -1807,7 +1806,7 @@ const DryMillStation = () => {
                 setTotalSelectedWeight(totalWeight);
               }}
               input={<OutlinedInput label="Selected Batches" />}
-              renderValue={(selected) => selected.map(s => s.split('-')[0]).join(", ")}
+              renderValue={(selected) => selected.map(s => s.split(',')[0]).join(", ")}
               MenuProps={{
                 PaperProps: {
                   style: {
@@ -1819,12 +1818,12 @@ const DryMillStation = () => {
             >
               {parentBatches.map((batch) => (
                 <MenuItem
-                  key={`${batch.batchNumber}-${batch.producer}-${batch.processingType}`}
-                  value={`${batch.batchNumber}-${batch.producer}-${batch.processingType}`}
+                  key={`${batch.batchNumber},${batch.producer},${batch.processingType}`}
+                  value={`${batch.batchNumber},${batch.producer},${batch.processingType}`}
                   disabled={batch.status !== "In Dry Mill" || batch.dryMillExited || batch.storedDate}
                 >
                   <Checkbox
-                    checked={selectedBatches.includes(`${batch.batchNumber}-${batch.producer}-${batch.processingType}`)}
+                    checked={selectedBatches.includes(`${batch.batchNumber},${batch.producer},${batch.processingType}`)}
                   />
                   <ListItemText
                     primary={`${batch.batchNumber} (${batch.processingType}, ${batch.producer}, ${batch.drying_weight} kg, ${batch.dryMillMerged})`}
