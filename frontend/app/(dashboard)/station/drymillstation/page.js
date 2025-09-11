@@ -1039,7 +1039,7 @@ const DryMillStation = () => {
               );
               setTotalSelectedWeight(totalWeight);
             }}
-            disabled={row.status !== "In Dry Mill" || row.dryMillExited || row.storedDate}
+            disabled={row.status !== "In Dry Mill" || row.dryMillExited}
           />
         ),
       },
