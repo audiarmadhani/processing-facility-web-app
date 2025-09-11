@@ -394,26 +394,24 @@ const DryMillStation = () => {
       setOpenSnackbar(true);
       return;
     }
-    const selectedBatchDetails = parentBatches.filter((b) => 
+    const selectedBatchDetails = parentBatches.filter((b) =>
       selectedBatches.includes(`${b.batchNumber}-${b.producer}-${b.processingType}`)
     );
-    const [batchNumber, producer, processingType] = selectedBatches[0].split('-');
-    // if (
-    //   !selectedBatchDetails.every(
-    //     (b) =>
-    //       b.producer === producer &&
-    //       b.processingType === processingType
-    //   )
-    // ) {
-    //   setSnackbarMessage("All selected batches must have the same producer, and processing type.");
-    //   setSnackbarSeverity("error");
-    //   setOpenSnackbar(true);
-    //   return;
-    // }
-    const batchNumbers = selectedBatchDetails.map(b => b.batchNumber);
+    const [, producer, ...processingTypeParts] = selectedBatches[0].split('-');
+    const processingType = processingTypeParts.join('-'); // Rejoin processingType parts in case it contains hyphens
+    if (
+      !selectedBatchDetails.every(
+        (b) => b.producer === producer && b.processingType === processingType
+      )
+    ) {
+      setSnackbarMessage("All selected batches must have the same producer and processing type.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
     try {
       const response = await axios.post("https://processing-facility-backend.onrender.com/api/dry-mill/merge", {
-        batchNumbers,
+        batchNumbers: selectedBatches, // Send full identifiers
         notes: mergeNotes.trim() || null,
         createdBy: session?.user?.email || "Unknown",
       });
