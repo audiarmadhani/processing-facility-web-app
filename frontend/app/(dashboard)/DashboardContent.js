@@ -710,7 +710,7 @@ function Dashboard() {
                             },
                           ]}
                           pageSizeOptions={[20, 50, 100]}
-                          slots={{ 
+                          slots={{
                             toolbar: GridToolbar,
                             footer: () => {
                               const totalContractValue = landTargets.reduce((sum, row) => sum + (row.contractValue || 0), 0);
@@ -718,8 +718,9 @@ function Dashboard() {
                               const totalGbEstimate = landTargets.reduce((sum, row) => sum + (row.gbEstimate || 0), 0);
                               const totalCurrentCherryTotal = landTargets.reduce((sum, row) => sum + (row.currentcherrytotal || 0), 0);
                               const totalDifference = landTargets.reduce((sum, row) => sum + (row.difference || 0), 0);
-                              const averageCherryPriceTotal = landTargets.reduce((avg, row) => avg + (row.averageCherryPrice || 0), 0);
-
+                              const weightedAverageCherryPrice = totalCurrentCherryTotal > 0
+                                ? landTargets.reduce((sum, row) => sum + ((row.averageCherryPrice || 0) * (row.currentcherrytotal || 0)), 0) / totalCurrentCherryTotal
+                                : 0;
                               return (
                                 <Box sx={{ padding: '8px 16px', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
                                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
@@ -733,7 +734,7 @@ function Dashboard() {
                                     <Typography sx={{ color: totalDifference < 0 ? 'red' : 'inherit', fontWeight: totalDifference < 0 ? 'bold' : 'normal' }}>
                                       Deficit (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalDifference)} kg
                                     </Typography>
-                                    <Typography>Average Cherry Price (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(averageCherryPriceTotal)} kg</Typography>
+                                    <Typography>Weighted Average Cherry Price (Rp/kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(weightedAverageCherryPrice)} Rp</Typography>
                                   </Box>
                                 </Box>
                               );
