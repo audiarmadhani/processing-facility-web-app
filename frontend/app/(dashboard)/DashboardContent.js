@@ -719,8 +719,21 @@ function Dashboard() {
                               const totalCurrentCherryTotal = landTargets.reduce((sum, row) => sum + (row.currentcherrytotal || 0), 0);
                               const totalDifference = landTargets.reduce((sum, row) => sum + (row.difference || 0), 0);
                               const weightedAverageCherryPrice = totalCurrentCherryTotal > 0
-                                ? landTargets.reduce((sum, row) => sum + ((row.averageCherryPrice || 0) * (row.currentcherrytotal || 0)), 0) / totalCurrentCherryTotal
+                                ? Number(totalContractValue / totalCurrentCherryTotal).toFixed(2)
                                 : 0;
+                              console.log('Weighted average calculation:', {
+                                landTargets: landTargets.map(row => ({
+                                  farmerName: row.farmerName,
+                                  contractValue: row.contractValue,
+                                  currentcherrytotal: row.currentcherrytotal
+                                })),
+                                totalContractValue,
+                                totalCurrentCherryTotal,
+                                weightedAverageCherryPrice
+                              });
+                              if (totalCurrentCherryTotal === 0) {
+                                console.warn('No valid cherry weights for weighted average calculation');
+                              }
                               return (
                                 <Box sx={{ padding: '8px 16px', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
                                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
