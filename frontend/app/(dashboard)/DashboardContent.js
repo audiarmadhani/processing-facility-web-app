@@ -740,14 +740,14 @@ function Dashboard() {
                                     Totals:
                                   </Typography>
                                   <Box sx={{ mt: 1 }}>
-                                    <Typography>Contract Value (Rp): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalContractValue)} Rp</Typography>
-                                    <Typography>Cherry Estimate (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCherryEstimate)} kg</Typography>
-                                    <Typography>GB Estimate (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalGbEstimate)} kg</Typography>
-                                    <Typography>Current Cherry Total (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCurrentCherryTotal)} kg</Typography>
-                                    <Typography sx={{ color: totalDifference < 0 ? 'red' : 'inherit', fontWeight: totalDifference < 0 ? 'bold' : 'normal' }}>
+                                    <Typography variant="subtitle1">Contract Value (Rp): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalContractValue)} Rp</Typography>
+                                    <Typography variant="subtitle1">Cherry Estimate (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCherryEstimate)} kg</Typography>
+                                    <Typography variant="subtitle1">GB Estimate (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalGbEstimate)} kg</Typography>
+                                    <Typography variant="subtitle1">Current Cherry Total (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalCurrentCherryTotal)} kg</Typography>
+                                    <Typography variant="subtitle1" sx={{ color: totalDifference < 0 ? 'red' : 'inherit', fontWeight: totalDifference < 0 ? 'bold' : 'normal' }}>
                                       Deficit (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalDifference)} kg
                                     </Typography>
-                                    <Typography>Weighted Average Cherry Price (Rp/kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(weightedAverageCherryPrice)} Rp</Typography>
+                                    <Typography variant="subtitle1">Weighted Average Cherry Price (Rp/kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(weightedAverageCherryPrice)} Rp</Typography>
                                   </Box>
                                 </Box>
                               );
