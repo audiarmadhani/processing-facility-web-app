@@ -302,6 +302,7 @@ function Dashboard() {
         gbEstimate: parseFloat(row.gbEstimate) || null,
         currentcherrytotal: parseFloat(row.currentcherrytotal) || null,
         difference: parseFloat(row.difference) || null,
+        averageCherryPrice: parseFloat(row.averageCherryPrice) || null,
       }));
       console.log('Setting landTargets:', formattedData);
       setLandTargets(formattedData);
@@ -697,6 +698,16 @@ function Dashboard() {
                                   : 'N/A',
                               cellClassName: (params) => (params.value != null && params.value < 0 ? 'negative-deficit' : '')
                             },
+                            { 
+                              field: 'averageCherryPrice', 
+                              headerName: 'Average Cherry Price (Rp)', 
+                              width: 200,
+                              type: 'number',
+                              valueFormatter: (value) => 
+                                value != null 
+                                  ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(value) 
+                                  : 'N/A',
+                            },
                           ]}
                           pageSizeOptions={[20, 50, 100]}
                           slots={{ 
@@ -707,6 +718,7 @@ function Dashboard() {
                               const totalGbEstimate = landTargets.reduce((sum, row) => sum + (row.gbEstimate || 0), 0);
                               const totalCurrentCherryTotal = landTargets.reduce((sum, row) => sum + (row.currentcherrytotal || 0), 0);
                               const totalDifference = landTargets.reduce((sum, row) => sum + (row.difference || 0), 0);
+                              const averageCherryPriceTotal = landTargets.reduce((avg, row) => avg + (row.averageCherryPrice || 0), 0);
 
                               return (
                                 <Box sx={{ padding: '8px 16px', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
@@ -721,6 +733,7 @@ function Dashboard() {
                                     <Typography sx={{ color: totalDifference < 0 ? 'red' : 'inherit', fontWeight: totalDifference < 0 ? 'bold' : 'normal' }}>
                                       Deficit (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(totalDifference)} kg
                                     </Typography>
+                                    <Typography>Average Cherry Price (kg): {new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(averageCherryPriceTotal)} kg</Typography>
                                   </Box>
                                 </Box>
                               );
