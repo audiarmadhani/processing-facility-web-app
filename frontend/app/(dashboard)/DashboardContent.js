@@ -41,6 +41,8 @@ import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
+import WarehouseTemperatureChart from './charts/WarehouseTemperatureChart';
+import WetmillTemperatureChart from './charts/WetmillTemperatureChart';
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
@@ -95,6 +97,7 @@ function Dashboard() {
       minTemperature: 0,
       maxHumidity: 0,
       minHumidity: 0,
+      temperatureData: [],
     },
     wetmill: {
       avgTemperature: 0,
@@ -103,6 +106,7 @@ function Dashboard() {
       minTemperature: 0,
       maxHumidity: 0,
       minHumidity: 0,
+      temperatureData: [],
     },
   });
   const [loading, setLoading] = useState(true);
@@ -328,6 +332,16 @@ function Dashboard() {
       }
       const data = await response.json();
       console.log('Raw Environmental Metrics API response:', data);
+      // Fetch raw data for charts
+      const warehouseRawResponse = await fetch(`https://processing-facility-backend.onrender.com/api/environmental-metrics/raw?device_id=WAREHOUSE_SENSOR&timeframe=${timeframe}`);
+      const wetmillRawResponse = await fetch(`https://processing-facility-backend.onrender.com/api/environmental-metrics/raw?device_id=WETMILL_SENSOR&timeframe=${timeframe}`);
+      if (!warehouseRawResponse.ok || !wetmillRawResponse.ok) {
+        throw new Error(`HTTP error! status: ${warehouseRawResponse.status || wetmillRawResponse.status}`);
+      }
+      const warehouseRawData = await warehouseRawResponse.json();
+      const wetmillRawData = await wetmillRawResponse.json();
+      console.log('Raw Warehouse Data:', warehouseRawData);
+      console.log('Raw Wetmill Data:', wetmillRawData);
       setEnvironmentalMetrics({
         warehouse: {
           avgTemperature: parseFloat(data.warehouse.avgTemperature) || 0,
@@ -336,6 +350,10 @@ function Dashboard() {
           minTemperature: parseFloat(data.warehouse.minTemperature) || 0,
           maxHumidity: parseFloat(data.warehouse.maxHumidity) || 0,
           minHumidity: parseFloat(data.warehouse.minHumidity) || 0,
+          temperatureData: warehouseRawData.map(row => ({
+            date: row.recorded_at,
+            temperature: parseFloat(row.temperature) || 0,
+          })) || [],
         },
         wetmill: {
           avgTemperature: parseFloat(data.wetmill.avgTemperature) || 0,
@@ -344,6 +362,10 @@ function Dashboard() {
           minTemperature: parseFloat(data.wetmill.minTemperature) || 0,
           maxHumidity: parseFloat(data.wetmill.maxHumidity) || 0,
           minHumidity: parseFloat(data.wetmill.minHumidity) || 0,
+          temperatureData: wetmillRawData.map(row => ({
+            date: row.recorded_at,
+            temperature: parseFloat(row.temperature) || 0,
+          })) || [],
         },
       });
     } catch (err) {
@@ -358,6 +380,7 @@ function Dashboard() {
           minTemperature: 0,
           maxHumidity: 0,
           minHumidity: 0,
+          temperatureData: [],
         },
         wetmill: {
           avgTemperature: 0,
@@ -366,6 +389,7 @@ function Dashboard() {
           minTemperature: 0,
           maxHumidity: 0,
           minHumidity: 0,
+          temperatureData: [],
         },
       });
     }
@@ -653,41 +677,65 @@ function Dashboard() {
             </DialogContent>
           </Dialog> */}
 
-          {/* Warehouse Environmental Metrics */}
-          <Grid item xs={12} md={5} sx={{ height: { xs: 'auto', md: '220px' } }}>
-            <Card variant="outlined" sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="body1">Warehouse Conditions</Typography>
-                <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {environmentalMetrics.warehouse.avgTemperature.toFixed(1)} °C
-                </Typography>
-                <Typography variant="body2">
-                  Min: {environmentalMetrics.warehouse.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.warehouse.maxTemperature.toFixed(1)} °C
-                </Typography>
-                <Typography variant="body2">
-                  Humidity: {environmentalMetrics.warehouse.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.warehouse.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.warehouse.maxHumidity.toFixed(1)}%)
-                </Typography>
-                <Typography variant="caption">{selectedRangeLabel}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          {/* Wetmill Environmental Metrics */}
-          <Grid item xs={12} md={5} sx={{ height: { xs: 'auto', md: '220px' } }}>
-            <Card variant="outlined" sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="body1">Wetmill Conditions</Typography>
-                <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {environmentalMetrics.wetmill.avgTemperature.toFixed(1)} °C
-                </Typography>
-                <Typography variant="body2">
-                  Min: {environmentalMetrics.wetmill.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.wetmill.maxTemperature.toFixed(1)} °C
-                </Typography>
-                <Typography variant="body2">
-                  Humidity: {environmentalMetrics.wetmill.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.wetmill.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.wetmill.maxHumidity.toFixed(1)}%)
-                </Typography>
-                <Typography variant="caption">{selectedRangeLabel}</Typography>
-              </CardContent>
-            </Card>
+          <Grid item xs={12} md={12}>
+            {/* Warehouse Environmental Metrics */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="body1">Warehouse Conditions</Typography>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {environmentalMetrics.warehouse.avgTemperature.toFixed(1)} °C
+                  </Typography>
+                  <Typography variant="body2">
+                    Min: {environmentalMetrics.warehouse.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.warehouse.maxTemperature.toFixed(1)} °C
+                  </Typography>
+                  <Typography variant="body2">
+                    Humidity: {environmentalMetrics.warehouse.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.warehouse.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.warehouse.maxHumidity.toFixed(1)}%)
+                  </Typography>
+                  <Typography variant="caption">{selectedRangeLabel}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            {/* Warehouse Temperature Chart */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent sx={{ height: '100%' }}>
+                  <Typography variant="h6" gutterBottom>
+                    Warehouse Temperature Over Time
+                  </Typography>
+                  <WarehouseTemperatureChart data={environmentalMetrics.warehouse.temperatureData} timeframe={timeframe} />
+                </CardContent>
+              </Card>
+            </Grid>
+            {/* Wetmill Environmental Metrics */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="body1">Wetmill Conditions</Typography>
+                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {environmentalMetrics.wetmill.avgTemperature.toFixed(1)} °C
+                  </Typography>
+                  <Typography variant="body2">
+                    Min: {environmentalMetrics.wetmill.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.wetmill.maxTemperature.toFixed(1)} °C
+                  </Typography>
+                  <Typography variant="body2">
+                    Humidity: {environmentalMetrics.wetmill.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.wetmill.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.wetmill.maxHumidity.toFixed(1)}%)
+                  </Typography>
+                  <Typography variant="caption">{selectedRangeLabel}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            {/* Wetmill Temperature Chart */}
+            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent sx={{ height: '100%' }}>
+                  <Typography variant="h6" gutterBottom>
+                    Wetmill Temperature Over Time
+                  </Typography>
+                  <WetmillTemperatureChart data={environmentalMetrics.wetmill.temperatureData} timeframe={timeframe} />
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
 
           {/* Arabica Section */}
