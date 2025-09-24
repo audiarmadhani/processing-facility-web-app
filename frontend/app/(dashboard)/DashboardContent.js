@@ -678,63 +678,65 @@ function Dashboard() {
           </Dialog> */}
 
           <Grid item xs={12} md={12}>
-            {/* Warehouse Environmental Metrics */}
-            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body1">Warehouse Conditions</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {environmentalMetrics.warehouse.avgTemperature.toFixed(1)} °C
-                  </Typography>
-                  <Typography variant="body2">
-                    Min: {environmentalMetrics.warehouse.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.warehouse.maxTemperature.toFixed(1)} °C
-                  </Typography>
-                  <Typography variant="body2">
-                    Humidity: {environmentalMetrics.warehouse.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.warehouse.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.warehouse.maxHumidity.toFixed(1)}%)
-                  </Typography>
-                  <Typography variant="caption">{selectedRangeLabel}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            {/* Warehouse Temperature Chart */}
-            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardContent sx={{ height: '100%' }}>
-                  <Typography variant="h6" gutterBottom>
-                    Warehouse Temperature Over Time
-                  </Typography>
-                  <WarehouseTemperatureChart data={environmentalMetrics.warehouse.temperatureData} timeframe={timeframe} />
-                </CardContent>
-              </Card>
-            </Grid>
-            {/* Wetmill Environmental Metrics */}
-            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body1">Wetmill Conditions</Typography>
-                  <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {environmentalMetrics.wetmill.avgTemperature.toFixed(1)} °C
-                  </Typography>
-                  <Typography variant="body2">
-                    Min: {environmentalMetrics.wetmill.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.wetmill.maxTemperature.toFixed(1)} °C
-                  </Typography>
-                  <Typography variant="body2">
-                    Humidity: {environmentalMetrics.wetmill.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.wetmill.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.wetmill.maxHumidity.toFixed(1)}%)
-                  </Typography>
-                  <Typography variant="caption">{selectedRangeLabel}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            {/* Wetmill Temperature Chart */}
-            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardContent sx={{ height: '100%' }}>
-                  <Typography variant="h6" gutterBottom>
-                    Wetmill Temperature Over Time
-                  </Typography>
-                  <WetmillTemperatureChart data={environmentalMetrics.wetmill.temperatureData} timeframe={timeframe} />
-                </CardContent>
-              </Card>
+            <Grid container spacing={3}>
+              {/* Warehouse Environmental Metrics */}
+              <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="body1">Warehouse Conditions</Typography>
+                    <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {environmentalMetrics.warehouse.avgTemperature.toFixed(1)} °C
+                    </Typography>
+                    <Typography variant="body2">
+                      Min: {environmentalMetrics.warehouse.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.warehouse.maxTemperature.toFixed(1)} °C
+                    </Typography>
+                    <Typography variant="body2">
+                      Humidity: {environmentalMetrics.warehouse.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.warehouse.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.warehouse.maxHumidity.toFixed(1)}%)
+                    </Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              {/* Warehouse Temperature Chart */}
+              <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Warehouse Temperature Over Time
+                    </Typography>
+                    <WarehouseTemperatureChart data={environmentalMetrics.warehouse.temperatureData} timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
+              {/* Wetmill Environmental Metrics */}
+              <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="body1">Wetmill Conditions</Typography>
+                    <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {environmentalMetrics.wetmill.avgTemperature.toFixed(1)} °C
+                    </Typography>
+                    <Typography variant="body2">
+                      Min: {environmentalMetrics.wetmill.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.wetmill.maxTemperature.toFixed(1)} °C
+                    </Typography>
+                    <Typography variant="body2">
+                      Humidity: {environmentalMetrics.wetmill.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.wetmill.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.wetmill.maxHumidity.toFixed(1)}%)
+                    </Typography>
+                    <Typography variant="caption">{selectedRangeLabel}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              {/* Wetmill Temperature Chart */}
+              <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Wetmill Temperature Over Time
+                    </Typography>
+                    <WetmillTemperatureChart data={environmentalMetrics.wetmill.temperatureData} timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           </Grid>
 
