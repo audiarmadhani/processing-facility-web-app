@@ -679,7 +679,7 @@ function Dashboard() {
 
           <Grid item xs={12} md={12}>
             {/* Warehouse Environmental Metrics */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="body1">Warehouse Conditions</Typography>
@@ -697,7 +697,7 @@ function Dashboard() {
               </Card>
             </Grid>
             {/* Warehouse Temperature Chart */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent sx={{ height: '100%' }}>
                   <Typography variant="h6" gutterBottom>
@@ -708,7 +708,7 @@ function Dashboard() {
               </Card>
             </Grid>
             {/* Wetmill Environmental Metrics */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="body1">Wetmill Conditions</Typography>
@@ -726,7 +726,7 @@ function Dashboard() {
               </Card>
             </Grid>
             {/* Wetmill Temperature Chart */}
-            <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
+            <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent sx={{ height: '100%' }}>
                   <Typography variant="h6" gutterBottom>
