@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
@@ -8,23 +7,22 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import { 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
-  CircularProgress, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
+import {
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   OutlinedInput,
   Box,
   Snackbar,
   Alert
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-
 import TotalBatchesChart from './charts/TotalBatchesChart';
 import TotalCostChart from './charts/TotalCostChart';
 import ArabicaWeightMoM from './charts/ArabicaWeightMoM';
@@ -43,14 +41,12 @@ import ArabicaCherryQualityChart from './charts/ArabicaCherryQualityChart';
 import RobustaCherryQualityChart from './charts/RobustaCherryQualityChart';
 import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContributionChart';
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
-
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
 function Dashboard() {
   const { data: session } = useSession();
   const userRole = session?.user?.role || "user";
-
   const [metrics, setMetrics] = useState({
     totalBatches: 0,
     totalArabicaWeight: 0,
@@ -91,7 +87,24 @@ function Dashboard() {
     pendingArabicaWeightProcessing: 0,
     pendingRobustaWeightProcessing: 0,
   });
-
+  const [environmentalMetrics, setEnvironmentalMetrics] = useState({
+    warehouse: {
+      avgTemperature: 0,
+      avgHumidity: 0,
+      maxTemperature: 0,
+      minTemperature: 0,
+      maxHumidity: 0,
+      minHumidity: 0,
+    },
+    wetmill: {
+      avgTemperature: 0,
+      avgHumidity: 0,
+      maxTemperature: 0,
+      minTemperature: 0,
+      maxHumidity: 0,
+      minHumidity: 0,
+    },
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [arabicaTargets, setArabicaTargets] = useState([]);
@@ -105,7 +118,6 @@ function Dashboard() {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
-
   const formatWeight = (weight) => {
     if (weight >= 1e9) {
       return `${(weight / 1e9).toFixed(2)} B`;
@@ -117,7 +129,6 @@ function Dashboard() {
       return `${new Intl.NumberFormat('de-DE').format(weight)} /kg`;
     }
   };
-
   const timeframes = [
     { value: 'this_week', label: 'This Week' },
     { value: 'last_week', label: 'Last Week' },
@@ -126,7 +137,6 @@ function Dashboard() {
     { value: 'this_year', label: 'This Year' },
     { value: 'last_year', label: 'Last Year' },
   ];
-
   const timeframeLabels = {
     this_week: 'This Week',
     last_week: 'Last Week',
@@ -135,10 +145,8 @@ function Dashboard() {
     this_year: 'This Year',
     last_year: 'Last Year',
   };
-
   const [timeframe, setTimeframe] = useState('this_month');
   const selectedRangeLabel = timeframeLabels[timeframe];
-
   const fetchBatchTrackingData = useCallback(async () => {
     console.log('Starting fetchBatchTrackingData');
     setIsLoadingBatchTracking(true);
@@ -168,7 +176,6 @@ function Dashboard() {
       setIsLoadingBatchTracking(false);
     }
   }, [batchFilter]);
-
   const fetchArabicaTargets = useCallback(async () => {
     console.log('Starting fetchArabicaTargets');
     setIsLoadingTargets(true);
@@ -203,7 +210,6 @@ function Dashboard() {
       setIsLoadingTargets(false);
     }
   }, []);
-
   const fetchHeqaTargets = useCallback(async () => {
     console.log('Starting fetchHeqaTargets');
     setIsLoadingTargets(true);
@@ -244,7 +250,6 @@ function Dashboard() {
       setIsLoadingTargets(false);
     }
   }, []);
-
   const fetchRobustaTargets = useCallback(async () => {
     console.log('Starting fetchRobustaTargets');
     setIsLoadingTargets(true);
@@ -279,7 +284,6 @@ function Dashboard() {
       setIsLoadingTargets(false);
     }
   }, []);
-
   const fetchLandTargets = useCallback(async () => {
     console.log('Starting fetchLandTargets');
     setIsLoadingTargets(true);
@@ -315,13 +319,61 @@ function Dashboard() {
       setIsLoadingTargets(false);
     }
   }, []);
-
+  const fetchEnvironmentalMetrics = useCallback(async () => {
+    console.log('Starting fetchEnvironmentalMetrics');
+    try {
+      const response = await fetch(`https://processing-facility-backend.onrender.com/api/environmental-metrics?timeframe=${timeframe}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Raw Environmental Metrics API response:', data);
+      setEnvironmentalMetrics({
+        warehouse: {
+          avgTemperature: parseFloat(data.warehouse.avgTemperature) || 0,
+          avgHumidity: parseFloat(data.warehouse.avgHumidity) || 0,
+          maxTemperature: parseFloat(data.warehouse.maxTemperature) || 0,
+          minTemperature: parseFloat(data.warehouse.minTemperature) || 0,
+          maxHumidity: parseFloat(data.warehouse.maxHumidity) || 0,
+          minHumidity: parseFloat(data.warehouse.minHumidity) || 0,
+        },
+        wetmill: {
+          avgTemperature: parseFloat(data.wetmill.avgTemperature) || 0,
+          avgHumidity: parseFloat(data.wetmill.avgHumidity) || 0,
+          maxTemperature: parseFloat(data.wetmill.maxTemperature) || 0,
+          minTemperature: parseFloat(data.wetmill.minTemperature) || 0,
+          maxHumidity: parseFloat(data.wetmill.maxHumidity) || 0,
+          minHumidity: parseFloat(data.wetmill.minHumidity) || 0,
+        },
+      });
+    } catch (err) {
+      console.error('Error fetching environmental metrics:', err);
+      setError(err.message || 'Failed to fetch environmental metrics');
+      setOpenSnackbar(true);
+      setEnvironmentalMetrics({
+        warehouse: {
+          avgTemperature: 0,
+          avgHumidity: 0,
+          maxTemperature: 0,
+          minTemperature: 0,
+          maxHumidity: 0,
+          minHumidity: 0,
+        },
+        wetmill: {
+          avgTemperature: 0,
+          avgHumidity: 0,
+          maxTemperature: 0,
+          minTemperature: 0,
+          maxHumidity: 0,
+          minHumidity: 0,
+        },
+      });
+    }
+  }, [timeframe]);
   const getProgressData = (batchNumber) => {
     if (!batchNumber) return null;
-
     const batchEntries = batchTrackingData.filter(b => b.batchNumber === batchNumber);
     if (batchEntries.length === 0) return null;
-
     const receivingWeight = parseFloat(batchEntries[0].receiving_weight) || 0;
     const progressData = [
       { step: 'Receiving', weight: receivingWeight, yield: 100 },
@@ -331,18 +383,14 @@ function Dashboard() {
       { step: 'Drying', weight: parseFloat(batchEntries[0].drying_weight) || 0, yield: receivingWeight ? (parseFloat(batchEntries[0].drying_weight) / receivingWeight * 100) : 0 },
       { step: 'Dry Mill', weight: parseFloat(batchEntries[0].dry_mill_weight) || 0, yield: receivingWeight ? (parseFloat(batchEntries[0].dry_mill_weight) / receivingWeight * 100) : 0 },
     ].filter(row => row.weight > 0 || row.step === 'Receiving');
-
     return progressData.map((row, index) => ({ id: index, ...row }));
   };
-
   useEffect(() => {
     const fetchData = async () => {
       console.log('Starting fetchData');
       setLoading(true);
       setError(null);
-
       let apiUrl = `https://processing-facility-backend.onrender.com/api/dashboard-metrics?timeframe=${timeframe}`;
-
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -359,7 +407,6 @@ function Dashboard() {
         setLoading(false);
       }
     };
-
     const fetchAllData = async () => {
       await fetchData();
       await fetchArabicaTargets();
@@ -367,34 +414,28 @@ function Dashboard() {
       await fetchLandTargets();
       await fetchHeqaTargets();
       await fetchBatchTrackingData();
+      await fetchEnvironmentalMetrics();
     };
-
     fetchAllData();
-  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets, fetchBatchTrackingData]);
-
+  }, [timeframe, fetchArabicaTargets, fetchRobustaTargets, fetchLandTargets, fetchHeqaTargets, fetchBatchTrackingData, fetchEnvironmentalMetrics]);
   const handleTimeframeChange = (event) => {
     setTimeframe(event.target.value);
   };
-
   const handleBatchFilterChange = (event) => {
     setBatchFilter(event.target.value);
   };
-
   const handleBatchClick = (batch) => {
     setSelectedBatch(batch);
     setOpenDialog(true);
   };
-
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedBatch(null);
   };
-
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
     setError(null);
   };
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -402,7 +443,6 @@ function Dashboard() {
       </Box>
     );
   }
-
   if (!session?.user || !['admin', 'manager', 'staff', 'receiving'].includes(session.user.role)) {
     return (
       <Typography variant="h6">
@@ -612,6 +652,43 @@ function Dashboard() {
               </Button>
             </DialogContent>
           </Dialog> */}
+
+          {/* Warehouse Environmental Metrics */}
+          <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="body1">Warehouse Conditions</Typography>
+                <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {environmentalMetrics.warehouse.avgTemperature.toFixed(1)} °C
+                </Typography>
+                <Typography variant="body2">
+                  Min: {environmentalMetrics.warehouse.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.warehouse.maxTemperature.toFixed(1)} °C
+                </Typography>
+                <Typography variant="body2">
+                  Humidity: {environmentalMetrics.warehouse.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.warehouse.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.warehouse.maxHumidity.toFixed(1)}%)
+                </Typography>
+                <Typography variant="caption">{selectedRangeLabel}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          {/* Wetmill Environmental Metrics */}
+          <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="body1">Wetmill Conditions</Typography>
+                <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {environmentalMetrics.wetmill.avgTemperature.toFixed(1)} °C
+                </Typography>
+                <Typography variant="body2">
+                  Min: {environmentalMetrics.wetmill.minTemperature.toFixed(1)} °C, Max: {environmentalMetrics.wetmill.maxTemperature.toFixed(1)} °C
+                </Typography>
+                <Typography variant="body2">
+                  Humidity: {environmentalMetrics.wetmill.avgHumidity.toFixed(1)}% (Min: {environmentalMetrics.wetmill.minHumidity.toFixed(1)}%, Max: {environmentalMetrics.wetmill.maxHumidity.toFixed(1)}%)
+                </Typography>
+                <Typography variant="caption">{selectedRangeLabel}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
 
           {/* Arabica Section */}
           <Grid item xs={12} md={12}>
