@@ -456,7 +456,7 @@ function Dashboard() {
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Grid container spacing={3}>
           {/* Timeframe Selector */}
-          <Grid item xs={6} md={2.4}>
+          <Grid item xs={6} md={2}>
             <FormControl fullWidth>
               <InputLabel id="timeframe-label">Select Timeframe</InputLabel>
               <Select
@@ -654,7 +654,7 @@ function Dashboard() {
           </Dialog> */}
 
           {/* Warehouse Environmental Metrics */}
-          <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+          <Grid item xs={12} md={5} sx={{ height: { xs: 'auto', md: '220px' } }}>
             <Card variant="outlined" sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="body1">Warehouse Conditions</Typography>
@@ -672,7 +672,7 @@ function Dashboard() {
             </Card>
           </Grid>
           {/* Wetmill Environmental Metrics */}
-          <Grid item xs={12} md={6} sx={{ height: { xs: 'auto', md: '220px' } }}>
+          <Grid item xs={12} md={5} sx={{ height: { xs: 'auto', md: '220px' } }}>
             <Card variant="outlined" sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="body1">Wetmill Conditions</Typography>
