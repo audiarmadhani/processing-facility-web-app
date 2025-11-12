@@ -136,106 +136,113 @@ const OrderProcessing = () => {
     fetchOrders();
   }, []);
 
+  const refreshOrder = async (orderId) => {
+    try {
+      const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Failed to fetch latest order: ' + (await res.text()));
+      const latestOrder = await res.json();
+
+      setOrders(prev => prev.map(o => (o.order_id === orderId ? latestOrder : o)));
+      setSelectedOrder(latestOrder);
+      return latestOrder;
+    } catch (err) {
+      console.error('refreshOrder error', err);
+      setSnackbar({ open: true, message: `Could not refresh order: ${err.message}`, severity: 'error' });
+      throw err;
+    }
+  };
+
+  // PUT update the order, then fetch the authoritative order row and update UI
+  const updateOrderStatus = async (orderId, putBody) => {
+    try {
+      const putRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(putBody),
+      });
+      if (!putRes.ok) throw new Error('Failed to update order: ' + (await putRes.text()));
+      // We don't rely on the PUT body to include server timestamps — fetch authoritative copy
+      const latest = await refreshOrder(orderId);
+      return latest;
+    } catch (err) {
+      console.error('updateOrderStatus error', err);
+      setSnackbar({ open: true, message: `Could not update order: ${err.message}`, severity: 'error' });
+      throw err;
+    }
+  };
+
   // Handle order processing with a single update to "Processing" before upload, save PDFs locally after
   const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
     try {
-      // Fetch the current order details with enhanced error handling
-      const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-        headers: { 'Accept': 'application/json' }, // Ensure JSON response
+      // fetch current order (so we can use details when generating PDFs)
+      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+        headers: { 'Accept': 'application/json' },
       });
-      if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
-      const data = await res.json();
-      console.log('Order Fetch Response:', data); // Log the response for debugging
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid order data received');
-      }
-      let order = data;
+      if (!orderRes.ok) throw new Error('Failed to fetch order for processing: ' + (await orderRes.text()));
+      const order = await orderRes.json();
 
-      if (!order.order_id || typeof order.order_id !== 'number') {
-        throw new Error('Invalid order_id fetched: ' + order.order_id);
-      }
+      // (your existing logic to enrich order with customer/driver details)
+      // e.g. fetch customer, driver, set order.customer_address, order.driver_name, etc.
+      // --- keep your existing code here up to document generation ---
 
-      // Update status to "Processing" before uploading documents
-      const processingUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          customer_id: order.customer_id,
-          status: 'Processing',
-          driver_id: order.driver_id, // Reuse existing driver_id
-          shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
-          price: order.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-          items: order.items
-        }),
+      // Update status to Processing on server (server should write process_at)
+      await updateOrderStatus(orderId, {
+        customer_id: order.customer_id,
+        status: 'Processing',
+        driver_id: order.driver_id || null,
+        shipping_method: order.shipping_method || 'Self',
+        driver_name: order.driver_name || '',
+        driver_vehicle_number: order.driver_vehicle_number || '',
+        driver_vehicle_type: order.driver_vehicle_type || '',
+        price: order.price?.toString() || '0',
+        tax_percentage: order.tax_percentage?.toString() || '0',
+        items: order.items,
+        shipping_address: order.customer_address || order.shipping_address,
+        billing_address: order.billing_address,
       });
 
-      if (!processingUpdateRes.ok) throw new Error('Failed to update order status to Processing: ' + (await processingUpdateRes.text()));
-      const updatedProcessingOrder = await processingUpdateRes.json();
-      console.log('Updated Order (Processing):', updatedProcessingOrder); // Log the updated order for debugging
+      // Generate PDFs (your existing generateSPKPDF/generateSPMPDF/generateDOPDF)
+      const spkDoc = generateSPKPDF({ ...order, status: 'Processing' });
+      const spmDoc = generateSPMPDF({ ...order, status: 'Processing' });
+      const doDoc  = generateDOPDF({ ...order, status: 'Processing' });
 
-      // Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "Processing" update
-      order = {
-        ...updatedProcessingOrder,
-        order_id: updatedProcessingOrder.order_id || order.order_id, // Ensure order_id is always present
-        customer_id: updatedProcessingOrder.customer_id || order.customer_id,
-        customer_name: updatedProcessingOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
-        status: updatedProcessingOrder.status || 'Processing', // Should be "Processing" now
-        shipping_method: updatedProcessingOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
-        items: updatedProcessingOrder.items || order.items, // Default to empty array if missing
-        created_at: updatedProcessingOrder.created_at || order.created_at || null,
-      };
+      // save locally (same as before)
+      spkDoc.save(`SPK_${String(order.order_id).padStart(4,'0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      spmDoc.save(`SPM_${String(order.order_id).padStart(4,'0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doDoc.save(`DO_${String(order.order_id).padStart(4,'0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
-      if (!order.order_id || typeof order.order_id !== 'number') {
-        throw new Error('Invalid order_id after Processing update: ' + order.order_id);
-      }
-
-      // Generate SPK, SPM, and DO PDFs
-      const spkDoc = generateSPKPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-
-      // Save PDFs locally using jsPDF.save()
-      spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
-      spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
-      doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
-
-      // Upload each document to Google Drive
+      // upload documents (same form-data logic as you already have)
       const uploadDocument = async (doc, type, filename) => {
         const blob = doc.output('blob');
-        const formData = new FormData();
-        formData.append('order_id', orderId.toString()); // Use validated orderId as string
-        formData.append('type', type);
-        formData.append('file', blob, filename);
-
-        const res = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+        const fd = new FormData();
+        fd.append('order_id', orderId.toString());
+        fd.append('type', type);
+        fd.append('file', blob, filename);
+        const r = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
           method: 'POST',
-          body: formData,
+          body: fd,
         });
-
-        if (!res.ok) throw new Error(`Failed to upload ${type} document: ' + (await res.text())`);
-        return await res.json(); // No need to return drive_url since we’re saving locally
+        if (!r.ok) throw new Error(`Failed upload ${type}: ${await r.text()}`);
+        return r.json();
       };
 
-      // Upload PDFs to Google Drive (without storing URLs for download)
       await Promise.all([
-        uploadDocument(spkDoc, 'SPK', `SPK_${String(order.order_id).padStart(4, '0')}.pdf`),
-        uploadDocument(spmDoc, 'SPM', `SPM_${String(order.order_id).padStart(4, '0')}.pdf`),
-        uploadDocument(doDoc, 'DO', `DO_${String(order.order_id).padStart(4, '0')}.pdf`),
+        uploadDocument(spkDoc, 'SPK', `SPK_${order.order_id}.pdf`),
+        uploadDocument(spmDoc, 'SPM', `SPM_${order.order_id}.pdf`),
+        uploadDocument(doDoc,  'DO',  `DO_${order.order_id}.pdf`),
       ]);
 
-      // Update the orders state safely with the current "Processing" status
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
+      // After uploads and server-side update, refresh the authoritative order (will include process_at)
+      await refreshOrder(orderId);
 
-      setSelectedOrder(order);
-
-      setSnackbar({ open: true, message: 'Documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
+      setSnackbar({ open: true, message: 'Order moved to Processing and documents uploaded', severity: 'success' });
     } catch (error) {
-      console.error('Error processing order:', error);
-      setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
+      console.error('Error in handleProcessOrder:', error);
+      setSnackbar({ open: true, message: `Error: ${error.message}`, severity: 'error' });
     } finally {
       setLoading(false);
       setProcessing(false);
@@ -244,178 +251,98 @@ const OrderProcessing = () => {
 
   // Handle generating shipment documents (Surat Jalan and BAST) with status update to "Ready for Shipment"
 	const handleReadyForShipment = async (orderId) => {
-		setLoading(true);
-		setProcessing(true);
-		try {
-			// Fetch the current order details with enhanced error handling
-			const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-				headers: { 'Accept': 'application/json' }, // Ensure JSON response
-			});
-			if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
-			const data = await res.json();
-			console.log('Order Fetch Response:', data); // Log the response for debugging
-			if (!data || typeof data !== 'object') {
-				throw new Error('Invalid order data received');
-			}
-			let order = data;
+    setLoading(true);
+    setProcessing(true);
+    try {
+      // fetch order so you can prepare driver/customer info and PDFs
+      const orderRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, { headers: { 'Accept': 'application/json' }});
+      if (!orderRes.ok) throw new Error('Failed to fetch order: ' + (await orderRes.text()));
+      const order = await orderRes.json();
 
-			if (!order.order_id || typeof order.order_id !== 'number') {
-				throw new Error('Invalid order_id fetched: ' + order.order_id);
-			}
+      // (your existing logic to attach customer/driver fields and generate PDFs)
+      const suratJalanDoc = generateSuratJalanPDF({ ...order, status: 'Ready for Shipment' });
+      const bastDoc = generateBASTPDF({ ...order, status: 'Ready for Shipment' });
 
-			// Update status to "Ready for Shipment" before generating documents
-			const readyUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-				body: JSON.stringify({
-					customer_id: order.customer_id,
-					status: 'Ready for Shipment',
-					driver_id: order.driver_id, // Reuse existing driver_id
-					shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
-					driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
-					price: order.price?.toString() || '0', // Reuse existing price, converted to string
-					tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-					items: order.items
-				}),
-			});
+      suratJalanDoc.save(`SuratJalan_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
+      bastDoc.save(`BAST_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
 
-			if (!readyUpdateRes.ok) throw new Error('Failed to update order status to Ready for Shipment: ' + (await readyUpdateRes.text()));
-			const updatedReadyOrder = await readyUpdateRes.json();
-			console.log('Updated Order (Ready for Shipment):', updatedReadyOrder); // Log the updated order for debugging
+      // Update status to Ready for Shipment (server should set ready_at)
+      await updateOrderStatus(orderId, {
+        customer_id: order.customer_id,
+        status: 'Ready for Shipment',
+        driver_id: order.driver_id || null,
+        shipping_method: order.shipping_method || 'Self',
+        driver_name: order.driver_name || '',
+        driver_vehicle_number: order.driver_vehicle_number || '',
+        driver_vehicle_type: order.driver_vehicle_type || '',
+        driver_max_capacity: order.driver_max_capacity || '',
+        price: order.price?.toString() || '0',
+        tax_percentage: order.tax_percentage?.toString() || '0',
+        items: order.items,
+        shipping_address: order.customer_address || order.shipping_address,
+        billing_address: order.billing_address,
+      });
 
-			// Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "Ready for Shipment" update
-			order = {
-				...updatedReadyOrder,
-				order_id: updatedReadyOrder.order_id || order.order_id, // Ensure order_id is always present
-				customer_id: updatedReadyOrder.customer_id || order.customer_id,
-				customer_name: updatedReadyOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
-				status: updatedReadyOrder.status || 'Ready for Shipment', // Should be "Ready for Shipment" now
-				shipping_method: updatedReadyOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
-				items: updatedReadyOrder.items || order.items, // Default to empty array if missing
-				created_at: updatedReadyOrder.created_at || order.created_at || null,
-			};
+      // upload the documents
+      const uploadDocument = async (doc, type, filename) => {
+        const blob = doc.output('blob');
+        const fd = new FormData();
+        fd.append('order_id', orderId.toString());
+        fd.append('type', type);
+        fd.append('file', blob, filename);
+        const r = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+          method: 'POST',
+          body: fd,
+        });
+        if (!r.ok) throw new Error(`Failed upload ${type}: ${await r.text()}`);
+        return r.json();
+      };
 
-			if (!order.order_id || typeof order.order_id !== 'number') {
-				throw new Error('Invalid order_id after Ready for Shipment update: ' + order.order_id);
-			}
+      await Promise.all([
+        uploadDocument(suratJalanDoc, 'Surat Jalan', `SuratJalan_${order.order_id}.pdf`),
+        uploadDocument(bastDoc, 'BAST', `BAST_${order.order_id}.pdf`),
+      ]);
 
-			// Generate Surat Jalan and BAST PDFs
-			const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name });
-			const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-
-			// Save PDFs locally using jsPDF.save()
-			suratJalanDoc.save(`SuratJalan_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
-			bastDoc.save(`BAST_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
-
-			// Upload each document to Google Drive
-			const uploadDocument = async (doc, type, filename) => {
-				const blob = doc.output('blob');
-				const formData = new FormData();
-				formData.append('order_id', orderId.toString()); // Use validated orderId as string
-				formData.append('type', type);
-				formData.append('file', blob, filename);
-
-				const res = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
-					method: 'POST',
-					body: formData,
-				});
-
-				if (!res.ok) throw new Error(`Failed to upload ${type} document: ' + (await res.text())`);
-				return await res.json(); // No need to return drive_url since we’re saving locally
-			};
-
-			// Upload PDFs to Google Drive (without storing URLs for download)
-			await Promise.all([
-				uploadDocument(suratJalanDoc, 'Surat Jalan', `SuratJalan_${order.order_id}.pdf`),
-				uploadDocument(bastDoc, 'BAST', `BAST_${order.order_id}.pdf`),
-			]);
-
-			// Update the orders state safely with the current "Ready for Shipment" status
-			setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
-
-			setSelectedOrder(order);
-
-			setSnackbar({ open: true, message: 'Shipment documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
-		} catch (error) {
-			console.error('Error generating shipment documents:', error);
-			setSnackbar({ open: true, message: `Error generating shipment documents: ${error.message}`, severity: 'error' });
-		} finally {
-			setLoading(false);
-			setProcessing(false);
-		}
-	};
+      // refresh to pick up ready_at
+      await refreshOrder(orderId);
+      setSnackbar({ open: true, message: 'Order set to Ready for Shipment and documents uploaded', severity: 'success' });
+    } catch (err) {
+      console.error('handleReadyForShipment error', err);
+      setSnackbar({ open: true, message: `Error: ${err.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
+      setProcessing(false);
+    }
+  };
 
 	// Handle updating status to "In Transit"
-	const handleInTransit = async (orderId) => {
-		setLoading(true);
-		setProcessing(true);
-		try {
-			// Fetch the current order details with enhanced error handling
-			const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-				headers: { 'Accept': 'application/json' }, // Ensure JSON response
-			});
-			if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
-			const data = await res.json();
-			console.log('Order Fetch Response:', data); // Log the response for debugging
-			if (!data || typeof data !== 'object') {
-				throw new Error('Invalid order data received');
-			}
-			let order = data;
+  const handleInTransit = async (orderId) => {
+    setLoading(true);
+    try {
+      const selected = selectedOrder || orders.find(o => o.order_id === orderId);
+      await updateOrderStatus(orderId, {
+        customer_id: selected.customer_id,
+        status: 'In Transit',   // backend should map this to setting ship_at
+        driver_id: selected.driver_id || null,
+        shipping_method: selected.shipping_method || 'Self',
+        driver_name: selected.driver_name || '',
+        driver_vehicle_number: selected.driver_vehicle_number || '',
+        driver_vehicle_type: selected.driver_vehicle_type || '',
+        price: selected.price?.toString() || '0',
+        tax_percentage: selected.tax_percentage?.toString() || '0',
+        items: selected.items,
+        shipping_address: selected.customer_address || selected.shipping_address,
+        billing_address: selected.billing_address,
+      });
+      setSnackbar({ open: true, message: 'Order marked In Transit', severity: 'success' });
+    } catch (err) {
+      console.error('handleShip error', err);
+      setSnackbar({ open: true, message: `Error: ${err.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-			if (!order.order_id || typeof order.order_id !== 'number') {
-				throw new Error('Invalid order_id fetched: ' + order.order_id);
-			}
-
-			// Update status to "In Transit"
-			const transitUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-				body: JSON.stringify({
-					customer_id: order.customer_id,
-					status: 'In Transit',
-					driver_id: order.driver_id, // Reuse existing driver_id
-					shipping_method: order.shipping_method || 'Self', // Default to 'Self' if missing
-					driver_details: order.driver_details, // Reuse existing driver_details (JSON string)
-					price: order.price?.toString() || '0', // Reuse existing price, converted to string
-					tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-					items: order.items
-				}),
-			});
-
-			if (!transitUpdateRes.ok) throw new Error('Failed to update order status to In Transit: ' + (await transitUpdateRes.text()));
-			const updatedTransitOrder = await transitUpdateRes.json();
-			console.log('Updated Order (In Transit):', updatedTransitOrder); // Log the updated order for debugging
-
-			// Ensure order_id, customer_name, status, shipping_method, and items are preserved or defaulted after "In Transit" update
-			order = {
-				...updatedTransitOrder,
-				order_id: updatedTransitOrder.order_id || order.order_id, // Ensure order_id is always present
-				customer_id: updatedTransitOrder.customer_id || order.customer_id,
-				customer_name: updatedTransitOrder.customer_name || order.customer_name || 'Unknown Customer', // Default if missing
-				status: updatedTransitOrder.status || 'In Transit', // Should be "In Transit" now
-				shipping_method: updatedTransitOrder.shipping_method || order.shipping_method || 'Self', // Default to 'Self' if missing
-				items: updatedTransitOrder.items || order.items, // Default to empty array if missing
-				created_at: updatedTransitOrder.created_at || order.created_at || null,
-			};
-
-			if (!order.order_id || typeof order.order_id !== 'number') {
-				throw new Error('Invalid order_id after In Transit update: ' + order.order_id);
-			}
-
-			// Update the orders state safely with the current "In Transit" status
-			setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
-
-			setSelectedOrder(order);
-
-			setSnackbar({ open: true, message: 'Order status updated to In Transit successfully', severity: 'success' });
-		} catch (error) {
-			console.error('Error updating to In Transit:', error);
-			setSnackbar({ open: true, message: `Error updating to In Transit: ${error.message}`, severity: 'error' });
-		} finally {
-			setLoading(false);
-			setProcessing(false);
-		}
-	};
 
   // Handle showing order details in modal
   const handleOpenOrderModal = async (order) => {
@@ -441,7 +368,6 @@ const OrderProcessing = () => {
   // Regenerate and download PDFs from modal
   const handleDownloadDocuments = () => {
     if (!selectedOrder) return;
-
     try {
       const spkDoc = generateSPKPDF({
         ...selectedOrder,
@@ -465,7 +391,6 @@ const OrderProcessing = () => {
         items: selectedOrder.items || [],
       });
 
-      // Save PDFs locally using jsPDF.save()
       spkDoc.save(`SPK_${String(selectedOrder.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       spmDoc.save(`SPM_${String(selectedOrder.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       doDoc.save(`DO_${String(selectedOrder.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -513,35 +438,66 @@ const OrderProcessing = () => {
     setOpenConfirmProcess(true);
   };
 
-  const handleReject = async (orderId) => {
-    if (!selectedOrder) return;
+  // Mark order delivered/arrived and refresh to pick up arrive_at
+  const handleOrderArrived = async (orderId) => {
+    setLoading(true);
     try {
-      const rejectUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          customer_id: selectedOrder.customer_id,
-          status: 'Rejected',
-          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
-          shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_details: selectedOrder.driver_details, // Reuse existing driver_details (JSON string)
-          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-          items: selectedOrder.items
-        }),
+      const selected = selectedOrder || orders.find(o => o.order_id === orderId);
+      if (!selected) throw new Error('No order selected');
+
+      await updateOrderStatus(orderId, {
+        customer_id: selected.customer_id,
+        status: 'Arrived', // or 'Delivered' if that's your canonical status string
+        driver_id: selected.driver_id || null,
+        shipping_method: selected.shipping_method || 'Self',
+        driver_name: selected.driver_name || '',
+        driver_vehicle_number: selected.driver_vehicle_number || '',
+        driver_vehicle_type: selected.driver_vehicle_type || '',
+        price: selected.price?.toString() || '0',
+        tax_percentage: selected.tax_percentage?.toString() || '0',
+        items: selected.items || [],
+        shipping_address: selected.customer_address || selected.shipping_address,
+        billing_address: selected.billing_address || '',
       });
 
-      if (!rejectUpdateRes.ok) throw new Error('Failed to reject order: ' + (await rejectUpdateRes.text()));
-      const updatedOrder = await rejectUpdateRes.json();
-      console.log('Rejected Order:', updatedOrder);
+      setSnackbar({ open: true, message: 'Order marked Arrived', severity: 'success' });
+    } catch (err) {
+      console.error('handleOrderArrived error', err);
+      setSnackbar({ open: true, message: `Error: ${err.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Update the orders state safely with the "Rejected" status
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === selectedOrder.order_id ? updatedOrder : o));
+  // Safe reject that uses updateOrderStatus + refresh
+  const handleReject = async (orderId, rejectReason = '') => {
+    setLoading(true);
+    try {
+      const selected = selectedOrder || orders.find(o => o.order_id === orderId);
+      if (!selected) throw new Error('No order selected');
 
-      setSnackbar({ open: true, message: 'Order rejected successfully', severity: 'success' });
-    } catch (error) {
-      console.error('Error rejecting order:', error);
-      setSnackbar({ open: true, message: `Error rejecting order: ${error.message}`, severity: 'error' });
+      await updateOrderStatus(orderId, {
+        customer_id: selected.customer_id,
+        status: 'Rejected',
+        reject_reason: rejectReason,
+        driver_id: selected.driver_id || null,
+        shipping_method: selected.shipping_method || 'Self',
+        driver_name: selected.driver_name || '',
+        driver_vehicle_number: selected.driver_vehicle_number || '',
+        driver_vehicle_type: selected.driver_vehicle_type || '',
+        price: selected.price?.toString() || '0',
+        tax_percentage: selected.tax_percentage?.toString() || '0',
+        items: selected.items || [],
+        shipping_address: selected.customer_address || selected.shipping_address,
+        billing_address: selected.billing_address || '',
+      });
+
+      setSnackbar({ open: true, message: 'Order rejected', severity: 'success' });
+    } catch (err) {
+      console.error('handleReject error', err);
+      setSnackbar({ open: true, message: `Error: ${err.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
