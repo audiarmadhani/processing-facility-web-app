@@ -1131,7 +1131,6 @@ const OrderCreation = () => {
                       onChange={(e) => handleItemChange(index, 'jumlah_karung', e.target.value)}
                       sx={{ mr: 2, width: 120 }}
                       inputProps={{ min: 1, step: 1 }}
-                      helperText="Default 50 (kg) — editable"
                     />
                     <TextField
                       label="Price (IDR)"
