@@ -642,7 +642,10 @@ useEffect(() => {
   };
 
   const addEditItem = () => {
-    setEditOrder(prev => ({ ...prev, items: [...prev.items, { product: '', quantity: '', price: '' }] }));
+    setEditOrder((prev) => ({
+      ...prev,
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
+    }));
   };
 
   const removeEditItem = (index) => {
@@ -1126,7 +1129,7 @@ useEffect(() => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          Math.ceil(item.quantity / 50) || 0,
+          item.jumlah_karung ? item.jumlah_karung : Math.ceil((parseFloat(item.quantity) || 0) / 50),
           (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1179,7 +1182,7 @@ useEffect(() => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          Math.ceil(item.quantity / 50) || 0,
+          item.jumlah_karung ? item.jumlah_karung : Math.ceil((parseFloat(item.quantity) || 0) / 50),
           dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1256,7 +1259,7 @@ useEffect(() => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          Math.ceil(item.quantity / 50) || 0,
+          item.jumlah_karung ? item.jumlah_karung : Math.ceil((parseFloat(item.quantity) || 0) / 50),
           dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1340,7 +1343,7 @@ useEffect(() => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0,
-        Math.ceil(item.quantity / 50) || 0,
+        item.jumlah_karung ? item.jumlah_karung : Math.ceil((parseFloat(item.quantity) || 0) / 50),
         'Barang Pesanan Pelanggan', // Description
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1445,7 +1448,7 @@ useEffect(() => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
-        Math.ceil(item.quantity / 50) || 0,
+        item.jumlah_karung ? item.jumlah_karung : Math.ceil((parseFloat(item.quantity) || 0) / 50),
         'Barang Pesanan Pelanggan', // Description, match OCR
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -2161,6 +2164,13 @@ useEffect(() => {
                         value={item.quantity}
                         InputProps={{ readOnly: true }}
                         sx={{ mr: 1, width: '120px' }}
+                      />
+                      <TextField
+                        label="Jumlah Karung"
+                        type="number"
+                        value={item.jumlah_karung}
+                        sx={{ mr: 2, width: 120 }}
+                        InputProps={{ readOnly: true }}
                       />
                       <TextField
                         label="Price per Unit (IDR)"

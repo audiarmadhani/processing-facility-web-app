@@ -40,7 +40,7 @@ const OrderCreation = () => {
   const [formData, setFormData] = useState({
     customer_id: '',
     driver_id: '',
-    items: [{ batch_number: '', quantity: '', price: '', product: '' }],
+    items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
     shipping_method: 'Customer',
     driver_details: {
       name: '',
@@ -158,7 +158,12 @@ const OrderCreation = () => {
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...formData.items];
-    newItems[index][field] = value;
+    // Keep jumlah_karung stored as number when possible
+    if (field === 'jumlah_karung') {
+      newItems[index][field] = value === '' ? '' : Number(value);
+    } else {
+      newItems[index][field] = value;
+    }
 
     setFormData((prev) => ({ ...prev, items: newItems }));
     const subtotal = newItems.reduce(
@@ -166,14 +171,7 @@ const OrderCreation = () => {
       0
     );
     setFormData((prev) => ({ ...prev, price: subtotal.toFixed(2) }));
-  };
-
-  const addItem = () => {
-    setFormData((prev) => ({
-      ...prev,
-      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }],
-    }));
-  };
+};
 
   const removeItem = (index) => {
     if (formData.items.length === 1) {
@@ -191,7 +189,11 @@ const OrderCreation = () => {
 
   const handleEditItemChange = (index, field, value) => {
     const newItems = [...editOrder.items];
-    newItems[index][field] = value;
+    if (field === 'jumlah_karung') {
+      newItems[index][field] = value === '' ? '' : Number(value);
+    } else {
+      newItems[index][field] = value;
+    }
 
     setEditOrder((prev) => ({ ...prev, items: newItems }));
     const subtotal = newItems.reduce(
@@ -201,10 +203,17 @@ const OrderCreation = () => {
     setEditOrder((prev) => ({ ...prev, price: subtotal.toFixed(2) }));
   };
 
+  const addItem = () => {
+    setFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
+    }));
+  };
+
   const addEditItem = () => {
     setEditOrder((prev) => ({
       ...prev,
-      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '' }],
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
     }));
   };
 
@@ -281,8 +290,8 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!formData.items.every((item) => item.batch_number && item.quantity && item.price && item.product)) {
-      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
+    if (!formData.items.every((item) => item.batch_number && item.quantity && item.price && item.product && (item.jumlah_karung || item.jumlah_karung === 0))) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, product and jumlah karung', severity: 'warning' });
       return;
     }
     if (!formData.shipping_address) {
@@ -309,8 +318,13 @@ const OrderCreation = () => {
     for (const item of formData.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
+      const jumlahKarung = Number(item.jumlah_karung) || 0;
       if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
+        return;
+      }
+      if (isNaN(jumlahKarung) || jumlahKarung <= 0) {
+        setSnackbar({ open: true, message: 'Invalid jumlah karung for an item', severity: 'error' });
         return;
       }
     }
@@ -331,6 +345,7 @@ const OrderCreation = () => {
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
           product: item.product,
+          jumlah_karung: Number(item.jumlah_karung) || Math.ceil((parseFloat(item.quantity) || 0) / 50),
         })),
       };
 
@@ -386,7 +401,7 @@ const OrderCreation = () => {
       setFormData({
         customer_id: '',
         driver_id: '',
-        items: [{ batch_number: '', quantity: '', price: '', product: '' }],
+        items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
         shipping_method: 'Customer',
         driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
         price: '',
@@ -488,6 +503,7 @@ const OrderCreation = () => {
         item.batch_number,
         item.product,
         item.quantity,
+        item.jumlah_karung ? item.jumlah_karung : Math.ceil((parseFloat(item.quantity) || 0) / 50),
         item.price || '0',
         (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)).toLocaleString('id-ID', {
           style: 'currency',
@@ -680,8 +696,8 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!editOrder.items.every((item) => item.batch_number && item.quantity && item.price && item.product)) {
-      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, and product', severity: 'warning' });
+    if (!formData.items.every((item) => item.batch_number && item.quantity && item.price && item.product && (item.jumlah_karung || item.jumlah_karung === 0))) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, product and jumlah karung', severity: 'warning' });
       return;
     }
     if (!editOrder.shipping_address) {
@@ -708,8 +724,13 @@ const OrderCreation = () => {
     for (const item of editOrder.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
+      const jumlahKarung = Number(item.jumlah_karung) || 0;
       if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
+        return;
+      }
+      if (isNaN(jumlahKarung) || jumlahKarung <= 0) {
+        setSnackbar({ open: true, message: 'Invalid jumlah karung for an item', severity: 'error' });
         return;
       }
     }
@@ -730,6 +751,7 @@ const OrderCreation = () => {
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
           product: item.product,
+          jumlah_karung: Number(item.jumlah_karung) || Math.ceil((parseFloat(item.quantity) || 0) / 50),
         })),
       };
 
@@ -848,7 +870,7 @@ const OrderCreation = () => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={5}>
+      <Grid item xs={12} md={7}>
         <Card variant="outlined">
           <CardContent>
             <Box>
@@ -1103,6 +1125,15 @@ const OrderCreation = () => {
                       inputProps={{ min: 0, step: 0.01 }}
                     />
                     <TextField
+                      label="Jumlah Karung"
+                      type="number"
+                      value={item.jumlah_karung}
+                      onChange={(e) => handleItemChange(index, 'jumlah_karung', e.target.value)}
+                      sx={{ mr: 2, width: 120 }}
+                      inputProps={{ min: 1, step: 1 }}
+                      helperText="Default 50 (kg) — editable"
+                    />
+                    <TextField
                       label="Price (IDR)"
                       type="number"
                       value={item.price}
@@ -1184,7 +1215,7 @@ const OrderCreation = () => {
       </Grid>
 
       {['admin', 'manager', 'preprocessing'].includes(session?.user?.role) && (
-        <Grid item xs={12} md={7}>
+        <Grid item xs={12} md={5}>
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -1528,6 +1559,14 @@ const OrderCreation = () => {
                         onChange={(e) => handleEditItemChange(index, 'quantity', e.target.value)}
                         sx={{ mr: 2, width: 120 }}
                         inputProps={{ min: 0, step: 0.01 }}
+                      />
+                      <TextField
+                        label="Jumlah Karung"
+                        type="number"
+                        value={item.jumlah_karung}
+                        onChange={(e) => handleEditItemChange(index, 'jumlah_karung', e.target.value)}
+                        sx={{ mr: 2, width: 120 }}
+                        inputProps={{ min: 1, step: 1 }}
                       />
                       <TextField
                         label="Price (IDR)"
