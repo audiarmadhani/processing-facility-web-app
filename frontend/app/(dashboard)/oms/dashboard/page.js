@@ -835,6 +835,22 @@ const Dashboard = () => {
     fetchOrderData();
   };
 
+  // --- helper: get canonical order object by id ---
+  // Uses selectedOrder if it's the same order, otherwise fetches from backend
+  const fetchOrderById = async (orderId) => {
+    // If selectedOrder already matches, return it (avoids extra fetch)
+    if (selectedOrder && selectedOrder.order_id === orderId) {
+      return selectedOrder;
+    }
+    // Otherwise fetch full order from backend
+    const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to fetch order details: ' + (await res.text()));
+    const fullOrder = await res.json();
+    return fullOrder;
+  };
+
   const handleActionsClose = () => {
     setAnchorEl(null);
     setSelectedOrder(null);
@@ -866,37 +882,45 @@ const Dashboard = () => {
   };
 
   const handleReject = async (orderId) => {
-    if (!selectedOrder) return;
+    if (!orderId) return;
+    setLoading(true);
     try {
-      const rejectUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${selectedOrder.order_id}`, {
+      const order = await fetchOrderById(orderId);
+
+      if (!order || !order.order_id) throw new Error('Order not found');
+
+      const payload = {
+        customer_id: order.customer_id,
+        status: 'Rejected',
+        driver_id: order.driver_id || null,
+        shipping_method: order.shipping_method || 'Self',
+        driver_name: order.driver_name || order.driver_details?.name || null,
+        driver_vehicle_number: order.driver_vehicle_number || order.driver_details?.vehicle_number_plate || null,
+        driver_vehicle_type: order.driver_vehicle_type || order.driver_details?.vehicle_type || null,
+        driver_max_capacity: order.driver_max_capacity || null,
+        price: order.price?.toString() || '0', 
+        tax_percentage: order.tax_percentage?.toString() || '0',
+        items: order.items || []
+      };
+
+      const rejectUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          customer_id: selectedOrder.customer_id,
-          status: 'Rejected',
-          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
-          shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_name: order.driver_name,
-          driver_vehicle_number: order.driver_vehicle_number,
-          driver_vehicle_type: order.driver_vehicle_type,
-          driver_max_capacity: order.driver_max_capacity,
-          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-          items: selectedOrder.items
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!rejectUpdateRes.ok) throw new Error('Failed to reject order: ' + (await rejectUpdateRes.text()));
       const updatedOrder = await rejectUpdateRes.json();
       console.log('Rejected Order:', updatedOrder);
 
-      // Update the orders state safely with the "Rejected" status
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === selectedOrder.order_id ? updatedOrder : o));
-
+      // Update UI
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? updatedOrder : o));
       setSnackbar({ open: true, message: 'Order rejected successfully', severity: 'success' });
     } catch (error) {
       console.error('Error rejecting order:', error);
       setSnackbar({ open: true, message: `Error rejecting order: ${error.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -912,32 +936,42 @@ const Dashboard = () => {
   };
 
   // Handle Order Arrived (update status to 'Delivered' and record arrive_at timestamp)
+  // Handle Order Arrived (update status to 'Arrived' and record arrive_at timestamp)
   const handleOrderArrived = async (orderId) => {
     setLoading(true);
     try {
+      // Get canonical order object (reuses selectedOrder if available)
+      const order = await fetchOrderById(orderId);
+
+      // Validate
+      if (!order || !order.order_id) throw new Error('Order not found');
+
+      // Build payload using the canonical order variable
+      const payload = {
+        customer_id: order.customer_id,
+        status: 'Arrived', // IMPORTANT: backend sets arrive_at when status === 'Arrived'
+        driver_id: order.driver_id || null,
+        shipping_method: order.shipping_method || 'Self',
+        driver_name: order.driver_name || order.driver_details?.name || null,
+        driver_vehicle_number: order.driver_vehicle_number || order.driver_details?.vehicle_number_plate || null,
+        driver_vehicle_type: order.driver_vehicle_type || order.driver_details?.vehicle_type || null,
+        driver_max_capacity: order.driver_max_capacity || null,
+        price: order.price?.toString() || '0',
+        tax_percentage: order.tax_percentage?.toString() || '0',
+        items: order.items || []
+      };
+
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          customer_id: selectedOrder.customer_id,
-          status: 'Delivered',
-          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
-          shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_name: order.driver_name,
-          driver_vehicle_number: order.driver_vehicle_number,
-          driver_vehicle_type: order.driver_vehicle_type,
-          driver_max_capacity: order.driver_max_capacity,
-          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-          items: selectedOrder.items
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error('Failed to mark order as arrived: ' + (await res.text()));
       const updatedOrder = await res.json();
       console.log('Updated Order (Arrived):', updatedOrder);
 
-      // Update the orders state safely with the "Delivered" status
+      // Update the orders state safely with the "Arrived" status
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? updatedOrder : o));
 
       setSnackbar({ open: true, message: 'Order marked as arrived successfully', severity: 'success' });
@@ -997,23 +1031,26 @@ const Dashboard = () => {
         setPaymentProof(null); // Reset after upload
       }
 
+      const order = await fetchOrderById(orderId);
+      if (!order) throw new Error('Order not found when updating payment status');
+
       // Update order payment_status to 'Paid' and paid_at timestamp, without changing shipment status
       const orderUpdateRes = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          customer_id: selectedOrder.customer_id,
-          status: selectedOrder.status, // Preserve the current shipment status
+          customer_id: order.customer_id,
+          status: order.status || 'Pending', // Preserve the current shipment status
           payment_status: 'Paid', // Update only payment_status
-          driver_id: selectedOrder.driver_id, // Reuse existing driver_id
-          shipping_method: selectedOrder.shipping_method || 'Self', // Default to 'Self' if missing
-          driver_name: order.driver_name,
-          driver_vehicle_number: order.driver_vehicle_number,
-          driver_vehicle_type: order.driver_vehicle_type,
-          driver_max_capacity: order.driver_max_capacity,
-          price: selectedOrder.price?.toString() || '0', // Reuse existing price, converted to string
-          tax_percentage: selectedOrder.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-          items: selectedOrder.items
+          driver_id: order.driver_id || null,
+          shipping_method: order.shipping_method || 'Self',
+          driver_name: order.driver_name || order.driver_details?.name || null,
+          driver_vehicle_number: order.driver_vehicle_number || order.driver_details?.vehicle_number_plate || null,
+          driver_vehicle_type: order.driver_vehicle_type || order.driver_details?.vehicle_type || null,
+          driver_max_capacity: order.driver_max_capacity || null,
+          price: order.price?.toString() || '0',
+          tax_percentage: order.tax_percentage?.toString() || '0',
+          items: order.items || []
         }),
       });
 
