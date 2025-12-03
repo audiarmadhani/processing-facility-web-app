@@ -59,6 +59,8 @@ function ReceivingStation() {
   const [processingType, setProcessingType] = useState('');
   const [grade, setGrade] = useState('');
   const [assigningRFID, setAssigningRFID] = useState(false);
+  const [price, setPrice] = useState('');
+  const [moisture, setMoisture] = useState('');
 
   // UI state
   const [tabValue, setTabValue] = useState(0); // 0: Cherry, 1: Green Bean
@@ -287,6 +289,9 @@ function ReceivingStation() {
       createdBy: session.user.name,
       updatedBy: session.user.name,
       rfid: scannedRFID,
+      // new fields:
+      price: commodityType === 'Green Bean' ? (price !== '' ? Number(price) : null) : null,
+      moisture: commodityType === 'Green Bean' ? (moisture !== '' ? Number(moisture) : null) : null,
     };
 
     try {
@@ -736,6 +741,28 @@ function ReceivingStation() {
                         </Select>
                       </FormControl>
                     </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Price (IDR/kg)"
+                        type="number"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        fullWidth
+                        inputProps={{ step: '0.1', min: '0' }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Moisture (%)"
+                        type="number"
+                        value={moisture}
+                        onChange={(e) => setMoisture(e.target.value)}
+                        fullWidth
+                        inputProps={{ step: '0.1', min: '0', max: '100' }}
+                      />
+                    </Grid>
+
                     <Grid item xs={12}>
                       <TextField
                         label="Number of Bags"
