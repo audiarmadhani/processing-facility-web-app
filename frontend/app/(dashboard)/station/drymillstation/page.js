@@ -1636,55 +1636,45 @@ const DryMillStation = () => {
                     <TableCell>{grade.grade}</TableCell>
                     <TableCell>{grade.processing_type || grade.processingType || grade.process_step || '-'}</TableCell>
                     <TableCell align="right">{totalWeight.toFixed(2)}</TableCell>
+                    {/* Actions cell — single Edit, Delete, Print Label (all enabled when not loading) */}
                     <TableCell align="right">
-                      <Box sx={{ display: "flex", gap: 1, flexDirection: "column", alignItems: "flex-end" }}>
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                          <Button variant="outlined" size="small" onClick={() => handleOpenEditGrade(grade)} disabled={isLoading || selectedBatch?.storedDate}>Edit</Button>
-                          <Button variant="outlined" color="error" size="small" onClick={() => handleDeleteGrade(grade.grade)} disabled={isLoading || selectedBatch?.storedDate}>Delete</Button>
-                        </Box>
+                      <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleOpenEditGrade(grade)}
+                          disabled={isLoading}
+                        >
+                          Edit
+                        </Button>
 
-                        {grade.bagWeights.length > 0 && (
-                          <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                            {grade.bagWeights.map((weight, bagIndex) => (
-                              <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "inline-flex", gap: 1, alignItems: "center" }}>
-                                <Button
-                                  variant="contained"
-                                  color="error"
-                                  size="small"
-                                  onClick={() => handleRemoveBag(grade.grade, bagIndex)}
-                                  disabled={isLoading}
-                                >
-                                  Remove Bag {bagIndex + 1}
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() => { handleOpenEditGrade(grade); setEditGradeData({ grade: grade.grade, bagWeights: [String(weight)] }); }}
-                                  disabled={isLoading || selectedBatch?.storedDate}
-                                >
-                                  Edit Bag
-                                </Button>
-                              </Box>
-                            ))}
-                            <Button
-                              variant="contained"
-                              color="secondary"
-                              size="small"
-                              onClick={() =>
-                                handlePrintLabel(
-                                  selectedBatch?.batchNumber,
-                                  selectedBatch.processingType,
-                                  grade.grade,
-                                  0,
-                                  grade.bagWeights[0]
-                                )
-                              }
-                              disabled={isLoading}
-                            >
-                              Print Label
-                            </Button>
-                          </Box>
-                        )}
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          onClick={() => handleDeleteGrade(grade.grade)}
+                          disabled={isLoading}
+                        >
+                          Delete
+                        </Button>
+
+                        <Button
+                          variant="contained"
+                          color="secondary"
+                          size="small"
+                          onClick={() =>
+                            handlePrintLabel(
+                              selectedBatch?.batchNumber,
+                              selectedBatch?.processingType,
+                              grade.grade,
+                              0,
+                              grade.bagWeights?.[0]
+                            )
+                          }
+                          disabled={isLoading}
+                        >
+                          Print Label
+                        </Button>
                       </Box>
                     </TableCell>
                   </TableRow>
