@@ -96,6 +96,100 @@ const DryMillStation = () => {
   const [openSampleHistoryDialog, setOpenSampleHistoryDialog] = useState(false);
   const [sampleData, setSampleData] = useState([]);
   const [openMergeDialog, setOpenMergeDialog] = useState(false);
+    const [openEditGradeDialog, setOpenEditGradeDialog] = useState(false);
+  const [editGradeData, setEditGradeData] = useState({ grade: null, bagWeights: [] });
+
+  const handleOpenEditGrade = (gradeObj) => {
+    setEditGradeData({
+      grade: gradeObj.grade,
+      bagWeights: Array.isArray(gradeObj.bagWeights) ? gradeObj.bagWeights.map(String) : [],
+    });
+    setOpenEditGradeDialog(true);
+  };
+  const handleCloseEditGrade = () => {
+    setOpenEditGradeDialog(false);
+    setEditGradeData({ grade: null, bagWeights: [] });
+  };
+  const handleEditGradeBagChange = (index, value) => {
+    setEditGradeData((prev) => {
+      const copy = { ...prev, bagWeights: [...prev.bagWeights] };
+      copy.bagWeights[index] = value;
+      return copy;
+    });
+  };
+  const handleAddEditGradeBag = () => {
+    setEditGradeData((prev) => ({ ...prev, bagWeights: [...prev.bagWeights, ""] }));
+  };
+  const handleRemoveEditGradeBag = (index) => {
+    setEditGradeData((prev) => {
+      const copy = { ...prev, bagWeights: [...prev.bagWeights] };
+      copy.bagWeights.splice(index, 1);
+      return copy;
+    });
+  };
+
+  const handleSaveEditedGrade = async () => {
+    if (!selectedBatch) {
+      setSnackbarMessage("Batch missing.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    const payload = {
+      grade: editGradeData.grade,
+      bagWeights: editGradeData.bagWeights.map((w) => String(w)),
+      weight: editGradeData.bagWeights
+        .reduce((acc, w) => acc + (parseFloat(w) || 0), 0)
+        .toString(),
+      bagged_at: new Date().toISOString().slice(0, 10),
+      processingType: selectedBatch.processingType,
+      process_step: selectedProcess || selectedBatch.processingType || "huller",
+    };
+    try {
+      await axios.post(
+        `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`,
+        payload
+      );
+      setSnackbarMessage("Grade updated successfully.");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
+      handleCloseEditGrade();
+      setGrades((prev) =>
+        prev.map((g) =>
+          g.grade === editGradeData.grade
+            ? { ...g, bagWeights: payload.bagWeights, weight: parseFloat(payload.weight) }
+            : g
+        )
+      );
+      await fetchDryMillData();
+    } catch (error) {
+      const message = error.response?.data?.error || "Failed to update grade.";
+      logError(message, error);
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleDeleteGrade = async (gradeName) => {
+    if (!confirm(`Permanently delete grade ${gradeName}? This will remove its bag records and unlink any process events.`)) return;
+    try {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com'}/api/dry-mill/${encodeURIComponent(selectedBatch.batchNumber)}/grade/${encodeURIComponent(gradeName)}`
+      );
+      await fetchDryMillData();
+      setSnackbarMessage('Grade deleted');
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
+    } catch (err) {
+      const message = err.response?.data?.error || 'Failed to delete grade';
+      setSnackbarMessage(message);
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  };
+  // add process pick for track weight / grade edits
+  const [selectedProcess, setSelectedProcess] = useState('Huller');
   const [selectedBatches, setSelectedBatches] = useState([]);
   const [mergeNotes, setMergeNotes] = useState("");
   const [newBatchNumber, setNewBatchNumber] = useState("");
@@ -649,17 +743,22 @@ const DryMillStation = () => {
         setOpenSnackbar(true);
         return;
       }
+
+      // Keep the block that prevents adding to a stored batch (do not allow add to stored)
       if (selectedBatch?.storedDate || grades.find((g) => g.grade === selectedGrade)?.storedDate) {
         setSnackbarMessage("Cannot add bags to a stored batch.");
         setSnackbarSeverity("warning");
         setOpenSnackbar(true);
         return;
       }
+
       const gradeIndex = grades.findIndex((g) => g.grade === selectedGrade);
       const newWeight = parsedWeight.toString();
       const updatedGrade = grades[gradeIndex] || { grade: selectedGrade, weight: 0, bagWeights: [] };
       const updatedBagWeights = [...updatedGrade.bagWeights, newWeight];
       const totalWeight = parseFloat(updatedGrade.weight || 0) + parsedWeight;
+
+      // Optimistically update local UI
       setGrades((prevGrades) => {
         const newGrades = [...prevGrades];
         const index = newGrades.findIndex((g) => g.grade === selectedGrade);
@@ -683,51 +782,91 @@ const DryMillStation = () => {
         }
         return newGrades;
       });
+
       setCurrentWeight("");
       setHasUnsavedChanges(true);
-      if (selectedBatch.parentBatchNumber) {
+
+      // Only persist for sub-batches (existing behavior)
+      if (selectedBatch?.parentBatchNumber) {
+        // build payload: include both processingType and process_step
+        const processStep = (typeof selectedProcess !== "undefined" && selectedProcess) || selectedBatch.processingType || "huller";
+        const payload = {
+          grade: selectedGrade,
+          bagWeights: updatedBagWeights,
+          weight: totalWeight.toString(),
+          bagged_at: new Date().toISOString().slice(0, 10),
+          processingType: selectedBatch.processingType,
+          process_step: processStep,
+        };
+
         try {
           const response = await axios.post(
             `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`,
-            {
-              grade: selectedGrade,
-              bagWeights: updatedBagWeights,
-              weight: totalWeight.toString(),
-              bagged_at: new Date().toISOString().slice(0, 10),
-              processingType: selectedBatch.processingType,
-            }
+            payload
           );
+
+          // Merge returned lot/reference if backend returned them (keeps previous behavior)
           setGrades((prevGrades) => {
             const newGrades = [...prevGrades];
             const index = newGrades.findIndex((g) => g.grade === selectedGrade);
             if (index >= 0) {
               newGrades[index] = {
                 ...newGrades[index],
-                lotNumber: response.data.lotNumber || prevGrades[index].lotNumber,
-                referenceNumber: response.data.referenceNumber || prevGrades[index].referenceNumber,
+                lotNumber: response.data.lotNumber || newGrades[index].lotNumber,
+                referenceNumber: response.data.referenceNumber || newGrades[index].referenceNumber,
               };
             }
             return newGrades;
           });
+
           setSnackbarMessage("Bag added successfully.");
           setSnackbarSeverity("success");
           setOpenSnackbar(true);
           setHasUnsavedChanges(false);
+
+          // Refresh canonical server state
           await fetchDryMillData();
+
+          // --- create lightweight DryMillProcessEvents record (non-blocking)
+          // after successful update-bags response inside handleAddBag
+          const returnedGradeRowIds = response.data?.gradeRowIds || [];
+
+          // create process-event and link the grade row ids (non-blocking)
+          (async () => {
+            try {
+              await axios.post(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://processing-facility-backend.onrender.com"}/api/drymill/process-event`,
+                {
+                  batchNumber: selectedBatch.batchNumber,
+                  process_step: processStep,
+                  input_weight: 0,
+                  output_weight: parseFloat(payload.weight) || 0,
+                  operator: session?.user?.name || session?.user?.email || "unknown",
+                  notes: `Added bag ${newWeight} kg to grade ${selectedGrade}`,
+                  gradeRowIdsOutput: returnedGradeRowIds
+                }
+              );
+            } catch (err) {
+              console.warn("Failed to create drymill process-event (non-blocking):", err?.message || err);
+            }
+          })();
         } catch (error) {
+          // Roll back optimistic update for this grade: remove last bag & subtract weight
           const message = error.response?.data?.error || "Failed to update bags.";
           logError(message, error);
           setSnackbarMessage(message);
           setSnackbarSeverity("error");
           setOpenSnackbar(true);
+
           setGrades((prevGrades) => {
             const newGrades = [...prevGrades];
             const index = newGrades.findIndex((g) => g.grade === selectedGrade);
             if (index >= 0) {
+              const prev = newGrades[index];
               newGrades[index] = {
-                ...newGrades[index],
-                bagWeights: newGrades[index].bagWeights.slice(0, -1),
-                weight: parseFloat(newGrades[index].weight || 0) - parsedWeight,
+                ...prev,
+                bagWeights: prev.bagWeights.slice(0, -1),
+                weight: parseFloat(prev.weight || 0) - parsedWeight,
               };
             }
             return newGrades;
@@ -735,89 +874,58 @@ const DryMillStation = () => {
         }
       }
     },
-    [selectedBatch, selectedGrade, grades, fetchDryMillData]
+    [selectedBatch, selectedGrade, grades, fetchDryMillData, selectedProcess, session]
   );
 
-  const handleRemoveBag = useCallback(
-    async (grade, bagIndex) => {
-      if (!selectedBatch) {
-        setSnackbarMessage("Batch is missing.");
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
-        return;
+  const handleRemoveBag = async (gradeName, bagIndex) => {
+    if (!selectedBatch) {
+      setSnackbarMessage("Batch is missing.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+    if (!confirm(`Remove bag ${bagIndex + 1} from ${gradeName}?`)) return;
+
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com'}/api/dry-mill/${encodeURIComponent(selectedBatch.batchNumber)}/remove-bag`,
+        { grade: gradeName, bagIndex }
+      );
+
+      // successful removal
+      const { newWeight, gradeRowIds } = res.data || {};
+      // refresh canonical list from server
+      await fetchDryMillData();
+
+      // optionally create a process-event recording the removal (linked to gradeRowIds)
+      try {
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com'}/api/drymill/process-event`,
+          {
+            batchNumber: selectedBatch.batchNumber,
+            process_step: selectedProcess || selectedBatch.processingType || "huller",
+            input_weight: 0,
+            output_weight: newWeight || 0,
+            operator: session?.user?.name || "unknown",
+            notes: `Removed bag index ${bagIndex + 1} from ${gradeName}`,
+            gradeRowIdsOutput: gradeRowIds || []
+          }
+        );
+      } catch (evtErr) {
+        console.warn("Failed to record removal process-event", evtErr);
       }
-      if (selectedBatch.storedDate || grades.find((g) => g.grade === grade)?.storedDate) {
-        setSnackbarMessage("Cannot remove bags from a stored batch.");
-        setSnackbarSeverity("warning");
-        setOpenSnackbar(true);
-        return;
-      }
-      const gradeIndex = grades.findIndex((g) => g.grade === grade);
-      const removedWeight = parseFloat(grades[gradeIndex].bagWeights[bagIndex]);
-      const updatedBagWeights = grades[gradeIndex].bagWeights.filter((_, i) => i !== bagIndex);
-      const totalWeight = parseFloat(grades[gradeIndex].weight || 0) - removedWeight;
-      setGrades((prevGrades) => {
-        const newGrades = [...prevGrades];
-        newGrades[gradeIndex] = {
-          ...newGrades[gradeIndex],
-          bagWeights: updatedBagWeights,
-          weight: totalWeight >= 0 ? totalWeight : 0,
-        };
-        return newGrades;
-      });
-      setHasUnsavedChanges(true);
-      if (selectedBatch.parentBatchNumber) {
-        try {
-          const response = await axios.post(
-            `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`,
-            {
-              grade,
-              bagWeights: updatedBagWeights,
-              weight: totalWeight >= 0 ? totalWeight.toString() : "0",
-              bagged_at: new Date().toISOString().slice(0, 10),
-              processingType: selectedBatch.processingType,
-            }
-          );
-          setGrades((prevGrades) => {
-            const newGrades = [...prevGrades];
-            const index = newGrades.findIndex((g) => g.grade === grade);
-            if (index >= 0) {
-              newGrades[index] = {
-                ...newGrades[index],
-                lotNumber: response.data.lotNumber || prevGrades[index].lotNumber,
-                referenceNumber: response.data.referenceNumber || prevGrades[index].referenceNumber,
-              };
-            }
-            return newGrades;
-          });
-          setSnackbarMessage("Bag removed successfully.");
-          setSnackbarSeverity("success");
-          setOpenSnackbar(true);
-          setHasUnsavedChanges(false);
-          await fetchDryMillData();
-        } catch (error) {
-          const message = error.response?.data?.error || "Failed to remove bag.";
-          logError(message, error);
-          setSnackbarMessage(message);
-          setSnackbarSeverity("error");
-          setOpenSnackbar(true);
-          setGrades((prevGrades) => {
-            const newGrades = [...prevGrades];
-            const index = newGrades.findIndex((g) => g.grade === grade);
-            if (index >= 0) {
-              newGrades[index] = {
-                ...newGrades[index],
-                bagWeights: grades[gradeIndex].bagWeights,
-                weight: parseFloat(grades[gradeIndex].weight || 0) + removedWeight,
-              };
-            }
-            return newGrades;
-          });
-        }
-      }
-    },
-    [selectedBatch, grades, fetchDryMillData]
-  );
+
+      setSnackbarMessage("Bag removed");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
+    } catch (err) {
+      const message = err.response?.data?.error || "Failed to remove bag";
+      logError(message, err);
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+  };
 
   const handleSaveSubBatch = useCallback(
     async () => {
@@ -1458,6 +1566,21 @@ const DryMillStation = () => {
           <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
             <Grid item xs={4}>
               <TextField
+                select
+                fullWidth
+                label="Process"
+                margin="dense"
+                value={selectedProcess}
+                onChange={(e) => setSelectedProcess(e.target.value)}
+              >
+                <MenuItem value="Huller">Huller</MenuItem>
+                <MenuItem value="Suton">Suton</MenuItem>
+                <MenuItem value="Sizer">Sizer</MenuItem>
+                <MenuItem value="Handpicking">Hand picking</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
                 label="Grade"
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
@@ -1494,20 +1617,13 @@ const DryMillStation = () => {
                 </Button>
               </Box>
             </Grid>
-            <Grid item xs={4}>
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <Typography variant="caption" sx={{ mr: 1 }}>Quick</Typography>
-                <Button variant="outlined" size="small" onClick={() => handleAddBag("50")} disabled={isLoading || selectedBatch?.storedDate}>50</Button>
-                <Button variant="outlined" size="small" onClick={() => handleAddBag("60")} disabled={isLoading || selectedBatch?.storedDate}>60</Button>
-                <Button variant="outlined" size="small" onClick={() => handleAddBag("70")} disabled={isLoading || selectedBatch?.storedDate}>70</Button>
-              </Box>
-            </Grid>
           </Grid>
           <Typography variant="h6" gutterBottom>Grades Overview</Typography>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>Grade</TableCell>
+                <TableCell>Process</TableCell>
                 <TableCell align="right">Total Weight (kg)</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -1518,22 +1634,37 @@ const DryMillStation = () => {
                 return (
                   <TableRow key={grade.grade}>
                     <TableCell>{grade.grade}</TableCell>
+                    <TableCell>{grade.processing_type || grade.processingType || grade.process_step || '-'}</TableCell>
                     <TableCell align="right">{totalWeight.toFixed(2)}</TableCell>
                     <TableCell align="right">
-                      <Box sx={{ display: "flex", gap: 1 }}>
+                      <Box sx={{ display: "flex", gap: 1, flexDirection: "column", alignItems: "flex-end" }}>
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <Button variant="outlined" size="small" onClick={() => handleOpenEditGrade(grade)} disabled={isLoading || selectedBatch?.storedDate}>Edit</Button>
+                          <Button variant="outlined" color="error" size="small" onClick={() => handleDeleteGrade(grade.grade)} disabled={isLoading || selectedBatch?.storedDate}>Delete</Button>
+                        </Box>
+
                         {grade.bagWeights.length > 0 && (
-                          <>
+                          <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
                             {grade.bagWeights.map((weight, bagIndex) => (
-                              <Button
-                                key={`${grade.grade}-bag-${bagIndex}`}
-                                variant="contained"
-                                color="error"
-                                size="small"
-                                onClick={() => handleRemoveBag(grade.grade, bagIndex)}
-                                disabled={isLoading || selectedBatch?.storedDate || grade.storedDate}
-                              >
-                                Remove Bag {bagIndex + 1}
-                              </Button>
+                              <Box key={`${grade.grade}-bag-${bagIndex}`} sx={{ display: "inline-flex", gap: 1, alignItems: "center" }}>
+                                <Button
+                                  variant="contained"
+                                  color="error"
+                                  size="small"
+                                  onClick={() => handleRemoveBag(grade.grade, bagIndex)}
+                                  disabled={isLoading}
+                                >
+                                  Remove Bag {bagIndex + 1}
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() => { handleOpenEditGrade(grade); setEditGradeData({ grade: grade.grade, bagWeights: [String(weight)] }); }}
+                                  disabled={isLoading || selectedBatch?.storedDate}
+                                >
+                                  Edit Bag
+                                </Button>
+                              </Box>
                             ))}
                             <Button
                               variant="contained"
@@ -1552,7 +1683,7 @@ const DryMillStation = () => {
                             >
                               Print Label
                             </Button>
-                          </>
+                          </Box>
                         )}
                       </Box>
                     </TableCell>
@@ -1840,6 +1971,36 @@ const DryMillStation = () => {
           <Button onClick={handleCloseSampleHistoryDialog} disabled={isLoading}>
             Close
           </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={openEditGradeDialog} onClose={handleCloseEditGrade} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Grade - {editGradeData.grade}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Edit individual bag weights for this grade. Empty values will be ignored.
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {editGradeData.bagWeights.map((w, idx) => (
+              <Box key={idx} sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <TextField
+                  label={`Bag ${idx + 1} (kg)`}
+                  value={w}
+                  onChange={(e) => handleEditGradeBagChange(idx, e.target.value)}
+                  type="number"
+                  inputProps={{ min: 0, step: 0.01 }}
+                  fullWidth
+                />
+                <Button variant="outlined" color="error" onClick={() => handleRemoveEditGradeBag(idx)}>Remove</Button>
+              </Box>
+            ))}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button variant="outlined" onClick={handleAddEditGradeBag}>Add Bag</Button>
+              <Button variant="contained" onClick={handleSaveEditedGrade}>Save Grade</Button>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditGrade}>Close</Button>
         </DialogActions>
       </Dialog>
       <Dialog open={openMergeDialog} onClose={handleCloseMergeDialog} maxWidth="md" fullWidth>
