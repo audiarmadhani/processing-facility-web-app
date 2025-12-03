@@ -937,28 +937,35 @@ const Dashboard = () => {
 
   // Handle Order Arrived (update status to 'Delivered' and record arrive_at timestamp)
   // Handle Order Arrived (update status to 'Arrived' and record arrive_at timestamp)
+  // Handle Order Arrived (replace existing)
   const handleOrderArrived = async (orderId) => {
     setLoading(true);
     try {
-      // Get canonical order object (reuses selectedOrder if available)
+      // get canonical order (reuses selectedOrder if available)
       const order = await fetchOrderById(orderId);
-
-      // Validate
       if (!order || !order.order_id) throw new Error('Order not found');
 
-      // Build payload using the canonical order variable
+      // Build payload by copying required canonical fields, then overriding what we need.
+      // IMPORTANT: include all fields the backend validates as required.
       const payload = {
+        // required identity/address fields (preserve from canonical order)
         customer_id: order.customer_id,
-        status: 'Arrived', // IMPORTANT: backend sets arrive_at when status === 'Arrived'
+        shipping_method: order.shipping_method || order.shippingMethod || 'Self',
+        shipping_address: order.shipping_address || order.shippingAddress || order.address || null,
+        billing_address: order.billing_address || order.billingAddress || order.billing || null,
+
+        // preserve other fields to avoid accidental clearing:
         driver_id: order.driver_id || null,
-        shipping_method: order.shipping_method || 'Self',
         driver_name: order.driver_name || order.driver_details?.name || null,
         driver_vehicle_number: order.driver_vehicle_number || order.driver_details?.vehicle_number_plate || null,
         driver_vehicle_type: order.driver_vehicle_type || order.driver_details?.vehicle_type || null,
         driver_max_capacity: order.driver_max_capacity || null,
-        price: order.price?.toString() || '0',
-        tax_percentage: order.tax_percentage?.toString() || '0',
-        items: order.items || []
+        price: (order.price !== undefined && order.price !== null) ? String(order.price) : '0',
+        tax_percentage: (order.tax_percentage !== undefined && order.tax_percentage !== null) ? String(order.tax_percentage) : '0',
+        items: order.items || [],
+
+        // the update we intend:
+        status: 'Arrived'
       };
 
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
@@ -969,15 +976,13 @@ const Dashboard = () => {
 
       if (!res.ok) throw new Error('Failed to mark order as arrived: ' + (await res.text()));
       const updatedOrder = await res.json();
-      console.log('Updated Order (Arrived):', updatedOrder);
 
-      // Update the orders state safely with the "Arrived" status
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? updatedOrder : o));
-
-      setSnackbar({ open: true, message: 'Order marked as arrived successfully', severity: 'success' });
-    } catch (error) {
-      console.error('Error marking order as arrived:', error);
-      setSnackbar({ open: true, message: `Error marking order as arrived: ${error.message}`, severity: 'error' });
+      // update UI
+      setOrders(prev => prev.map(o => o.order_id === orderId ? updatedOrder : o));
+      setSnackbar({ open: true, message: 'Order marked as arrived', severity: 'success' });
+    } catch (err) {
+      console.error('Error marking order as arrived:', err);
+      setSnackbar({ open: true, message: `Error marking order as arrived: ${err.message}`, severity: 'error' });
     } finally {
       setLoading(false);
     }
