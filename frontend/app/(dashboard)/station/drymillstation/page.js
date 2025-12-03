@@ -34,6 +34,7 @@ import {
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
 import jsPDF from "jspdf";
+import SaveIcon from '@mui/icons-material/Save';
 
 // Constants for scanned_at values
 const SCAN_LOCATIONS = {
@@ -1340,25 +1341,76 @@ const DryMillStation = () => {
             <Typography variant="h5" gutterBottom>
               Dry Mill Station - Active Batches
             </Typography>
-            <Box sx={{ mb: 2, display: "flex", gap: 1 }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleRefreshData}
-                disabled={isLoading}
-                startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
+            {/* --- Wet-mill style toolbar (replaces previous simple Box) --- */}
+              <Box
+                sx={{
+                  mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  flexWrap: "wrap",
+                }}
               >
-                {isLoading ? "Refreshing..." : "Refresh Data"}
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleOpenMergeDialog}
-                disabled={selectedBatches.length < 2}
-              >
-                Merge Batches
-              </Button>
-            </Box>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleRefreshData}
+                    disabled={isLoading}
+                    startIcon={isLoading ? <CircularProgress size={18} /> : undefined}
+                  >
+                    {isLoading ? "Refreshing..." : "Refresh"}
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      // Open a small quick-search or batch filter if desired in future
+                      // keeps parity with wetmill which has small utility actions
+                    }}
+                    disabled
+                  >
+                    Filter
+                  </Button>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => {
+                      // quick-add common action that wet mill has: create new batch flow
+                      // keep disabled now to avoid changing behavior
+                    }}
+                    disabled
+                    size="small"
+                  >
+                    New Batch
+                  </Button>
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenMergeDialog}
+                    disabled={selectedBatches.length < 2 || isLoading}
+                    size="small"
+                  >
+                    Merge
+                  </Button>
+
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleRefreshData}
+                    startIcon={isLoading ? <CircularProgress size={18} /> : undefined}
+                    disabled={isLoading}
+                    size="small"
+                  >
+                    Refresh
+                  </Button>
+                </Box>
+              </Box>
+              {/* --- end toolbar --- */}
             {renderParentDataGrid}
           </CardContent>
         </Card>
@@ -1443,23 +1495,11 @@ const DryMillStation = () => {
               </Box>
             </Grid>
             <Grid item xs={4}>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleAddBag("50")}
-                  disabled={isLoading || selectedBatch?.storedDate}
-                >
-                  50 kg
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleAddBag("60")}
-                  disabled={isLoading || selectedBatch?.storedDate}
-                >
-                  60 kg
-                </Button>
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <Typography variant="caption" sx={{ mr: 1 }}>Quick</Typography>
+                <Button variant="outlined" size="small" onClick={() => handleAddBag("50")} disabled={isLoading || selectedBatch?.storedDate}>50</Button>
+                <Button variant="outlined" size="small" onClick={() => handleAddBag("60")} disabled={isLoading || selectedBatch?.storedDate}>60</Button>
+                <Button variant="outlined" size="small" onClick={() => handleAddBag("70")} disabled={isLoading || selectedBatch?.storedDate}>70</Button>
               </Box>
             </Grid>
           </Grid>
@@ -1529,16 +1569,32 @@ const DryMillStation = () => {
             </TableBody>
           </Table>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={isLoading}>
-            Close
-          </Button>
-          {!selectedBatch?.parentBatchNumber && (
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          {/* left-side: contextual secondary actions */}
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center", mr: "auto" }}>
+            <Button onClick={handleCloseDialog} disabled={isLoading}>
+              Close
+            </Button>
+
+            {/* sample history quick-open (wetmill has similar quick utilities) */}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setOpenSampleHistoryDialog(true)}
+              disabled={!selectedBatch}
+            >
+              Sample History
+            </Button>
+          </Box>
+
+          {/* right-side: primary actions (wet-mill style: primary save then secondary complete) */}
+          {!selectedBatch?.parentBatchNumber ? (
             <>
               <Button
                 variant="contained"
                 color="primary"
                 onClick={handleSortAndWeigh}
+                startIcon={<SaveIcon />}
                 disabled={
                   isLoading ||
                   !selectedBatch ||
@@ -1547,10 +1603,12 @@ const DryMillStation = () => {
               >
                 Save Splits
               </Button>
+
               <Button
                 variant="contained"
                 color="secondary"
                 onClick={() => setOpenCompleteDialog(true)}
+                sx={{ ml: 1 }}
                 disabled={
                   isLoading ||
                   !selectedBatch ||
@@ -1560,12 +1618,12 @@ const DryMillStation = () => {
                 Mark Complete
               </Button>
             </>
-          )}
-          {selectedBatch?.parentBatchNumber && (
+          ) : (
             <Button
               variant="contained"
               color="primary"
               onClick={handleSaveSubBatch}
+              startIcon={<SaveIcon />}
               disabled={
                 isLoading ||
                 !selectedBatch ||
