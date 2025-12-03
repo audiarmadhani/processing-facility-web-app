@@ -85,7 +85,7 @@ const QCStation = () => {
 
       // Fetch Receiving data
       const receivingResponse = await axios.get(`${API_BASE_URL}/api/receiving`);
-      const receivingDataResult = receivingResponse.data.allRows || [];
+      const receivingDataResult = receivingResponse.data.noQCRows || [];
       
       const qcBatchNumbers = new Set(qcDataResult.map(qc => qc.batchNumber));
       const filteredReceivingData = receivingDataResult
