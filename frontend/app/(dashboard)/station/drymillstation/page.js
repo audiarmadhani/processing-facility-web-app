@@ -1209,7 +1209,7 @@ const DryMillStation = () => {
         sortable: false,
         renderCell: (params) => (
           <Button
-            variant="outlined"
+            variant="contained"
             size="small"
             onClick={() => handleDetailsClick(params.row)}
             disabled={isLoading}
@@ -1266,7 +1266,7 @@ const DryMillStation = () => {
         sortable: false,
         renderCell: (params) => (
           <Button
-            variant="outlined"
+            variant="contained"
             size="small"
             onClick={() => handleDetailsClick(params.row)}
             disabled={isLoading}
@@ -1305,7 +1305,7 @@ const DryMillStation = () => {
         sortable: false,
         renderCell: (params) => (
           <Button
-            variant="outlined"
+            variant="contained"
             size="small"
             onClick={() => handleShowSampleHistory(params.row.batchNumber, params.row.processingType)}
             disabled={isLoading}
@@ -1462,7 +1462,7 @@ const DryMillStation = () => {
               >
                 <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     onClick={handleRefreshData}
                     disabled={isLoading}
                     startIcon={isLoading ? <CircularProgress size={18} /> : undefined}
@@ -1471,7 +1471,7 @@ const DryMillStation = () => {
                   </Button>
 
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     onClick={() => {
                       // Open a small quick-search or batch filter if desired in future
                       // keeps parity with wetmill which has small utility actions
@@ -1640,7 +1640,7 @@ const DryMillStation = () => {
                     <TableCell align="right">
                       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
                         <Button
-                          variant="outlined"
+                          variant="contained"
                           size="small"
                           onClick={() => handleOpenEditGrade(grade)}
                           disabled={isLoading}
@@ -1649,7 +1649,7 @@ const DryMillStation = () => {
                         </Button>
 
                         <Button
-                          variant="outlined"
+                          variant="contained"
                           color="error"
                           size="small"
                           onClick={() => handleDeleteGrade(grade.grade)}
@@ -1699,7 +1699,7 @@ const DryMillStation = () => {
 
             {/* sample history quick-open (wetmill has similar quick utilities) */}
             <Button
-              variant="outlined"
+              variant="contained"
               size="small"
               onClick={() => setOpenSampleHistoryDialog(true)}
               disabled={!selectedBatch}
@@ -1801,7 +1801,7 @@ const DryMillStation = () => {
             onChange={(e) => setRfid(e.target.value)}
             onKeyPress={handleRfidKeyPress}
             fullWidth
-            variant="outlined"
+            variant="contained"
             inputRef={rfidInputRef}
             disabled={isLoading}
           />
@@ -1980,11 +1980,11 @@ const DryMillStation = () => {
                   inputProps={{ min: 0, step: 0.01 }}
                   fullWidth
                 />
-                <Button variant="outlined" color="error" onClick={() => handleRemoveEditGradeBag(idx)}>Remove</Button>
+                <Button variant="contained" color="error" onClick={() => handleRemoveEditGradeBag(idx)}>Remove</Button>
               </Box>
             ))}
             <Box sx={{ display: "flex", gap: 1 }}>
-              <Button variant="outlined" onClick={handleAddEditGradeBag}>Add Bag</Button>
+              <Button variant="contained" onClick={handleAddEditGradeBag}>Add Bag</Button>
               <Button variant="contained" onClick={handleSaveEditedGrade}>Save Grade</Button>
             </Box>
           </Box>
