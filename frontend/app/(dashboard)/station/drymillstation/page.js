@@ -99,6 +99,49 @@ const DryMillStation = () => {
     const [openEditGradeDialog, setOpenEditGradeDialog] = useState(false);
   const [editGradeData, setEditGradeData] = useState({ grade: null, bagWeights: [] });
 
+  // ---------- Process-sheet state (4 steps, grade totals only) ----------
+const PROCESS_STEPS = ['Huller', 'Suton', 'Sizer', 'Handpicking'];
+const GRADE_ORDER = ['Specialty Grade', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Asalan'];
+
+// structure:
+// { Huller: { outputWeight: '12.34' },
+//   Suton: { grades: { 'Specialty Grade': { weight: '12.34' }, ... } }, ... }
+const [processTables, setProcessTables] = useState({
+  Huller: { outputWeight: '' },
+  Suton: { grades: {} },
+  Sizer: { grades: {} },
+  Handpicking: { grades: {} },
+});
+
+// initialize from existing grades when dialog opens (copy totals)
+const initProcessTablesFromGrades = useCallback(() => {
+  const base = {
+    Huller: { outputWeight: '' },
+    Suton: { grades: {} },
+    Sizer: { grades: {} },
+    Handpicking: { grades: {} },
+  };
+
+  // For non-huller steps, map existing grades weight into the table.
+  ['Suton', 'Sizer', 'Handpicking'].forEach((proc) => {
+    GRADE_ORDER.forEach((gradeName) => {
+      const existing = grades.find((g) => g.grade === gradeName);
+      base[proc].grades[gradeName] = {
+        grade: gradeName,
+        weight: existing ? String(parseFloat(existing.weight || 0).toFixed(2)) : '',
+      };
+    });
+  });
+
+  // If any backend stores per-step huller result, you can populate here (left blank by default)
+  setProcessTables(base);
+}, [grades]);
+
+// Re-init table whenever dialog opens
+useEffect(() => {
+  if (openDialog) initProcessTablesFromGrades();
+}, [openDialog, initProcessTablesFromGrades]);
+
   const handleOpenEditGrade = (gradeObj) => {
     setEditGradeData({
       grade: gradeObj.grade,
@@ -1119,6 +1162,114 @@ const DryMillStation = () => {
     }
   };
 
+  // Save total weight for a grade on a specific processing step (Suton/Sizer/Handpicking)
+// This will call update-bags with empty bagWeights and the given total weight.
+const handleSaveProcessGrade = async (processName, gradeName) => {
+  if (!selectedBatch) {
+    setSnackbarMessage('Batch missing.');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+  const weightStr = processTables?.[processName]?.grades?.[gradeName]?.weight || '';
+  const parsed = parseFloat(weightStr);
+  if (isNaN(parsed) || parsed < 0) {
+    setSnackbarMessage('Enter a valid non-negative total weight.');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+
+  // For UI responsiveness
+  setIsLoading(true);
+  try {
+    // For compatibility with your existing route, send bagWeights as empty array (we're storing total only)
+    const payload = {
+      grade: gradeName,
+      bagWeights: [],
+      weight: parsed.toFixed(2),
+      bagged_at: new Date().toISOString().slice(0, 10),
+      processingType: selectedBatch.processingType,
+      process_step: processName.toLowerCase()
+    };
+
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com'}/api/dry-mill/${encodeURIComponent(selectedBatch.batchNumber)}/update-bags`,
+      payload
+    );
+
+    // merge lot/ref if returned
+    setGrades((prev) =>
+      prev.map((g) =>
+        g.grade === gradeName
+          ? { ...g, weight: parsed, lotNumber: res.data.lotNumber || g.lotNumber, referenceNumber: res.data.referenceNumber || g.referenceNumber }
+          : g
+      )
+    );
+
+    setSnackbarMessage(`Saved ${processName} — ${gradeName} : ${parsed.toFixed(2)} kg`);
+    setSnackbarSeverity('success');
+    setOpenSnackbar(true);
+
+    // refresh canonical server state
+    await fetchDryMillData();
+  } catch (err) {
+    const message = err.response?.data?.error || 'Failed to save grade total.';
+    logError(message, err);
+    setSnackbarMessage(message);
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Save huller output (single total) — records a process-event
+const handleSaveHullerOutput = async () => {
+  if (!selectedBatch) {
+    setSnackbarMessage('Batch missing.');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+  const outStr = processTables?.Huller?.outputWeight || '';
+  const parsed = parseFloat(outStr);
+  if (isNaN(parsed) || parsed <= 0) {
+    setSnackbarMessage('Enter a valid positive huller output weight.');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com'}/api/drymill/process-event`,
+      {
+        batchNumber: selectedBatch.batchNumber,
+        process_step: 'huller',
+        input_weight: 0,
+        output_weight: parsed,
+        operator: session?.user?.name || 'unknown',
+        notes: `Huller output recorded via UI: ${parsed.toFixed(2)} kg`
+      }
+    );
+
+    setSnackbarMessage('Recorded Huller output.');
+    setSnackbarSeverity('success');
+    setOpenSnackbar(true);
+    await fetchDryMillData();
+  } catch (err) {
+    const message = err.response?.data?.error || 'Failed to record huller output';
+    logError(message, err);
+    setSnackbarMessage(message);
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   const parentColumns = useMemo(
     () => [
       {
@@ -1548,147 +1699,113 @@ const DryMillStation = () => {
           Batch {selectedBatch?.batchNumber} - {selectedBatch?.processingType} ({selectedBatch?.batchType})
         </DialogTitle>
         <DialogContent>
-          {selectedBatch?.batchType === "Green Beans" && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Processing Green Beans: No Wet Mill/Drying Required
-            </Typography>
-          )}
           {selectedBatch && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2">
-                Lot Number: {selectedBatch.lotNumber}
-              </Typography>
-              <Typography variant="body2">
-                Reference Number: {selectedBatch.referenceNumber}
-              </Typography>
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2">Lot: {selectedBatch.lotNumber} • Ref: {selectedBatch.referenceNumber}</Typography>
             </Box>
           )}
-          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-            <Grid item xs={4}>
-              <TextField
-                select
-                fullWidth
-                label="Process"
-                margin="dense"
-                value={selectedProcess}
-                onChange={(e) => setSelectedProcess(e.target.value)}
-              >
-                <MenuItem value="Huller">Huller</MenuItem>
-                <MenuItem value="Suton">Suton</MenuItem>
-                <MenuItem value="Sizer">Sizer</MenuItem>
-                <MenuItem value="Handpicking">Hand picking</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={4}>
-              <TextField
-                label="Grade"
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
-                select
-                fullWidth
-                disabled={isLoading || selectedBatch?.storedDate}
-              >
-                {["Specialty Grade", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Asalan"].map((grade) => (
-                  <MenuItem key={grade} value={grade}>
-                    {grade}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={4}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <TextField
-                  label="Weight (kg)"
-                  value={currentWeight}
-                  onChange={(e) => setCurrentWeight(e.target.value)}
-                  type="number"
-                  inputProps={{ min: 0, step: 0.1 }}
-                  fullWidth
-                  disabled={isLoading || selectedBatch?.storedDate}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleAddBag(currentWeight)}
-                  size="small"
-                  disabled={isLoading || !currentWeight || isNaN(parseFloat(currentWeight)) || parseFloat(currentWeight) <= 0 || selectedBatch?.storedDate}
-                >
-                  Add Bag
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-          <Typography variant="h6" gutterBottom>Grades Overview</Typography>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Grade</TableCell>
-                <TableCell>Process</TableCell>
-                <TableCell align="right">Total Weight (kg)</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {grades.map((grade) => {
-                const totalWeight = grade.weight || grade.bagWeights.reduce((acc, w) => acc + parseFloat(w || 0), 0);
-                return (
-                  <TableRow key={grade.grade}>
-                    <TableCell>{grade.grade}</TableCell>
-                    <TableCell>{grade.processing_type || grade.processingType || grade.process_step || '-'}</TableCell>
-                    <TableCell align="right">{totalWeight.toFixed(2)}</TableCell>
-                    {/* Actions cell — single Edit, Delete, Print Label (all enabled when not loading) */}
-                    <TableCell align="right">
-                      <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => handleOpenEditGrade(grade)}
-                          disabled={isLoading}
-                        >
-                          Edit
-                        </Button>
 
-                        <Button
-                          variant="contained"
-                          color="error"
-                          size="small"
-                          onClick={() => handleDeleteGrade(grade.grade)}
-                          disabled={isLoading}
-                        >
-                          Delete
-                        </Button>
+          <Typography variant="h6" gutterBottom>Track Weight — Sheet View</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Edit the total weight for each step. Huller only needs a single output total. Other steps take per-grade totals.
+          </Typography>
 
-                        <Button
-                          variant="contained"
-                          color="secondary"
-                          size="small"
-                          onClick={() =>
-                            handlePrintLabel(
-                              selectedBatch?.batchNumber,
-                              selectedBatch?.processingType,
-                              grade.grade,
-                              0,
-                              grade.bagWeights?.[0]
-                            )
-                          }
-                          disabled={isLoading}
-                        >
-                          Print Label
-                        </Button>
-                      </Box>
-                    </TableCell>
+          {/* HULLER: single total row */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1">Huller (output)</Typography>
+            <Table size="small" sx={{ mb: 1 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Step</TableCell>
+                  <TableCell>Output Weight (kg)</TableCell>
+                  <TableCell>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Huller</TableCell>
+                  <TableCell>
+                    <TextField
+                      value={processTables.Huller.outputWeight || ''}
+                      onChange={(e) => setProcessTables((p) => ({ ...p, Huller: { ...(p.Huller || {}), outputWeight: e.target.value } }))}
+                      type="number"
+                      inputProps={{ min: 0, step: 0.01 }}
+                      size="small"
+                      fullWidth
+                      disabled={isLoading || !selectedBatch}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="contained" size="small" onClick={handleSaveHullerOutput} disabled={isLoading || !selectedBatch}>Save</Button>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Box>
+
+          {/* Suton / Sizer / Handpicking - each a small sheet of grades */}
+          {['Suton', 'Sizer', 'Handpicking'].map((proc) => (
+            <Box key={proc} sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>{proc}</Typography>
+              <Table size="small" sx={{ mb: 1 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Grade</TableCell>
+                    <TableCell>Total Weight (kg)</TableCell>
+                    <TableCell width={150}>Action</TableCell>
                   </TableRow>
-                );
-              })}
-              <TableRow>
-                <TableCell><strong>Total</strong></TableCell>
-                <TableCell align="right">
-                  <strong>{grades.reduce((acc, g) => acc + (parseFloat(g.weight) || 0), 0).toFixed(2)}</strong>
-                </TableCell>
-                <TableCell />
-              </TableRow>
-            </TableBody>
-          </Table>
+                </TableHead>
+                <TableBody>
+                  {GRADE_ORDER.map((gradeName) => {
+                    const value = processTables?.[proc]?.grades?.[gradeName]?.weight ?? '';
+                    return (
+                      <TableRow key={`${proc}-${gradeName}`}>
+                        <TableCell>{gradeName}</TableCell>
+                        <TableCell>
+                          <TextField
+                            value={value}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setProcessTables((prev) => {
+                                const copy = { ...prev };
+                                copy[proc] = { ...(copy[proc] || {}), grades: { ...(copy[proc]?.grades || {}) } };
+                                copy[proc].grades[gradeName] = { ...(copy[proc].grades[gradeName] || {}), weight: v };
+                                return copy;
+                              });
+                            }}
+                            size="small"
+                            type="number"
+                            inputProps={{ min: 0, step: 0.01 }}
+                            fullWidth
+                            disabled={isLoading || !selectedBatch}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleSaveProcessGrade(proc, gradeName)}
+                            disabled={isLoading || !selectedBatch}
+                          >
+                            Save
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Box>
+          ))}
+
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2">Notes:</Typography>
+            <Typography variant="caption" color="text.secondary">
+              - Saving a grade will write the aggregate total for that grade to the DryMillGrades table (the backend route keeps lot/ref).{'\n'}
+              - Huller saves will create a DryMillProcessEvents record (output weight).{'\n'}
+              - This UI intentionally stores totals only — no per-bag details.
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           {/* left-side: contextual secondary actions */}
