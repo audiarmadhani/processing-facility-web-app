@@ -1162,7 +1162,7 @@ useEffect(() => {
     }
   };
 
-  // Save total weight for a grade on a specific processing step (Suton/Sizer/Handpicking)
+// Save total weight for a grade on a specific processing step (Suton/Sizer/Handpicking)
 // This will call update-bags with empty bagWeights and the given total weight.
 const handleSaveProcessGrade = async (processName, gradeName) => {
   if (!selectedBatch) {
@@ -1171,7 +1171,9 @@ const handleSaveProcessGrade = async (processName, gradeName) => {
     setOpenSnackbar(true);
     return;
   }
-  const weightStr = processTables?.[processName]?.grades?.[gradeName]?.weight || '';
+
+  // read total weight string from the sheet state
+  const weightStr = processTables?.[processName]?.grades?.[gradeName]?.weight ?? '';
   const parsed = parseFloat(weightStr);
   if (isNaN(parsed) || parsed < 0) {
     setSnackbarMessage('Enter a valid non-negative total weight.');
@@ -1180,13 +1182,13 @@ const handleSaveProcessGrade = async (processName, gradeName) => {
     return;
   }
 
-  // For UI responsiveness
   setIsLoading(true);
   try {
-    // For compatibility with your existing route, send bagWeights as empty array (we're storing total only)
+    // Build payload: we send the total as a single bagWeights element.
+    // This causes the backend to create one BagDetails row for the total and upsert DryMillGrades.weight.
     const payload = {
       grade: gradeName,
-      bagWeights: [],
+      bagWeights: [parsed.toFixed(2)],   // <--- total-as-single-bag
       weight: parsed.toFixed(2),
       bagged_at: new Date().toISOString().slice(0, 10),
       processingType: selectedBatch.processingType,
@@ -1198,11 +1200,16 @@ const handleSaveProcessGrade = async (processName, gradeName) => {
       payload
     );
 
-    // merge lot/ref if returned
+    // merge lot/ref into local grades (keeps behavior you already had)
     setGrades((prev) =>
       prev.map((g) =>
         g.grade === gradeName
-          ? { ...g, weight: parsed, lotNumber: res.data.lotNumber || g.lotNumber, referenceNumber: res.data.referenceNumber || g.referenceNumber }
+          ? {
+              ...g,
+              weight: parsed,
+              lotNumber: res.data.lotNumber || g.lotNumber,
+              referenceNumber: res.data.referenceNumber || g.referenceNumber,
+            }
           : g
       )
     );
@@ -1211,14 +1218,40 @@ const handleSaveProcessGrade = async (processName, gradeName) => {
     setSnackbarSeverity('success');
     setOpenSnackbar(true);
 
+    // Get returned gradeRowIds so we can link the process-event to the exact grade rows
+    const returnedIds = res.data?.gradeRowIds || [];
+
+    // Optionally: create a DryMillProcessEvents record and link to the grade row ids.
+    // This gives you an auditable event (input/output) connected to these grade rows.
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com'}/api/drymill/process-event`,
+        {
+          batchNumber: selectedBatch.batchNumber,
+          process_step: processName.toLowerCase(),
+          input_weight: 0, // optional to compute elsewhere
+          output_weight: parsed,
+          operator: session?.user?.name || session?.user?.email || 'unknown',
+          notes: `Saved aggregate total for ${gradeName} at ${processName}`,
+          gradeRowIdsOutput: returnedIds
+        }
+      );
+    } catch (evtErr) {
+      // Not fatal — we still succeeded saving the grade; log & continue
+      console.warn('Failed to create process-event (non-blocking):', evtErr?.message || evtErr);
+    }
+
     // refresh canonical server state
     await fetchDryMillData();
   } catch (err) {
+    // rollback local UI change: re-read canonical state from server (or simple revert logic)
     const message = err.response?.data?.error || 'Failed to save grade total.';
     logError(message, err);
     setSnackbarMessage(message);
     setSnackbarSeverity('error');
     setOpenSnackbar(true);
+    // refresh to make UI consistent
+    await fetchDryMillData();
   } finally {
     setIsLoading(false);
   }
