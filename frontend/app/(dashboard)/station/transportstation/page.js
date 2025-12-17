@@ -49,6 +49,7 @@ const TransportStation = () => {
   const [farmerContractCache, setFarmerContractCache] = useState({});
   const [batchWeights, setBatchWeights] = useState({});
 
+  
   const fetchBatchNumbers = async () => {
     try {
       const response = await axios.get('https://processing-facility-backend.onrender.com/api/receiving');

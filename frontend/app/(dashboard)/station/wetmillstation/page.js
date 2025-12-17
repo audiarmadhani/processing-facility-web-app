@@ -19,6 +19,7 @@ const debounce = (func, wait) => {
   };
 };
 
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };

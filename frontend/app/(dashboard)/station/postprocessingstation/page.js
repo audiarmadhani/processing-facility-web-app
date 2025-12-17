@@ -21,7 +21,6 @@ import {
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-
 function PostprocessingStation() {
   const { data: session, status } = useSession();
   const [notes, setNotes] = useState('');

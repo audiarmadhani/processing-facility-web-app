@@ -180,6 +180,7 @@ const DryingStation = () => {
         wetmillWeightResponse.json()
       ]);
   
+      
       const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 
         batch && batch.batchNumber && typeof batch.batchNumber === 'string'
       );
