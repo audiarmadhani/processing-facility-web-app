@@ -217,6 +217,27 @@ const FermentationStation = () => {
     tankAmount: isCarrybrew || isBiomaster,
   };
 
+  const detailsTank = detailsData.fermentationTank;
+
+  const detailsIsCarrybrew = detailsTank === 'Carrybrew';
+  const detailsIsBiomaster = detailsTank === 'Biomaster';
+  const detailsIsBucketOrBB =
+    detailsTank === 'Fermentation Bucket' ||
+    detailsTank?.startsWith('BB-');
+
+  const detailsFieldDisabled = {
+    fermentationTemperature: detailsIsCarrybrew || detailsIsBiomaster || detailsIsBucketOrBB,
+    brewTankTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
+    waterTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
+    coolerTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
+    stirring: detailsIsBiomaster || detailsIsBucketOrBB,
+    airlock: detailsIsCarrybrew || detailsIsBiomaster,
+    gas: detailsIsBucketOrBB,
+    pH: detailsIsCarrybrew || detailsIsBucketOrBB,
+    leachateTarget: detailsIsCarrybrew || detailsIsBucketOrBB,
+    tankAmount: detailsIsCarrybrew || detailsIsBiomaster,
+  };
+
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
   const MenuProps = {
@@ -1484,7 +1505,7 @@ const FermentationStation = () => {
                         onChange={(e) => setTankAmount(e.target.value)}
                         fullWidth
                         margin="normal"
-                        disabled={isCarrybrew}
+                        disabled={fieldDisabled.tankAmount}
                       />
                       <TextField
                         label="Leachate Target (L)"
@@ -1493,7 +1514,7 @@ const FermentationStation = () => {
                         onChange={(e) => setLeachateTarget(e.target.value)}
                         fullWidth
                         margin="normal"
-                        disabled={!isCarrybrew}
+                        disabled={fieldDisabled.leachateTarget}
                       />
                       <TextField
                         label="Brew Tank Temperature (°C)"
@@ -1502,7 +1523,7 @@ const FermentationStation = () => {
                         onChange={(e) => setBrewTankTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
-                        disabled={fermentationTank !== 'Carrybrew'}
+                        disabled={fieldDisabled.brewTankTemperature}
                       />
                       <TextField
                         label="Water Temperature (°C)"
@@ -1511,7 +1532,7 @@ const FermentationStation = () => {
                         onChange={(e) => setWaterTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
-                        disabled={fermentationTank !== 'Carrybrew'}
+                        disabled={fieldDisabled.waterTemperature}
                       />
                       <TextField
                         label="Cooler Temperature (°C)"
@@ -1520,7 +1541,7 @@ const FermentationStation = () => {
                         onChange={(e) => setCoolerTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
-                        disabled={fermentationTank !== 'Carrybrew'}
+                        disabled={fieldDisabled.coolerTemperature}
                       />
                     </CardContent>
                   </Card>
@@ -1593,7 +1614,7 @@ const FermentationStation = () => {
                         <InputLabel id="second-gas-label">Second Gas</InputLabel>
                         <Select
                           labelId="second-gas-label"
-                          value={gas}
+                          value={secondGas}
                           onChange={(e) => setSecondGas(e.target.value)}
                           input={<OutlinedInput label="Second Gas" />}
                         >
@@ -2388,6 +2409,7 @@ const FermentationStation = () => {
                   value={detailsData.gas || ''}
                   onChange={(e) => setDetailsData({ ...detailsData, gas: e.target.value })}
                   label="Gas"
+                  disabled={detailsFieldDisabled.gas}
                 >
                   <MenuItem value="air">Air</MenuItem>
                   <MenuItem value="co2">CO2</MenuItem>
@@ -2463,6 +2485,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={detailsFieldDisabled.stirring}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2474,6 +2497,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={detailsFieldDisabled.fermentationTemperature}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2485,6 +2509,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={detailsFieldDisabled.pH}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2588,6 +2613,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={detailsFieldDisabled.airlock}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2609,7 +2635,7 @@ const FermentationStation = () => {
                 onChange={(e) => setLeachateTarget(e.target.value)}
                 fullWidth
                 margin="normal"
-                disabled={fermentationTank !== 'Carrybrew'}
+                disabled={fieldDisabled.leachateTarget}
               />
             </Grid>
             <Grid item xs={4}>
