@@ -249,6 +249,11 @@ const FermentationStation = () => {
     },
   };
 
+  const isSecondFermentationDisabled = secondFermentation === 'no';
+
+  const isDetailsSecondFermentationDisabled =
+  detailsData.secondFermentation === 'no';
+
   const fetchAvailableBatches = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-batches`);
@@ -415,6 +420,26 @@ const FermentationStation = () => {
   if (fieldDisabled.waterTemperature) setWaterTemperature('');
   if (fieldDisabled.coolerTemperature) setCoolerTemperature('');
 }, [fermentationTank]);
+
+useEffect(() => {
+  if (secondFermentation === 'no') {
+    setSecondFermentationTank('');
+    setSecondWashed('');
+    setSecondWashedDelva('');
+    setSecondStarterType('');
+    setSecondGas('');
+    setSecondPressure('');
+    setSecondIsSubmerged('');
+    setSecondTotalVolume('');
+    setSecondWaterUsed('');
+    setSecondMosstoUsed('');
+    setSecondActualVolume('');
+    setSecondTemperature('');
+    setSecondFermentationTimeTarget('');
+    setSecondFermentationStart('');
+    setSecondFermentationEnd('');
+  }
+}, [secondFermentation]);
 
   const handleBatchNumberChange = async (batchNumber) => {
     setBatchNumber(batchNumber);
@@ -1571,6 +1596,7 @@ const FermentationStation = () => {
                           onChange={(e) => setSecondFermentationTank(e.target.value)}
                           input={<OutlinedInput label="Second Fermentation Tank" />}
                           MenuProps={MenuProps}
+                          disabled={isSecondFermentationDisabled}
                         >
                           {availableTanks.map(tank => (
                             <MenuItem key={tank} value={tank}>{tank}</MenuItem>
@@ -1585,6 +1611,7 @@ const FermentationStation = () => {
                           onChange={(e) => setSecondWashedDelva(e.target.value)}
                           input={<OutlinedInput label="Washed with Delva" />}
                           MenuProps={MenuProps}
+                          disabled={isSecondFermentationDisabled}
                         >
                           <MenuItem value="yes">Yes</MenuItem>
                           <MenuItem value="no">No</MenuItem>
@@ -1598,6 +1625,7 @@ const FermentationStation = () => {
                           onChange={(e) => setSecondWashed(e.target.value)}
                           input={<OutlinedInput label="Washed" />}
                           MenuProps={MenuProps}
+                          disabled={isSecondFermentationDisabled}
                         >
                           <MenuItem value="yes">Yes</MenuItem>
                           <MenuItem value="no">No</MenuItem>
@@ -1609,6 +1637,7 @@ const FermentationStation = () => {
                         onChange={(e) => setSecondStarterType(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={isSecondFermentationDisabled}
                       />
                       <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
                         <InputLabel id="second-gas-label">Second Gas</InputLabel>
@@ -1617,6 +1646,7 @@ const FermentationStation = () => {
                           value={secondGas}
                           onChange={(e) => setSecondGas(e.target.value)}
                           input={<OutlinedInput label="Second Gas" />}
+                          disabled={isSecondFermentationDisabled}
                         >
                           <MenuItem value="air">Air</MenuItem>
                           <MenuItem value="co2">CO2</MenuItem>
@@ -1631,6 +1661,7 @@ const FermentationStation = () => {
                         onChange={(e) => setSecondPressure(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={isSecondFermentationDisabled}
                       />
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="second-is-submerged-label">Second Is Submerged</InputLabel>
@@ -1640,6 +1671,7 @@ const FermentationStation = () => {
                           onChange={(e) => setSecondIsSubmerged(e.target.value)}
                           input={<OutlinedInput label="Second Is Submerged" />}
                           MenuProps={MenuProps}
+                          disabled={isSecondFermentationDisabled}
                         >
                           <MenuItem value="yes">Yes</MenuItem>
                           <MenuItem value="no">No</MenuItem>
@@ -1652,6 +1684,7 @@ const FermentationStation = () => {
                         onChange={(e) => setSecondTotalVolume(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={isSecondFermentationDisabled}
                       />
                       <TextField
                         label="Second Temperature (°C)"
@@ -1660,6 +1693,7 @@ const FermentationStation = () => {
                         onChange={(e) => setSecondTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={isSecondFermentationDisabled}
                       />
                       <TextField
                         label="Second Fermentation Time Target (h)"
@@ -1668,6 +1702,7 @@ const FermentationStation = () => {
                         onChange={(e) => setSecondFermentationTimeTarget(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={isSecondFermentationDisabled}
                       />
                       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Drying Section</Typography>
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
@@ -2707,6 +2742,7 @@ const FermentationStation = () => {
                   value={detailsData.secondFermentationTank || ''}
                   onChange={(e) => setDetailsData({ ...detailsData, secondFermentationTank: e.target.value })}
                   label="Second Fermentation Tank"
+                  disabled={isDetailsSecondFermentationDisabled}
                 >
                   {availableTanks.map(tank => (
                     <MenuItem key={tank} value={tank}>{tank}</MenuItem>
@@ -2722,6 +2758,7 @@ const FermentationStation = () => {
                   value={detailsData.secondWashedDelva || ''}
                   onChange={(e) => setDetailsData({ ...detailsData, secondWashedDelva: e.target.value })}
                   label="Washed with Delva"
+                  disabled={isDetailsSecondFermentationDisabled}
                 >
                   <MenuItem value="yes">Yes</MenuItem>
                   <MenuItem value="no">No</MenuItem>
@@ -2736,6 +2773,7 @@ const FermentationStation = () => {
                   value={detailsData.secondWashed || ''}
                   onChange={(e) => setDetailsData({ ...detailsData, secondWashed: e.target.value })}
                   label="Washed"
+                  disabled={isDetailsSecondFermentationDisabled}
                 >
                   <MenuItem value="yes">Yes</MenuItem>
                   <MenuItem value="no">No</MenuItem>
@@ -2751,6 +2789,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2762,6 +2801,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2772,6 +2812,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2782,6 +2823,7 @@ const FermentationStation = () => {
                   value={detailsData.secondGas || ''}
                   onChange={(e) => setDetailsData({ ...detailsData, secondGas: e.target.value })}
                   label="Second Gas"
+                  disabled={isDetailsSecondFermentationDisabled}
                 >
                   <MenuItem value="air">Air</MenuItem>
                   <MenuItem value="co2">CO2</MenuItem>
@@ -2799,6 +2841,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2809,6 +2852,7 @@ const FermentationStation = () => {
                   value={detailsData.secondIsSubmerged || ''}
                   onChange={(e) => setDetailsData({ ...detailsData, secondIsSubmerged: e.target.value })}
                   label="Second Is Submerged"
+                  disabled={isDetailsSecondFermentationDisabled}
                 >
                   <MenuItem value="yes">Yes</MenuItem>
                   <MenuItem value="no">No</MenuItem>
@@ -2824,6 +2868,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2835,6 +2880,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2846,6 +2892,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2857,6 +2904,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2868,6 +2916,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2879,6 +2928,7 @@ const FermentationStation = () => {
                 fullWidth
                 variant="filled"
                 sx={{ mt: 1 }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2891,6 +2941,7 @@ const FermentationStation = () => {
                 variant="filled"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2903,6 +2954,7 @@ const FermentationStation = () => {
                 variant="filled"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
+                disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
           </Grid>
