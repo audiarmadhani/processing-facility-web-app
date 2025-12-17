@@ -853,7 +853,7 @@ useEffect(() => {
         waterTemperature: detailsData.waterTemperature ? parseFloat(detailsData.waterTemperature) : null,
         coolerTemperature: detailsData.coolerTemperature ? parseFloat(detailsData.coolerTemperature) : null,
         drying: detailsData.drying || null,
-        createdBy: session.user.name,
+        createdBy: session.user.name,10402733
       };
 
       await axios.put(`${API_BASE_URL}/api/fermentation/details/${selectedBatch.batchNumber}`, payload);
