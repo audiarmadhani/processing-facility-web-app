@@ -191,6 +191,32 @@ const FermentationStation = () => {
   );
   const producers = ['HQ', 'BTM'];
 
+  const isCarrybrew = fermentationTank === 'Carrybrew';
+  const isBiomaster = fermentationTank === 'Biomaster';
+  const isBucketOrBB =
+    fermentationTank === 'Fermentation Bucket' ||
+    fermentationTank?.startsWith('BB-');
+
+  const fieldDisabled = {
+    // temperature related
+    fermentationTemperature: isCarrybrew || isBiomaster || isBucketOrBB,
+    brewTankTemperature: isBiomaster || isBucketOrBB,
+    waterTemperature: isBiomaster || isBucketOrBB,
+    coolerTemperature: isBiomaster || isBucketOrBB,
+
+    // mechanics
+    stirring: isBiomaster || isBucketOrBB,
+    airlock: isCarrybrew || isBiomaster,
+    gas: isBucketOrBB,
+
+    // chemistry
+    pH: isCarrybrew || isBucketOrBB,
+    leachateTarget: isCarrybrew || isBucketOrBB,
+
+    // capacity
+    tankAmount: isCarrybrew || isBiomaster,
+  };
+
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
   const MenuProps = {
@@ -355,6 +381,19 @@ const FermentationStation = () => {
     fetchAvailableTanks();
     fetchReferenceMappings();
   }, []);
+
+  useEffect(() => {
+  if (fieldDisabled.fermentationTemperature) setFermentationTemperature('');
+  if (fieldDisabled.pH) setPH('');
+  if (fieldDisabled.stirring) setStirring('');
+  if (fieldDisabled.airlock) setAirlock('');
+  if (fieldDisabled.gas) setGas('');
+  if (fieldDisabled.leachateTarget) setLeachateTarget('');
+  if (fieldDisabled.tankAmount) setTankAmount('');
+  if (fieldDisabled.brewTankTemperature) setBrewTankTemperature('');
+  if (fieldDisabled.waterTemperature) setWaterTemperature('');
+  if (fieldDisabled.coolerTemperature) setCoolerTemperature('');
+}, [fermentationTank]);
 
   const handleBatchNumberChange = async (batchNumber) => {
     setBatchNumber(batchNumber);
@@ -1329,14 +1368,13 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-                      <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                      <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
                         <InputLabel id="gas-label">Gas</InputLabel>
                         <Select
                           labelId="gas-label"
                           value={gas}
                           onChange={(e) => setGas(e.target.value)}
                           input={<OutlinedInput label="Gas" />}
-                          MenuProps={MenuProps}
                         >
                           <MenuItem value="air">Air</MenuItem>
                           <MenuItem value="co2">CO2</MenuItem>
@@ -1380,6 +1418,7 @@ const FermentationStation = () => {
                         onChange={(e) => setStirring(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={fieldDisabled.stirring}
                       />
                       <TextField
                         label="Fermentation Temperature (°C)"
@@ -1388,6 +1427,7 @@ const FermentationStation = () => {
                         onChange={(e) => setFermentationTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={fieldDisabled.fermentationTemperature}
                       />
                       <TextField
                         label="pH"
@@ -1396,6 +1436,7 @@ const FermentationStation = () => {
                         onChange={(e) => setPH(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={fieldDisabled.pH}
                       />
                       <TextField
                         label="Fermentation Time Target (h)"
@@ -1404,6 +1445,16 @@ const FermentationStation = () => {
                         onChange={(e) => setFermentationTimeTarget(e.target.value)}
                         fullWidth
                         margin="normal"
+                      />
+                      <TextField
+                        label="Fermentation Start"
+                        type="datetime-local"
+                        value={fermentationStart}
+                        onChange={(e) => setFermentationStart(e.target.value)}
+                        fullWidth
+                        required
+                        margin="normal"
+                        InputLabelProps={{ shrink: true }}
                       />
                       <FormControl fullWidth sx={{ marginTop: '16px' }}>
                         <InputLabel id="post-pulped-label">Post-pulped</InputLabel>
@@ -1424,7 +1475,7 @@ const FermentationStation = () => {
                         onChange={(e) => setAirlock(e.target.value)}
                         fullWidth
                         margin="normal"
-                        placeholder="e.g., lid open"
+                        disabled={fieldDisabled.airlock}
                       />
                       <TextField
                         label="Tank Amount"
@@ -1433,6 +1484,7 @@ const FermentationStation = () => {
                         onChange={(e) => setTankAmount(e.target.value)}
                         fullWidth
                         margin="normal"
+                        disabled={isCarrybrew}
                       />
                       <TextField
                         label="Leachate Target (L)"
@@ -1441,7 +1493,7 @@ const FermentationStation = () => {
                         onChange={(e) => setLeachateTarget(e.target.value)}
                         fullWidth
                         margin="normal"
-                        disabled={fermentationTank !== 'Carrybrew'}
+                        disabled={!isCarrybrew}
                       />
                       <TextField
                         label="Brew Tank Temperature (°C)"
@@ -1537,14 +1589,13 @@ const FermentationStation = () => {
                         fullWidth
                         margin="normal"
                       />
-                      <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                      <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
                         <InputLabel id="second-gas-label">Second Gas</InputLabel>
                         <Select
                           labelId="second-gas-label"
-                          value={secondGas}
+                          value={gas}
                           onChange={(e) => setSecondGas(e.target.value)}
                           input={<OutlinedInput label="Second Gas" />}
-                          MenuProps={MenuProps}
                         >
                           <MenuItem value="air">Air</MenuItem>
                           <MenuItem value="co2">CO2</MenuItem>
@@ -2543,11 +2594,11 @@ const FermentationStation = () => {
               <TextField
                 label="Tank Amount"
                 type="number"
-                value={detailsData.tankAmount || ''}
-                onChange={(e) => setDetailsData({ ...detailsData, tankAmount: e.target.value })}
+                value={tankAmount}
+                onChange={(e) => setTankAmount(e.target.value)}
                 fullWidth
-                variant="filled"
-                sx={{ mt: 1 }}
+                margin="normal"
+                disabled={fieldDisabled.tankAmount}
               />
             </Grid>
             <Grid item xs={4}>
@@ -2576,36 +2627,33 @@ const FermentationStation = () => {
               <TextField
                 label="Brew Tank Temperature (°C)"
                 type="number"
-                value={detailsData.brewTankTemperature || ''}
-                onChange={(e) => setDetailsData({ ...detailsData, brewTankTemperature: e.target.value })}
+                value={brewTankTemperature}
+                onChange={(e) => setBrewTankTemperature(e.target.value)}
                 fullWidth
-                variant="filled"
-                sx={{ mt: 1 }}
-                disabled={fermentationTank !== 'Carrybrew'}
+                margin="normal"
+                disabled={fieldDisabled.brewTankTemperature}
               />
             </Grid>
             <Grid item xs={4}>
               <TextField
                 label="Water Temperature (°C)"
                 type="number"
-                value={detailsData.waterTemperature || ''}
-                onChange={(e) => setDetailsData({ ...detailsData, waterTemperature: e.target.value })}
+                value={waterTemperature}
+                onChange={(e) => setWaterTemperature(e.target.value)}
                 fullWidth
-                variant="filled"
-                sx={{ mt: 1 }}
-                disabled={fermentationTank !== 'Carrybrew'}
+                margin="normal"
+                disabled={fieldDisabled.waterTemperature}
               />
             </Grid>
             <Grid item xs={4}>
               <TextField
                 label="Cooler Temperature (°C)"
                 type="number"
-                value={detailsData.coolerTemperature || ''}
-                onChange={(e) => setDetailsData({ ...detailsData, coolerTemperature: e.target.value })}
+                value={coolerTemperature}
+                onChange={(e) => setCoolerTemperature(e.target.value)}
                 fullWidth
-                variant="filled"
-                sx={{ mt: 1 }}
-                disabled={fermentationTank !== 'Carrybrew'}
+                margin="normal"
+                disabled={fieldDisabled.coolerTemperature}
               />
             </Grid>
           </Grid>
