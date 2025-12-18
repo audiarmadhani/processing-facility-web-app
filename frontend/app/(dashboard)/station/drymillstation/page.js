@@ -125,47 +125,6 @@ const calcYield = (num, denom) => {
   return (num / denom) * 100;
 };
 
-let yieldPct = null;
-if (proc === 'Suton') {
-  yieldPct = calcYield(
-    toNumber(processTables.Suton.grades[gradeName]?.weight),
-    hullerTotal
-  );
-}
-
-if (proc === 'Sizer') {
-  yieldPct = calcYield(
-    toNumber(processTables.Sizer.grades[gradeName]?.weight),
-    sutonTotal
-  );
-}
-
-if (proc === 'Handpicking') {
-  yieldPct = calcYield(
-    toNumber(processTables.Handpicking.grades[gradeName]?.weight),
-    sizerTotal
-  );
-}
-
-// ---------- Subtotal row ----------
-let stepTotal = 0;
-let stepYield = null;
-
-if (proc === 'Suton') {
-  stepTotal = sutonTotal;
-  stepYield = calcYield(sutonTotal, hullerTotal);
-}
-
-if (proc === 'Sizer') {
-  stepTotal = sizerTotal;
-  stepYield = calcYield(sizerTotal, sutonTotal);
-}
-
-if (proc === 'Handpicking') {
-  stepTotal = handpickTotal;
-  stepYield = calcYield(handpickTotal, sizerTotal);
-}
-
 const initProcessTablesFromEvents = useCallback(async () => {
   if (!selectedBatch) return;
   const res = await axios.get(
@@ -1057,6 +1016,7 @@ const handleSaveHullerOutput = async () => {
   const hullerTotal = toNumber(processTables.Huller.outputWeight);
   const sutonTotal = sumGrades(processTables.Suton.grades);
   const sizerTotal = sumGrades(processTables.Sizer.grades);
+  const handpickTotal = sumGrades(processTables.Handpicking.grades);
 
   if (status === "loading") {
     return <Typography>Loading data...</Typography>;
@@ -1225,136 +1185,139 @@ const handleSaveHullerOutput = async () => {
           </Box>
 
           {/* Suton / Sizer / Handpicking - each a small sheet of grades */}
-          {['Suton', 'Sizer', 'Handpicking'].map((proc) => (
-            <Box key={proc} sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>{proc}</Typography>
-              <Table size="small" sx={{ mb: 1 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Grade</TableCell>
-                    <TableCell>Yield (%)</TableCell>
-                    <TableCell>Total Weight (kg)</TableCell>
-                    <TableCell width={150}>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {GRADE_ORDER.map((gradeName) => {
-                    const value = processTables?.[proc]?.grades?.[gradeName]?.weight ?? '';
-                  
-                    let yieldPct = null;
-                    if (proc === 'Suton') {
-                      yieldPct = calcYield(
-                        toNumber(processTables.Suton.grades[gradeName]?.weight),
-                        hullerTotal
-                      );
-                    }
+          {['Suton', 'Sizer', 'Handpicking'].map((proc) => {
+            // ---- STEP TOTALS ----
+            let stepTotal = 0;
+            let stepYield = null;
 
-                    if (proc === 'Sizer') {
-                      yieldPct = calcYield(
-                        toNumber(processTables.Sizer.grades[gradeName]?.weight),
-                        sutonTotal
-                      );
-                    }
+            if (proc === 'Suton') {
+              stepTotal = sutonTotal;
+              stepYield = calcYield(sutonTotal, hullerTotal);
+            }
 
-                    if (proc === 'Handpicking') {
-                      yieldPct = calcYield(
-                        toNumber(processTables.Handpicking.grades[gradeName]?.weight),
-                        sizerTotal
-                      );
-                    }
+            if (proc === 'Sizer') {
+              stepTotal = sizerTotal;
+              stepYield = calcYield(sizerTotal, sutonTotal);
+            }
 
-                     // ---------- Subtotal row ----------
-                    let stepTotal = 0;
-                    let stepYield = null;
+            if (proc === 'Handpicking') {
+              stepTotal = handpickTotal;
+              stepYield = calcYield(handpickTotal, sizerTotal);
+            }
 
-                    if (proc === 'Suton') {
-                      stepTotal = sutonTotal;
-                      stepYield = calcYield(sutonTotal, hullerTotal);
-                    }
-
-                    if (proc === 'Sizer') {
-                      stepTotal = sizerTotal;
-                      stepYield = calcYield(sizerTotal, sutonTotal);
-                    }
-
-                    if (proc === 'Handpicking') {
-                      stepTotal = handpickTotal;
-                      stepYield = calcYield(handpickTotal, sizerTotal);
-                    }
+            return (
+              <Box key={proc} sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>{proc}</Typography>
+                <Table size="small" sx={{ mb: 1 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Grade</TableCell>
+                      <TableCell>Yield (%)</TableCell>
+                      <TableCell>Total Weight (kg)</TableCell>
+                      <TableCell width={150}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {GRADE_ORDER.map((gradeName) => {
+                      const value = processTables?.[proc]?.grades?.[gradeName]?.weight ?? '';
                     
-                    return (
-                      <TableRow key={`${proc}-${gradeName}`}>
-                        <TableCell>{gradeName}</TableCell>
+                      let yieldPct = null;
+                      if (proc === 'Suton') {
+                        yieldPct = calcYield(
+                          toNumber(processTables.Suton.grades[gradeName]?.weight),
+                          hullerTotal
+                        );
+                      }
 
-                        <TableCell align="right">
-                          <Typography variant="body2" color="text.secondary">
-                            {yieldPct !== null ? `${yieldPct.toFixed(1)} %` : '–'}
-                          </Typography>
-                        </TableCell>
+                      if (proc === 'Sizer') {
+                        yieldPct = calcYield(
+                          toNumber(processTables.Sizer.grades[gradeName]?.weight),
+                          sutonTotal
+                        );
+                      }
 
-                        <TableCell>
-                          <TextField
-                            value={value}
-                            onChange={(e) => {
-                              const newValue = e.target.value;
-                              setProcessTables((prev) => ({
-                                ...prev,
-                                [proc]: {
-                                  ...prev[proc],
-                                  grades: {
-                                    ...prev[proc].grades,
-                                    [gradeName]: {
-                                      ...prev[proc].grades[gradeName],
-                                      weight: newValue,
+                      if (proc === 'Handpicking') {
+                        yieldPct = calcYield(
+                          toNumber(processTables.Handpicking.grades[gradeName]?.weight),
+                          sizerTotal
+                        );
+                      }
+                      
+                      return (
+                        <TableRow key={`${proc}-${gradeName}`}>
+                          <TableCell>{gradeName}</TableCell>
+
+                          <TableCell align="right">
+                            <Typography variant="body2" color="text.secondary">
+                              {yieldPct !== null ? `${yieldPct.toFixed(1)} %` : '–'}
+                            </Typography>
+                          </TableCell>
+
+                          <TableCell>
+                            <TextField
+                              value={value}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                setProcessTables((prev) => ({
+                                  ...prev,
+                                  [proc]: {
+                                    ...prev[proc],
+                                    grades: {
+                                      ...prev[proc].grades,
+                                      [gradeName]: {
+                                        ...prev[proc].grades[gradeName],
+                                        weight: newValue,
+                                      },
                                     },
                                   },
-                                },
-                              }));
-                            }}
-                            size="small"
-                            type="number"
-                            inputProps={{ min: 0, step: 0.01 }}
-                            fullWidth
-                            disabled={isLoading || !selectedBatch}
-                          />
-                        </TableCell>
+                                }));
+                              }}
+                              size="small"
+                              type="number"
+                              inputProps={{ min: 0, step: 0.01 }}
+                              fullWidth
+                              disabled={isLoading || !selectedBatch}
+                            />
+                          </TableCell>
 
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleSaveProcessGrade(proc, gradeName)}
-                            disabled={isLoading || !selectedBatch}
-                          >
-                            Save
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-                <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                  <TableCell>
-                    <Typography fontWeight={700}>Subtotal</Typography>
-                  </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => handleSaveProcessGrade(proc, gradeName)}
+                              disabled={isLoading || !selectedBatch}
+                            >
+                              Save
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {/* SUBTOTAL ROW */}
+                    <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                      <TableCell>
+                        <Typography fontWeight={700}>Subtotal</Typography>
+                      </TableCell>
 
-                  <TableCell align="right">
-                    <Typography fontWeight={700}>
-                      {stepYield !== null ? `${stepYield.toFixed(1)} %` : '–'}
-                    </Typography>
-                  </TableCell>
+                      <TableCell align="right">
+                        <Typography fontWeight={700}>
+                          {stepYield !== null ? `${stepYield.toFixed(1)} %` : '–'}
+                        </Typography>
+                      </TableCell>
 
-                  <TableCell>
-                    <Typography fontWeight={700}>
-                      {stepTotal.toFixed(2)} kg
-                    </Typography>
-                  </TableCell>
+                      <TableCell>
+                        <Typography fontWeight={700}>
+                          {stepTotal.toFixed(2)} kg
+                        </Typography>
+                      </TableCell>
 
-                  <TableCell />
-                </TableRow>
-              </Table>
-            </Box>
-          ))}
+                      <TableCell />
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </Box>
+            );
+          })}
 
           <Box sx={{ mt: 1 }}>
             <Typography variant="body2">Notes:</Typography>
