@@ -125,6 +125,28 @@ const calcYield = (num, denom) => {
   return (num / denom) * 100;
 };
 
+let yieldPct = null;
+if (proc === 'Suton') {
+  yieldPct = calcYield(
+    toNumber(processTables.Suton.grades[gradeName]?.weight),
+    hullerTotal
+  );
+}
+
+if (proc === 'Sizer') {
+  yieldPct = calcYield(
+    toNumber(processTables.Sizer.grades[gradeName]?.weight),
+    sutonTotal
+  );
+}
+
+if (proc === 'Handpicking') {
+  yieldPct = calcYield(
+    toNumber(processTables.Handpicking.grades[gradeName]?.weight),
+    sizerTotal
+  );
+}
+
 // ---------- Subtotal row ----------
 let stepTotal = 0;
 let stepYield = null;
