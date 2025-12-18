@@ -111,6 +111,20 @@ const normalizeProcessStep = (label) => {
   }
 };
 
+// ---------- Yield helpers ----------
+const toNumber = (v) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+};
+
+const sumGrades = (grades = {}) =>
+  Object.values(grades).reduce((sum, g) => sum + toNumber(g.weight), 0);
+
+const calcYield = (num, denom) => {
+  if (!denom || denom <= 0) return null;
+  return (num / denom) * 100;
+};
+
 const initProcessTablesFromEvents = useCallback(async () => {
   if (!selectedBatch) return;
   const res = await axios.get(
