@@ -125,6 +125,25 @@ const calcYield = (num, denom) => {
   return (num / denom) * 100;
 };
 
+// ---------- Subtotal row ----------
+let stepTotal = 0;
+let stepYield = null;
+
+if (proc === 'Suton') {
+  stepTotal = sutonTotal;
+  stepYield = calcYield(sutonTotal, hullerTotal);
+}
+
+if (proc === 'Sizer') {
+  stepTotal = sizerTotal;
+  stepYield = calcYield(sizerTotal, sutonTotal);
+}
+
+if (proc === 'Handpicking') {
+  stepTotal = handpickTotal;
+  stepYield = calcYield(handpickTotal, sizerTotal);
+}
+
 const initProcessTablesFromEvents = useCallback(async () => {
   if (!selectedBatch) return;
   const res = await axios.get(
