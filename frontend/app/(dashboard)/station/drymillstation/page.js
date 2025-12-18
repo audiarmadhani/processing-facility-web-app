@@ -674,24 +674,6 @@ const handleSaveHullerOutput = async () => {
     return;
   }
 
-  const toNumber = (v) => {
-    const n = parseFloat(v);
-    return isNaN(n) ? 0 : n;
-  };
-
-  const sumGrades = (grades = {}) =>
-    Object.values(grades).reduce((sum, g) => sum + toNumber(g.weight), 0);
-
-  const calcYield = (num, denom) => {
-    if (!denom || denom <= 0) return null;
-    return (num / denom) * 100;
-  };
-
-  const hullerTotal = toNumber(processTables.Huller.outputWeight);
-
-  const sutonTotal = sumGrades(processTables.Suton.grades);
-  const sizerTotal = sumGrades(processTables.Sizer.grades);
-
   setIsLoading(true);
   try {
     await axios.post(
@@ -1029,6 +1011,11 @@ const handleSaveHullerOutput = async () => {
     ),
     [sampleData, sampleOverviewColumns]
   );
+
+  // ---------- Step totals for yield ----------
+  const hullerTotal = toNumber(processTables.Huller.outputWeight);
+  const sutonTotal = sumGrades(processTables.Suton.grades);
+  const sizerTotal = sumGrades(processTables.Sizer.grades);
 
   if (status === "loading") {
     return <Typography>Loading data...</Typography>;
