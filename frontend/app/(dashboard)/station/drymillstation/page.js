@@ -113,34 +113,68 @@ const [processTables, setProcessTables] = useState({
   Handpicking: { grades: {} },
 });
 
-// initialize from existing grades when dialog opens (copy totals)
-const initProcessTablesFromGrades = useCallback(() => {
-  const base = {
-    Huller: { outputWeight: '' },
-    Suton: { grades: {} },
-    Sizer: { grades: {} },
-    Handpicking: { grades: {} },
-  };
+const normalizeProcessStep = (label) => {
+  switch (label) {
+    case 'Huller': return 'huller';
+    case 'Suton': return 'suton';
+    case 'Sizer': return 'sizer';
+    case 'Handpicking': return 'handpicking';
+    default: return label?.toLowerCase();
+  }
+};
 
-  // For non-huller steps, map existing grades weight into the table.
-  ['Suton', 'Sizer', 'Handpicking'].forEach((proc) => {
-    GRADE_ORDER.forEach((gradeName) => {
-      const existing = grades.find((g) => g.grade === gradeName);
-      base[proc].grades[gradeName] = {
-        grade: gradeName,
-        weight: existing ? String(parseFloat(existing.weight || 0).toFixed(2)) : '',
-      };
+const initProcessTablesFromEvents = useCallback(
+  async () => {
+    if (!selectedBatch) return;
+
+    const events = await fetchProcessEvents(selectedBatch.batchNumber);
+
+    const base = {
+      Huller: { outputWeight: '' },
+      Suton: { grades: {} },
+      Sizer: { grades: {} },
+      Handpicking: { grades: {} },
+    };
+
+    // init empty grades
+    ['Suton', 'Sizer', 'Handpicking'].forEach((proc) => {
+      GRADE_ORDER.forEach((g) => {
+        base[proc].grades[g] = { weight: '' };
+      });
     });
-  });
 
-  // If any backend stores per-step huller result, you can populate here (left blank by default)
-  setProcessTables(base);
-}, [grades]);
+    // hydrate from process events
+    events.forEach((evt) => {
+      const proc = evt.process_step?.toLowerCase();
+      if (!proc) return;
+
+      if (proc === 'huller') {
+        base.Huller.outputWeight = String(evt.output_weight ?? '');
+      } else {
+        const procName =
+          proc === 'suton' ? 'Suton' :
+          proc === 'sizer' ? 'Sizer' :
+          proc === 'handpicking' ? 'Handpicking' : null;
+
+        if (procName && evt.grade) {
+          base[procName].grades[evt.grade] = {
+            weight: String(evt.output_weight ?? '')
+          };
+        }
+      }
+    });
+
+    setProcessTables(base);
+  },
+  [selectedBatch, fetchProcessEvents]
+);
 
 // Re-init table whenever dialog opens
 useEffect(() => {
-  if (openDialog) initProcessTablesFromGrades();
-}, [openDialog, initProcessTablesFromGrades]);
+  if (openDialog) {
+    initProcessTablesFromEvents();
+  }
+}, [openDialog, initProcessTablesFromEvents]);
 
   const handleOpenEditGrade = (gradeObj) => {
     setEditGradeData({
@@ -420,6 +454,13 @@ useEffect(() => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
+  }, []);
+
+  const fetchProcessEvents = useCallback(async (batchNumber) => {
+    const res = await axios.get(
+      `https://processing-facility-backend.onrender.com/api/drymill/process-events/${batchNumber}`
+    );
+    return res.data || [];
   }, []);
 
   const fetchSampleHistory = useCallback(async (batchNumber) => {
@@ -777,148 +818,148 @@ useEffect(() => {
     [selectedBatch, subBatches, grades]
   );
 
-  const handleAddBag = useCallback(
-    async (weight) => {
-      const parsedWeight = parseFloat(weight);
-      if (isNaN(parsedWeight) || parsedWeight <= 0) {
-        setSnackbarMessage("Please enter a valid positive weight.");
-        setSnackbarSeverity("error");
-        setOpenSnackbar(true);
-        return;
-      }
+  // const handleAddBag = useCallback(
+  //   async (weight) => {
+  //     const parsedWeight = parseFloat(weight);
+  //     if (isNaN(parsedWeight) || parsedWeight <= 0) {
+  //       setSnackbarMessage("Please enter a valid positive weight.");
+  //       setSnackbarSeverity("error");
+  //       setOpenSnackbar(true);
+  //       return;
+  //     }
 
-      // Keep the block that prevents adding to a stored batch (do not allow add to stored)
-      if (selectedBatch?.storedDate || grades.find((g) => g.grade === selectedGrade)?.storedDate) {
-        setSnackbarMessage("Cannot add bags to a stored batch.");
-        setSnackbarSeverity("warning");
-        setOpenSnackbar(true);
-        return;
-      }
+  //     // Keep the block that prevents adding to a stored batch (do not allow add to stored)
+  //     if (selectedBatch?.storedDate || grades.find((g) => g.grade === selectedGrade)?.storedDate) {
+  //       setSnackbarMessage("Cannot add bags to a stored batch.");
+  //       setSnackbarSeverity("warning");
+  //       setOpenSnackbar(true);
+  //       return;
+  //     }
 
-      const gradeIndex = grades.findIndex((g) => g.grade === selectedGrade);
-      const newWeight = parsedWeight.toString();
-      const updatedGrade = grades[gradeIndex] || { grade: selectedGrade, weight: 0, bagWeights: [] };
-      const updatedBagWeights = [...updatedGrade.bagWeights, newWeight];
-      const totalWeight = parseFloat(updatedGrade.weight || 0) + parsedWeight;
+  //     const gradeIndex = grades.findIndex((g) => g.grade === selectedGrade);
+  //     const newWeight = parsedWeight.toString();
+  //     const updatedGrade = grades[gradeIndex] || { grade: selectedGrade, weight: 0, bagWeights: [] };
+  //     const updatedBagWeights = [...updatedGrade.bagWeights, newWeight];
+  //     const totalWeight = parseFloat(updatedGrade.weight || 0) + parsedWeight;
 
-      // Optimistically update local UI
-      setGrades((prevGrades) => {
-        const newGrades = [...prevGrades];
-        const index = newGrades.findIndex((g) => g.grade === selectedGrade);
-        if (index >= 0) {
-          newGrades[index] = {
-            ...newGrades[index],
-            bagWeights: updatedBagWeights,
-            weight: totalWeight,
-          };
-        } else {
-          newGrades.push({
-            grade: selectedGrade,
-            weight: totalWeight,
-            bagWeights: updatedBagWeights,
-            bagged_at: new Date().toISOString().split("T")[0],
-            tempSequence: "0001",
-            storedDate: null,
-            lotNumber: selectedBatch?.lotNumber || "N/A",
-            referenceNumber: selectedBatch?.referenceNumber || "N/A",
-          });
-        }
-        return newGrades;
-      });
+  //     // Optimistically update local UI
+  //     setGrades((prevGrades) => {
+  //       const newGrades = [...prevGrades];
+  //       const index = newGrades.findIndex((g) => g.grade === selectedGrade);
+  //       if (index >= 0) {
+  //         newGrades[index] = {
+  //           ...newGrades[index],
+  //           bagWeights: updatedBagWeights,
+  //           weight: totalWeight,
+  //         };
+  //       } else {
+  //         newGrades.push({
+  //           grade: selectedGrade,
+  //           weight: totalWeight,
+  //           bagWeights: updatedBagWeights,
+  //           bagged_at: new Date().toISOString().split("T")[0],
+  //           tempSequence: "0001",
+  //           storedDate: null,
+  //           lotNumber: selectedBatch?.lotNumber || "N/A",
+  //           referenceNumber: selectedBatch?.referenceNumber || "N/A",
+  //         });
+  //       }
+  //       return newGrades;
+  //     });
 
-      setCurrentWeight("");
-      setHasUnsavedChanges(true);
+  //     setCurrentWeight("");
+  //     setHasUnsavedChanges(true);
 
-      // Only persist for sub-batches (existing behavior)
-      if (selectedBatch?.parentBatchNumber) {
-        // build payload: include both processingType and process_step
-        const processStep = (typeof selectedProcess !== "undefined" && selectedProcess) || selectedBatch.processingType || "huller";
-        const payload = {
-          grade: selectedGrade,
-          bagWeights: updatedBagWeights,
-          weight: totalWeight.toString(),
-          bagged_at: new Date().toISOString().slice(0, 10),
-          processingType: selectedBatch.processingType,
-          process_step: processStep,
-        };
+  //     // Only persist for sub-batches (existing behavior)
+  //     if (selectedBatch?.parentBatchNumber) {
+  //       // build payload: include both processingType and process_step
+  //       const processStep = (typeof selectedProcess !== "undefined" && selectedProcess) || selectedBatch.processingType || "huller";
+  //       const payload = {
+  //         grade: selectedGrade,
+  //         bagWeights: updatedBagWeights,
+  //         weight: totalWeight.toString(),
+  //         bagged_at: new Date().toISOString().slice(0, 10),
+  //         processingType: selectedBatch.processingType,
+  //         process_step: normalizeProcessStep(processName),
+  //       };
 
-        try {
-          const response = await axios.post(
-            `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`,
-            payload
-          );
+  //       try {
+  //         const response = await axios.post(
+  //           `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/update-bags`,
+  //           payload
+  //         );
 
-          // Merge returned lot/reference if backend returned them (keeps previous behavior)
-          setGrades((prevGrades) => {
-            const newGrades = [...prevGrades];
-            const index = newGrades.findIndex((g) => g.grade === selectedGrade);
-            if (index >= 0) {
-              newGrades[index] = {
-                ...newGrades[index],
-                lotNumber: response.data.lotNumber || newGrades[index].lotNumber,
-                referenceNumber: response.data.referenceNumber || newGrades[index].referenceNumber,
-              };
-            }
-            return newGrades;
-          });
+  //         // Merge returned lot/reference if backend returned them (keeps previous behavior)
+  //         setGrades((prevGrades) => {
+  //           const newGrades = [...prevGrades];
+  //           const index = newGrades.findIndex((g) => g.grade === selectedGrade);
+  //           if (index >= 0) {
+  //             newGrades[index] = {
+  //               ...newGrades[index],
+  //               lotNumber: response.data.lotNumber || newGrades[index].lotNumber,
+  //               referenceNumber: response.data.referenceNumber || newGrades[index].referenceNumber,
+  //             };
+  //           }
+  //           return newGrades;
+  //         });
 
-          setSnackbarMessage("Bag added successfully.");
-          setSnackbarSeverity("success");
-          setOpenSnackbar(true);
-          setHasUnsavedChanges(false);
+  //         setSnackbarMessage("Bag added successfully.");
+  //         setSnackbarSeverity("success");
+  //         setOpenSnackbar(true);
+  //         setHasUnsavedChanges(false);
 
-          // Refresh canonical server state
-          await fetchDryMillData();
+  //         // Refresh canonical server state
+  //         await fetchDryMillData();
 
-          // --- create lightweight DryMillProcessEvents record (non-blocking)
-          // after successful update-bags response inside handleAddBag
-          const returnedGradeRowIds = response.data?.gradeRowIds || [];
+  //         // --- create lightweight DryMillProcessEvents record (non-blocking)
+  //         // after successful update-bags response inside handleAddBag
+  //         const returnedGradeRowIds = response.data?.gradeRowIds || [];
 
-          // create process-event and link the grade row ids (non-blocking)
-          (async () => {
-            try {
-              await axios.post(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://processing-facility-backend.onrender.com"}/api/drymill/process-event`,
-                {
-                  batchNumber: selectedBatch.batchNumber,
-                  process_step: processStep,
-                  input_weight: 0,
-                  output_weight: parseFloat(payload.weight) || 0,
-                  operator: session?.user?.name || session?.user?.email || "unknown",
-                  notes: `Added bag ${newWeight} kg to grade ${selectedGrade}`,
-                  gradeRowIdsOutput: returnedGradeRowIds
-                }
-              );
-            } catch (err) {
-              console.warn("Failed to create drymill process-event (non-blocking):", err?.message || err);
-            }
-          })();
-        } catch (error) {
-          // Roll back optimistic update for this grade: remove last bag & subtract weight
-          const message = error.response?.data?.error || "Failed to update bags.";
-          logError(message, error);
-          setSnackbarMessage(message);
-          setSnackbarSeverity("error");
-          setOpenSnackbar(true);
+  //         // create process-event and link the grade row ids (non-blocking)
+  //         (async () => {
+  //           try {
+  //             await axios.post(
+  //               `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://processing-facility-backend.onrender.com"}/api/drymill/process-event`,
+  //               {
+  //                 batchNumber: selectedBatch.batchNumber,
+  //                 process_step: normalizeProcessStep(processName),
+  //                 input_weight: 0,
+  //                 output_weight: parseFloat(payload.weight) || 0,
+  //                 operator: session?.user?.name || session?.user?.email || "unknown",
+  //                 notes: `Added bag ${newWeight} kg to grade ${selectedGrade}`,
+  //                 gradeRowIdsOutput: returnedGradeRowIds
+  //               }
+  //             );
+  //           } catch (err) {
+  //             console.warn("Failed to create drymill process-event (non-blocking):", err?.message || err);
+  //           }
+  //         })();
+  //       } catch (error) {
+  //         // Roll back optimistic update for this grade: remove last bag & subtract weight
+  //         const message = error.response?.data?.error || "Failed to update bags.";
+  //         logError(message, error);
+  //         setSnackbarMessage(message);
+  //         setSnackbarSeverity("error");
+  //         setOpenSnackbar(true);
 
-          setGrades((prevGrades) => {
-            const newGrades = [...prevGrades];
-            const index = newGrades.findIndex((g) => g.grade === selectedGrade);
-            if (index >= 0) {
-              const prev = newGrades[index];
-              newGrades[index] = {
-                ...prev,
-                bagWeights: prev.bagWeights.slice(0, -1),
-                weight: parseFloat(prev.weight || 0) - parsedWeight,
-              };
-            }
-            return newGrades;
-          });
-        }
-      }
-    },
-    [selectedBatch, selectedGrade, grades, fetchDryMillData, selectedProcess, session]
-  );
+  //         setGrades((prevGrades) => {
+  //           const newGrades = [...prevGrades];
+  //           const index = newGrades.findIndex((g) => g.grade === selectedGrade);
+  //           if (index >= 0) {
+  //             const prev = newGrades[index];
+  //             newGrades[index] = {
+  //               ...prev,
+  //               bagWeights: prev.bagWeights.slice(0, -1),
+  //               weight: parseFloat(prev.weight || 0) - parsedWeight,
+  //             };
+  //           }
+  //           return newGrades;
+  //         });
+  //       }
+  //     }
+  //   },
+  //   [selectedBatch, selectedGrade, grades, fetchDryMillData, selectedProcess, session]
+  // );
 
   const handleRemoveBag = async (gradeName, bagIndex) => {
     if (!selectedBatch) {
@@ -1192,7 +1233,7 @@ const handleSaveProcessGrade = async (processName, gradeName) => {
       weight: parsed.toFixed(2),
       bagged_at: new Date().toISOString().slice(0, 10),
       processingType: selectedBatch.processingType,
-      process_step: processName.toLowerCase()
+      process_step: normalizeProcessStep(processName),
     };
 
     const res = await axios.post(
@@ -1228,7 +1269,7 @@ const handleSaveProcessGrade = async (processName, gradeName) => {
         `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com'}/api/drymill/process-event`,
         {
           batchNumber: selectedBatch.batchNumber,
-          process_step: processName.toLowerCase(),
+          process_step: normalizeProcessStep(processName),
           input_weight: 0, // optional to compute elsewhere
           output_weight: parsed,
           operator: session?.user?.name || session?.user?.email || 'unknown',
@@ -1243,6 +1284,7 @@ const handleSaveProcessGrade = async (processName, gradeName) => {
 
     // refresh canonical server state
     await fetchDryMillData();
+    await initProcessTablesFromEvents();
   } catch (err) {
     // rollback local UI change: re-read canonical state from server (or simple revert logic)
     const message = err.response?.data?.error || 'Failed to save grade total.';
@@ -1292,6 +1334,7 @@ const handleSaveHullerOutput = async () => {
     setSnackbarSeverity('success');
     setOpenSnackbar(true);
     await fetchDryMillData();
+    await initProcessTablesFromEvents();
   } catch (err) {
     const message = err.response?.data?.error || 'Failed to record huller output';
     logError(message, err);
