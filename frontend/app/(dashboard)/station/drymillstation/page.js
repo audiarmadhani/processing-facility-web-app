@@ -1191,8 +1191,8 @@ const handleSaveHullerOutput = async () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Grade</TableCell>
-                    <TableCell>Total Weight (kg)</TableCell>
                     <TableCell>Yield (%)</TableCell>
+                    <TableCell>Total Weight (kg)</TableCell>
                     <TableCell width={150}>Action</TableCell>
                   </TableRow>
                 </TableHead>
@@ -1226,12 +1226,17 @@ const handleSaveHullerOutput = async () => {
                       <TableRow key={`${proc}-${gradeName}`}>
                         <TableCell>{gradeName}</TableCell>
 
+                        <TableCell align="right">
+                          <Typography variant="body2" color="text.secondary">
+                            {yieldPct !== null ? `${yieldPct.toFixed(1)} %` : '–'}
+                          </Typography>
+                        </TableCell>
+
                         <TableCell>
                           <TextField
                             value={value}
                             onChange={(e) => {
                               const newValue = e.target.value;
-
                               setProcessTables((prev) => ({
                                 ...prev,
                                 [proc]: {
@@ -1252,12 +1257,6 @@ const handleSaveHullerOutput = async () => {
                             fullWidth
                             disabled={isLoading || !selectedBatch}
                           />
-                        </TableCell>
-
-                        <TableCell align="right">
-                          <Typography variant="body2" color="text.secondary">
-                            {yieldPct !== null ? `${yieldPct.toFixed(1)} %` : '–'}
-                          </Typography>
                         </TableCell>
 
                         <TableCell>
