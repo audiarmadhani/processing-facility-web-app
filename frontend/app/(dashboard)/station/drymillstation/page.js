@@ -114,7 +114,7 @@ const normalizeProcessStep = (label) => {
 const initProcessTablesFromEvents = useCallback(async () => {
   if (!selectedBatch) return;
   const res = await axios.get(
-    `/api/drymill/track-weight/${selectedBatch.batchNumber}`,
+    `https://processing-facility-backend.onrender.com/api/drymill/track-weight/${selectedBatch.batchNumber}`,
     { params: { processingType: selectedBatch.processingType } }
   );
 
