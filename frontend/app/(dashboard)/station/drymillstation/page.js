@@ -123,6 +123,13 @@ const normalizeProcessStep = (label) => {
   }
 };
 
+const fetchProcessEvents = useCallback(async (batchNumber) => {
+    const res = await axios.get(
+      `https://processing-facility-backend.onrender.com/api/drymill/process-events/${batchNumber}`
+    );
+    return res.data || [];
+  }, []);
+
 const initProcessTablesFromEvents = useCallback(
   async () => {
     if (!selectedBatch) return;
@@ -454,13 +461,6 @@ useEffect(() => {
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
-  }, []);
-
-  const fetchProcessEvents = useCallback(async (batchNumber) => {
-    const res = await axios.get(
-      `https://processing-facility-backend.onrender.com/api/drymill/process-events/${batchNumber}`
-    );
-    return res.data || [];
   }, []);
 
   const fetchSampleHistory = useCallback(async (batchNumber) => {
