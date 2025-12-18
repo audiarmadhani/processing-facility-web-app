@@ -1221,6 +1221,25 @@ const handleSaveHullerOutput = async () => {
                         sizerTotal
                       );
                     }
+
+                     // ---------- Subtotal row ----------
+                    let stepTotal = 0;
+                    let stepYield = null;
+
+                    if (proc === 'Suton') {
+                      stepTotal = sutonTotal;
+                      stepYield = calcYield(sutonTotal, hullerTotal);
+                    }
+
+                    if (proc === 'Sizer') {
+                      stepTotal = sizerTotal;
+                      stepYield = calcYield(sizerTotal, sutonTotal);
+                    }
+
+                    if (proc === 'Handpicking') {
+                      stepTotal = handpickTotal;
+                      stepYield = calcYield(handpickTotal, sizerTotal);
+                    }
                     
                     return (
                       <TableRow key={`${proc}-${gradeName}`}>
@@ -1273,6 +1292,25 @@ const handleSaveHullerOutput = async () => {
                     );
                   })}
                 </TableBody>
+                <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                  <TableCell>
+                    <Typography fontWeight={700}>Subtotal</Typography>
+                  </TableCell>
+
+                  <TableCell align="right">
+                    <Typography fontWeight={700}>
+                      {stepYield !== null ? `${stepYield.toFixed(1)} %` : '–'}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography fontWeight={700}>
+                      {stepTotal.toFixed(2)} kg
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell />
+                </TableRow>
               </Table>
             </Box>
           ))}
