@@ -660,6 +660,24 @@ const handleSaveHullerOutput = async () => {
     return;
   }
 
+  const toNumber = (v) => {
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  };
+
+  const sumGrades = (grades = {}) =>
+    Object.values(grades).reduce((sum, g) => sum + toNumber(g.weight), 0);
+
+  const calcYield = (num, denom) => {
+    if (!denom || denom <= 0) return null;
+    return (num / denom) * 100;
+  };
+
+  const hullerTotal = toNumber(processTables.Huller.outputWeight);
+
+  const sutonTotal = sumGrades(processTables.Suton.grades);
+  const sizerTotal = sumGrades(processTables.Sizer.grades);
+
   setIsLoading(true);
   try {
     await axios.post(
@@ -1172,6 +1190,7 @@ const handleSaveHullerOutput = async () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Grade</TableCell>
+                    <TableCell>Yield (%)</TableCell>
                     <TableCell>Total Weight (kg)</TableCell>
                     <TableCell width={150}>Action</TableCell>
                   </TableRow>
@@ -1179,20 +1198,52 @@ const handleSaveHullerOutput = async () => {
                 <TableBody>
                   {GRADE_ORDER.map((gradeName) => {
                     const value = processTables?.[proc]?.grades?.[gradeName]?.weight ?? '';
+                  
+                    let yieldPct = null;
+                    if (proc === 'Suton') {
+                      yieldPct = calcYield(
+                        toNumber(processTables.Suton.grades[gradeName]?.weight),
+                        hullerTotal
+                      );
+                    }
+
+                    if (proc === 'Sizer') {
+                      yieldPct = calcYield(
+                        toNumber(processTables.Sizer.grades[gradeName]?.weight),
+                        sutonTotal
+                      );
+                    }
+
+                    if (proc === 'Handpicking') {
+                      yieldPct = calcYield(
+                        toNumber(processTables.Handpicking.grades[gradeName]?.weight),
+                        sizerTotal
+                      );
+                    }
+                    
                     return (
                       <TableRow key={`${proc}-${gradeName}`}>
                         <TableCell>{gradeName}</TableCell>
+
                         <TableCell>
                           <TextField
                             value={value}
                             onChange={(e) => {
-                              const v = e.target.value;
-                              setProcessTables((prev) => {
-                                const copy = { ...prev };
-                                copy[proc] = { ...(copy[proc] || {}), grades: { ...(copy[proc]?.grades || {}) } };
-                                copy[proc].grades[gradeName] = { ...(copy[proc].grades[gradeName] || {}), weight: v };
-                                return copy;
-                              });
+                              const newValue = e.target.value;
+
+                              setProcessTables((prev) => ({
+                                ...prev,
+                                [proc]: {
+                                  ...prev[proc],
+                                  grades: {
+                                    ...prev[proc].grades,
+                                    [gradeName]: {
+                                      ...prev[proc].grades[gradeName],
+                                      weight: newValue,
+                                    },
+                                  },
+                                },
+                              }));
                             }}
                             size="small"
                             type="number"
@@ -1201,6 +1252,13 @@ const handleSaveHullerOutput = async () => {
                             disabled={isLoading || !selectedBatch}
                           />
                         </TableCell>
+
+                        <TableCell align="right">
+                          <Typography variant="body2" color="text.secondary">
+                            {yieldPct !== null ? `${yieldPct.toFixed(1)} %` : '–'}
+                          </Typography>
+                        </TableCell>
+
                         <TableCell>
                           <Button
                             variant="contained"
