@@ -1191,8 +1191,8 @@ const handleSaveHullerOutput = async () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Grade</TableCell>
-                    <TableCell>Yield (%)</TableCell>
                     <TableCell>Total Weight (kg)</TableCell>
+                    <TableCell>Yield (%)</TableCell>
                     <TableCell width={150}>Action</TableCell>
                   </TableRow>
                 </TableHead>
