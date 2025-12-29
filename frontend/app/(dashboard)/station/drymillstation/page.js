@@ -192,6 +192,7 @@ useEffect(() => {
           batchNumber: selectedBatch.batchNumber,
           processingType: selectedBatch.processingType,
           processStep: step,
+          producer: selectedBatch.producer,
           grade: gradeName,
           inputWeight: 0,
           outputWeight: parsed,
