@@ -682,6 +682,7 @@ const handleSaveHullerOutput = async () => {
         batchNumber: selectedBatch.batchNumber,
         processingType: selectedBatch.processingType,
         processStep: 'huller',
+        producer: selectedBatch.producer,
         inputWeight: 0,
         outputWeight: parsed,
         operator: session?.user?.name || 'unknown',
