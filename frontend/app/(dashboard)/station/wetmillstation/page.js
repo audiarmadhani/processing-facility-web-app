@@ -64,6 +64,9 @@ const WetmillStation = () => {
   const [unprocessedFilter, setUnprocessedFilter] = useState('');
   const [completedFilter, setCompletedFilter] = useState('');
   const isFetchingRef = useRef(false);
+  const [selectedRejectBatchIds, setSelectedRejectBatchIds] = useState([]);
+  const [openRejectMergeDialog, setOpenRejectMergeDialog] = useState(false);
+  const [rejectWeights, setRejectWeights] = useState({});
 
   const fetchOrderBook = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -640,6 +643,119 @@ const WetmillStation = () => {
     [unprocessedAndInProgressBatches, unprocessedFilter]
   );
 
+  const selectedRejectBatches = useMemo(
+    () =>
+      unprocessedAndInProgressBatches.filter(b =>
+        selectedRejectBatchIds.includes(b.batchNumber)
+      ),
+    [selectedRejectBatchIds, unprocessedAndInProgressBatches]
+  );
+
+  const handleOpenRejectMergeDialog = () => {
+    const producers = [...new Set(selectedRejectBatches.map(b => b.producer))];
+
+    if (producers.length !== 1) {
+      setSnackbarMessage('All selected batches must have the same producer');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    initializeRejectWeights();
+    setOpenRejectMergeDialog(true);
+  };
+
+  const initializeRejectWeights = () => {
+    const initial = {};
+    selectedRejectBatches.forEach(b => {
+      initial[b.batchNumber] = '';
+    });
+    setRejectWeights(initial);
+  };
+
+  const handleConfirmRejectMerge = async () => {
+    const producer = selectedRejectBatches[0].producer;
+
+    const sourceBatches = selectedRejectBatches.map(b => ({
+      batchNumber: b.batchNumber,
+      rejectWeight: Number(rejectWeights[b.batchNumber] || 0)
+    }));
+
+    if (sourceBatches.some(b => b.rejectWeight <= 0)) {
+      setSnackbarMessage('Reject weight must be greater than 0');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const payload = {
+      sourceBatches,
+      producer,
+      operator: session.user.name,
+      notes: 'Reject batch merged from Wet Mill UI'
+    };
+
+    const res = await fetch('/api/wetmill/rejects/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to merge reject batch');
+
+    setOpenRejectMergeDialog(false);
+    setSelectedRejectBatchIds([]);
+    fetchOrderBook();
+  };
+
+  const rejectValidation = useMemo(() => {
+    let totalReject = 0;
+    let hasError = false;
+
+    const perBatch = selectedRejectBatches.map(b => {
+      const reject = Number(rejectWeights[b.batchNumber] || 0);
+      const available = Number(b.weight || 0);
+
+      totalReject += reject;
+
+      if (reject <= 0 || reject > available) {
+        hasError = true;
+      }
+
+      return {
+        batchNumber: b.batchNumber,
+        reject,
+        available,
+        remaining: available - reject
+      };
+    });
+
+    return {
+      perBatch,
+      totalReject,
+      hasError
+    };
+  }, [selectedRejectBatches, rejectWeights]);
+
+  const selectedProducers = useMemo(() => {
+    const set = new Set(selectedRejectBatches.map(b => b.producer));
+    return Array.from(set);
+  }, [selectedRejectBatches]);
+
+  const canOpenRejectMergeDialog =
+    selectedRejectBatches.length > 0 &&
+    selectedProducers.length === 1;
+
+  const totalRejectWeight = selectedRejectBatches.reduce(
+    (sum, b) =>
+      sum + Number(rejectWeights[b.batchNumber] || 0),
+    0
+  );
+
+  const hasEmptyReject = selectedRejectBatches.some(
+    b => rejectWeights[b.batchNumber] === '' || rejectWeights[b.batchNumber] == null
+  );
+
   const filteredCompletedBatches = useMemo(() => 
     completedWetMillBatches.filter(batch => 
       batch.batchNumber?.toLowerCase().includes(completedFilter.toLowerCase()) ||
@@ -676,6 +792,18 @@ const WetmillStation = () => {
                 {isLoading ? 'Refreshing...' : 'Refresh Data'}
               </Button>
 
+              <Button
+                variant="contained"
+                color="error"
+                disabled={
+                  selectedRejectBatches.length === 0 ||
+                  selectedProducers.length !== 1
+                }
+                onClick={handleOpenRejectMergeDialog}
+              >
+                Merge Reject
+              </Button>
+
               {/* Unprocessed and In-Progress Batches Grid */}
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" gutterBottom>Unprocessed and In-Progress Batches</Typography>
@@ -698,7 +826,9 @@ const WetmillStation = () => {
                     rows={filteredUnprocessedBatches}
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
-                    disableRowSelectionOnClick
+                    checkboxSelection
+                    onRowSelectionModelChange={(ids) => setSelectedRejectBatchIds(ids)}
+                    rowSelectionModel={selectedRejectBatchIds}
                     getRowId={row => row.batchNumber}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
@@ -737,7 +867,9 @@ const WetmillStation = () => {
                     rows={filteredCompletedBatches}
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
-                    disableRowSelectionOnClick
+                    checkboxSelection
+                    onRowSelectionModelChange={(ids) => setSelectedRejectBatchIds(ids)}
+                    rowSelectionModel={selectedRejectBatchIds}
                     getRowId={row => row.batchNumber}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
@@ -1001,6 +1133,118 @@ const WetmillStation = () => {
           </Alert>
         </Snackbar>
       </Grid>
+
+      <Dialog
+        open={openRejectMergeDialog}
+        onClose={() => setOpenRejectMergeDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Merge Reject Batches</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {selectedRejectBatches.map(batch => {
+              const availableWeight = Number(batch.weight || 0);
+              const rejectValue = Number(rejectWeights[batch.batchNumber] || 0);
+              const isError =
+                rejectValue < 0 || rejectValue > availableWeight;
+
+              return (
+                <Box
+                  key={batch.batchNumber}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr 1fr',
+                    gap: 2,
+                    alignItems: 'center'
+                  }}
+                >
+                  {/* Batch info */}
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>
+                      {batch.batchNumber}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {batch.farmerName}
+                    </Typography>
+                  </Box>
+
+                  {/* Available weight (disabled) */}
+                  <TextField
+                    label="Available (kg)"
+                    value={availableWeight.toFixed(2)}
+                    size="small"
+                    disabled
+                    fullWidth
+                  />
+
+                  {/* Reject input */}
+                  <TextField
+                    label="Reject (kg)"
+                    type="number"
+                    size="small"
+                    fullWidth
+                    value={rejectWeights[batch.batchNumber] || ''}
+                    onChange={e =>
+                      setRejectWeights(prev => ({
+                        ...prev,
+                        [batch.batchNumber]: e.target.value
+                      }))
+                    }
+                    inputProps={{ min: 0, step: 0.01 }}
+                    error={isError}
+                    helperText={
+                      isError
+                        ? 'Exceeds available'
+                        : `Remaining ${(availableWeight - rejectValue).toFixed(2)} kg`
+                    }
+                  />
+                </Box>
+              );
+            })}
+          </Box>
+
+          {/* ---- FOOTER ---- */}
+          <Divider sx={{ my: 3 }} />
+
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <Box>
+              <Typography variant="subtitle2">
+                Total Reject Weight
+              </Typography>
+              <Typography
+                variant="h6"
+                color={totalRejectWeight > 0 ? 'error.main' : 'text.secondary'}
+              >
+                {totalRejectWeight.toFixed(2)} kg
+              </Typography>
+            </Box>
+
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleConfirmRejectMerge}
+              disabled={
+                hasEmptyReject ||
+                totalRejectWeight <= 0 ||
+                selectedRejectBatches.some(b => {
+                  const available = Number(b.weight || 0);
+                  const reject = Number(rejectWeights[b.batchNumber]);
+                  return reject <= 0 || reject > available;
+                })
+              }
+            >
+              Merge Reject
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   );
 };
