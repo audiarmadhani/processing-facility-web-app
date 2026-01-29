@@ -67,6 +67,7 @@ const WetmillStation = () => {
   const [selectedRejectBatchIds, setSelectedRejectBatchIds] = useState([]);
   const [openRejectMergeDialog, setOpenRejectMergeDialog] = useState(false);
   const [rejectWeights, setRejectWeights] = useState({});
+  const [rowSelectionModel, setRowSelectionModel] = useState([]);
 
   const fetchOrderBook = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -646,6 +647,9 @@ const WetmillStation = () => {
   const getBatchRowId = (row) =>
     `${row.batchNumber}_${row.producer}_${row.processingType}`;
 
+  const getRowId = (row) =>
+    `${row.batchNumber}_${row.producer}_${row.processingType}`;
+
   const selectedRejectBatches = useMemo(
     () =>
       unprocessedAndInProgressBatches.filter(b =>
@@ -830,9 +834,12 @@ const WetmillStation = () => {
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
                     checkboxSelection
-                    onRowSelectionModelChange={(ids) => setSelectedRejectBatchIds(ids)}
-                    rowSelectionModel={selectedRejectBatchIds}
-                    getRowId={getBatchRowId}
+                    onRowSelectionModelChange={(newSelection) => {
+                      setRowSelectionModel(newSelection);
+                    }}
+                    rowSelectionModel={rowSelectionModel}
+                    keepNonExistentRowsSelected
+                    getRowId={getRowId}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
                       maxHeight: 600,
@@ -870,7 +877,7 @@ const WetmillStation = () => {
                     rows={filteredCompletedBatches}
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
-                    checkboxSelection
+                    // checkboxSelection
                     onRowSelectionModelChange={(ids) => setSelectedRejectBatchIds(ids)}
                     rowSelectionModel={selectedRejectBatchIds}
                     getRowId={getBatchRowId}
