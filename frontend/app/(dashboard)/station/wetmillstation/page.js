@@ -64,7 +64,6 @@ const WetmillStation = () => {
   const [unprocessedFilter, setUnprocessedFilter] = useState('');
   const [completedFilter, setCompletedFilter] = useState('');
   const isFetchingRef = useRef(false);
-  const [selectedRejectBatchIds, setSelectedRejectBatchIds] = useState([]);
   const [openRejectMergeDialog, setOpenRejectMergeDialog] = useState(false);
   const [rejectWeights, setRejectWeights] = useState({});
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
@@ -653,9 +652,9 @@ const WetmillStation = () => {
   const selectedRejectBatches = useMemo(
     () =>
       unprocessedAndInProgressBatches.filter(b =>
-        selectedRejectBatchIds.includes(getBatchRowId(b))
+        rowSelectionModel.includes(getRowId(b))
       ),
-    [selectedRejectBatchIds, unprocessedAndInProgressBatches]
+    [rowSelectionModel, unprocessedAndInProgressBatches]
   );
 
   const handleOpenRejectMergeDialog = () => {
@@ -711,7 +710,7 @@ const WetmillStation = () => {
     if (!res.ok) throw new Error('Failed to merge reject batch');
 
     setOpenRejectMergeDialog(false);
-    setSelectedRejectBatchIds([]);
+    setRowSelectionModel([]);([]);
     fetchOrderBook();
   };
 
@@ -878,8 +877,6 @@ const WetmillStation = () => {
                     columns={columns}
                     pageSizeOptions={[10, 50, 100]}
                     // checkboxSelection
-                    onRowSelectionModelChange={(ids) => setSelectedRejectBatchIds(ids)}
-                    rowSelectionModel={selectedRejectBatchIds}
                     getRowId={getBatchRowId}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
