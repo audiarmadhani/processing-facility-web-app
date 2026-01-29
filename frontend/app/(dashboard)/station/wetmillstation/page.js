@@ -643,10 +643,13 @@ const WetmillStation = () => {
     [unprocessedAndInProgressBatches, unprocessedFilter]
   );
 
+  const getBatchRowId = (row) =>
+    `${row.batchNumber}_${row.producer}_${row.processingType}`;
+
   const selectedRejectBatches = useMemo(
     () =>
       unprocessedAndInProgressBatches.filter(b =>
-        selectedRejectBatchIds.includes(b.batchNumber)
+        selectedRejectBatchIds.includes(getBatchRowId(b))
       ),
     [selectedRejectBatchIds, unprocessedAndInProgressBatches]
   );
@@ -829,7 +832,7 @@ const WetmillStation = () => {
                     checkboxSelection
                     onRowSelectionModelChange={(ids) => setSelectedRejectBatchIds(ids)}
                     rowSelectionModel={selectedRejectBatchIds}
-                    getRowId={row => row.batchNumber}
+                    getRowId={getBatchRowId}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
                       maxHeight: 600,
@@ -870,7 +873,7 @@ const WetmillStation = () => {
                     checkboxSelection
                     onRowSelectionModelChange={(ids) => setSelectedRejectBatchIds(ids)}
                     rowSelectionModel={selectedRejectBatchIds}
-                    getRowId={row => row.batchNumber}
+                    getRowId={getBatchRowId}
                     slots={{ toolbar: GridToolbar }}
                     sx={{
                       maxHeight: 600,
