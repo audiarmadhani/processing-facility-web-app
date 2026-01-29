@@ -246,9 +246,7 @@ useEffect(() => {
           lotNumber: batch.lotNumber === "ID-BTM-A-N-AS" && !batch.dryMillExited ? "ID-BTM-A-N" : batch.lotNumber,
           referenceNumber: batch.referenceNumber || "N/A",
           dryMillMerged: batch.dryMillMerged ? "Merged" : "Not Merged",
-          id: `${batch.batchNumber},${batch.processingType || "unknown"},${batch.producer || "unknown"},${Date.now()},${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
+          id: `${batch.batchNumber}__${batch.producer}__${batch.processingType}`,
         }));
 
       // Include all sub-batches, including those with quality and totalBags > 0
@@ -258,9 +256,7 @@ useEffect(() => {
           (batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
         )
         .map((batch) => ({
-          id: `${batch.batchNumber},${batch.processingType || "unknown"},${batch.producer || "unknown"},${Date.now()},${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
+          id: `${batch.batchNumber}__${batch.producer}__${batch.processingType}`,
           batchNumber: batch.batchNumber,
           status: batch.status,
           dryMillEntered: batch.dryMillEntered,
@@ -912,8 +908,9 @@ const handleSaveHullerOutput = async () => {
         const statusOrder = { "In Dry Mill": 0, "Processed": 1, "Not Started": 2 };
         return (
           (statusOrder[a.status] || 2) - (statusOrder[b.status] || 2) ||
-          (a.dryMillEntered === "N/A" ? Infinity : new Date(a.dryMillEntered)) -
-          (b.dryMillEntered === "N/A" ? Infinity : new Date(b.dryMillEntered))
+          new Date(a.dryMillEntered || 0) - new Date(b.dryMillEntered || 0) ||
+          a.producer.localeCompare(b.producer) ||
+          a.processingType.localeCompare(b.processingType)
         );
       }),
     [parentBatches]
