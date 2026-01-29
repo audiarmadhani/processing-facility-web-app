@@ -225,6 +225,7 @@ useEffect(() => {
 
       // Include all batches without dryMillExited or not Processed in parentBatches
       const parentBatchesData = data
+        .filter((batch) => !batch.dryMillExited || batch.status !== "Processed")
         .map((batch) => ({
           batchNumber: batch.batchNumber,
           status: batch.status,
