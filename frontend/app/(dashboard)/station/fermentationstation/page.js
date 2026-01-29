@@ -30,6 +30,7 @@ import {
   TableCell,
   TableHead,
 } from '@mui/material';
+import * as XLSX from 'xlsx';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Alert from '@mui/material/Alert';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
@@ -1129,6 +1130,14 @@ useEffect(() => {
             <MenuItem onClick={() => handleDetailsClick(row)}>
               Details
             </MenuItem>
+            <MenuItem
+              onClick={() => {
+                downloadFermentationDataExcel(row);
+                handleMenuClose();
+              }}
+            >
+              Download Data
+            </MenuItem>
           </Menu>
         </>
       ),
@@ -1156,6 +1165,46 @@ useEffect(() => {
     { field: 'status', headerName: 'Status', width: 120 },
     { field: 'createdBy', headerName: 'Created By', width: 150 },
   ];
+
+  const downloadFermentationDataExcel = (row) => {
+    const data = [
+      {
+        'Batch Number': row.batchNumber,
+        'Reference Number': row.referenceNumber || '',
+        'Experiment Number': row.experimentNumber || '',
+        'Farmer': row.farmerName || '',
+        'Processing Type': row.processingType || '',
+        'Tank': row.tank || '',
+        'Fermentation Start': row.fermentationStart
+          ? dayjs(row.fermentationStart)
+              .tz('Asia/Makassar')
+              .format('YYYY-MM-DD HH:mm')
+          : '',
+        'Fermentation End': row.fermentationEnd
+          ? dayjs(row.fermentationEnd)
+              .tz('Asia/Makassar')
+              .format('YYYY-MM-DD HH:mm')
+          : '',
+        'Status': row.status || '',
+        'Created By': row.createdBy || '',
+        'Notes': row.notes || ''
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Fermentation Data'
+    );
+
+    XLSX.writeFile(
+      workbook,
+      `Fermentation_${row.batchNumber}.xlsx`
+    );
+  };
 
   if (status === 'loading') {
     return <p>Loading...</p>;
