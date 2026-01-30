@@ -806,6 +806,7 @@ const WetmillStation = () => {
                   selectedProducers.length !== 1
                 }
                 onClick={handleOpenRejectMergeDialog}
+                sx={{ ml: 2}}
               >
                 Merge Reject
               </Button>

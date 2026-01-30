@@ -43,6 +43,8 @@ const PostProcessingQCPage = () => {
     seranggaHidup: null,
     bijiBauBusuk: null,
     kelembapan: "",
+    waterActivity: "",
+    triage: "",
     bijiHitam: "",
     bijiHitamSebagian: "",
     bijiHitamPecah: "",
@@ -103,6 +105,8 @@ const PostProcessingQCPage = () => {
           seranggaHidup: null,
           bijiBauBusuk: null,
           kelembapan: "",
+          waterActivity: "",
+          triage: "",
           bijiHitam: "",
           bijiHitamSebagian: "",
           bijiHitamPecah: "",
@@ -140,6 +144,8 @@ const PostProcessingQCPage = () => {
       seranggaHidup: null,
       bijiBauBusuk: null,
       kelembapan: "",
+      waterActivity: "",
+      triage: "",
       bijiHitam: "",
       bijiHitamSebagian: "",
       bijiHitamPecah: "",
@@ -184,6 +190,8 @@ const PostProcessingQCPage = () => {
   const isFormComplete = () => {
     return (
       formData.kelembapan !== "" &&
+      formData.waterActivity !== "" &&
+      formData.triage !== "" &&
       formData.bijiHitam !== "" &&
       formData.bijiHitamSebagian !== "" &&
       formData.bijiHitamPecah !== "" &&
@@ -216,6 +224,8 @@ const PostProcessingQCPage = () => {
       const submissionData = {
         ...formData,
         kelembapan: formData.kelembapan === "" ? 0 : parseFloat(formData.kelembapan),
+        waterActivity: formData.waterActivity === "" ? 0 : parseFloat(formData.waterActivity),
+        triage: formData.triage === "" ? null : formData.triage,
         bijiHitam: formData.bijiHitam === "" ? 0 : parseFloat(formData.bijiHitam),
         bijiHitamSebagian: formData.bijiHitamSebagian === "" ? 0 : parseFloat(formData.bijiHitamSebagian),
         bijiHitamPecah: formData.bijiHitamPecah === "" ? 0 : parseFloat(formData.bijiHitamPecah),
@@ -279,6 +289,8 @@ const PostProcessingQCPage = () => {
       { field: "generalQuality", headerName: "General Quality" },
       { field: "actualGrade", headerName: "Actual Grade" },
       { field: "kelembapan", headerName: "Kelembapan (%)" },
+      { field: "waterActivity", headerName: "Water Activity" },
+      { field: "triage", headerName: "Triage" },
       { field: "defectScore", headerName: "Defect Score" },
       { field: "defectWeightPercentage", headerName: "Defect Weight (%)" },
       { field: "bijiHitam", headerName: "Biji Hitam" },
@@ -402,6 +414,8 @@ const PostProcessingQCPage = () => {
     { field: "generalQuality", headerName: "General Quality", width: 180 },
     { field: "actualGrade", headerName: "Actual Grade", width: 150 },
     { field: "kelembapan", headerName: "Kelembapan (%)", width: 130 },
+    { field: "triage", headerName: "Triage", width: 130 },
+    { field: "waterActivity", headerName: "Water Activity", width: 150 },
     { field: "seranggaHidup", headerName: "Serangga Hidup", width: 150 },
     { field: "bijiBauBusuk", headerName: "Biji Bau Busuk", width: 150 },
     { field: "defectScore", headerName: "Defect Score", width: 140 },
@@ -585,6 +599,18 @@ const PostProcessingQCPage = () => {
                   />
                 </Grid>
               </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  name="waterActivity"
+                  label="Water Activity (aw)"
+                  type="number"
+                  value={formData.waterActivity}
+                  onChange={handleFormChange}
+                  fullWidth
+                  inputProps={{ min: 0, max: 1, step: 0.001 }}
+                  placeholder="e.g. 0.55"
+                />
+              </Grid>
             </AccordionDetails>
           </Accordion>
 
@@ -696,6 +722,29 @@ const PostProcessingQCPage = () => {
               </Grid>
             </AccordionDetails>
           </Accordion>
+
+          <Accordion defaultExpanded>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography>Triage Decision</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <FormControl fullWidth>
+                <InputLabel>Triage</InputLabel>
+                <Select
+                  name="triage"
+                  value={formData.triage}
+                  onChange={handleFormChange}
+                  input={<OutlinedInput label="Triage" />}
+                >
+                  <MenuItem value="" disabled>Select decision</MenuItem>
+                  <MenuItem value="Approved">Approved</MenuItem>
+                  <MenuItem value="Hold">Hold</MenuItem>
+                  <MenuItem value="Reject">Reject</MenuItem>
+                </Select>
+              </FormControl>
+            </AccordionDetails>
+          </Accordion>
+
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
