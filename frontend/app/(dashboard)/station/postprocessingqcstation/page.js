@@ -225,7 +225,7 @@ const PostProcessingQCPage = () => {
         ...formData,
         kelembapan: formData.kelembapan === "" ? 0 : parseFloat(formData.kelembapan),
         waterActivity: formData.waterActivity === "" ? 0 : parseFloat(formData.waterActivity),
-        triage: formData.triage === "" ? null : formData.triage,
+        triage: formData.triage === "" ? 0 : parseFloat(formData.triage),
         bijiHitam: formData.bijiHitam === "" ? 0 : parseFloat(formData.bijiHitam),
         bijiHitamSebagian: formData.bijiHitamSebagian === "" ? 0 : parseFloat(formData.bijiHitamSebagian),
         bijiHitamPecah: formData.bijiHitamPecah === "" ? 0 : parseFloat(formData.bijiHitamPecah),
@@ -728,20 +728,16 @@ const PostProcessingQCPage = () => {
               <Typography>Triage Decision</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <FormControl fullWidth>
-                <InputLabel>Triage</InputLabel>
-                <Select
+              <Grid item xs={4}>
+                <TextField
                   name="triage"
+                  label="Triage"
+                  type="number"
                   value={formData.triage}
                   onChange={handleFormChange}
-                  input={<OutlinedInput label="Triage" />}
-                >
-                  <MenuItem value="" disabled>Select decision</MenuItem>
-                  <MenuItem value="Approved">Approved</MenuItem>
-                  <MenuItem value="Hold">Hold</MenuItem>
-                  <MenuItem value="Reject">Reject</MenuItem>
-                </Select>
-              </FormControl>
+                  fullWidth
+                />
+              </Grid>
             </AccordionDetails>
           </Accordion>
 
