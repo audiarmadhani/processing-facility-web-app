@@ -126,10 +126,18 @@ const calcYield = (num, denom) => {
 };
 
 const initProcessTablesFromEvents = useCallback(async () => {
-  if (!selectedBatch) return;
+  if (!selectedBatch?.batchNumber || 
+      !selectedBatch?.processingType || 
+      !selectedBatch?.producer) return;
+
   const res = await axios.get(
     `https://processing-facility-backend.onrender.com/api/drymill/track-weight/${selectedBatch.batchNumber}`,
-    { params: { processingType: selectedBatch.processingType } }
+    {
+      params: {
+        processingType: selectedBatch.processingType,
+        producer: selectedBatch.producer
+      }
+    }
   );
 
   const base = createEmptyProcessTables();
@@ -138,14 +146,22 @@ const initProcessTablesFromEvents = useCallback(async () => {
     const step = row.processStep;
     const grade = row.grade;
 
+    // HULLER (grade is NULL)
     if (step === 'huller') {
       base.Huller.outputWeight = String(row.totalWeight);
-    } else if (base[capitalize(step)]?.grades?.[grade]) {
-      base[capitalize(step)].grades[grade].weight = String(row.totalWeight);
+      return;
+    }
+
+    // Other steps (grade-based)
+    const stepKey = capitalize(step);
+
+    if (base[stepKey]?.grades && grade in base[stepKey].grades) {
+      base[stepKey].grades[grade].weight = String(row.totalWeight);
     }
   });
 
   setProcessTables(base);
+
 }, [selectedBatch]);
 
 // Re-init table whenever dialog opens
