@@ -126,17 +126,19 @@ const calcYield = (num, denom) => {
 };
 
 const initProcessTablesFromEvents = useCallback(async () => {
-  if (!selectedBatch?.batchNumber || 
-      !selectedBatch?.processingType || 
-      !selectedBatch?.producer) return;
+  if (!selectedBatch) return;
+
+  const { batchNumber, processingType, producer } = selectedBatch;
+
+  if (!batchNumber || !processingType || !producer) {
+    console.error("batchNumber, processingType, and producer are required");
+    return;
+  }
 
   const res = await axios.get(
-    `https://processing-facility-backend.onrender.com/api/drymill/track-weight/${selectedBatch.batchNumber}`,
+    `https://processing-facility-backend.onrender.com/api/drymill/track-weight/${batchNumber}/${producer}`,
     {
-      params: {
-        processingType: selectedBatch.processingType,
-        producer: selectedBatch.producer
-      }
+      params: { processingType }
     }
   );
 
@@ -146,13 +148,11 @@ const initProcessTablesFromEvents = useCallback(async () => {
     const step = row.processStep;
     const grade = row.grade;
 
-    // HULLER (grade is NULL)
-    if (step === 'huller') {
+    if (step === "huller") {
       base.Huller.outputWeight = String(row.totalWeight);
       return;
     }
 
-    // Other steps (grade-based)
     const stepKey = capitalize(step);
 
     if (base[stepKey]?.grades && grade in base[stepKey].grades) {
