@@ -616,6 +616,42 @@ const PostProcessingQCPage = () => {
 
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography>Moisture</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={4}>
+                  <TextField
+                    name="kelembapan"
+                    label="Kelembapan (%)"
+                    type="number"
+                    value={formData.kelembapan}
+                    onChange={handleFormChange}
+                    fullWidth
+                    inputProps={{ min: 0, step: 0.1 }}
+                    InputProps={{
+                      placeholder: "Enter moisture percentage",
+                    }}
+                  />
+                </Grid>
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  name="waterActivity"
+                  label="Water Activity (aw)"
+                  type="number"
+                  value={formData.waterActivity}
+                  onChange={handleFormChange}
+                  fullWidth
+                  inputProps={{ min: 0, max: 1, step: 0.001 }}
+                  placeholder="e.g. 0.55"
+                />
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion defaultExpanded>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography>Defects</Typography>
             </AccordionSummary>
             <AccordionDetails>
