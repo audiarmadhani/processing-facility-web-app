@@ -391,14 +391,16 @@ const FermentationStation = () => {
       const queryParams = new URLSearchParams();
       if (referenceNumber) queryParams.append('referenceNumber', referenceNumber);
       if (experimentNumber) queryParams.append('experimentNumber', experimentNumber);
-      const response = await axios.get(`${API_BASE_URL}/api/fermentation/details/${batchNumber}?${queryParams.toString()}`);
-      setDetailsData(response.data || {});
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/fermentation/details/${batchNumber}?${queryParams.toString()}`
+      );
+
+      setDetailsData(response.data?.[0] || {});
+
     } catch (error) {
-      console.error('Error fetching details data:', error, 'Response:', error.response);
+      console.error('Error fetching details data:', error);
       setDetailsData({});
-      setSnackbarMessage(error.response?.data?.error || 'Failed to fetch details data.');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
     }
   };
 
@@ -1068,11 +1070,9 @@ useEffect(() => {
     setSelectedRow(null);
   };
 
-  const handleDetailsClick = async (row) => {
+  const handleDetailsClick = (row) => {
     setSelectedBatch(row);
-    await fetchDetailsData(row.batchNumber, row.referenceNumber, row.experimentNumber);
-    setOpenDetailsDialog(true);
-    setAnchorEl(null);
+    fetchDetailsData(row.batchNumber, row.referenceNumber, row.experimentNumber);
   };
 
   const calculateElapsedTime = (startDate, endDate) => {
