@@ -11,6 +11,7 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Menu,
   MenuItem,
   Box,
   Button,
@@ -20,6 +21,7 @@ import {
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import CloseIcon from '@mui/icons-material/Close';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 const API_BASE_URL = 'https://processing-facility-backend.onrender.com';
 
@@ -35,6 +37,11 @@ function InventoryManagement() {
   const [greenBeanFilterType, setGreenBeanFilterType] = useState('');
   const [openDetailsModal, setOpenDetailsModal] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [actionBatch, setActionBatch] = useState(null);
+  const openMenu = Boolean(anchorEl);
+  const [submenuAnchor, setSubmenuAnchor] = useState(null);
+  const [movementHistory, setMovementHistory] = useState([]);
 
   useEffect(() => {
     fetchCherryData();
@@ -82,6 +89,7 @@ function InventoryManagement() {
               totalBags: 0,
               storedDateTrunc: row.storedDateTrunc, // Use latest stored date
               processingType: row.processingType,
+              location: row.location || 'Bali',
             };
           }
           acc[key].weight += parseFloat(row.weight || 0);
@@ -111,14 +119,77 @@ function InventoryManagement() {
     setSnackbarOpen(false);
   };
 
-  const handleOpenDetailsModal = (batchNumber) => {
-    setSelectedBatch(batchNumber);
-    setOpenDetailsModal(true);
+  const handleOpenDetailsModal = async (batchNumber) => {
+    try {
+      setSelectedBatch(batchNumber);
+
+      // Fetch movement history
+      const movementRes = await fetch(
+        `${API_BASE_URL}/api/inventory/greenbeans/movements/${batchNumber}`
+      );
+
+      if (!movementRes.ok) {
+        throw new Error('Failed to fetch movement history');
+      }
+
+      const movementData = await movementRes.json();
+      setMovementHistory(movementData || []);
+
+      setOpenDetailsModal(true);
+
+    } catch (error) {
+      console.error('Error opening details modal:', error);
+
+      setSnackbarMessage('Failed to load transfer history');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+
+      setMovementHistory([]);
+    }
   };
 
   const handleCloseDetailsModal = () => {
     setOpenDetailsModal(false);
     setSelectedBatch(null);
+  };
+
+  const handleOpenMenu = (event, batchNumber) => {
+    setAnchorEl(event.currentTarget);
+    setActionBatch(batchNumber);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+    setActionBatch(null);
+  };
+
+  const handleMove = async (newLocation) => {
+    try {
+      await fetch(`${API_BASE_URL}/api/inventory/greenbeans/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batchNumber: actionBatch,
+          newLocation,
+          createdBy: 'system',
+          updatedBy: 'system'
+        })
+      });
+
+      fetchGreenBeanData();
+
+      setSnackbarMessage('Batch moved successfully');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+
+    } catch (err) {
+      setSnackbarMessage('Failed to move batch');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+
+    setSubmenuAnchor(null);
+    handleCloseMenu();
   };
 
   const cherryColumns = [
@@ -142,19 +213,56 @@ function InventoryManagement() {
     { field: 'totalBags', headerName: 'Total Bags', width: 100, sortable: true },
     { field: 'storedDateTrunc', headerName: 'Latest Stored Date', width: 160, sortable: true },
     { field: 'processingType', headerName: 'Processing Type', width: 150, sortable: true },
+    { field: 'location', headerName: 'Location', width: 180, sortable: true },
     {
-      field: 'details',
-      headerName: 'Details',
+      field: 'actions',
+      headerName: 'Actions',
       width: 120,
       sortable: false,
       renderCell: (params) => (
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleOpenDetailsModal(params.row.batchNumber)}
-        >
-          Details
-        </Button>
+        <>
+          <IconButton
+            size="small"
+            onClick={(event) => handleOpenMenu(event, params.row.batchNumber)}
+          >
+            <MoreVertIcon />
+          </IconButton>
+
+          <Menu
+            anchorEl={anchorEl}
+            open={openMenu && actionBatch === params.row.batchNumber}
+            onClose={handleCloseMenu}
+          >
+            <MenuItem onClick={() => {
+              handleOpenDetailsModal(actionBatch);
+              handleCloseMenu();
+            }}>
+              Details
+            </MenuItem>
+
+            <MenuItem
+              onClick={(e) => setSubmenuAnchor(e.currentTarget)}
+            >
+              Move
+            </MenuItem>
+          </Menu>
+
+          <Menu
+            anchorEl={submenuAnchor}
+            open={Boolean(submenuAnchor)}
+            onClose={() => setSubmenuAnchor(null)}
+          >
+            <MenuItem onClick={() => handleMove('Jakarta')}>
+              Jakarta
+            </MenuItem>
+            <MenuItem onClick={() => handleMove('Surabaya')}>
+              Surabaya
+            </MenuItem>
+            <MenuItem onClick={() => handleMove('Bali')}>
+              Bali
+            </MenuItem>
+          </Menu>
+        </>
       ),
     },
   ];
@@ -302,6 +410,24 @@ function InventoryManagement() {
             <Typography variant="h6">
               Batch Details: {selectedBatch}
             </Typography>
+            <Typography variant="h6" sx={{ mt: 3 }}>
+              Warehouse Transfer History
+            </Typography>
+
+            {movementHistory.length === 0 ? (
+              <Typography>No transfer history</Typography>
+            ) : (
+              movementHistory.map((move, index) => (
+                <Box key={index} sx={{ mb: 1 }}>
+                  <Typography variant="body2">
+                    {move.fromLocation} → {move.toLocation}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {new Date(move.movedAt).toLocaleString()} | {move.createdBy}
+                  </Typography>
+                </Box>
+              ))
+            )}
             <IconButton onClick={handleCloseDetailsModal}>
               <CloseIcon />
             </IconButton>
