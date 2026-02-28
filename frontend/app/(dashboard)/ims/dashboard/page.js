@@ -18,6 +18,11 @@ import {
   Modal,
   Paper,
   IconButton,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import CloseIcon from '@mui/icons-material/Close';
@@ -42,6 +47,10 @@ function InventoryManagement() {
   const openMenu = Boolean(anchorEl);
   const [submenuAnchor, setSubmenuAnchor] = useState(null);
   const [movementHistory, setMovementHistory] = useState([]);
+  const [selectedBatchForAction, setSelectedBatchForAction] = useState(null);
+  const warehouses = ["Jakarta", "Surabaya", "Bali"];
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingMoveLocation, setPendingMoveLocation] = useState(null);
 
   useEffect(() => {
     fetchCherryData();
@@ -155,22 +164,28 @@ function InventoryManagement() {
 
   const handleOpenMenu = (event, batchNumber) => {
     setAnchorEl(event.currentTarget);
-    setActionBatch(batchNumber);
+    setSelectedBatchForAction(batchNumber);
   };
 
   const handleCloseMenu = () => {
     setAnchorEl(null);
-    setActionBatch(null);
+    setSelectedBatchForAction(null);
   };
 
-  const handleMove = async (newLocation) => {
+  const handleConfirmMove = (location) => {
+    if (!location) return;
+    setPendingMoveLocation(location);
+    setConfirmOpen(true);
+  };
+
+  const handleMove = async () => {
     try {
       await fetch(`${API_BASE_URL}/api/inventory/greenbeans/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          batchNumber: actionBatch,
-          newLocation,
+          batchNumber: selectedBatchForAction,
+          newLocation: pendingMoveLocation,
           createdBy: 'system',
           updatedBy: 'system'
         })
@@ -178,7 +193,9 @@ function InventoryManagement() {
 
       fetchGreenBeanData();
 
-      setSnackbarMessage('Batch moved successfully');
+      setSnackbarMessage(
+        `Moved to ${pendingMoveLocation} successfully`
+      );
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
 
@@ -188,6 +205,8 @@ function InventoryManagement() {
       setSnackbarOpen(true);
     }
 
+    setConfirmOpen(false);
+    setPendingMoveLocation(null);
     setSubmenuAnchor(null);
     handleCloseMenu();
   };
@@ -217,52 +236,18 @@ function InventoryManagement() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 120,
+      width: 140,
       sortable: false,
       renderCell: (params) => (
-        <>
-          <IconButton
-            size="small"
-            onClick={(event) => handleOpenMenu(event, params.row.batchNumber)}
-          >
-            <MoreVertIcon />
-          </IconButton>
-
-          <Menu
-            anchorEl={anchorEl}
-            open={openMenu && actionBatch === params.row.batchNumber}
-            onClose={handleCloseMenu}
-          >
-            <MenuItem onClick={() => {
-              handleOpenDetailsModal(actionBatch);
-              handleCloseMenu();
-            }}>
-              Details
-            </MenuItem>
-
-            <MenuItem
-              onClick={(e) => setSubmenuAnchor(e.currentTarget)}
-            >
-              Move
-            </MenuItem>
-          </Menu>
-
-          <Menu
-            anchorEl={submenuAnchor}
-            open={Boolean(submenuAnchor)}
-            onClose={() => setSubmenuAnchor(null)}
-          >
-            <MenuItem onClick={() => handleMove('Jakarta')}>
-              Jakarta
-            </MenuItem>
-            <MenuItem onClick={() => handleMove('Surabaya')}>
-              Surabaya
-            </MenuItem>
-            <MenuItem onClick={() => handleMove('Bali')}>
-              Bali
-            </MenuItem>
-          </Menu>
-        </>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={(event) =>
+            handleOpenMenu(event, params.row.batchNumber)
+          }
+        >
+          Actions
+        </Button>
       ),
     },
   ];
@@ -398,59 +383,177 @@ function InventoryManagement() {
         <Paper
           sx={{
             p: 3,
-            maxWidth: 800,
-            maxHeight: '80vh',
-            overflowY: 'auto',
+            width: 900,
+            maxHeight: '85vh',
+            overflow: 'hidden',
             mx: 'auto',
             mt: '5vh',
             borderRadius: 2,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+
+          {/* HEADER */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 2,
+            }}
+          >
             <Typography variant="h6">
               Batch Details: {selectedBatch}
             </Typography>
-            <Typography variant="h6" sx={{ mt: 3 }}>
-              Warehouse Transfer History
-            </Typography>
 
-            {movementHistory.length === 0 ? (
-              <Typography>No transfer history</Typography>
-            ) : (
-              movementHistory.map((move, index) => (
-                <Box key={index} sx={{ mb: 1 }}>
-                  <Typography variant="body2">
-                    {move.fromLocation} → {move.toLocation}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(move.movedAt).toLocaleString()} | {move.createdBy}
-                  </Typography>
-                </Box>
-              ))
-            )}
             <IconButton onClick={handleCloseDetailsModal}>
               <CloseIcon />
             </IconButton>
           </Box>
-          <div style={{ height: 300, width: '100%' }}>
+
+          <Typography variant="body2" color="text.secondary">
+            Current Location: {
+              aggregatedGreenBeanData.find(
+                b => b.batchNumber === selectedBatch
+              )?.location || "-"
+            }
+          </Typography>
+
+          {/* DETAILS TABLE */}
+          <Box sx={{ height: 280, mb: 3 }}>
             <DataGrid
               rows={batchDetails}
               columns={detailColumns}
               pageSize={5}
-              rowsPerPageOptions={[5, 10, 20]}
-              disableSelectionOnClick
-              sortingOrder={['asc', 'desc']}
-              autosizeOnMount
-              autosizeOptions={{
-                includeHeaders: true,
-                includeOutliers: true,
-                expand: true,
-              }}
+              rowsPerPageOptions={[5, 10]}
+              disableRowSelectionOnClick
               rowHeight={35}
             />
-          </div>
+          </Box>
+
+          {/* DIVIDER */}
+          <Divider sx={{ mb: 2 }} />
+
+          {/* TRANSFER HISTORY */}
+          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+            Warehouse Transfer History
+          </Typography>
+
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: 'auto',
+              pr: 1,
+            }}
+          >
+            {movementHistory.length === 0 ? (
+              <Typography color="text.secondary">
+                No transfer history
+              </Typography>
+            ) : (
+              movementHistory.map((move, index) => (
+                <Paper
+                  key={index}
+                  variant="outlined"
+                  sx={{ p: 1.5, mb: 1 }}
+                >
+                  <Typography variant="body2">
+                    <strong>{move.fromLocation}</strong> →{" "}
+                    <strong>{move.toLocation}</strong>
+                  </Typography>
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    {new Date(move.movedAt).toLocaleString()} | {move.createdBy}
+                  </Typography>
+                </Paper>
+              ))
+            )}
+          </Box>
         </Paper>
       </Modal>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+      >
+        <MenuItem
+          onClick={() => {
+            handleOpenDetailsModal(selectedBatchForAction);
+            handleCloseMenu();
+          }}
+        >
+          Details
+        </MenuItem>
+
+        <MenuItem
+          onClick={(event) => {
+            setSubmenuAnchor(event.currentTarget);
+            setAnchorEl(null); // close main menu
+          }}
+        >
+          Move
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        anchorEl={submenuAnchor}
+        open={Boolean(submenuAnchor)}
+        onClose={() => setSubmenuAnchor(null)}
+      >
+        {warehouses.map((warehouse) => {
+          const currentLocation =
+            aggregatedGreenBeanData.find(
+              b => b.batchNumber === selectedBatchForAction
+            )?.location;
+
+          const disabled = currentLocation === warehouse;
+
+          return (
+            <MenuItem
+              key={warehouse}
+              disabled={disabled}
+              onClick={() => handleConfirmMove(warehouse)}
+            >
+              {warehouse}
+              {disabled && (
+                <Typography
+                  variant="caption"
+                  sx={{ ml: 1, color: 'text.secondary' }}
+                >
+                  (Current)
+                </Typography>
+              )}
+            </MenuItem>
+          );
+        })}
+      </Menu>
+
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirm Transfer</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Move batch <strong>{selectedBatchForAction}</strong> to{" "}
+            <strong>{pendingMoveLocation}</strong> warehouse?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleMove}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
