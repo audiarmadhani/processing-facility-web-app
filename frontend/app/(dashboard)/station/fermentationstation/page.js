@@ -2069,12 +2069,12 @@ useEffect(() => {
                 onChange={(e) => setDetailsData({ ...detailsData, batchNumber: e.target.value })}
                 fullWidth
                 disabled
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="reference-number-details-label">Reference Number</InputLabel>
                 <Select
                   labelId="reference-number-details-label"
@@ -2101,7 +2101,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="processing-type-details-label">Processing Type</InputLabel>
                 <Select
                   labelId="processing-type-details-label"
@@ -2130,7 +2130,7 @@ useEffect(() => {
                 value={detailsData.experimentNumber || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, experimentNumber: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2140,7 +2140,7 @@ useEffect(() => {
                 value={detailsData.description || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, description: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2151,12 +2151,12 @@ useEffect(() => {
                 onChange={(e) => setDetailsData({ ...detailsData, farmerName: e.target.value })}
                 fullWidth
                 disabled
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="type-details-label">Type</InputLabel>
                 <Select
                   labelId="type-details-label"
@@ -2171,7 +2171,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="variety-details-label">Variety</InputLabel>
                 <Select
                   labelId="variety-details-label"
@@ -2191,7 +2191,7 @@ useEffect(() => {
                 value={detailsData.harvestDate || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, harvestDate: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -2203,7 +2203,7 @@ useEffect(() => {
                 value={detailsData.harvestAt || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, harvestAt: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -2215,7 +2215,7 @@ useEffect(() => {
                 value={detailsData.receivedAt || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, receivedAt: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -2227,7 +2227,7 @@ useEffect(() => {
                 value={detailsData.receivedWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, receivedWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2238,7 +2238,7 @@ useEffect(() => {
                 value={detailsData.rejectWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, rejectWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2249,7 +2249,7 @@ useEffect(() => {
                 value={detailsData.defectWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, defectWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2260,7 +2260,7 @@ useEffect(() => {
                 value={detailsData.damagedWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, damagedWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2271,7 +2271,7 @@ useEffect(() => {
                 value={detailsData.lostWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, lostWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2282,7 +2282,7 @@ useEffect(() => {
                 value={detailsData.preprocessingWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, preprocessingWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2293,7 +2293,7 @@ useEffect(() => {
                 value={detailsData.quality || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, quality: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2304,7 +2304,7 @@ useEffect(() => {
                 value={detailsData.brix || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, brix: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2314,7 +2314,7 @@ useEffect(() => {
                 value={detailsData.productLine || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, productLine: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2322,7 +2322,7 @@ useEffect(() => {
           <Typography variant="h6" gutterBottom>Pre-Fermentation Details</Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="pre-storage-details-label">Pre-storage</InputLabel>
                 <Select
                   labelId="pre-storage-details-label"
@@ -2341,7 +2341,7 @@ useEffect(() => {
                 value={detailsData.preStorageCondition || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, preStorageCondition: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2352,7 +2352,7 @@ useEffect(() => {
                 value={detailsData.preFermentationStorageGoal || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, preFermentationStorageGoal: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2363,7 +2363,7 @@ useEffect(() => {
                 value={detailsData.preFermentationStorageStart || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, preFermentationStorageStart: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -2375,13 +2375,13 @@ useEffect(() => {
                 value={detailsData.preFermentationStorageEnd || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, preFermentationStorageEnd: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="pre-pulped-details-label">Pre-pulped</InputLabel>
                 <Select
                   labelId="pre-pulped-details-label"
@@ -2395,7 +2395,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="pre-pulped-delva-details-label">Pre-pulped Delva</InputLabel>
                 <Select
                   labelId="pre-pulped-delva-details-label"
@@ -2415,7 +2415,7 @@ useEffect(() => {
                 value={detailsData.preFermentationTimeAfterPulping || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, preFermentationTimeAfterPulping: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -2427,12 +2427,12 @@ useEffect(() => {
                 value={detailsData.prePulpedWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, prePulpedWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="wesorter-details-label">Wesorter</InputLabel>
                 <Select
                   labelId="wesorter-details-label"
@@ -2446,7 +2446,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="pre-classifier-details-label">Pre-classifier</InputLabel>
                 <Select
                   labelId="pre-classifier-details-label"
@@ -2463,7 +2463,7 @@ useEffect(() => {
           <Typography variant="h6" gutterBottom>Fermentation Details</Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="cherry-type-details-label">Cherry Type</InputLabel>
                 <Select
                   labelId="cherry-type-details-label"
@@ -2483,12 +2483,12 @@ useEffect(() => {
                 value={detailsData.fermentationCherryWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationCherryWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="fermentation-details-label">Fermentation</InputLabel>
                 <Select
                   labelId="fermentation-details-label"
@@ -2502,7 +2502,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="fermentation-tank-details-label">Fermentation Tank</InputLabel>
                 <Select
                   labelId="fermentation-tank-details-label"
@@ -2522,7 +2522,7 @@ useEffect(() => {
                 value={detailsData.fermentationStarter || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationStarter: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2533,12 +2533,12 @@ useEffect(() => {
                 value={detailsData.fermentationStarterAmount || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationStarterAmount: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="gas-details-label">Gas</InputLabel>
                 <Select
                   labelId="gas-details-label"
@@ -2561,12 +2561,12 @@ useEffect(() => {
                 value={detailsData.pressure || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, pressure: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="is-submerged-details-label">Is Submerged</InputLabel>
                 <Select
                   labelId="is-submerged-details-label"
@@ -2586,7 +2586,7 @@ useEffect(() => {
                 value={detailsData.totalVolume || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, totalVolume: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2597,7 +2597,7 @@ useEffect(() => {
                 value={detailsData.waterUsed || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, waterUsed: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2608,7 +2608,7 @@ useEffect(() => {
                 value={detailsData.starterUsed || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, starterUsed: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2619,7 +2619,7 @@ useEffect(() => {
                 value={detailsData.stirring || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, stirring: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={detailsFieldDisabled.stirring}
               />
@@ -2631,7 +2631,7 @@ useEffect(() => {
                 value={detailsData.fermentationTemperature || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationTemperature: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={detailsFieldDisabled.fermentationTemperature}
               />
@@ -2643,7 +2643,7 @@ useEffect(() => {
                 value={detailsData.pH || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, pH: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={detailsFieldDisabled.pH}
               />
@@ -2655,7 +2655,7 @@ useEffect(() => {
                 value={detailsData.fermentationTimeTarget || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationTimeTarget: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2666,7 +2666,7 @@ useEffect(() => {
                 value={detailsData.fermentationStart || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationStart: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -2678,7 +2678,7 @@ useEffect(() => {
                 value={detailsData.fermentationEnd || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationEnd: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -2690,7 +2690,7 @@ useEffect(() => {
                 value={detailsData.finalPH || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, finalPH: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2701,7 +2701,7 @@ useEffect(() => {
                 value={detailsData.finalTDS || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, finalTDS: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2712,7 +2712,7 @@ useEffect(() => {
                 value={detailsData.finalTemperature || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, finalTemperature: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2723,12 +2723,12 @@ useEffect(() => {
                 value={detailsData.postFermentationWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, postFermentationWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="post-pulped-details-label">Post-pulped</InputLabel>
                 <Select
                   labelId="post-pulped-details-label"
@@ -2747,7 +2747,7 @@ useEffect(() => {
                 value={detailsData.airlock || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, airlock: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={detailsFieldDisabled.airlock}
               />
@@ -2781,7 +2781,7 @@ useEffect(() => {
                 value={detailsData.leachate || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, leachate: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -2822,7 +2822,7 @@ useEffect(() => {
           <Typography variant="h6" gutterBottom>Second Fermentation Details</Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-fermentation-details-label">Second Fermentation</InputLabel>
                 <Select
                   labelId="second-fermentation-details-label"
@@ -2836,7 +2836,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-fermentation-tank-details-label">Second Fermentation Tank</InputLabel>
                 <Select
                   labelId="second-fermentation-tank-details-label"
@@ -2852,7 +2852,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-washed-delva-details-label">Washed with Delva</InputLabel>
                 <Select
                   labelId="second-washed-delva-details-label"
@@ -2867,7 +2867,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-washed-details-label">Washed</InputLabel>
                 <Select
                   labelId="second-washed-details-label"
@@ -2888,7 +2888,7 @@ useEffect(() => {
                 value={detailsData.secondFermentationCherryWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFermentationCherryWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -2900,7 +2900,7 @@ useEffect(() => {
                 value={detailsData.secondFermentationPulpedWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFermentationPulpedWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -2911,13 +2911,13 @@ useEffect(() => {
                 value={detailsData.secondStarterType || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondStarterType: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-gas-details-label">Second Gas</InputLabel>
                 <Select
                   labelId="second-gas-details-label"
@@ -2940,13 +2940,13 @@ useEffect(() => {
                 value={detailsData.secondPressure || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondPressure: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-is-submerged-details-label">Second Is Submerged</InputLabel>
                 <Select
                   labelId="second-is-submerged-details-label"
@@ -2967,7 +2967,7 @@ useEffect(() => {
                 value={detailsData.secondTotalVolume || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondTotalVolume: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -2979,7 +2979,7 @@ useEffect(() => {
                 value={detailsData.secondWaterUsed || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondWaterUsed: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -2991,7 +2991,7 @@ useEffect(() => {
                 value={detailsData.secondMosstoUsed || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondMosstoUsed: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -3003,7 +3003,7 @@ useEffect(() => {
                 value={detailsData.secondActualVolume || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondActualVolume: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -3015,7 +3015,7 @@ useEffect(() => {
                 value={detailsData.secondTemperature || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondTemperature: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -3027,7 +3027,7 @@ useEffect(() => {
                 value={detailsData.secondFermentationTimeTarget || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFermentationTimeTarget: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 disabled={isDetailsSecondFermentationDisabled}
               />
@@ -3039,7 +3039,7 @@ useEffect(() => {
                 value={detailsData.secondFermentationStart || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFermentationStart: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
                 disabled={isDetailsSecondFermentationDisabled}
@@ -3052,7 +3052,7 @@ useEffect(() => {
                 value={detailsData.secondFermentationEnd || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFermentationEnd: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
                 disabled={isDetailsSecondFermentationDisabled}
@@ -3062,7 +3062,7 @@ useEffect(() => {
           <Typography variant="h6" gutterBottom>Drying Details</Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="drying-area-details-label">Drying Area</InputLabel>
                 <Select
                   labelId="drying-area-details-label"
@@ -3083,7 +3083,7 @@ useEffect(() => {
                 value={detailsData.avgTemperature || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, avgTemperature: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3094,7 +3094,7 @@ useEffect(() => {
                 value={detailsData.preDryingWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, preDryingWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3105,7 +3105,7 @@ useEffect(() => {
                 value={detailsData.finalMoisture || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, finalMoisture: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3116,7 +3116,7 @@ useEffect(() => {
                 value={detailsData.postDryingWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, postDryingWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3127,7 +3127,7 @@ useEffect(() => {
                 value={detailsData.dryingStart || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, dryingStart: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -3139,13 +3139,13 @@ useEffect(() => {
                 value={detailsData.dryingEnd || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, dryingEnd: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-drying-details-label">Second Drying</InputLabel>
                 <Select
                   labelId="second-drying-details-label"
@@ -3159,7 +3159,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="second-drying-area-details-label">Second Drying Area</InputLabel>
                 <Select
                   labelId="second-drying-area-details-label"
@@ -3180,7 +3180,7 @@ useEffect(() => {
                 value={detailsData.secondAverageTemperature || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondAverageTemperature: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3191,7 +3191,7 @@ useEffect(() => {
                 value={detailsData.secondFinalMoisture || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFinalMoisture: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3202,7 +3202,7 @@ useEffect(() => {
                 value={detailsData.secondPostDryingWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondPostDryingWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3213,7 +3213,7 @@ useEffect(() => {
                 value={detailsData.secondDryingStart || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondDryingStart: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
@@ -3225,13 +3225,13 @@ useEffect(() => {
                 value={detailsData.secondDryingEnd || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, secondDryingEnd: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="rehydration-details-label">Rehydration</InputLabel>
                 <Select
                   labelId="rehydration-details-label"
@@ -3245,7 +3245,7 @@ useEffect(() => {
               </FormControl>
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="drying-details-label">Drying Method</InputLabel>
                 <Select
                   labelId="drying-details-label"
@@ -3263,7 +3263,7 @@ useEffect(() => {
           <Typography variant="h6" gutterBottom>Post-Drying Details</Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="storage-details-label">Storage</InputLabel>
                 <Select
                   labelId="storage-details-label"
@@ -3283,7 +3283,7 @@ useEffect(() => {
                 value={detailsData.storageTemperature || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, storageTemperature: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
@@ -3294,13 +3294,13 @@ useEffect(() => {
                 value={detailsData.hullingTime || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, hullingTime: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl fullWidth variant="filled" sx={{ mt: 1 }}>
+              <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
                 <InputLabel id="bag-type-details-label">Bag Type</InputLabel>
                 <Select
                   labelId="bag-type-details-label"
@@ -3320,7 +3320,7 @@ useEffect(() => {
                 value={detailsData.postHullingWeight || ''}
                 onChange={(e) => setDetailsData({ ...detailsData, postHullingWeight: e.target.value })}
                 fullWidth
-                variant="filled"
+                variant="outlined"
                 sx={{ mt: 1 }}
               />
             </Grid>
