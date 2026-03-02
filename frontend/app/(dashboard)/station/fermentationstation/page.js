@@ -1178,42 +1178,40 @@ useEffect(() => {
   ];
 
   const downloadFermentationDataExcel = (row) => {
-    const data = [
-      {
-        'Batch Number': row.batchNumber,
-        'Reference Number': row.referenceNumber || '',
-        'Experiment Number': row.experimentNumber || '',
-        'Farmer': row.farmerName || '',
-        'Processing Type': row.processingType || '',
-        'Tank': row.tank || '',
-        'Fermentation Start': row.fermentationStart
-          ? dayjs(row.fermentationStart)
-              .tz('Asia/Makassar')
-              .format('YYYY-MM-DD HH:mm')
-          : '',
-        'Fermentation End': row.fermentationEnd
-          ? dayjs(row.fermentationEnd)
-              .tz('Asia/Makassar')
-              .format('YYYY-MM-DD HH:mm')
-          : '',
-        'Status': row.status || '',
-        'Created By': row.createdBy || '',
-        'Notes': row.notes || ''
-      }
-    ];
+    // Clone row to avoid mutating original
+    const exportData = { ...row };
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    // Remove internal fields you don’t want
+    delete exportData.id;
+
+    // Format all date fields consistently
+    Object.keys(exportData).forEach(key => {
+      if (
+        key.toLowerCase().includes("date") ||
+        key.toLowerCase().includes("start") ||
+        key.toLowerCase().includes("end") ||
+        key.toLowerCase().includes("time")
+      ) {
+        if (exportData[key]) {
+          exportData[key] = dayjs(exportData[key])
+            .tz('Asia/Makassar')
+            .format('YYYY-MM-DD HH:mm:ss');
+        }
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet([exportData]);
     const workbook = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(
       workbook,
       worksheet,
-      'Fermentation Data'
+      'Fermentation Full Data'
     );
 
     XLSX.writeFile(
       workbook,
-      `Fermentation_${row.batchNumber}.xlsx`
+      `Fermentation_${row.batchNumber}_FULL.xlsx`
     );
   };
 
