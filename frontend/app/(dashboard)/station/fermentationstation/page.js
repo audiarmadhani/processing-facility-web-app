@@ -1898,7 +1898,19 @@ useEffect(() => {
 
       <Dialog open={openWeightDialog} onClose={() => setOpenWeightDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber}</DialogTitle>
-        <DialogContent>
+        <DialogContent
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#1E1E1E',
+            },
+            '& .MuiOutlinedInput-root.Mui-disabled': {
+              backgroundColor: '#1E1E1E',
+            },
+            '& .MuiSelect-select': {
+              backgroundColor: 'transparent',
+            }
+          }}
+        >
           <Typography variant="h6" gutterBottom>Add Weight Measurement</Typography>
           <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
             <Grid item xs={4}>
@@ -1997,7 +2009,19 @@ useEffect(() => {
 
       <Dialog open={openFinishDialog} onClose={() => setOpenFinishDialog(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Finish Fermentation - Batch {selectedRow?.batchNumber}</DialogTitle>
-        <DialogContent>
+        <DialogContent
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#1E1E1E',
+            },
+            '& .MuiOutlinedInput-root.Mui-disabled': {
+              backgroundColor: '#1E1E1E',
+            },
+            '& .MuiSelect-select': {
+              backgroundColor: 'transparent',
+            }
+          }}
+        >
           <TextField
             label="End Date and Time"
             type="datetime-local"
@@ -2023,7 +2047,19 @@ useEffect(() => {
 
       <Dialog open={openDetailsDialog} onClose={() => setOpenDetailsDialog(false)} maxWidth="lg" fullWidth>
         <DialogTitle>Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
-        <DialogContent>
+        <DialogContent
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#1E1E1E',
+            },
+            '& .MuiOutlinedInput-root.Mui-disabled': {
+              backgroundColor: '#1E1E1E',
+            },
+            '& .MuiSelect-select': {
+              backgroundColor: 'transparent',
+            }
+          }}
+        >
           <Typography variant="h6" gutterBottom>Cherry Information</Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={4}>
