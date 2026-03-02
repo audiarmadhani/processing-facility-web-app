@@ -1070,9 +1070,20 @@ useEffect(() => {
     setSelectedRow(null);
   };
 
-  const handleDetailsClick = (row) => {
+  const handleDetailsClick = async (row) => {
     setSelectedBatch(row);
-    fetchDetailsData(row.batchNumber, row.referenceNumber, row.experimentNumber);
+    handleMenuClose();
+
+    try {
+      await fetchDetailsData(
+        row.batchNumber,
+        row.referenceNumber,
+        row.experimentNumber
+      );
+      setOpenDetailsDialog(true);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const calculateElapsedTime = (startDate, endDate) => {
