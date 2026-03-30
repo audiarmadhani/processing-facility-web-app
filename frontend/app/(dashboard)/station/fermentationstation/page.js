@@ -1102,18 +1102,23 @@ useEffect(() => {
       headerName: 'Batch Number',
       width: 180,
       renderCell: ({ row }) => {
-        const isFinished = row.status === 'Finished';
+        const status = row.status?.toLowerCase();
+        const isFinished = status === 'finished';
 
         return (
           <Box
             sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
               px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              fontWeight: 600,
-              color: isFinished ? '#1B5E20' : '#F57F17',
+
               backgroundColor: isFinished ? '#C8E6C9' : '#FFF9C4',
-              display: 'inline-block',
+              color: isFinished ? '#1B5E20' : '#F57F17',
+
+              fontWeight: 600,
+              borderRadius: 0, // 🔥 remove rounded
             }}
           >
             {row.batchNumber}
