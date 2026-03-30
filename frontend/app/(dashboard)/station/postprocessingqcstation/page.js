@@ -274,36 +274,59 @@ const PostProcessingQCPage = () => {
   };
 
   const handleCapture = async () => {
-    const imageSrc = webcamRef.current.getScreenshot();
+    try {
+      const imageSrc = webcamRef.current.getScreenshot();
 
-    const base64 = imageSrc.split(",")[1];
+      // convert base64 → blob → file
+      const blob = await fetch(imageSrc).then(res => res.blob());
+      const file = new File([blob], `qc_${Date.now()}.jpg`, {
+        type: "image/jpeg"
+      });
 
-    const upload = await axios.post(
-      "https://script.google.com/macros/s/AKfycbznbawzJcY1sdgNYzCElpEnH-Boi-xF0_sYEdRfJh3M_HwoCkJPHZtgmTyvpJukKKY/exec",
-      {
-        image: base64,
-        batchNumber: selectedBatch.batchNumber,
-        filename: `qc_${Date.now()}.jpg`
-      }
-    );
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      formDataUpload.append("batchNumber", selectedBatch.batchNumber);
+      formDataUpload.append("module", "GB-QC"); // 🔥 IMPORTANT
 
-    const imageUrl = upload.data.preview;
+      // upload to YOUR backend (not Apps Script)
+      const uploadRes = await axios.post(
+        "https://processing-facility-backend.onrender.com/api/upload-image",
+        formDataUpload
+      );
 
-    await axios.post(
-      "https://processing-facility-backend.onrender.com/api/postproqc/image",
-      {
-        batchNumber: selectedBatch.batchNumber,
-        imageUrl
-      }
-    );
+      const imageUrl = uploadRes.data.url;
 
-    // local download
-    const link = document.createElement("a");
-    link.href = imageSrc;
-    link.download = `QC_${selectedBatch.batchNumber}.jpg`;
-    link.click();
+      // save to QC history
+      await axios.post(
+        "https://processing-facility-backend.onrender.com/api/postproqc/image",
+        {
+          batchNumber: selectedBatch.batchNumber,
+          imageUrl
+        }
+      );
 
-    setOpenCamera(false);
+      // download locally
+      const link = document.createElement("a");
+      link.href = imageSrc;
+      link.download = `QC_${selectedBatch.batchNumber}_${Date.now()}.jpg`;
+      link.click();
+
+      setSnackbar({
+        open: true,
+        message: "Image captured & uploaded successfully",
+        severity: "success",
+      });
+
+      setOpenCamera(false);
+
+    } catch (err) {
+      console.error("Capture error:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to capture/upload image",
+        severity: "error",
+      });
+    }
   };
 
   const handleExportToPDF = (row) => {

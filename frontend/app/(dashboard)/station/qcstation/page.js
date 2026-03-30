@@ -374,6 +374,7 @@ const QCStation = () => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("batchNumber", batchNumber);
+      formData.append("module", "Cherry-QC");
 
       const response = await axios.post(`${API_BASE_URL}/api/upload-image`, formData);
       console.log("Image uploaded successfully:", response.data);
