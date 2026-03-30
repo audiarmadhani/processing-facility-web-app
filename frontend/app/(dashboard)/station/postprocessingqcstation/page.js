@@ -31,6 +31,8 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { useSession } from "next-auth/react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import Webcam from "react-webcam";
+import { useRef } from "react";
 
 const PostProcessingQCPage = () => {
   const { data: session, status } = useSession();
@@ -39,6 +41,8 @@ const PostProcessingQCPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
+  const webcamRef = useRef(null);
+  const [openCamera, setOpenCamera] = useState(false);
   const [formData, setFormData] = useState({
     seranggaHidup: null,
     bijiBauBusuk: null,
@@ -267,6 +271,39 @@ const PostProcessingQCPage = () => {
       console.error("Error saving QC data:", error);
       setSnackbar({ open: true, message: "Failed to save QC data!", severity: "error" });
     }
+  };
+
+  const handleCapture = async () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+
+    const base64 = imageSrc.split(",")[1];
+
+    const upload = await axios.post(
+      "https://script.google.com/macros/s/AKfycbznbawzJcY1sdgNYzCElpEnH-Boi-xF0_sYEdRfJh3M_HwoCkJPHZtgmTyvpJukKKY/exec",
+      {
+        image: base64,
+        batchNumber: selectedBatch.batchNumber,
+        filename: `qc_${Date.now()}.jpg`
+      }
+    );
+
+    const imageUrl = upload.data.preview;
+
+    await axios.post(
+      "https://processing-facility-backend.onrender.com/api/postproqc/image",
+      {
+        batchNumber: selectedBatch.batchNumber,
+        imageUrl
+      }
+    );
+
+    // local download
+    const link = document.createElement("a");
+    link.href = imageSrc;
+    link.download = `QC_${selectedBatch.batchNumber}.jpg`;
+    link.click();
+
+    setOpenCamera(false);
   };
 
   const handleExportToPDF = (row) => {
@@ -742,7 +779,12 @@ const PostProcessingQCPage = () => {
           </Accordion>
 
         </DialogContent>
+
         <DialogActions>
+          <Button onClick={() => setOpenCamera(true)}>
+            Capture Image
+          </Button>
+
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button
             variant="contained"
@@ -758,6 +800,29 @@ const PostProcessingQCPage = () => {
             disabled={!isFormComplete()}
           >
             Complete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openCamera} onClose={() => setOpenCamera(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Capture QC Image</DialogTitle>
+
+        <DialogContent sx={{ textAlign: "center" }}>
+          <Webcam
+            audio={false}
+            ref={webcamRef}
+            screenshotFormat="image/jpeg"
+            width="100%"
+            videoConstraints={{
+              facingMode: "environment"
+            }}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenCamera(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleCapture}>
+            Capture
           </Button>
         </DialogActions>
       </Dialog>

@@ -1097,7 +1097,30 @@ useEffect(() => {
   };
 
   const fermentationColumns = [
-    { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
+    {
+      field: 'batchNumber',
+      headerName: 'Batch Number',
+      width: 180,
+      renderCell: ({ row }) => {
+        const isFinished = row.status === 'Finished';
+
+        return (
+          <Box
+            sx={{
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              fontWeight: 600,
+              color: isFinished ? '#1B5E20' : '#F57F17',
+              backgroundColor: isFinished ? '#C8E6C9' : '#FFF9C4',
+              display: 'inline-block',
+            }}
+          >
+            {row.batchNumber}
+          </Box>
+        );
+      },
+    },
     { field: 'referenceNumber', headerName: 'Reference Number', width: 180 },
     { field: 'experimentNumber', headerName: 'Experiment Number', width: 180 },
     { field: 'processingType', headerName: 'Processing Type', width: 180 },
