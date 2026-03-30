@@ -190,13 +190,18 @@ const FermentationStation = () => {
   const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
   );
+
+  const bucketCodes = Array.from({ length: 10 }, (_, i) => 
+    `BUC-HQ-${String(i + 1).padStart(4, '0')}`
+  );
+
   const producers = ['HQ', 'BTM'];
 
   const isCarrybrew = fermentationTank === 'Carrybrew';
   const isBiomaster = fermentationTank === 'Biomaster';
   const isBucketOrBB =
-    fermentationTank === 'Fermentation Bucket' ||
-    fermentationTank?.startsWith('BB-');
+    fermentationTank?.startsWith('BB-') ||
+    fermentationTank?.startsWith('BUC-');
 
   const fieldDisabled = {
     // temperature related
@@ -223,8 +228,8 @@ const FermentationStation = () => {
   const detailsIsCarrybrew = detailsTank === 'Carrybrew';
   const detailsIsBiomaster = detailsTank === 'Biomaster';
   const detailsIsBucketOrBB =
-    detailsTank === 'Fermentation Bucket' ||
-    detailsTank?.startsWith('BB-');
+    detailsTank?.startsWith('BB-') ||
+    detailsTank?.startsWith('BUC-');
 
   const detailsFieldDisabled = {
     fermentationTemperature: detailsIsCarrybrew || detailsIsBiomaster || detailsIsBucketOrBB,
@@ -1907,7 +1912,7 @@ useEffect(() => {
                     }
 
                     if (tabValue === 'Fermentation Bucket') {
-                      return row.tank === 'Fermentation Bucket';
+                      return row.tank?.startsWith('BUC-');
                     }
 
                     return row.tank === tabValue;
