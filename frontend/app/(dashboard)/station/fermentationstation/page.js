@@ -1100,7 +1100,7 @@ useEffect(() => {
     {
       field: 'batchNumber',
       headerName: 'Batch Number',
-      width: 180,
+      width: 220,
       renderCell: ({ row }) => {
         const status = row.status?.toLowerCase();
         const isFinished = status === 'finished';
