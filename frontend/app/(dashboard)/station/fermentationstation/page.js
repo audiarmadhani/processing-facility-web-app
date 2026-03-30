@@ -1901,11 +1901,17 @@ useEffect(() => {
             <div style={{ height: 800, width: '100%' }}>
               <DataGrid
                 rows={fermentationData
-                  .filter(row => 
-                    tabValue === 'Blue Barrel' 
-                      ? row.tank.startsWith('BB-HQ-') 
-                      : row.tank === tabValue
-                  )}
+                  .filter(row => {
+                    if (tabValue === 'Blue Barrel') {
+                      return row.tank?.startsWith('BB-');
+                    }
+
+                    if (tabValue === 'Fermentation Bucket') {
+                      return row.tank === 'Fermentation Bucket';
+                    }
+
+                    return row.tank === tabValue;
+                  })}
                 columns={fermentationColumns}
                 pageSize={5}
                 slots={{ toolbar: GridToolbar }}
