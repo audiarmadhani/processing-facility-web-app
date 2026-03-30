@@ -81,7 +81,7 @@ const FermentationStation = () => {
   const [cherryType, setCherryType] = useState('');
   const [fermentationCherryWeight, setFermentationCherryWeight] = useState('');
   const [fermentation, setFermentation] = useState('');
-  const [fermentationTank, setFermentationTank] = useState('');
+  const [tank, setTank] = useState('');
   const [fermentationStarter, setFermentationStarter] = useState('');
   const [fermentationStarterAmount, setFermentationStarterAmount] = useState('');
   const [gas, setGas] = useState('');
@@ -102,7 +102,7 @@ const FermentationStation = () => {
   const [postFermentationWeight, setPostFermentationWeight] = useState('');
   const [postPulped, setPostPulped] = useState('');
   const [secondFermentation, setSecondFermentation] = useState('');
-  const [secondFermentationTank, setSecondFermentationTank] = useState('');
+  const [secondTank, setSecondTank] = useState('');
   const [secondWashedDelva, setSecondWashedDelva] = useState('');
   const [secondWashed, setSecondWashed] = useState('');
   const [secondFermentationCherryWeight, setSecondFermentationCherryWeight] = useState('');
@@ -197,11 +197,11 @@ const FermentationStation = () => {
 
   const producers = ['HQ', 'BTM'];
 
-  const isCarrybrew = fermentationTank === 'Carrybrew';
-  const isBiomaster = fermentationTank === 'Biomaster';
+  const isCarrybrew = tank === 'Carrybrew';
+  const isBiomaster = tank === 'Biomaster';
   const isBucketOrBB =
-    fermentationTank?.startsWith('BB-') ||
-    fermentationTank?.startsWith('BUC-');
+    tank?.startsWith('BB-') ||
+    tank?.startsWith('BUC-');
 
   const fieldDisabled = {
     // temperature related
@@ -223,7 +223,7 @@ const FermentationStation = () => {
     tankAmount: isCarrybrew || isBiomaster,
   };
 
-  const detailsTank = detailsData.fermentationTank;
+  const detailsTank = detailsData.tank;
 
   const detailsIsCarrybrew = detailsTank === 'Carrybrew';
   const detailsIsBiomaster = detailsTank === 'Biomaster';
@@ -427,11 +427,11 @@ const FermentationStation = () => {
   if (fieldDisabled.brewTankTemperature) setBrewTankTemperature('');
   if (fieldDisabled.waterTemperature) setWaterTemperature('');
   if (fieldDisabled.coolerTemperature) setCoolerTemperature('');
-}, [fermentationTank]);
+}, [tank]);
 
 useEffect(() => {
   if (secondFermentation === 'no') {
-    setSecondFermentationTank('');
+    setSecondTank('');
     setSecondWashed('');
     setSecondWashedDelva('');
     setSecondStarterType('');
@@ -499,8 +499,8 @@ useEffect(() => {
     }
   };
 
-  const handleFermentationTankChange = (value) => {
-    setFermentationTank(value);
+  const handleTankChange = (value) => {
+    setTank(value);
     if (value !== 'Carrybrew') {
       setLeachateTarget('');
       setBrewTankTemperature('');
@@ -528,8 +528,8 @@ useEffect(() => {
       return;
     }
 
-    if (!batchNumber || !fermentationTank || !fermentationStart) {
-      setSnackbarMessage('batchNumber, fermentationTank, and fermentationStart are required.');
+    if (!batchNumber || !tank || !fermentationStart) {
+      setSnackbarMessage('batchNumber, tank, and fermentationStart are required.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -567,7 +567,7 @@ useEffect(() => {
       cherryType,
       fermentationCherryWeight: fermentationCherryWeight ? parseFloat(fermentationCherryWeight) : null,
       fermentation,
-      fermentationTank,
+      tank,
       fermentationStarter,
       fermentationStarterAmount: fermentationStarterAmount ? parseFloat(fermentationStarterAmount) : null,
       gas,
@@ -588,7 +588,7 @@ useEffect(() => {
       postFermentationWeight: postFermentationWeight ? parseFloat(postFermentationWeight) : null,
       postPulped,
       secondFermentation,
-      secondFermentationTank,
+      secondTank,
       secondWashedDelva,
       secondWashed,
       secondFermentationCherryWeight: secondFermentationCherryWeight ? parseFloat(secondFermentationCherryWeight) : null,
@@ -641,7 +641,7 @@ useEffect(() => {
 
     try {
       await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
-      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${fermentationTank}.`);
+      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${tank}.`);
       setSnackbarSeverity('success');
       resetForm();
       await fetchFermentationData();
@@ -688,7 +688,7 @@ useEffect(() => {
     setCherryType('');
     setFermentationCherryWeight('');
     setFermentation('');
-    setFermentationTank('');
+    setTank('');
     setFermentationStarter('');
     setFermentationStarterAmount('');
     setGas('');
@@ -709,7 +709,7 @@ useEffect(() => {
     setPostFermentationWeight('');
     setPostPulped('');
     setSecondFermentation('');
-    setSecondFermentationTank('');
+    setSecondTank('');
     setSecondWashedDelva('');
     setSecondWashed('');
     setSecondFermentationCherryWeight('');
@@ -792,7 +792,7 @@ useEffect(() => {
         cherryType: detailsData.cherryType || null,
         fermentationCherryWeight: detailsData.fermentationCherryWeight ? parseFloat(detailsData.fermentationCherryWeight) : null,
         fermentation: detailsData.fermentation || null,
-        fermentationTank: detailsData.fermentationTank || null,
+        tank: detailsData.tank || null,
         fermentationStarter: detailsData.fermentationStarter || null,
         fermentationStarterAmount: detailsData.fermentationStarterAmount ? parseFloat(detailsData.fermentationStarterAmount) : null,
         gas: detailsData.gas || null,
@@ -813,7 +813,7 @@ useEffect(() => {
         postFermentationWeight: detailsData.postFermentationWeight ? parseFloat(detailsData.postFermentationWeight) : null,
         postPulped: detailsData.postPulped || null,
         secondFermentation: detailsData.secondFermentation || null,
-        secondFermentationTank: detailsData.secondFermentationTank || null,
+        secondTank: detailsData.secondTank || null,
         secondWashedDelva: detailsData.secondWashedDelva || null,
         secondWashed: detailsData.secondWashed || null,
         secondFermentationCherryWeight: detailsData.secondFermentationCherryWeight ? parseFloat(detailsData.secondFermentationCherryWeight) : null,
@@ -903,7 +903,7 @@ useEffect(() => {
       { label: 'Wesorter', value: wesorter || '' },
       { label: 'Pre-classifier', value: preClassifier || '' },
       { label: 'Fermentation', value: fermentation || '' },
-      { label: 'Fermentation tank', value: fermentationTank || '' },
+      { label: 'Fermentation tank', value: tank || '' },
       { label: 'Airlock', value: airlock || '' },
       { label: 'Tank amount', value: tankAmount || '' },
       { label: 'Pulped', value: prePulped || '' },
@@ -1487,8 +1487,8 @@ useEffect(() => {
                         <InputLabel id="fermentation-tank-label">Fermentation Tank</InputLabel>
                         <Select
                           labelId="fermentation-tank-label"
-                          value={fermentationTank}
-                          onChange={(e) => handleFermentationTankChange(e.target.value)}
+                          value={tank}
+                          onChange={(e) => handleTankChange(e.target.value)}
                           input={<OutlinedInput label="Fermentation Tank" />}
                           MenuProps={MenuProps}
                         >
@@ -1688,8 +1688,8 @@ useEffect(() => {
                         <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
                         <Select
                           labelId="second-fermentation-tank-label"
-                          value={secondFermentationTank}
-                          onChange={(e) => setSecondFermentationTank(e.target.value)}
+                          value={secondTank}
+                          onChange={(e) => setSecondTank(e.target.value)}
                           input={<OutlinedInput label="Second Fermentation Tank" />}
                           MenuProps={MenuProps}
                           disabled={isSecondFermentationDisabled}
@@ -2543,8 +2543,8 @@ useEffect(() => {
                 <InputLabel id="fermentation-tank-details-label">Fermentation Tank</InputLabel>
                 <Select
                   labelId="fermentation-tank-details-label"
-                  value={detailsData.fermentationTank || ''}
-                  onChange={(e) => setDetailsData({ ...detailsData, fermentationTank: e.target.value })}
+                  value={detailsData.tank || ''}
+                  onChange={(e) => setDetailsData({ ...detailsData, tank: e.target.value })}
                   label="Fermentation Tank"
                 >
                   {availableTanks.map(tank => (
@@ -2877,8 +2877,8 @@ useEffect(() => {
                 <InputLabel id="second-fermentation-tank-details-label">Second Fermentation Tank</InputLabel>
                 <Select
                   labelId="second-fermentation-tank-details-label"
-                  value={detailsData.secondFermentationTank || ''}
-                  onChange={(e) => setDetailsData({ ...detailsData, secondFermentationTank: e.target.value })}
+                  value={detailsData.secondTank || ''}
+                  onChange={(e) => setDetailsData({ ...detailsData, secondTank: e.target.value })}
                   label="Second Fermentation Tank"
                   disabled={isDetailsSecondFermentationDisabled}
                 >
