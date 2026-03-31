@@ -773,116 +773,133 @@ useEffect(() => {
     try {
       const payload = {
         batchNumber: selectedBatch.batchNumber,
-        referenceNumber: detailsData.referenceNumber || null,
-        experimentNumber: detailsData.experimentNumber || null,
-        processingType: detailsData.processingType || null,
-        description: detailsData.description || null,
-        farmerName: detailsData.farmerName || null,
-        type: detailsData.type || null,
-        variety: detailsData.variety || null,
-        harvestDate: toISO(detailsData.harvestDate),
-        harvestAt: toISO(detailsData.harvestAt),
-        receivedAt: toISO(detailsData.receivedAt),
-        receivedWeight: detailsData.receivedWeight ? parseFloat(detailsData.receivedWeight) : null,
-        rejectWeight: detailsData.rejectWeight ? parseFloat(detailsData.rejectWeight) : null,
-        defectWeight: detailsData.defectWeight ? parseFloat(detailsData.defectWeight) : null,
-        damagedWeight: detailsData.damagedWeight ? parseFloat(detailsData.damagedWeight) : null,
-        lostWeight: detailsData.lostWeight ? parseFloat(detailsData.lostWeight) : null,
-        preprocessingWeight: detailsData.preprocessingWeight ? parseFloat(detailsData.preprocessingWeight) : null,
-        quality: detailsData.quality ? parseFloat(detailsData.quality) : null,
-        brix: detailsData.brix ? parseFloat(detailsData.brix) : null,
-        preStorage: detailsData.preStorage || null,
-        preStorageCondition: detailsData.preStorageCondition || null,
-        preFermentationStorageGoal: detailsData.preFermentationStorageGoal ? parseFloat(detailsData.preFermentationStorageGoal) : null,
-        preFermentationStorageStart: toISO(detailsData.preFermentationStorageStart),
-        preFermentationStorageEnd: toISO(detailsData.preFermentationStorageEnd),
-        prePulped: detailsData.prePulped || null,
-        prePulpedDelva: detailsData.prePulpedDelva || null,
-        preFermentationTimeAfterPulping: detailsData.preFermentationTimeAfterPulping ? parseFloat(detailsData.preFermentationTimeAfterPulping) : null,
-        prePulpedWeight: detailsData.prePulpedWeight ? parseFloat(detailsData.prePulpedWeight) : null,
-        cherryType: detailsData.cherryType || null,
-        fermentationCherryWeight: detailsData.fermentationCherryWeight ? parseFloat(detailsData.fermentationCherryWeight) : null,
-        fermentation: detailsData.fermentation || null,
-        tank: detailsData.tank || null,
-        fermentationStarter: detailsData.fermentationStarter || null,
-        fermentationStarterAmount: detailsData.fermentationStarterAmount ? parseFloat(detailsData.fermentationStarterAmount) : null,
-        gas: detailsData.gas || null,
-        pressure: detailsData.pressure ? parseFloat(detailsData.pressure) : null,
-        isSubmerged: detailsData.isSubmerged || null,
-        totalVolume: detailsData.totalVolume ? parseFloat(detailsData.totalVolume) : null,
-        waterUsed: detailsData.waterUsed ? parseFloat(detailsData.waterUsed) : null,
-        starterUsed: detailsData.starterUsed ? parseFloat(detailsData.starterUsed) : null,
-        stirring: detailsData.stirring ? parseFloat(detailsData.stirring) : null,
-        fermentationTemperature: detailsData.fermentationTemperature || null,
-        pH: detailsData.pH ? parseFloat(detailsData.pH) : null,
-        fermentationTimeTarget: detailsData.fermentationTimeTarget ? parseInt(detailsData.fermentationTimeTarget) : null,
-        fermentationStart: toISO(detailsData.fermentationStart),
-        fermentationEnd: toISO(detailsData.fermentationEnd),
-        finalPH: detailsData.finalPH ? parseFloat(detailsData.finalPH) : null,
-        finalTDS: detailsData.finalTDS ? parseFloat(detailsData.finalTDS) : null,
-        finalTemperature: detailsData.finalTemperature || null,
-        postFermentationWeight: detailsData.postFermentationWeight ? parseFloat(detailsData.postFermentationWeight) : null,
-        postPulped: detailsData.postPulped || null,
-        secondFermentation: detailsData.secondFermentation || null,
-        secondFermentationTank: detailsData.secondFermentationTank || null,
-        secondWashedDelva: detailsData.secondWashedDelva || null,
-        secondWashed: detailsData.secondWashed || null,
-        secondFermentationCherryWeight: detailsData.secondFermentationCherryWeight ? parseFloat(detailsData.secondFermentationCherryWeight) : null,
-        secondFermentationPulpedWeight: detailsData.secondFermentationPulpedWeight ? parseFloat(detailsData.secondFermentationPulpedWeight) : null,
-        secondStarterType: detailsData.secondStarterType || null,
-        secondGas: detailsData.secondGas || null,
-        secondPressure: detailsData.secondPressure ? parseFloat(detailsData.secondPressure) : null,
-        secondIsSubmerged: detailsData.secondIsSubmerged || null,
-        secondTotalVolume: detailsData.secondTotalVolume ? parseFloat(detailsData.secondTotalVolume) : null,
-        secondWaterUsed: detailsData.secondWaterUsed ? parseFloat(detailsData.secondWaterUsed) : null,
-        secondMosstoUsed: detailsData.secondMosstoUsed ? parseFloat(detailsData.secondMosstoUsed) : null,
-        secondActualVolume: detailsData.secondActualVolume ? parseFloat(detailsData.secondActualVolume) : null,
-        secondTemperature: detailsData.secondTemperature || null,
-        secondFermentationTimeTarget: detailsData.secondFermentationTimeTarget ? parseInt(detailsData.secondFermentationTimeTarget) : null,
-        secondFermentationStart: toISO(detailsData.secondFermentationStart),
-        secondFermentationEnd: toISO(detailsData.secondFermentationEnd),
-        dryingArea: detailsData.dryingArea || null,
-        avgTemperature: detailsData.avgTemperature ? parseFloat(detailsData.avgTemperature) : null,
-        preDryingWeight: detailsData.preDryingWeight ? parseFloat(detailsData.preDryingWeight) : null,
-        finalMoisture: detailsData.finalMoisture ? parseFloat(detailsData.finalMoisture) : null,
-        postDryingWeight: detailsData.postDryingWeight ? parseFloat(detailsData.postDryingWeight) : null,
-        dryingStart: toISO(detailsData.dryingStart),
-        dryingEnd: toISO(detailsData.dryingEnd),
-        secondDrying: detailsData.secondDrying || null,
-        secondDryingArea: detailsData.secondDryingArea || null,
-        secondAverageTemperature: detailsData.secondAverageTemperature ? parseFloat(detailsData.secondAverageTemperature) : null,
-        secondFinalMoisture: detailsData.secondFinalMoisture ? parseFloat(detailsData.secondFinalMoisture) : null,
-        secondPostDryingWeight: detailsData.secondPostDryingWeight ? parseFloat(detailsData.secondPostDryingWeight) : null,
-        secondDryingStart: toISO(detailsData.secondDryingStart),
-        secondDryingEnd: toISO(detailsData.secondDryingEnd),
-        rehydration: detailsData.rehydration || null,
-        storage: detailsData.storage || null,
-        storageTemperature: detailsData.storageTemperature ? parseFloat(detailsData.storageTemperature) : null,
-        hullingTime: toISO(detailsData.hullingTime),
-        bagType: detailsData.bagType || null,
-        postHullingWeight: detailsData.postHullingWeight ? parseFloat(detailsData.postHullingWeight) : null,
-        productLine: detailsData.productLine || null,
-        wesorter: detailsData.wesorter || null,
-        preClassifier: detailsData.preClassifier || null,
-        airlock: detailsData.airlock || null,
-        tankAmount: detailsData.tankAmount ? parseInt(detailsData.tankAmount) : null,
-        leachateTarget: detailsData.leachateTarget ? parseFloat(detailsData.leachateTarget) : null,
-        leachate: detailsData.leachate ? parseFloat(detailsData.leachate) : null,
-        brewTankTemperature: detailsData.brewTankTemperature ? parseFloat(detailsData.brewTankTemperature) : null,
-        waterTemperature: detailsData.waterTemperature ? parseFloat(detailsData.waterTemperature) : null,
-        coolerTemperature: detailsData.coolerTemperature ? parseFloat(detailsData.coolerTemperature) : null,
-        drying: detailsData.drying || null,
-        createdBy: session.user.name
+        tank: detailsData.tank, // keep identity field
       };
 
-      await axios.put(`${API_BASE_URL}/api/fermentation/details/${selectedBatch.batchNumber}`, payload);
+      // -------------------------
+      // 🧠 HELPERS
+      // -------------------------
+      const setIfValid = (key, value) => {
+        if (value !== undefined && value !== null && value !== '') {
+          payload[key] = value;
+        }
+      };
+
+      const setNumber = (key, value) => {
+        if (value !== undefined && value !== null && value !== '') {
+          const num = Number(value);
+          if (!isNaN(num)) payload[key] = num;
+        }
+      };
+
+      const setInt = (key, value) => {
+        if (value !== undefined && value !== null && value !== '') {
+          const num = parseInt(value);
+          if (!isNaN(num)) payload[key] = num;
+        }
+      };
+
+      const setDate = (key, value) => {
+        if (value) {
+          const iso = toISO(value);
+          if (iso) payload[key] = iso;
+        }
+      };
+
+      // -------------------------
+      // ✏️ BASIC FIELDS
+      // -------------------------
+      setIfValid('referenceNumber', detailsData.referenceNumber);
+      setIfValid('experimentNumber', detailsData.experimentNumber);
+      setIfValid('processingType', detailsData.processingType);
+      setIfValid('description', detailsData.description);
+      setIfValid('farmerName', detailsData.farmerName);
+      setIfValid('type', detailsData.type);
+      setIfValid('variety', detailsData.variety);
+
+      // -------------------------
+      // 📅 DATES
+      // -------------------------
+      setDate('harvestAt', detailsData.harvestAt);
+      setDate('receivedAt', detailsData.receivedAt);
+      setDate('fermentationStart', detailsData.fermentationStart);
+      setDate('fermentationEnd', detailsData.fermentationEnd);
+
+      // -------------------------
+      // 🔢 NUMBERS
+      // -------------------------
+      setNumber('receivedWeight', detailsData.receivedWeight);
+      setNumber('rejectWeight', detailsData.rejectWeight);
+      setNumber('defectWeight', detailsData.defectWeight);
+      setNumber('damagedWeight', detailsData.damagedWeight);
+      setNumber('lostWeight', detailsData.lostWeight);
+      setNumber('preprocessingWeight', detailsData.preprocessingWeight);
+      setNumber('quality', detailsData.quality);
+      setNumber('brix', detailsData.brix);
+
+      setNumber('pressure', detailsData.pressure);
+      setNumber('totalVolume', detailsData.totalVolume);
+      setNumber('waterUsed', detailsData.waterUsed);
+      setNumber('starterUsed', detailsData.starterUsed);
+      setNumber('stirring', detailsData.stirring);
+      setNumber('avgTemperature', detailsData.avgTemperature);
+      setNumber('pH', detailsData.pH);
+      setNumber('leachateTarget', detailsData.leachateTarget);
+      setNumber('leachate', detailsData.leachate);
+      setNumber('brewTankTemperature', detailsData.brewTankTemperature);
+      setNumber('waterTemperature', detailsData.waterTemperature);
+      setNumber('coolerTemperature', detailsData.coolerTemperature);
+      setNumber('secondPressure', detailsData.secondPressure);
+      setNumber('secondTemperature', detailsData.secondTemperature);
+
+      setInt('fermentationTimeTarget', detailsData.fermentationTimeTarget);
+      setInt('secondFermentationTimeTarget', detailsData.secondFermentationTimeTarget);
+      setInt('tankAmount', detailsData.tankAmount);
+
+      // -------------------------
+      // 🧪 ENUM / TEXT
+      // -------------------------
+      setIfValid('fermentation', detailsData.fermentation);
+      setIfValid('secondFermentation', detailsData.secondFermentation);
+      setIfValid('secondFermentationTank', detailsData.secondFermentationTank);
+      setIfValid('gas', detailsData.gas);
+      setIfValid('secondGas', detailsData.secondGas);
+      setIfValid('isSubmerged', detailsData.isSubmerged);
+      setIfValid('secondIsSubmerged', detailsData.secondIsSubmerged);
+
+      // -------------------------
+      // 🧾 META
+      // -------------------------
+      payload.createdBy = session.user.name;
+
+      // -------------------------
+      // 🚨 NOTHING TO UPDATE
+      // -------------------------
+      if (Object.keys(payload).length <= 2) {
+        setSnackbarMessage('No changes detected.');
+        setSnackbarSeverity('warning');
+        setOpenSnackbar(true);
+        return;
+      }
+
+      // -------------------------
+      // 🚀 API CALL
+      // -------------------------
+      await axios.patch(
+        `${API_BASE_URL}/api/fermentation/details/${selectedBatch.batchNumber}`,
+        payload
+      );
+
       setSnackbarMessage(`Details updated for batch ${selectedBatch.batchNumber}.`);
       setSnackbarSeverity('success');
       setOpenDetailsDialog(false);
       await fetchFermentationData();
+
     } catch (error) {
-      console.error('Error updating fermentation details:', error, 'Response:', error.response);
-      setSnackbarMessage(error.response?.data?.error || 'Failed to update details. Please try again.');
+      console.error('Error updating fermentation details:', error);
+      setSnackbarMessage(
+        error.response?.data?.error || 'Failed to update details.'
+      );
       setSnackbarSeverity('error');
     } finally {
       setOpenSnackbar(true);
