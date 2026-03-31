@@ -1928,8 +1928,8 @@ useEffect(() => {
               <Tab label="Biomaster" value="Biomaster" />
               <Tab label="Carrybrew" value="Carrybrew" />
               <Tab label="Washing Track" value="Washing Track" />
-              <Tab label="Blue Barrel" value="Blue Barrel" />
-              <Tab label="Fermentation Bucket" value="Fermentation Bucket" />
+              <Tab label="BB" value="Blue Barrel" />
+              <Tab label="Bucket" value="Fermentation Bucket" />
             </Tabs>
             <div style={{ height: 800, width: '100%' }}>
               <DataGrid
