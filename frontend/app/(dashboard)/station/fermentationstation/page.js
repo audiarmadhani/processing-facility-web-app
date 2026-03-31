@@ -174,6 +174,13 @@ const FermentationStation = () => {
   const [detailsData, setDetailsData] = useState({});
   const [referenceMappings, setReferenceMappings] = useState([]);
 
+  const formatDateTimeLocal = (date) => {
+    if (!date) return '';
+    return dayjs(date)
+      .tz('Asia/Makassar')
+      .format('YYYY-MM-DDTHH:mm');
+  };
+
   const derivedDate = fermentationStart
     ? dayjs(fermentationStart).tz('Asia/Makassar').format('DD/MM/YYYY HH:mm:ss')
     : dayjs().tz('Asia/Makassar').format('DD/MM/YYYY HH:mm:ss');
@@ -2700,7 +2707,7 @@ useEffect(() => {
               <TextField
                 label="Fermentation Start"
                 type="datetime-local"
-                value={detailsData.fermentationStart || ''}
+                value={formatDateTimeLocal(detailsData.fermentationStart)}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationStart: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -2712,7 +2719,7 @@ useEffect(() => {
               <TextField
                 label="Fermentation End"
                 type="datetime-local"
-                value={detailsData.fermentationEnd || ''}
+                value={formatDateTimeLocal(detailsData.fermentationEnd || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationEnd: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -3073,7 +3080,7 @@ useEffect(() => {
               <TextField
                 label="Second Fermentation Start"
                 type="datetime-local"
-                value={detailsData.secondFermentationStart || ''}
+                value={formatDateTimeLocal(detailsData.secondFermentationStart || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFermentationStart: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -3086,7 +3093,7 @@ useEffect(() => {
               <TextField
                 label="Second Fermentation End"
                 type="datetime-local"
-                value={detailsData.secondFermentationEnd || ''}
+                value={formatDateTimeLocal(detailsData.secondFermentationEnd || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, secondFermentationEnd: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -3161,7 +3168,7 @@ useEffect(() => {
               <TextField
                 label="Drying Start"
                 type="datetime-local"
-                value={detailsData.dryingStart || ''}
+                value={formatDateTimeLocal(detailsData.dryingStart || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, dryingStart: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -3173,7 +3180,7 @@ useEffect(() => {
               <TextField
                 label="Drying End"
                 type="datetime-local"
-                value={detailsData.dryingEnd || ''}
+                value={formatDateTimeLocal(detailsData.dryingEnd || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, dryingEnd: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -3247,7 +3254,7 @@ useEffect(() => {
               <TextField
                 label="Second Drying Start"
                 type="datetime-local"
-                value={detailsData.secondDryingStart || ''}
+                value={formatDateTimeLocal(detailsData.secondDryingStart || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, secondDryingStart: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -3259,7 +3266,7 @@ useEffect(() => {
               <TextField
                 label="Second Drying End"
                 type="datetime-local"
-                value={detailsData.secondDryingEnd || ''}
+                value={formatDateTimeLocal(detailsData.secondDryingEnd || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, secondDryingEnd: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -3328,7 +3335,7 @@ useEffect(() => {
               <TextField
                 label="Hulling Time"
                 type="datetime-local"
-                value={detailsData.hullingTime || ''}
+                value={formatDateTimeLocal(detailsData.hullingTime || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, hullingTime: e.target.value })}
                 fullWidth
                 variant="outlined"
