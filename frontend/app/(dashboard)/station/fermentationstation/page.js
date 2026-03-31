@@ -176,9 +176,9 @@ const FermentationStation = () => {
 
   const formatDateTimeLocal = (date) => {
     if (!date) return '';
-    return dayjs(date)
-      .tz('Asia/Makassar')
-      .format('YYYY-MM-DDTHH:mm');
+    const d = dayjs(date);
+    if (!d.isValid()) return '';
+    return d.tz('Asia/Makassar').format('YYYY-MM-DDTHH:mm');
   };
 
   const derivedDate = fermentationStart
@@ -2244,7 +2244,7 @@ useEffect(() => {
               <TextField
                 label="Harvest At"
                 type="datetime-local"
-                value={detailsData.harvestAt || ''}
+                value={formatDateTimeLocal(detailsData.harvestAt || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, harvestAt: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -2256,7 +2256,7 @@ useEffect(() => {
               <TextField
                 label="Received At"
                 type="datetime-local"
-                value={detailsData.receivedAt || ''}
+                value={formatDateTimeLocal(detailsData.receivedAt || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, receivedAt: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -2404,7 +2404,7 @@ useEffect(() => {
               <TextField
                 label="Pre-Fermentation Storage Start"
                 type="datetime-local"
-                value={detailsData.preFermentationStorageStart || ''}
+                value={formatDateTimeLocal(detailsData.preFermentationStorageStart || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, preFermentationStorageStart: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -2416,7 +2416,7 @@ useEffect(() => {
               <TextField
                 label="Pre-Fermentation Storage End"
                 type="datetime-local"
-                value={detailsData.preFermentationStorageEnd || ''}
+                value={formatDateTimeLocal(detailsData.preFermentationStorageEnd || '')}
                 onChange={(e) => setDetailsData({ ...detailsData, preFermentationStorageEnd: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -2454,14 +2454,18 @@ useEffect(() => {
             </Grid>
             <Grid item xs={4}>
               <TextField
-                label="Time After Pulping"
-                type="datetime-local"
+                label="Time After Pulping (h)"
+                type="number"
                 value={detailsData.preFermentationTimeAfterPulping || ''}
-                onChange={(e) => setDetailsData({ ...detailsData, preFermentationTimeAfterPulping: e.target.value })}
+                onChange={(e) =>
+                  setDetailsData({
+                    ...detailsData,
+                    preFermentationTimeAfterPulping: e.target.value
+                  })
+                }
                 fullWidth
                 variant="outlined"
                 sx={{ mt: 1 }}
-                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={4}>
