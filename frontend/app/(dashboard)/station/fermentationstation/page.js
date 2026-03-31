@@ -102,7 +102,7 @@ const FermentationStation = () => {
   const [postFermentationWeight, setPostFermentationWeight] = useState('');
   const [postPulped, setPostPulped] = useState('');
   const [secondFermentation, setSecondFermentation] = useState('');
-  const [secondTank, setSecondTank] = useState('');
+  const [secondFermentationTank, setSecondFermentationTank] = useState('');
   const [secondWashedDelva, setSecondWashedDelva] = useState('');
   const [secondWashed, setSecondWashed] = useState('');
   const [secondFermentationCherryWeight, setSecondFermentationCherryWeight] = useState('');
@@ -438,7 +438,7 @@ const FermentationStation = () => {
 
 useEffect(() => {
   if (secondFermentation === 'no') {
-    setSecondTank('');
+    SetSecondFermentationTank('');
     setSecondWashed('');
     setSecondWashedDelva('');
     setSecondStarterType('');
@@ -599,7 +599,7 @@ useEffect(() => {
       postFermentationWeight: postFermentationWeight ? parseFloat(postFermentationWeight) : null,
       postPulped,
       secondFermentation,
-      secondTank,
+      secondFermentationTank,
       secondWashedDelva,
       secondWashed,
       secondFermentationCherryWeight: secondFermentationCherryWeight ? parseFloat(secondFermentationCherryWeight) : null,
@@ -720,7 +720,7 @@ useEffect(() => {
     setPostFermentationWeight('');
     setPostPulped('');
     setSecondFermentation('');
-    setSecondTank('');
+    setSecondFermentationTank('');
     setSecondWashedDelva('');
     setSecondWashed('');
     setSecondFermentationCherryWeight('');
@@ -824,7 +824,7 @@ useEffect(() => {
         postFermentationWeight: detailsData.postFermentationWeight ? parseFloat(detailsData.postFermentationWeight) : null,
         postPulped: detailsData.postPulped || null,
         secondFermentation: detailsData.secondFermentation || null,
-        secondTank: detailsData.secondTank || null,
+        secondFermentationTank: detailsData.secondFermentationTank || null,
         secondWashedDelva: detailsData.secondWashedDelva || null,
         secondWashed: detailsData.secondWashed || null,
         secondFermentationCherryWeight: detailsData.secondFermentationCherryWeight ? parseFloat(detailsData.secondFermentationCherryWeight) : null,
@@ -1699,8 +1699,8 @@ useEffect(() => {
                         <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
                         <Select
                           labelId="second-fermentation-tank-label"
-                          value={secondTank}
-                          onChange={(e) => setSecondTank(e.target.value)}
+                          value={secondFermentationTank}
+                          onChange={(e) => setSecondFermentationTank(e.target.value)}
                           input={<OutlinedInput label="Second Fermentation Tank" />}
                           MenuProps={MenuProps}
                           disabled={isSecondFermentationDisabled}
@@ -2892,8 +2892,8 @@ useEffect(() => {
                 <InputLabel id="second-fermentation-tank-details-label">Second Fermentation Tank</InputLabel>
                 <Select
                   labelId="second-fermentation-tank-details-label"
-                  value={detailsData.secondTank || ''}
-                  onChange={(e) => setDetailsData({ ...detailsData, secondTank: e.target.value })}
+                  value={detailsData.secondFermentationTank || ''}
+                  onChange={(e) => setDetailsData({ ...detailsData, secondFermentationTank: e.target.value })}
                   label="Second Fermentation Tank"
                   disabled={isDetailsSecondFermentationDisabled}
                 >
