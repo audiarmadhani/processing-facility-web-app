@@ -522,7 +522,11 @@ useEffect(() => {
 
   const toISO = (localDateTime) => {
     if (!localDateTime) return null;
-    return new Date(localDateTime).toISOString();
+
+    return dayjs
+      .tz(localDateTime, 'Asia/Makassar')
+      .utc()
+      .toISOString();
   };
 
   const handleSubmit = async (e) => {
@@ -1629,7 +1633,7 @@ useEffect(() => {
                       <TextField
                         label="Tank Amount"
                         type="number"
-                        value={tankAmount}
+                        value={detailsData.tankAmount}
                         onChange={(e) => setTankAmount(e.target.value)}
                         fullWidth
                         margin="normal"
@@ -1638,7 +1642,7 @@ useEffect(() => {
                       <TextField
                         label="Leachate Target (L)"
                         type="number"
-                        value={leachateTarget}
+                        value={detailsData.leachateTarget}
                         onChange={(e) => setLeachateTarget(e.target.value)}
                         fullWidth
                         margin="normal"
@@ -1647,7 +1651,7 @@ useEffect(() => {
                       <TextField
                         label="Brew Tank Temperature (°C)"
                         type="number"
-                        value={brewTankTemperature}
+                        value={detailsData.brewTankTemperature}
                         onChange={(e) => setBrewTankTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
@@ -1656,7 +1660,7 @@ useEffect(() => {
                       <TextField
                         label="Water Temperature (°C)"
                         type="number"
-                        value={waterTemperature}
+                        value={detailsData.waterTemperature}
                         onChange={(e) => setWaterTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
@@ -1665,7 +1669,7 @@ useEffect(() => {
                       <TextField
                         label="Cooler Temperature (°C)"
                         type="number"
-                        value={coolerTemperature}
+                        value={detailsData.coolerTemperature}
                         onChange={(e) => setCoolerTemperature(e.target.value)}
                         fullWidth
                         margin="normal"
@@ -2711,7 +2715,7 @@ useEffect(() => {
               <TextField
                 label="Fermentation Start"
                 type="datetime-local"
-                value={formatDateTimeLocal(detailsData.fermentationStart)}
+                value={formatDateTimeLocal(detailsData.fermentationStart || detailsData.startDate)}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationStart: e.target.value })}
                 fullWidth
                 variant="outlined"
@@ -2723,7 +2727,7 @@ useEffect(() => {
               <TextField
                 label="Fermentation End"
                 type="datetime-local"
-                value={formatDateTimeLocal(detailsData.fermentationEnd || '')}
+                value={formatDateTimeLocal(detailsData.fermentationEnd || detailsData.endDate)}
                 onChange={(e) => setDetailsData({ ...detailsData, fermentationEnd: e.target.value })}
                 fullWidth
                 variant="outlined"
