@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import cors from 'cors';
 import { useSession } from "next-auth/react";
 import {
   Typography,
@@ -46,13 +45,6 @@ dayjs.extend(duration);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault('Asia/Makassar');
-
-app.use(cors({
-  origin: '*', // change later
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-}));
-
-app.options('*', cors());
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
