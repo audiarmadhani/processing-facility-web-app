@@ -510,7 +510,7 @@ function Dashboard() {
                 <Card variant="outlined" sx={{ height: 260 }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="body1">Arabica Futures</Typography>
-                    <TradingViewWidget symbol="ICEUS:KC1!" />
+                    <TradingViewWidget symbol="BMFBOVESPA:ICF1!" />
                   </CardContent>
                 </Card>
               </Grid>
