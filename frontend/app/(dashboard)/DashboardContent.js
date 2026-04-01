@@ -507,30 +507,36 @@ function Dashboard() {
               
               {/* Coffee Futures */}
               <Grid item xs={12} md={4}>
-                <Card variant="outlined" sx={{ height: 260 }}>
+                <Card variant="outlined" sx={{ height: 400 }}>
                   <CardContent sx={{ height: '100%' }}>
-                    <Typography variant="body1">Arabica Futures</Typography>
-                    <TradingViewWidget symbol="BMFBOVESPA:ICF1!" />
+                    <Typography variant="h6" gutterBottom>
+                      Arabica Futures USD/60kg
+                    </Typography>
+                    <TradingViewWidget symbol="BMFBOVESPA:ICF1!" theme="dark" />
                   </CardContent>
                 </Card>
               </Grid>
 
               {/* USD/IDR */}
               <Grid item xs={12} md={4}>
-                <Card variant="outlined" sx={{ height: 260 }}>
+                <Card variant="outlined" sx={{ height: 400 }}>
                   <CardContent sx={{ height: '100%' }}>
-                    <Typography variant="body1">Robusta Futures</Typography>
-                    <TradingViewWidget symbol="ICEEUR:RC1!" />
+                    <Typography variant="h6" gutterBottom>
+                      Robusta Futures USD/MT
+                    </Typography>
+                    <TradingViewWidget symbol="ACTIVTRADES:COFFEER" theme="dark" />
                   </CardContent>
                 </Card>
               </Grid>
 
               {/* Crypto / Market */}
               <Grid item xs={12} md={4}>
-                <Card variant="outlined" sx={{ height: 260 }}>
+                <Card variant="outlined" sx={{ height: 400 }}>
                   <CardContent sx={{ height: '100%' }}>
-                    <Typography variant="body1">USD/IDR</Typography>
-                    <TradingViewWidget symbol="FX_IDC:USDIDR" />
+                    <Typography variant="h6" gutterBottom>
+                      USD/IDR
+                    </Typography>
+                    <TradingViewWidget symbol="FX_IDC:USDIDR" theme="dark" />
                   </CardContent>
                 </Card>
               </Grid>
@@ -544,7 +550,7 @@ function Dashboard() {
               <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent>
-                    <Typography variant="body1">Warehouse Conditions</Typography>
+                    <Typography variant="h6">Warehouse Conditions</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {environmentalMetrics.warehouse.avgTemperature.toFixed(1)} °C
                     </Typography>
@@ -573,7 +579,7 @@ function Dashboard() {
               <Grid item xs={12} md={3} sx={{ height: { xs: 'auto', md: '220px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent>
-                    <Typography variant="body1">Wetmill Conditions</Typography>
+                    <Typography variant="h6">Wetmill Conditions</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {environmentalMetrics.wetmill.avgTemperature.toFixed(1)} °C
                     </Typography>
