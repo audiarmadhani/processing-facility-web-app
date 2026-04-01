@@ -43,6 +43,7 @@ import ArabicaFarmersContributionChart from './charts/ArabicaFarmersContribution
 import RobustaFarmersContributionChart from './charts/RobustaFarmersContributionChart';
 import WarehouseTemperatureChart from './charts/WarehouseTemperatureChart';
 import WetmillTemperatureChart from './charts/WetmillTemperatureChart';
+import TradingViewWidget from './charts/TradingViewWidget';
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
@@ -500,182 +501,42 @@ function Dashboard() {
             </FormControl>
           </Grid>
 
-          {/* Batch Tracking Filter */}
-          {/* <Grid item xs={6} md={2.4}>
-            <TextField
-              label="Filter Batch Numbers (comma-separated)"
-              value={batchFilter}
-              onChange={handleBatchFilterChange}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  fetchBatchTrackingData();
-                }
-              }}
-              fullWidth
-              variant="outlined"
-            />
-          </Grid> */}
+          {/* TradingView Charts Row */}
+          <Grid item xs={12}>
+            <Grid container spacing={3}>
+              
+              {/* Coffee Futures */}
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ height: 260 }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="body1">Arabica Futures</Typography>
+                    <TradingViewWidget symbol="ICEUS:KC1!" />
+                  </CardContent>
+                </Card>
+              </Grid>
 
-          {/* Batch Tracking Table */}
-          {/* <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm: '600px', md: '600px' } }}>
-            <Card variant="outlined" sx={{ height: '100%' }}>
-              <CardContent sx={{ height: '100%' }}>
-                <Typography variant="h6" gutterBottom>
-                  Batch Tracking
-                </Typography>
-                {isLoadingBatchTracking ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80%' }}>
-                    <CircularProgress />
-                  </Box>
-                ) : batchTrackingData.length === 0 ? (
-                  <Typography variant="body1" color="error">
-                    No batch tracking data available. Please try again later or check batch numbers.
-                  </Typography>
-                ) : (
-                  <DataGrid
-                    rows={batchTrackingData}
-                    columns={[
-                      { 
-                        field: 'batchNumber', 
-                        headerName: 'Batch Number', 
-                        width: 180,
-                        renderCell: (params) => (
-                          <Button
-                            variant="text"
-                            color="primary"
-                            onClick={() => handleBatchClick(params.row)}
-                          >
-                            {params.value}
-                          </Button>
-                        ),
-                      },
-                      { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-                      { field: 'processingType', headerName: 'Processing Type', width: 140 },
-                      { field: 'position', headerName: 'Position', width: 150 },
-                      { field: 'status', headerName: 'Status', width: 120 },
-                      { 
-                        field: 'receiving_weight', 
-                        headerName: 'Receiving Weight (kg)', 
-                        width: 160,
-                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
-                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
-                      },
-                      { 
-                        field: 'preprocessing_weight', 
-                        headerName: 'Preprocessing Weight (kg)', 
-                        width: 180,
-                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
-                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
-                      },
-                      { 
-                        field: 'wetmill_weight', 
-                        headerName: 'Wet Mill Weight (kg)', 
-                        width: 160,
-                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
-                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
-                      },
-                      { 
-                        field: 'fermentation_weight', 
-                        headerName: 'Fermentation Weight (kg)', 
-                        width: 180,
-                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
-                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
-                      },
-                      { 
-                        field: 'drying_weight', 
-                        headerName: 'Drying Weight (kg)', 
-                        width: 150,
-                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
-                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
-                      },
-                      { 
-                        field: 'dry_mill_weight', 
-                        headerName: 'Dry Mill Weight (kg)', 
-                        width: 150,
-                        cellClassName: (params) => (params.value === 'N/A' ? 'null-weight' : ''),
-                        valueFormatter: (value) => value === 'N/A' ? 'N/A' : new Intl.NumberFormat('de-DE').format(parseFloat(value)),
-                      },
-                    ]}
-                    pageSizeOptions={[20, 50, 100]}
-                    slots={{ toolbar: GridToolbar }}
-                    sx={{
-                      height: '100%',
-                      border: '1px solid rgba(0,0,0,0.12)',
-                      '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
-                      '& .null-weight': { color: 'red', fontWeight: 'bold' },
-                      '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
-                      '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
-                    }}
-                    rowHeight={32}
-                    disableRowSelectionOnClick
-                    initialState={{
-                      pagination: { paginationModel: { pageSize: 100 } },
-                      sorting: {
-                        sortModel: [{ field: 'batchNumber', sort: 'asc' }],
-                      },
-                    }}
-                    localeText={{
-                      noRowsLabel: 'No batch tracking data available'
-                    }}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </Grid> */}
+              {/* USD/IDR */}
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ height: 260 }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="body1">Robusta Futures</Typography>
+                    <TradingViewWidget symbol="ICEEUR:RC1!" />
+                  </CardContent>
+                </Card>
+              </Grid>
 
-          {/* Batch Tracking Dialog */}
-          {/* <Dialog
-            open={openDialog}
-            onClose={handleCloseDialog}
-            maxWidth="lg"
-            fullWidth
-            TransitionComponent={null}
-          >
-            <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
-              Batch Progress - {selectedBatch?.batchNumber}
-            </DialogTitle>
-            <DialogContent>
-              {selectedBatch && getProgressData(selectedBatch.batchNumber) && (
-                <DataGrid
-                  rows={getProgressData(selectedBatch.batchNumber)}
-                  columns={[
-                    { field: 'step', headerName: 'Process Step', width: 150 },
-                    { 
-                      field: 'weight', 
-                      headerName: 'Weight (kg)', 
-                      width: 150,
-                      valueFormatter: (value) => new Intl.NumberFormat('de-DE').format(parseFloat(value)),
-                    },
-                    { 
-                      field: 'yield', 
-                      headerName: 'Yield (%)', 
-                      width: 120,
-                      valueFormatter: (value) => value.toFixed(2),
-                    },
-                  ]}
-                  pageSizeOptions={[5]}
-                  sx={{
-                    height: '400px',
-                    border: '1px solid rgba(0,0,0,0.12)',
-                    '& .MuiDataGrid-footerContainer': { borderTop: 'none' },
-                    '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
-                    '& .MuiDataGrid-cell': { fontSize: '0.85rem' },
-                  }}
-                  rowHeight={32}
-                  disableRowSelectionOnClick
-                  initialState={{
-                    pagination: { paginationModel: { pageSize: 5 } },
-                  }}
-                  localeText={{
-                    noRowsLabel: 'No progress data available'
-                  }}
-                />
-              )}
-              <Button onClick={handleCloseDialog} variant="contained" sx={{ mt: 2, width: '100%' }}>
-                Close
-              </Button>
-            </DialogContent>
-          </Dialog> */}
+              {/* Crypto / Market */}
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ height: 260 }}>
+                  <CardContent sx={{ height: '100%' }}>
+                    <Typography variant="body1">USD/IDR</Typography>
+                    <TradingViewWidget symbol="FX_IDC:USDIDR" />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+            </Grid>
+          </Grid>
 
           <Grid item xs={12} md={12}>
             <Grid container spacing={3}>
