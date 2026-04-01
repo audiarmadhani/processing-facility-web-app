@@ -17,7 +17,7 @@ const TradingViewWidget = ({ symbol }) => {
     script.innerHTML = JSON.stringify({
         autosize: true,
         symbol,
-        interval: "60",
+        interval: "1440",
         timezone: "Asia/Jakarta",
         theme: "dark",
         style: "1",
