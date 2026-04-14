@@ -1116,11 +1116,11 @@ useEffect(() => {
 
     if (!start.isValid() || !end.isValid()) return '';
 
-    const duration = dayjs.duration(end.diff(start));
+    const diffMs = end.diff(start);
 
-    const days = Math.floor(duration.asDays());
-    const hours = Math.floor(duration.asHours() % 24);
-    const minutes = Math.floor(duration.asMinutes() % 60);
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
 
     return `${days}d ${hours}h ${minutes}m`;
   };
