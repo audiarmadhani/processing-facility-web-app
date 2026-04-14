@@ -808,6 +808,7 @@ useEffect(() => {
       // 📅 DATES
       // -------------------------
       setDate('harvestAt', detailsData.harvestAt);
+      setDate('harvestDate', detailsData.harvestDate);
       setDate('receivedAt', detailsData.receivedAt);
       setDate('fermentationStart', detailsData.fermentationStart);
       setDate('fermentationEnd', detailsData.fermentationEnd);
@@ -1298,7 +1299,7 @@ useEffect(() => {
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                  <Grid item xs={12} md={4}>
+                  <Grid item xs={12} md={12}>
                     <Card>
                       <CardContent>
                         <Typography variant="h6" gutterBottom>Cherry Information</Typography>
@@ -1478,7 +1479,7 @@ useEffect(() => {
                   </Grid>
                 </Grid>
                 <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                  <Grid item xs={12} md={4}>
+                  <Grid item xs={12} md={12}>
                     <Card>
                       <CardContent>
                         <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Fermentation Section</Typography>
@@ -1694,7 +1695,7 @@ useEffect(() => {
                   </Grid>
                 </Grid>
                 <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                  <Grid item xs={12} md={4}>
+                  <Grid item xs={12} md={12}>
                     <Card>
                       <CardContent>
                         <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Second Fermentation Section</Typography>
