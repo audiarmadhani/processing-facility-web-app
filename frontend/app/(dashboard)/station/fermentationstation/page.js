@@ -1284,7 +1284,7 @@ useEffect(() => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+      <Grid item xs={12} md={12}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
@@ -1297,7 +1297,7 @@ useEffect(() => {
             )}
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={12}>
+                <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
                   <Grid item xs={12} md={4}>
                     <Card>
                       <CardContent>
@@ -1477,7 +1477,7 @@ useEffect(() => {
                     </Card>
                   </Grid>
                 </Grid>
-                <Grid item xs={12} md={12}>
+                <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
                   <Grid item xs={12} md={4}>
                     <Card>
                       <CardContent>
@@ -1693,7 +1693,7 @@ useEffect(() => {
                     </Card>
                   </Grid>
                 </Grid>
-                <Grid item xs={12} md={12}>
+                <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
                   <Grid item xs={12} md={4}>
                     <Card>
                       <CardContent>
