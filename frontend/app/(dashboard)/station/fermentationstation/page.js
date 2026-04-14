@@ -38,7 +38,6 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import axios from "axios";
 import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
@@ -790,8 +789,7 @@ useEffect(() => {
 
       const setDate = (key, value) => {
         if (value) {
-          const iso = toISO(value);
-          if (iso) payload[key] = iso;
+          payload[key] = value; // store exactly what user inputs
         }
       };
 
