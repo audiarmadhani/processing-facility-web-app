@@ -1284,7 +1284,7 @@ useEffect(() => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={12}>
+      <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
