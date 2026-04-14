@@ -205,7 +205,7 @@ const FermentationStation = () => {
 
   const fieldDisabled = {
     // temperature related
-    fermentationTemperature: isCarrybrew || isBiomaster || isBucketOrBB,
+    fermentationTemperature: isCarrybrew || isBucketOrBB,
     brewTankTemperature: isBiomaster || isBucketOrBB,
     waterTemperature: isBiomaster || isBucketOrBB,
     coolerTemperature: isBiomaster || isBucketOrBB,
@@ -220,7 +220,7 @@ const FermentationStation = () => {
     leachateTarget: isCarrybrew || isBucketOrBB,
 
     // capacity
-    tankAmount: isCarrybrew || isBiomaster,
+    tankAmount: isBiomaster || isBucketOrBB,
   };
 
   const detailsTank = detailsData.tank;
@@ -232,7 +232,7 @@ const FermentationStation = () => {
     detailsTank?.startsWith('BUC-');
 
   const detailsFieldDisabled = {
-    fermentationTemperature: detailsIsCarrybrew || detailsIsBiomaster || detailsIsBucketOrBB,
+    fermentationTemperature: detailsIsCarrybrew || detailsIsBucketOrBB,
     brewTankTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
     waterTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
     coolerTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
@@ -241,7 +241,7 @@ const FermentationStation = () => {
     gas: detailsIsBucketOrBB,
     pH: detailsIsCarrybrew || detailsIsBucketOrBB,
     leachateTarget: detailsIsCarrybrew || detailsIsBucketOrBB,
-    tankAmount: detailsIsCarrybrew || detailsIsBiomaster,
+    tankAmount: detailsIsBiomaster || detailsIsBucketOrBB,
   };
 
   const ITEM_HEIGHT = 48;
