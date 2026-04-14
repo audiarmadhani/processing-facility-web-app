@@ -1109,12 +1109,19 @@ useEffect(() => {
   };
 
   const calculateElapsedTime = (startDate, endDate) => {
+    if (!startDate) return '';
+
     const start = dayjs(startDate);
-    const end = endDate ? dayjs.tz(endDate) : dayjs.tz();
+    const end = endDate ? dayjs(endDate) : dayjs();
+
+    if (!start.isValid() || !end.isValid()) return '';
+
     const duration = dayjs.duration(end.diff(start));
+
     const days = Math.floor(duration.asDays());
     const hours = Math.floor(duration.asHours() % 24);
     const minutes = Math.floor(duration.asMinutes() % 60);
+
     return `${days}d ${hours}h ${minutes}m`;
   };
 
