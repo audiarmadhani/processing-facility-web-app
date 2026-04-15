@@ -1289,7 +1289,7 @@ useEffect(() => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={12}>
+      <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom sx={{ mb: 5 }}>
@@ -1308,7 +1308,7 @@ useEffect(() => {
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                      <Grid item xs={12} md={12}>
+                      <Grid item xs={12}>
                         <Card>
                           <CardContent>
                             <FormControl fullWidth required sx={{ marginTop: '16px' }}>
@@ -1434,7 +1434,7 @@ useEffect(() => {
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                      <Grid item xs={12} md={12}>
+                      <Grid item xs={12}>
                         <Card>
                           <CardContent>
                             <TextField
@@ -1510,7 +1510,7 @@ useEffect(() => {
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                      <Grid item xs={12} md={12}>
+                      <Grid item xs={12}>
                         <Card>
                           <CardContent>
                             <FormControl fullWidth sx={{ marginTop: '16px' }}>
@@ -1733,10 +1733,9 @@ useEffect(() => {
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                      <Grid item xs={12} md={12}>
+                      <Grid item xs={12}>
                         <Card>
                           <CardContent>
-                            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Second Fermentation Section</Typography>
                             <FormControl fullWidth sx={{ marginTop: '16px' }}>
                               <InputLabel id="second-fermentation-label">Second Fermentation</InputLabel>
                               <Select
@@ -1879,7 +1878,7 @@ useEffect(() => {
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                      <Grid item xs={12} md={12}>
+                      <Grid item xs={12}>
                         <Card>
                           <CardContent>    
                             <FormControl fullWidth sx={{ marginTop: '16px' }}>
@@ -1963,7 +1962,7 @@ useEffect(() => {
         </Card>
       </Grid>
 
-      <Grid item xs={12} md={12}>
+      <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h5" gutterBottom>
