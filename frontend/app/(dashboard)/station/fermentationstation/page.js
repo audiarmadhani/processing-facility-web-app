@@ -38,6 +38,13 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import axios from "axios";
 import dayjs from 'dayjs';
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
@@ -1298,186 +1305,193 @@ useEffect(() => {
             )}
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
-                  <Grid item xs={12} md={12}>
-                    <Card>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>Cherry Information</Typography>
-                        <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                          <InputLabel id="batch-number-label">Batch Number</InputLabel>
-                          <Select
-                            labelId="batch-number-label"
-                            id="batch-number"
-                            value={batchNumber}
-                            onChange={(e) => handleBatchNumberChange(e.target.value)}
-                            input={<OutlinedInput label="Batch Number" />}
-                            MenuProps={MenuProps}
-                          >
-                            {availableBatches.map(batch => (
-                              <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                  <Typography variant="body1">{batch.batchNumber}</Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Farmer: {batch.farmerName}, {batch.weight}kg, Type: {batch.type}
-                                  </Typography>
-                                </Box>
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                          <InputLabel id="reference-number-label">Reference Number</InputLabel>
-                          <Select
-                            labelId="reference-number-label"
-                            value={referenceNumber}
-                            onChange={(e) => handleReferenceNumberChange(e.target.value)}
-                            input={<OutlinedInput label="Reference Number" />}
-                            MenuProps={MenuProps}
-                          >
-                            {referenceMappings
-                              .filter(mapping => !processingType || mapping.processingType === processingType)
-                              .map(mapping => (
-                                <MenuItem key={mapping.id} value={mapping.referenceNumber}>
-                                  {mapping.referenceNumber}
-                                </MenuItem>
-                              ))}
-                          </Select>
-                        </FormControl>
-                        <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                          <InputLabel id="processing-type-label">Processing Type</InputLabel>
-                          <Select
-                            labelId="processing-type-label"
-                            value={processingType}
-                            onChange={(e) => handleProcessingTypeChange(e.target.value)}
-                            input={<OutlinedInput label="Processing Type" />}
-                            MenuProps={MenuProps}
-                          >
-                            {[...new Set(referenceMappings.map(mapping => mapping.processingType))].map(type => (
-                              <MenuItem key={type} value={type}>{type}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <TextField
-                          label="Experiment Number"
-                          type="number"
-                          value={experimentNumber}
-                          onChange={(e) => setExperimentNumber(e.target.value)}
-                          fullWidth
-                          required
-                          margin="normal"
-                        />
-                        <TextField
-                          label="Description"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          fullWidth
-                          margin="normal"
-                        />
-                        <TextField
-                          label="Farmer Name"
-                          value={farmerName}
-                          disabled
-                          fullWidth
-                          margin="normal"
-                        />
-                        <TextField
-                          label="Type"
-                          value={type}
-                          disabled
-                          fullWidth
-                          margin="normal"
-                        />
-                        <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                          <InputLabel id="variety-label">Variety</InputLabel>
-                          <Select
-                            labelId="variety-label"
-                            value={variety}
-                            onChange={(e) => setVariety(e.target.value)}
-                            input={<OutlinedInput label="Variety" />}
-                            MenuProps={MenuProps}
-                          >
-                            <MenuItem value="cobra">Cobra</MenuItem>
-                            <MenuItem value="yellow caturra">Yellow Caturra</MenuItem>
-                          </Select>
-                        </FormControl>
-                        <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                          <InputLabel id="product-line-label">Product</InputLabel>
-                          <Select
-                            labelId="product-line-label"
-                            value={productLine}
-                            onChange={(e) => setProductLine(e.target.value)}
-                            input={<OutlinedInput label="Product" />}
-                            MenuProps={MenuProps}
-                          >
-                            <MenuItem value="production lot">Production Lot</MenuItem>
-                            <MenuItem value="experiment lot">Experiment Lot</MenuItem>
-                          </Select>
-                        </FormControl>
-                        <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Pre-Fermentation Section</Typography>
-                        <TextField
-                          label="Pre-Fermentation Storage Goal (h)"
-                          type="number"
-                          value={preFermentationStorageGoal}
-                          onChange={(e) => setPreFermentationStorageGoal(e.target.value)}
-                          fullWidth
-                          margin="normal"
-                        />
-                        <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                          <InputLabel id="pre-pulped-label">Pre-pulped</InputLabel>
-                          <Select
-                            labelId="pre-pulped-label"
-                            value={prePulped}
-                            onChange={(e) => setPrePulped(e.target.value)}
-                            input={<OutlinedInput label="Pre-pulped" />}
-                            MenuProps={MenuProps}
-                          >
-                            <MenuItem value="yes">Yes</MenuItem>
-                            <MenuItem value="no">No</MenuItem>
-                          </Select>
-                        </FormControl>
-                        <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                          <InputLabel id="pre-pulped-delva-label">Pre-pulped Delva</InputLabel>
-                          <Select
-                            labelId="pre-pulped-delva-label"
-                            value={prePulpedDelva}
-                            onChange={(e) => setPrePulpedDelva(e.target.value)}
-                            input={<OutlinedInput label="Pre-pulped Delva" />}
-                            MenuProps={MenuProps}
-                          >
-                            <MenuItem value="yes">Yes</MenuItem>
-                            <MenuItem value="no">No</MenuItem>
-                          </Select>
-                        </FormControl>
-                        <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                          <InputLabel id="wesorter-label">Wesorter</InputLabel>
-                          <Select
-                            labelId="wesorter-label"
-                            value={wesorter}
-                            onChange={(e) => setWesorter(e.target.value)}
-                            input={<OutlinedInput label="Wesorter" />}
-                            MenuProps={MenuProps}
-                          >
-                            <MenuItem value="yes">Yes</MenuItem>
-                            <MenuItem value="no">No</MenuItem>
-                          </Select>
-                        </FormControl>
-                        <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                          <InputLabel id="pre-classifier-label">Pre-classifier</InputLabel>
-                          <Select
-                            labelId="pre-classifier-label"
-                            value={preClassifier}
-                            onChange={(e) => setPreClassifier(e.target.value)}
-                            input={<OutlinedInput label="Pre-classifier" />}
-                            MenuProps={MenuProps}
-                          >
-                            <MenuItem value="yes">Yes</MenuItem>
-                            <MenuItem value="no">No</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
+                <Accordion defaultExpanded>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography fontWeight={600}>Cherry Information</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+                      <Grid item xs={12} md={12}>
+                        <Card>
+                          <CardContent>
+                            {/* <Typography variant="h6" gutterBottom>Cherry Information</Typography> */}
+                            <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                              <InputLabel id="batch-number-label">Batch Number</InputLabel>
+                              <Select
+                                labelId="batch-number-label"
+                                id="batch-number"
+                                value={batchNumber}
+                                onChange={(e) => handleBatchNumberChange(e.target.value)}
+                                input={<OutlinedInput label="Batch Number" />}
+                                MenuProps={MenuProps}
+                              >
+                                {availableBatches.map(batch => (
+                                  <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                      <Typography variant="body1">{batch.batchNumber}</Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Farmer: {batch.farmerName}, {batch.weight}kg, Type: {batch.type}
+                                      </Typography>
+                                    </Box>
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                              <InputLabel id="reference-number-label">Reference Number</InputLabel>
+                              <Select
+                                labelId="reference-number-label"
+                                value={referenceNumber}
+                                onChange={(e) => handleReferenceNumberChange(e.target.value)}
+                                input={<OutlinedInput label="Reference Number" />}
+                                MenuProps={MenuProps}
+                              >
+                                {referenceMappings
+                                  .filter(mapping => !processingType || mapping.processingType === processingType)
+                                  .map(mapping => (
+                                    <MenuItem key={mapping.id} value={mapping.referenceNumber}>
+                                      {mapping.referenceNumber}
+                                    </MenuItem>
+                                  ))}
+                              </Select>
+                            </FormControl>
+                            <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                              <InputLabel id="processing-type-label">Processing Type</InputLabel>
+                              <Select
+                                labelId="processing-type-label"
+                                value={processingType}
+                                onChange={(e) => handleProcessingTypeChange(e.target.value)}
+                                input={<OutlinedInput label="Processing Type" />}
+                                MenuProps={MenuProps}
+                              >
+                                {[...new Set(referenceMappings.map(mapping => mapping.processingType))].map(type => (
+                                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <TextField
+                              label="Experiment Number"
+                              type="number"
+                              value={experimentNumber}
+                              onChange={(e) => setExperimentNumber(e.target.value)}
+                              fullWidth
+                              required
+                              margin="normal"
+                            />
+                            <TextField
+                              label="Description"
+                              value={description}
+                              onChange={(e) => setDescription(e.target.value)}
+                              fullWidth
+                              margin="normal"
+                            />
+                            <TextField
+                              label="Farmer Name"
+                              value={farmerName}
+                              disabled
+                              fullWidth
+                              margin="normal"
+                            />
+                            <TextField
+                              label="Type"
+                              value={type}
+                              disabled
+                              fullWidth
+                              margin="normal"
+                            />
+                            <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                              <InputLabel id="variety-label">Variety</InputLabel>
+                              <Select
+                                labelId="variety-label"
+                                value={variety}
+                                onChange={(e) => setVariety(e.target.value)}
+                                input={<OutlinedInput label="Variety" />}
+                                MenuProps={MenuProps}
+                              >
+                                <MenuItem value="cobra">Cobra</MenuItem>
+                                <MenuItem value="yellow caturra">Yellow Caturra</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                              <InputLabel id="product-line-label">Product</InputLabel>
+                              <Select
+                                labelId="product-line-label"
+                                value={productLine}
+                                onChange={(e) => setProductLine(e.target.value)}
+                                input={<OutlinedInput label="Product" />}
+                                MenuProps={MenuProps}
+                              >
+                                <MenuItem value="production lot">Production Lot</MenuItem>
+                                <MenuItem value="experiment lot">Experiment Lot</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Pre-Fermentation Section</Typography>
+                            <TextField
+                              label="Pre-Fermentation Storage Goal (h)"
+                              type="number"
+                              value={preFermentationStorageGoal}
+                              onChange={(e) => setPreFermentationStorageGoal(e.target.value)}
+                              fullWidth
+                              margin="normal"
+                            />
+                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                              <InputLabel id="pre-pulped-label">Pre-pulped</InputLabel>
+                              <Select
+                                labelId="pre-pulped-label"
+                                value={prePulped}
+                                onChange={(e) => setPrePulped(e.target.value)}
+                                input={<OutlinedInput label="Pre-pulped" />}
+                                MenuProps={MenuProps}
+                              >
+                                <MenuItem value="yes">Yes</MenuItem>
+                                <MenuItem value="no">No</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                              <InputLabel id="pre-pulped-delva-label">Pre-pulped Delva</InputLabel>
+                              <Select
+                                labelId="pre-pulped-delva-label"
+                                value={prePulpedDelva}
+                                onChange={(e) => setPrePulpedDelva(e.target.value)}
+                                input={<OutlinedInput label="Pre-pulped Delva" />}
+                                MenuProps={MenuProps}
+                              >
+                                <MenuItem value="yes">Yes</MenuItem>
+                                <MenuItem value="no">No</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                              <InputLabel id="wesorter-label">Wesorter</InputLabel>
+                              <Select
+                                labelId="wesorter-label"
+                                value={wesorter}
+                                onChange={(e) => setWesorter(e.target.value)}
+                                input={<OutlinedInput label="Wesorter" />}
+                                MenuProps={MenuProps}
+                              >
+                                <MenuItem value="yes">Yes</MenuItem>
+                                <MenuItem value="no">No</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                              <InputLabel id="pre-classifier-label">Pre-classifier</InputLabel>
+                              <Select
+                                labelId="pre-classifier-label"
+                                value={preClassifier}
+                                onChange={(e) => setPreClassifier(e.target.value)}
+                                input={<OutlinedInput label="Pre-classifier" />}
+                                MenuProps={MenuProps}
+                              >
+                                <MenuItem value="yes">Yes</MenuItem>
+                                <MenuItem value="no">No</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
                 <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
                   <Grid item xs={12} md={12}>
                     <Card>
