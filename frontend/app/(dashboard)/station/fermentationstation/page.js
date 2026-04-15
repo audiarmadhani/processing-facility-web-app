@@ -1307,7 +1307,7 @@ useEffect(() => {
                     <Typography variant="h6" gutterBottom>Cherry Information</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+                    <Grid container spacing={2}>
                       <Grid item xs={12}>
                         <Card>
                           <CardContent>
@@ -1433,7 +1433,7 @@ useEffect(() => {
                     <Typography variant="h6" gutterBottom>Pre-Fermentation Section</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+                    <Grid container spacing={2}>
                       <Grid item xs={12}>
                         <Card>
                           <CardContent>
@@ -1509,7 +1509,7 @@ useEffect(() => {
                     <Typography variant="h6" gutterBottom>Fermentation Section</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+                    <Grid container spacing={2}>
                       <Grid item xs={12}>
                         <Card>
                           <CardContent>
@@ -1732,7 +1732,7 @@ useEffect(() => {
                     <Typography variant="h6" gutterBottom>Second Fermentation Section</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+                    <Grid container spacing={2}>
                       <Grid item xs={12}>
                         <Card>
                           <CardContent>
@@ -1877,7 +1877,7 @@ useEffect(() => {
                     <Typography variant="h6" gutterBottom>Drying Section</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+                    <Grid container spacing={2}>
                       <Grid item xs={12}>
                         <Card>
                           <CardContent>    
