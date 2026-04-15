@@ -2192,7 +2192,7 @@ useEffect(() => {
             }
           }}
         >
-          <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+          <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Cherry Information</Typography>
             </AccordionSummary>
@@ -2458,7 +2458,7 @@ useEffect(() => {
             </AccordionDetails>
           </Accordion>
 
-          <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+          <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Pre-Fermentation Details</Typography>
             </AccordionSummary>
@@ -2610,7 +2610,7 @@ useEffect(() => {
             </AccordionDetails>
           </Accordion>
 
-          <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+          <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Fermentation Details</Typography>
             </AccordionSummary>
@@ -2976,7 +2976,7 @@ useEffect(() => {
             </AccordionDetails>
           </Accordion>
 
-          <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+          <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Second Fermentation Details</Typography>
             </AccordionSummary>
@@ -3223,7 +3223,7 @@ useEffect(() => {
             </AccordionDetails>
           </Accordion>
 
-          <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+          <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Drying Details</Typography>
             </AccordionSummary>
@@ -3431,7 +3431,7 @@ useEffect(() => {
             </AccordionDetails>
           </Accordion>
 
-          <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+          <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Post Drying Details</Typography>
             </AccordionSummary>
