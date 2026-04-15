@@ -1509,429 +1509,435 @@ useEffect(() => {
                   </Accordion>
                 </Grid>
 
-                <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" gutterBottom>Fermentation Section</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <Card>
-                          <CardContent>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="cherry-type-label">Cherry Type</InputLabel>
-                              <Select
-                                labelId="cherry-type-label"
-                                value={cherryType}
-                                onChange={(e) => setCherryType(e.target.value)}
-                                input={<OutlinedInput label="Cherry Type" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="whole cherry">Whole Cherry</MenuItem>
-                                <MenuItem value="pulped">Pulped</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="fermentation-label">Fermentation</InputLabel>
-                              <Select
-                                labelId="fermentation-label"
-                                value={fermentation}
-                                onChange={(e) => setFermentation(e.target.value)}
-                                input={<OutlinedInput label="Fermentation" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                              <InputLabel id="fermentation-tank-label">Fermentation Tank</InputLabel>
-                              <Select
-                                labelId="fermentation-tank-label"
-                                value={tank}
-                                onChange={(e) => handleTankChange(e.target.value)}
-                                input={<OutlinedInput label="Fermentation Tank" />}
-                                MenuProps={MenuProps}
-                              >
-                                {isLoadingTanks ? (
-                                  <MenuItem disabled>
-                                    <CircularProgress size={24} />
-                                  </MenuItem>
-                                ) : (
-                                  availableTanks.map(tank => (
-                                    <MenuItem key={tank} value={tank}>{tank}</MenuItem>
-                                  ))
-                                )}
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="Starter"
-                              value={fermentationStarter}
-                              onChange={(e) => setFermentationStarter(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                            />
-                            <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
-                              <InputLabel id="gas-label">Gas</InputLabel>
-                              <Select
-                                labelId="gas-label"
-                                value={gas}
-                                onChange={(e) => setGas(e.target.value)}
-                                input={<OutlinedInput label="Gas" />}
-                              >
-                                <MenuItem value="air">Air</MenuItem>
-                                <MenuItem value="co2">CO2</MenuItem>
-                                <MenuItem value="n2">N2</MenuItem>
-                                <MenuItem value="pure o2">Pure O2</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="Pressure (psi)"
-                              type="number"
-                              value={pressure}
-                              onChange={(e) => setPressure(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                            />
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="is-submerged-label">Is Submerged</InputLabel>
-                              <Select
-                                labelId="is-submerged-label"
-                                value={isSubmerged}
-                                onChange={(e) => setIsSubmerged(e.target.value)}
-                                input={<OutlinedInput label="Is Submerged" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="Total Volume (L)"
-                              type="number"
-                              value={totalVolume}
-                              onChange={(e) => setTotalVolume(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                            />
-                            <TextField
-                              label="Stirring (Hz)"
-                              type="number"
-                              value={stirring}
-                              onChange={(e) => setStirring(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.stirring}
-                            />
-                            <TextField
-                              label="Fermentation Temperature (°C)"
-                              type="number"
-                              value={fermentationTemperature}
-                              onChange={(e) => setFermentationTemperature(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.fermentationTemperature}
-                            />
-                            <TextField
-                              label="pH"
-                              type="number"
-                              value={pH}
-                              onChange={(e) => setPH(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.pH}
-                            />
-                            <TextField
-                              label="Fermentation Time Target (h)"
-                              type="number"
-                              value={fermentationTimeTarget}
-                              onChange={(e) => setFermentationTimeTarget(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                            />
-                            <TextField
-                              label="Fermentation Start"
-                              type="datetime-local"
-                              value={fermentationStart}
-                              onChange={(e) => setFermentationStart(e.target.value)}
-                              fullWidth
-                              required
-                              margin="normal"
-                              InputLabelProps={{ shrink: true }}
-                            />
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="post-pulped-label">Post-pulped</InputLabel>
-                              <Select
-                                labelId="post-pulped-label"
-                                value={postPulped}
-                                onChange={(e) => setPostPulped(e.target.value)}
-                                input={<OutlinedInput label="Post-pulped" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="Airlock"
-                              value={airlock}
-                              onChange={(e) => setAirlock(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.airlock}
-                            />
-                            <TextField
-                              label="Tank Amount"
-                              type="number"
-                              value={detailsData.tankAmount}
-                              onChange={(e) => setTankAmount(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.tankAmount}
-                            />
-                            <TextField
-                              label="Leachate Target (L)"
-                              type="number"
-                              value={detailsData.leachateTarget}
-                              onChange={(e) => setLeachateTarget(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.leachateTarget}
-                            />
-                            <TextField
-                              label="Brew Tank Temperature (°C)"
-                              type="number"
-                              value={detailsData.brewTankTemperature}
-                              onChange={(e) => setBrewTankTemperature(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.brewTankTemperature}
-                            />
-                            <TextField
-                              label="Water Temperature (°C)"
-                              type="number"
-                              value={detailsData.waterTemperature}
-                              onChange={(e) => setWaterTemperature(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.waterTemperature}
-                            />
-                            <TextField
-                              label="Cooler Temperature (°C)"
-                              type="number"
-                              value={detailsData.coolerTemperature}
-                              onChange={(e) => setCoolerTemperature(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={fieldDisabled.coolerTemperature}
-                            />
-                          </CardContent>
-                        </Card>
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Fermentation Section</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="cherry-type-label">Cherry Type</InputLabel>
+                                <Select
+                                  labelId="cherry-type-label"
+                                  value={cherryType}
+                                  onChange={(e) => setCherryType(e.target.value)}
+                                  input={<OutlinedInput label="Cherry Type" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="whole cherry">Whole Cherry</MenuItem>
+                                  <MenuItem value="pulped">Pulped</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="fermentation-label">Fermentation</InputLabel>
+                                <Select
+                                  labelId="fermentation-label"
+                                  value={fermentation}
+                                  onChange={(e) => setFermentation(e.target.value)}
+                                  input={<OutlinedInput label="Fermentation" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                                <InputLabel id="fermentation-tank-label">Fermentation Tank</InputLabel>
+                                <Select
+                                  labelId="fermentation-tank-label"
+                                  value={tank}
+                                  onChange={(e) => handleTankChange(e.target.value)}
+                                  input={<OutlinedInput label="Fermentation Tank" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  {isLoadingTanks ? (
+                                    <MenuItem disabled>
+                                      <CircularProgress size={24} />
+                                    </MenuItem>
+                                  ) : (
+                                    availableTanks.map(tank => (
+                                      <MenuItem key={tank} value={tank}>{tank}</MenuItem>
+                                    ))
+                                  )}
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Starter"
+                                value={fermentationStarter}
+                                onChange={(e) => setFermentationStarter(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+                              <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
+                                <InputLabel id="gas-label">Gas</InputLabel>
+                                <Select
+                                  labelId="gas-label"
+                                  value={gas}
+                                  onChange={(e) => setGas(e.target.value)}
+                                  input={<OutlinedInput label="Gas" />}
+                                >
+                                  <MenuItem value="air">Air</MenuItem>
+                                  <MenuItem value="co2">CO2</MenuItem>
+                                  <MenuItem value="n2">N2</MenuItem>
+                                  <MenuItem value="pure o2">Pure O2</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Pressure (psi)"
+                                type="number"
+                                value={pressure}
+                                onChange={(e) => setPressure(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="is-submerged-label">Is Submerged</InputLabel>
+                                <Select
+                                  labelId="is-submerged-label"
+                                  value={isSubmerged}
+                                  onChange={(e) => setIsSubmerged(e.target.value)}
+                                  input={<OutlinedInput label="Is Submerged" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Total Volume (L)"
+                                type="number"
+                                value={totalVolume}
+                                onChange={(e) => setTotalVolume(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+                              <TextField
+                                label="Stirring (Hz)"
+                                type="number"
+                                value={stirring}
+                                onChange={(e) => setStirring(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.stirring}
+                              />
+                              <TextField
+                                label="Fermentation Temperature (°C)"
+                                type="number"
+                                value={fermentationTemperature}
+                                onChange={(e) => setFermentationTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.fermentationTemperature}
+                              />
+                              <TextField
+                                label="pH"
+                                type="number"
+                                value={pH}
+                                onChange={(e) => setPH(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.pH}
+                              />
+                              <TextField
+                                label="Fermentation Time Target (h)"
+                                type="number"
+                                value={fermentationTimeTarget}
+                                onChange={(e) => setFermentationTimeTarget(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+                              <TextField
+                                label="Fermentation Start"
+                                type="datetime-local"
+                                value={fermentationStart}
+                                onChange={(e) => setFermentationStart(e.target.value)}
+                                fullWidth
+                                required
+                                margin="normal"
+                                InputLabelProps={{ shrink: true }}
+                              />
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="post-pulped-label">Post-pulped</InputLabel>
+                                <Select
+                                  labelId="post-pulped-label"
+                                  value={postPulped}
+                                  onChange={(e) => setPostPulped(e.target.value)}
+                                  input={<OutlinedInput label="Post-pulped" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Airlock"
+                                value={airlock}
+                                onChange={(e) => setAirlock(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.airlock}
+                              />
+                              <TextField
+                                label="Tank Amount"
+                                type="number"
+                                value={detailsData.tankAmount}
+                                onChange={(e) => setTankAmount(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.tankAmount}
+                              />
+                              <TextField
+                                label="Leachate Target (L)"
+                                type="number"
+                                value={detailsData.leachateTarget}
+                                onChange={(e) => setLeachateTarget(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.leachateTarget}
+                              />
+                              <TextField
+                                label="Brew Tank Temperature (°C)"
+                                type="number"
+                                value={detailsData.brewTankTemperature}
+                                onChange={(e) => setBrewTankTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.brewTankTemperature}
+                              />
+                              <TextField
+                                label="Water Temperature (°C)"
+                                type="number"
+                                value={detailsData.waterTemperature}
+                                onChange={(e) => setWaterTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.waterTemperature}
+                              />
+                              <TextField
+                                label="Cooler Temperature (°C)"
+                                type="number"
+                                value={detailsData.coolerTemperature}
+                                onChange={(e) => setCoolerTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.coolerTemperature}
+                              />
+                            </CardContent>
+                          </Card>
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
                 
-                <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" gutterBottom>Second Fermentation Section</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <Card>
-                          <CardContent>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="second-fermentation-label">Second Fermentation</InputLabel>
-                              <Select
-                                labelId="second-fermentation-label"
-                                value={secondFermentation}
-                                onChange={(e) => setSecondFermentation(e.target.value)}
-                                input={<OutlinedInput label="Second Fermentation" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
-                              <Select
-                                labelId="second-fermentation-tank-label"
-                                value={secondFermentationTank}
-                                onChange={(e) => setSecondFermentationTank(e.target.value)}
-                                input={<OutlinedInput label="Second Fermentation Tank" />}
-                                MenuProps={MenuProps}
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Second Fermentation Section</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="second-fermentation-label">Second Fermentation</InputLabel>
+                                <Select
+                                  labelId="second-fermentation-label"
+                                  value={secondFermentation}
+                                  onChange={(e) => setSecondFermentation(e.target.value)}
+                                  input={<OutlinedInput label="Second Fermentation" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
+                                <Select
+                                  labelId="second-fermentation-tank-label"
+                                  value={secondFermentationTank}
+                                  onChange={(e) => setSecondFermentationTank(e.target.value)}
+                                  input={<OutlinedInput label="Second Fermentation Tank" />}
+                                  MenuProps={MenuProps}
+                                  disabled={isSecondFermentationDisabled}
+                                >
+                                  {availableTanks.map(tank => (
+                                    <MenuItem key={tank} value={tank}>{tank}</MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="second-washed-delva-label">Washed with Delva</InputLabel>
+                                <Select
+                                  labelId="second-washed-delva-label"
+                                  value={secondWashedDelva}
+                                  onChange={(e) => setSecondWashedDelva(e.target.value)}
+                                  input={<OutlinedInput label="Washed with Delva" />}
+                                  MenuProps={MenuProps}
+                                  disabled={isSecondFermentationDisabled}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="second-washed-label">Washed</InputLabel>
+                                <Select
+                                  labelId="second-washed-label"
+                                  value={secondWashed}
+                                  onChange={(e) => setSecondWashed(e.target.value)}
+                                  input={<OutlinedInput label="Washed" />}
+                                  MenuProps={MenuProps}
+                                  disabled={isSecondFermentationDisabled}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Starter"
+                                value={secondStarterType}
+                                onChange={(e) => setSecondStarterType(e.target.value)}
+                                fullWidth
+                                margin="normal"
                                 disabled={isSecondFermentationDisabled}
-                              >
-                                {availableTanks.map(tank => (
-                                  <MenuItem key={tank} value={tank}>{tank}</MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="second-washed-delva-label">Washed with Delva</InputLabel>
-                              <Select
-                                labelId="second-washed-delva-label"
-                                value={secondWashedDelva}
-                                onChange={(e) => setSecondWashedDelva(e.target.value)}
-                                input={<OutlinedInput label="Washed with Delva" />}
-                                MenuProps={MenuProps}
+                              />
+                              <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
+                                <InputLabel id="second-gas-label">Second Gas</InputLabel>
+                                <Select
+                                  labelId="second-gas-label"
+                                  value={secondGas}
+                                  onChange={(e) => setSecondGas(e.target.value)}
+                                  input={<OutlinedInput label="Second Gas" />}
+                                  disabled={isSecondFermentationDisabled}
+                                >
+                                  <MenuItem value="air">Air</MenuItem>
+                                  <MenuItem value="co2">CO2</MenuItem>
+                                  <MenuItem value="n2">N2</MenuItem>
+                                  <MenuItem value="pure o2">Pure O2</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Second Pressure (psi)"
+                                type="number"
+                                value={secondPressure}
+                                onChange={(e) => setSecondPressure(e.target.value)}
+                                fullWidth
+                                margin="normal"
                                 disabled={isSecondFermentationDisabled}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="second-washed-label">Washed</InputLabel>
-                              <Select
-                                labelId="second-washed-label"
-                                value={secondWashed}
-                                onChange={(e) => setSecondWashed(e.target.value)}
-                                input={<OutlinedInput label="Washed" />}
-                                MenuProps={MenuProps}
+                              />
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="second-is-submerged-label">Second Is Submerged</InputLabel>
+                                <Select
+                                  labelId="second-is-submerged-label"
+                                  value={secondIsSubmerged}
+                                  onChange={(e) => setSecondIsSubmerged(e.target.value)}
+                                  input={<OutlinedInput label="Second Is Submerged" />}
+                                  MenuProps={MenuProps}
+                                  disabled={isSecondFermentationDisabled}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="Second Total Volume (L)"
+                                type="number"
+                                value={secondTotalVolume}
+                                onChange={(e) => setSecondTotalVolume(e.target.value)}
+                                fullWidth
+                                margin="normal"
                                 disabled={isSecondFermentationDisabled}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="Starter"
-                              value={secondStarterType}
-                              onChange={(e) => setSecondStarterType(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={isSecondFermentationDisabled}
-                            />
-                            <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
-                              <InputLabel id="second-gas-label">Second Gas</InputLabel>
-                              <Select
-                                labelId="second-gas-label"
-                                value={secondGas}
-                                onChange={(e) => setSecondGas(e.target.value)}
-                                input={<OutlinedInput label="Second Gas" />}
+                              />
+                              <TextField
+                                label="Second Temperature (°C)"
+                                type="number"
+                                value={secondTemperature}
+                                onChange={(e) => setSecondTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
                                 disabled={isSecondFermentationDisabled}
-                              >
-                                <MenuItem value="air">Air</MenuItem>
-                                <MenuItem value="co2">CO2</MenuItem>
-                                <MenuItem value="n2">N2</MenuItem>
-                                <MenuItem value="pure o2">Pure O2</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="Second Pressure (psi)"
-                              type="number"
-                              value={secondPressure}
-                              onChange={(e) => setSecondPressure(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={isSecondFermentationDisabled}
-                            />
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="second-is-submerged-label">Second Is Submerged</InputLabel>
-                              <Select
-                                labelId="second-is-submerged-label"
-                                value={secondIsSubmerged}
-                                onChange={(e) => setSecondIsSubmerged(e.target.value)}
-                                input={<OutlinedInput label="Second Is Submerged" />}
-                                MenuProps={MenuProps}
+                              />
+                              <TextField
+                                label="Second Fermentation Time Target (h)"
+                                type="number"
+                                value={secondFermentationTimeTarget}
+                                onChange={(e) => setSecondFermentationTimeTarget(e.target.value)}
+                                fullWidth
+                                margin="normal"
                                 disabled={isSecondFermentationDisabled}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="Second Total Volume (L)"
-                              type="number"
-                              value={secondTotalVolume}
-                              onChange={(e) => setSecondTotalVolume(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={isSecondFermentationDisabled}
-                            />
-                            <TextField
-                              label="Second Temperature (°C)"
-                              type="number"
-                              value={secondTemperature}
-                              onChange={(e) => setSecondTemperature(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={isSecondFermentationDisabled}
-                            />
-                            <TextField
-                              label="Second Fermentation Time Target (h)"
-                              type="number"
-                              value={secondFermentationTimeTarget}
-                              onChange={(e) => setSecondFermentationTimeTarget(e.target.value)}
-                              fullWidth
-                              margin="normal"
-                              disabled={isSecondFermentationDisabled}
-                            />
-                          </CardContent>
-                        </Card>
+                              />
+                            </CardContent>
+                          </Card>
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
 
-                <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" gutterBottom>Drying Section</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <Card>
-                          <CardContent>    
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="second-drying-label">Second Drying</InputLabel>
-                              <Select
-                                labelId="second-drying-label"
-                                value={secondDrying}
-                                onChange={(e) => setSecondDrying(e.target.value)}
-                                input={<OutlinedInput label="Second Drying" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="rehydration-label">Rehydration</InputLabel>
-                              <Select
-                                labelId="rehydration-label"
-                                value={rehydration}
-                                onChange={(e) => setRehydration(e.target.value)}
-                                input={<OutlinedInput label="Rehydration" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                              <InputLabel id="drying-label">Drying Method</InputLabel>
-                              <Select
-                                labelId="drying-label"
-                                value={drying}
-                                onChange={(e) => setDrying(e.target.value)}
-                                input={<OutlinedInput label="Drying Method" />}
-                                MenuProps={MenuProps}
-                              >
-                                <MenuItem value="Pulped Natural">Pulped Natural</MenuItem>
-                                <MenuItem value="Natural">Natural</MenuItem>
-                                <MenuItem value="Washed">Washed</MenuItem>
-                              </Select>
-                            </FormControl>
-                          </CardContent>
-                        </Card>
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Drying Section</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent>    
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="second-drying-label">Second Drying</InputLabel>
+                                <Select
+                                  labelId="second-drying-label"
+                                  value={secondDrying}
+                                  onChange={(e) => setSecondDrying(e.target.value)}
+                                  input={<OutlinedInput label="Second Drying" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="rehydration-label">Rehydration</InputLabel>
+                                <Select
+                                  labelId="rehydration-label"
+                                  value={rehydration}
+                                  onChange={(e) => setRehydration(e.target.value)}
+                                  input={<OutlinedInput label="Rehydration" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="yes">Yes</MenuItem>
+                                  <MenuItem value="no">No</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="drying-label">Drying Method</InputLabel>
+                                <Select
+                                  labelId="drying-label"
+                                  value={drying}
+                                  onChange={(e) => setDrying(e.target.value)}
+                                  input={<OutlinedInput label="Drying Method" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="Pulped Natural">Pulped Natural</MenuItem>
+                                  <MenuItem value="Natural">Natural</MenuItem>
+                                  <MenuItem value="Washed">Washed</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </CardContent>
+                          </Card>
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
 
                 <Grid item xs={12}>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
