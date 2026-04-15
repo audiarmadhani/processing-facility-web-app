@@ -29,6 +29,9 @@ import {
   TableRow,
   TableCell,
   TableHead,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import * as XLSX from 'xlsx';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -38,12 +41,6 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import axios from "axios";
 import dayjs from 'dayjs';
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography
-} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
