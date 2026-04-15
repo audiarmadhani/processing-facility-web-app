@@ -1510,7 +1510,7 @@ useEffect(() => {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
+                  <Accordion sx={{ mb:1, borderRadius: 2, boxShadow: 'none' }} >
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6" gutterBottom>Fermentation Section</Typography>
                     </AccordionSummary>
@@ -1735,7 +1735,7 @@ useEffect(() => {
                 </Grid>
                 
                 <Grid item xs={12}>
-                  <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
+                  <Accordion sx={{ mb:1, borderRadius: 2, boxShadow: 'none' }} >
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6" gutterBottom>Second Fermentation Section</Typography>
                     </AccordionSummary>
