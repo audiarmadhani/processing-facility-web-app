@@ -1292,7 +1292,7 @@ useEffect(() => {
       <Grid item xs={12} md={12}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom sx={{ mb: 10 }}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 5 }}>
               Fermentation Station Form
             </Typography>
             {tankError && (
@@ -1421,7 +1421,22 @@ useEffect(() => {
                                 <MenuItem value="experiment lot">Experiment Lot</MenuItem>
                               </Select>
                             </FormControl>
-                            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Pre-Fermentation Section</Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    </Grid>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion sx={{ mb: 2, borderRadius: 2 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6" gutterBottom>Pre-Fermentation Section</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
+                      <Grid item xs={12} md={12}>
+                        <Card>
+                          <CardContent>
                             <TextField
                               label="Pre-Fermentation Storage Goal (h)"
                               type="number"
@@ -1860,14 +1875,13 @@ useEffect(() => {
 
                 <Accordion sx={{ mb: 2, borderRadius: 2 }}>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" gutterBottom>Second Fermentation Section</Typography>
+                    <Typography variant="h6" gutterBottom>Drying Section</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid item xs={12} md={10} lg={8} sx={{ margin: '0 auto' }}>
                       <Grid item xs={12} md={12}>
                         <Card>
                           <CardContent>    
-                            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Drying Section</Typography>
                             <FormControl fullWidth sx={{ marginTop: '16px' }}>
                               <InputLabel id="second-drying-label">Second Drying</InputLabel>
                               <Select
