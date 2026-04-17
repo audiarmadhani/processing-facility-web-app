@@ -312,13 +312,13 @@ const FermentationStation = () => {
     if (!experimentNumber) return;
 
     const res = await fetch(
-      `https://processing-facility-backend.onrender.com/api/fermentation/check-experiment?batchNumber=${batchNumber}&referenceNumber=${referenceNumber}&experimentNumber=${experimentNumber}`
+      `https://processing-facility-backend.onrender.com/api/fermentation/check-experiment?experimentNumber=${experimentNumber}`
     );
 
     const data = await res.json();
 
     if (data.exists) {
-      alert('Experiment number already exists for this batch & reference');
+      alert('Experiment number already exists');
       return false;
     }
 
