@@ -1329,6 +1329,7 @@ useEffect(() => {
                             <CardContent>
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={availableBatches}
                                 getOptionLabel={(option) => option.batchNumber || ''}
                                 value={
@@ -1353,6 +1354,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={referenceMappings.filter(
                                   m => !processingType || m.processingType === processingType
                                 )}
@@ -1388,6 +1390,7 @@ useEffect(() => {
                               </Typography>
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={[...new Set(referenceMappings.map(m => m.processingType))]}
                                 value={processingType || null}
                                 onChange={(e, newValue) => {
@@ -1482,6 +1485,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={prePulped || null}
                                 onChange={(e, newValue) => setPrePulped(newValue || '')}
@@ -1491,6 +1495,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={prePulpedDelva || null}
                                 onChange={(e, newValue) => setPrePulpedDelva(newValue || '')}
@@ -1500,6 +1505,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={wesorter || null}
                                 onChange={(e, newValue) => setWesorter(newValue || '')}
@@ -1509,6 +1515,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={preClassifier || null}
                                 onChange={(e, newValue) => setPreClassifier(newValue || '')}
@@ -1537,6 +1544,7 @@ useEffect(() => {
                             <CardContent>
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['whole cherry', 'pulped']}
                                 value={cherryType || null}
                                 onChange={(e, newValue) => setCherryType(newValue || '')}
@@ -1546,6 +1554,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={fermentation || null}
                                 onChange={(e, newValue) => setFermentation(newValue || '')}
@@ -1555,6 +1564,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={availableTanks}
                                 value={tank || null}
                                 onChange={(e, newValue) => handleTankChange(newValue || '')}
@@ -1587,6 +1597,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['air', 'co2', 'n2', 'pure o2']}
                                 value={gas || null}
                                 onChange={(e, newValue) => setGas(newValue || '')}
@@ -1606,6 +1617,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={isSubmerged || null}
                                 onChange={(e, newValue) => setIsSubmerged(newValue || '')}
@@ -1669,6 +1681,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={postPulped || null}
                                 onChange={(e, newValue) => setPostPulped(newValue || '')}
@@ -1750,6 +1763,7 @@ useEffect(() => {
                             <CardContent>
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={secondFermentation || null}
                                 onChange={(e, newValue) => setSecondFermentation(newValue || '')}
@@ -1790,6 +1804,7 @@ useEffect(() => {
                               </FormControl>
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={secondWashed || null}
                                 onChange={(e, newValue) => setSecondWashed(newValue || '')}
@@ -1808,6 +1823,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['air', 'co2', 'n2', 'pure o2']}
                                 value={secondGas || null}
                                 onChange={(e, newValue) => setSecondGas(newValue || '')}
@@ -1828,6 +1844,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={secondIsSubmerged || null}
                                 onChange={(e, newValue) => setSecondIsSubmerged(newValue || '')}
@@ -1883,6 +1900,7 @@ useEffect(() => {
                             <CardContent>
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={secondDrying || null}
                                 onChange={(e, newValue) => setSecondDrying(newValue || '')}
@@ -1892,6 +1910,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={rehydration || null}
                                 onChange={(e, newValue) => setRehydration(newValue || '')}
@@ -1901,6 +1920,7 @@ useEffect(() => {
                               />
 
                               <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['Greenhouse', 'Drying Room']}
                                 value={drying || null}
                                 onChange={(e, newValue) => setDrying(newValue || '')}
