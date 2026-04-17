@@ -43,7 +43,7 @@ import axios from "axios";
 import dayjs from 'dayjs';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { IconButton, InputAdornment } from '@mui/material';
-import ClearIcon from '@mui/icons-material/Clear';
+import { Autocomplete } from '@mui/material';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
@@ -52,6 +52,10 @@ const FermentationStation = () => {
   const [batchNumber, setBatchNumber] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [version, setVersion] = useState('');
+  const fullReferenceNumber =
+    referenceNumber && version
+      ? `${referenceNumber}-${version}`
+      : '';
   const [experimentNumber, setExperimentNumber] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [description, setDescription] = useState('');
@@ -666,7 +670,7 @@ useEffect(() => {
   const resetForm = () => {
     setBatchNumber('');
     setReferenceNumber('');
-    setVersionNumber('');
+    setVersion('');
     setExperimentNumber('');
     setProcessingType('');
     setDescription('');
@@ -765,16 +769,6 @@ useEffect(() => {
     setCoolerTemperature('');
     setDrying('');
   };
-
-  const clearableInput = (value, setValue) => ({
-    endAdornment: value && (
-      <InputAdornment position="end">
-        <IconButton size="small" onClick={() => setValue('')}>
-          <ClearIcon fontSize="small" />
-        </IconButton>
-      </InputAdornment>
-    )
-  });
 
   const handleUpdateDetails = async () => {
     try {
@@ -928,6 +922,9 @@ useEffect(() => {
     const fields = [
       { label: 'Date', value: derivedDate },
       { label: 'Batch number', value: batchNumber || '' },
+      { label: 'Reference number', value: referenceNumber || '' },
+      { label: 'Version', value: version || '' },
+      { label: 'Full Reference Number', value: fullReferenceNumber || '' },
       { label: 'Farmer', value: farmerName || '' },
       { label: 'Variety', value: variety || '' },
       { label: 'Product line', value: productLine || '' },
@@ -1330,28 +1327,31 @@ useEffect(() => {
                         <Grid item xs={12}>
                           <Card>
                             <CardContent>
-                              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                                <InputLabel id="batch-number-label">Batch Number</InputLabel>
-                                <Select
-                                  labelId="batch-number-label"
-                                  id="batch-number"
-                                  value={batchNumber}
-                                  onChange={(e) => handleBatchNumberChange(e.target.value)}
-                                  input={<OutlinedInput label="Batch Number" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  {availableBatches.map(batch => (
-                                    <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
-                                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                        <Typography variant="body1">{batch.batchNumber}</Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                          Farmer: {batch.farmerName}, {batch.weight}kg, Type: {batch.type}
-                                        </Typography>
-                                      </Box>
-                                    </MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
+                              
+                              <Autocomplete
+                                options={availableBatches}
+                                getOptionLabel={(option) => option.batchNumber || ''}
+                                value={
+                                  availableBatches.find(b => b.batchNumber === batchNumber) || null
+                                }
+                                onChange={(e, newValue) => {
+                                  handleBatchNumberChange(newValue?.batchNumber || '');
+                                }}
+                                renderOption={(props, option) => (
+                                  <li {...props}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                      <Typography>{option.batchNumber}</Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Farmer: {option.farmerName}, {option.weight}kg, Type: {option.type}
+                                      </Typography>
+                                    </Box>
+                                  </li>
+                                )}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Batch Number" required fullWidth />
+                                )}
+                              />
+
                               <FormControl fullWidth sx={{ marginTop: '16px' }}>
                                 <InputLabel id="reference-number-label">Reference Number</InputLabel>
                                 <Select
@@ -1360,7 +1360,6 @@ useEffect(() => {
                                   onChange={(e) => handleReferenceNumberChange(e.target.value)}
                                   input={<OutlinedInput label="Reference Number" />}
                                   MenuProps={MenuProps}
-                                  InputProps={clearableInput(referenceNumber, setReferenceNumber)}
                                 >
                                   {referenceMappings
                                     .filter(mapping => !processingType || mapping.processingType === processingType)
