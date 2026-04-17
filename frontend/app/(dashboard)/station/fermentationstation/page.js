@@ -42,6 +42,8 @@ import 'jspdf-autotable';
 import axios from "axios";
 import dayjs from 'dayjs';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { IconButton, InputAdornment } from '@mui/material';
+import ClearIcon from '@mui/icons-material/Clear';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
 
@@ -49,6 +51,7 @@ const FermentationStation = () => {
   const { data: session, status } = useSession();
   const [batchNumber, setBatchNumber] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [version, setVersion] = useState('');
   const [experimentNumber, setExperimentNumber] = useState('');
   const [processingType, setProcessingType] = useState('');
   const [description, setDescription] = useState('');
@@ -541,6 +544,7 @@ useEffect(() => {
     const payload = {
       batchNumber: batchNumber.trim(),
       referenceNumber,
+      version,
       experimentNumber,
       processingType,
       description,
@@ -662,6 +666,7 @@ useEffect(() => {
   const resetForm = () => {
     setBatchNumber('');
     setReferenceNumber('');
+    setVersionNumber('');
     setExperimentNumber('');
     setProcessingType('');
     setDescription('');
@@ -761,6 +766,16 @@ useEffect(() => {
     setDrying('');
   };
 
+  const clearableInput = (value, setValue) => ({
+    endAdornment: value && (
+      <InputAdornment position="end">
+        <IconButton size="small" onClick={() => setValue('')}>
+          <ClearIcon fontSize="small" />
+        </IconButton>
+      </InputAdornment>
+    )
+  });
+
   const handleUpdateDetails = async () => {
     try {
       const payload = {
@@ -801,6 +816,7 @@ useEffect(() => {
       // ✏️ BASIC FIELDS
       // -------------------------
       setIfValid('referenceNumber', detailsData.referenceNumber);
+      setInt('version', detailsData.version);
       setIfValid('experimentNumber', detailsData.experimentNumber);
       setIfValid('processingType', detailsData.processingType);
       setIfValid('description', detailsData.description);
@@ -1160,6 +1176,7 @@ useEffect(() => {
       },
     },
     { field: 'referenceNumber', headerName: 'Reference Number', width: 180 },
+    { field: 'version', headerName: 'Version', width: 100 },
     { field: 'experimentNumber', headerName: 'Experiment Number', width: 180 },
     { field: 'processingType', headerName: 'Processing Type', width: 180 },
     {
@@ -1343,6 +1360,7 @@ useEffect(() => {
                                   onChange={(e) => handleReferenceNumberChange(e.target.value)}
                                   input={<OutlinedInput label="Reference Number" />}
                                   MenuProps={MenuProps}
+                                  InputProps={clearableInput(referenceNumber, setReferenceNumber)}
                                 >
                                   {referenceMappings
                                     .filter(mapping => !processingType || mapping.processingType === processingType)
@@ -1353,6 +1371,20 @@ useEffect(() => {
                                     ))}
                                 </Select>
                               </FormControl>
+                              <TextField
+                                label="Version"
+                                type="number"
+                                value={version}
+                                onChange={(e) => setVersion(e.target.value)}
+                                fullWidth
+                                required
+                                margin="normal"
+                              />
+                              <Typography variant="body2" sx={{ mt: 1 }}>
+                                Full Reference: {referenceNumber && version
+                                  ? `${referenceNumber}-${version}`
+                                  : '-'}
+                              </Typography>
                               <FormControl fullWidth required sx={{ marginTop: '16px' }}>
                                 <InputLabel id="processing-type-label">Processing Type</InputLabel>
                                 <Select
@@ -2235,6 +2267,19 @@ useEffect(() => {
                         ))}
                     </Select>
                   </FormControl>
+                </Grid>
+                <Grid item xs={4}>
+                <TextField
+                  label="Version"
+                  type="number"
+                  value={detailsData.version || ''}
+                  onChange={(e) =>
+                    setDetailsData({ ...detailsData, version: e.target.value })
+                  }
+                  fullWidth
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                />
                 </Grid>
                 <Grid item xs={4}>
                   <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
