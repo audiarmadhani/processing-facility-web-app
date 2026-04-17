@@ -105,6 +105,7 @@ const FermentationStation = () => {
   const [finalTemperature, setFinalTemperature] = useState('');
   const [postFermentationWeight, setPostFermentationWeight] = useState('');
   const [postPulped, setPostPulped] = useState('');
+  const [postPulpedDelva, setPostPulpedDelva] = useState('');
   const [secondFermentation, setSecondFermentation] = useState('');
   const [secondFermentationTank, setSecondFermentationTank] = useState('');
   const [secondWashedDelva, setSecondWashedDelva] = useState('');
@@ -598,6 +599,7 @@ useEffect(() => {
       finalTemperature,
       postFermentationWeight: postFermentationWeight ? parseFloat(postFermentationWeight) : null,
       postPulped,
+      postPulpedDelva,
       secondFermentation,
       secondFermentationTank,
       secondWashedDelva,
@@ -720,6 +722,7 @@ useEffect(() => {
     setFinalTemperature('');
     setPostFermentationWeight('');
     setPostPulped('');
+    setPostPulpedDelva('');
     setSecondFermentation('');
     setSecondFermentationTank('');
     setSecondWashedDelva('');
@@ -961,6 +964,7 @@ useEffect(() => {
       { label: 'Fermentation end date', value: '' }, // Second step
       { label: 'Post fermentation weight', value: '' }, // Second step
       { label: 'Post fermentation pulped', value: postPulped || '' },
+      { label: 'Post fermentation pulped delva', value: postPulpedDelva || '' },
       { label: 'Drying', value: drying || '' },
       { label: 'Drying Area', value: '' }, // Second step
       { label: 'Special note', value: description || '' },
@@ -1690,6 +1694,16 @@ useEffect(() => {
                                 )}
                               />
 
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={postPulpedDelva || null}
+                                onChange={(e, newValue) => setPostPulpedDelva(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Post-pulped Delva" fullWidth />
+                                )}
+                              />
+
                               <TextField
                                 label="Airlock"
                                 value={airlock}
@@ -1921,7 +1935,7 @@ useEffect(() => {
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
-                                options={['Greenhouse', 'Drying Room']}
+                                options={['Greenhouse', 'Drying Room', 'Sun Dry']}
                                 value={drying || null}
                                 onChange={(e, newValue) => setDrying(newValue || '')}
                                 renderInput={(params) => (
@@ -2906,6 +2920,21 @@ useEffect(() => {
                     </Select>
                   </FormControl>
                 </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
+                    <InputLabel id="post-pulped-delva-label">Post-pulped Delva</InputLabel>
+                    <Select
+                      labelId="post-pulped-delva-label"
+                      value={detailsData.postPulpedDelva || ''}
+                      onChange={(e) => setDetailsData({ ...detailsData, postPulpedDelva: e.target.value })}
+                      label="Post-pulped Delva"
+                    >
+                      <MenuItem value="yes">Yes</MenuItem>
+                      <MenuItem value="no">No</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                
                 <Grid item xs={4}>
                   <TextField
                     label="Airlock"
