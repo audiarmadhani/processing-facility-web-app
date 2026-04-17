@@ -1327,7 +1327,7 @@ useEffect(() => {
                         <Grid item xs={12}>
                           <Card>
                             <CardContent>
-                              
+
                               <Autocomplete
                                 options={availableBatches}
                                 getOptionLabel={(option) => option.batchNumber || ''}
@@ -1352,24 +1352,25 @@ useEffect(() => {
                                 )}
                               />
 
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="reference-number-label">Reference Number</InputLabel>
-                                <Select
-                                  labelId="reference-number-label"
-                                  value={referenceNumber}
-                                  onChange={(e) => handleReferenceNumberChange(e.target.value)}
-                                  input={<OutlinedInput label="Reference Number" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  {referenceMappings
-                                    .filter(mapping => !processingType || mapping.processingType === processingType)
-                                    .map(mapping => (
-                                      <MenuItem key={mapping.id} value={mapping.referenceNumber}>
-                                        {mapping.referenceNumber}
-                                      </MenuItem>
-                                    ))}
-                                </Select>
-                              </FormControl>
+                              <Autocomplete
+                                options={referenceMappings.filter(
+                                  m => !processingType || m.processingType === processingType
+                                )}
+                                getOptionLabel={(option) => option.referenceNumber || ''}
+                                value={
+                                  referenceMappings.find(m => m.referenceNumber === referenceNumber) || null
+                                }
+                                onChange={(e, newValue) => {
+                                  handleReferenceNumberChange(newValue?.referenceNumber || '');
+                                }}
+                                isOptionEqualToValue={(option, value) =>
+                                  option.referenceNumber === value.referenceNumber
+                                }
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Reference Number" fullWidth />
+                                )}
+                              />
+
                               <TextField
                                 label="Version"
                                 type="number"
@@ -1379,25 +1380,24 @@ useEffect(() => {
                                 required
                                 margin="normal"
                               />
+
                               <Typography variant="body2" sx={{ mt: 1 }}>
                                 Full Reference: {referenceNumber && version
                                   ? `${referenceNumber}-${version}`
                                   : '-'}
                               </Typography>
-                              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                                <InputLabel id="processing-type-label">Processing Type</InputLabel>
-                                <Select
-                                  labelId="processing-type-label"
-                                  value={processingType}
-                                  onChange={(e) => handleProcessingTypeChange(e.target.value)}
-                                  input={<OutlinedInput label="Processing Type" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  {[...new Set(referenceMappings.map(mapping => mapping.processingType))].map(type => (
-                                    <MenuItem key={type} value={type}>{type}</MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={[...new Set(referenceMappings.map(m => m.processingType))]}
+                                value={processingType || null}
+                                onChange={(e, newValue) => {
+                                  handleProcessingTypeChange(newValue || '');
+                                }}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Processing Type" fullWidth required />
+                                )}
+                              />
+
                               <TextField
                                 label="Experiment Number"
                                 type="number"
@@ -1480,58 +1480,43 @@ useEffect(() => {
                                 fullWidth
                                 margin="normal"
                               />
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="pre-pulped-label">Pre-pulped</InputLabel>
-                                <Select
-                                  labelId="pre-pulped-label"
-                                  value={prePulped}
-                                  onChange={(e) => setPrePulped(e.target.value)}
-                                  input={<OutlinedInput label="Pre-pulped" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="pre-pulped-delva-label">Pre-pulped Delva</InputLabel>
-                                <Select
-                                  labelId="pre-pulped-delva-label"
-                                  value={prePulpedDelva}
-                                  onChange={(e) => setPrePulpedDelva(e.target.value)}
-                                  input={<OutlinedInput label="Pre-pulped Delva" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="wesorter-label">Wesorter</InputLabel>
-                                <Select
-                                  labelId="wesorter-label"
-                                  value={wesorter}
-                                  onChange={(e) => setWesorter(e.target.value)}
-                                  input={<OutlinedInput label="Wesorter" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="pre-classifier-label">Pre-classifier</InputLabel>
-                                <Select
-                                  labelId="pre-classifier-label"
-                                  value={preClassifier}
-                                  onChange={(e) => setPreClassifier(e.target.value)}
-                                  input={<OutlinedInput label="Pre-classifier" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={prePulped || null}
+                                onChange={(e, newValue) => setPrePulped(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-pulped" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={prePulpedDelva || null}
+                                onChange={(e, newValue) => setPrePulpedDelva(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-pulped Delva" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={wesorter || null}
+                                onChange={(e, newValue) => setWesorter(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Wesorter" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={preClassifier || null}
+                                onChange={(e, newValue) => setPreClassifier(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-classifier" fullWidth />
+                                )}
+                              />
+
                             </CardContent>
                           </Card>
                         </Grid>
@@ -1550,52 +1535,49 @@ useEffect(() => {
                         <Grid item xs={12}>
                           <Card>
                             <CardContent>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="cherry-type-label">Cherry Type</InputLabel>
-                                <Select
-                                  labelId="cherry-type-label"
-                                  value={cherryType}
-                                  onChange={(e) => setCherryType(e.target.value)}
-                                  input={<OutlinedInput label="Cherry Type" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="whole cherry">Whole Cherry</MenuItem>
-                                  <MenuItem value="pulped">Pulped</MenuItem>
-                                </Select>
-                              </FormControl>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="fermentation-label">Fermentation</InputLabel>
-                                <Select
-                                  labelId="fermentation-label"
-                                  value={fermentation}
-                                  onChange={(e) => setFermentation(e.target.value)}
-                                  input={<OutlinedInput label="Fermentation" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
-                              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
-                                <InputLabel id="fermentation-tank-label">Fermentation Tank</InputLabel>
-                                <Select
-                                  labelId="fermentation-tank-label"
-                                  value={tank}
-                                  onChange={(e) => handleTankChange(e.target.value)}
-                                  input={<OutlinedInput label="Fermentation Tank" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  {isLoadingTanks ? (
-                                    <MenuItem disabled>
-                                      <CircularProgress size={24} />
-                                    </MenuItem>
-                                  ) : (
-                                    availableTanks.map(tank => (
-                                      <MenuItem key={tank} value={tank}>{tank}</MenuItem>
-                                    ))
-                                  )}
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['whole cherry', 'pulped']}
+                                value={cherryType || null}
+                                onChange={(e, newValue) => setCherryType(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Cherry Type" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={fermentation || null}
+                                onChange={(e, newValue) => setFermentation(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Fermentation" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                options={availableTanks}
+                                value={tank || null}
+                                onChange={(e, newValue) => handleTankChange(newValue || '')}
+                                loading={isLoadingTanks}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    label="Fermentation Tank"
+                                    fullWidth
+                                    required
+                                    InputProps={{
+                                      ...params.InputProps,
+                                      endAdornment: (
+                                        <>
+                                          {isLoadingTanks ? <CircularProgress size={20} /> : null}
+                                          {params.InputProps.endAdornment}
+                                        </>
+                                      ),
+                                    }}
+                                  />
+                                )}
+                              />
+
                               <TextField
                                 label="Starter"
                                 value={fermentationStarter}
@@ -1603,20 +1585,17 @@ useEffect(() => {
                                 fullWidth
                                 margin="normal"
                               />
-                              <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
-                                <InputLabel id="gas-label">Gas</InputLabel>
-                                <Select
-                                  labelId="gas-label"
-                                  value={gas}
-                                  onChange={(e) => setGas(e.target.value)}
-                                  input={<OutlinedInput label="Gas" />}
-                                >
-                                  <MenuItem value="air">Air</MenuItem>
-                                  <MenuItem value="co2">CO2</MenuItem>
-                                  <MenuItem value="n2">N2</MenuItem>
-                                  <MenuItem value="pure o2">Pure O2</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['air', 'co2', 'n2', 'pure o2']}
+                                value={gas || null}
+                                onChange={(e, newValue) => setGas(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Gas" fullWidth />
+                                )}
+                                disabled={fieldDisabled.gas}
+                              />
+
                               <TextField
                                 label="Pressure (psi)"
                                 type="number"
@@ -1625,19 +1604,16 @@ useEffect(() => {
                                 fullWidth
                                 margin="normal"
                               />
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="is-submerged-label">Is Submerged</InputLabel>
-                                <Select
-                                  labelId="is-submerged-label"
-                                  value={isSubmerged}
-                                  onChange={(e) => setIsSubmerged(e.target.value)}
-                                  input={<OutlinedInput label="Is Submerged" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={isSubmerged || null}
+                                onChange={(e, newValue) => setIsSubmerged(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Is Submerged" fullWidth />
+                                )}
+                              />
+
                               <TextField
                                 label="Total Volume (L)"
                                 type="number"
@@ -1691,19 +1667,16 @@ useEffect(() => {
                                 margin="normal"
                                 InputLabelProps={{ shrink: true }}
                               />
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="post-pulped-label">Post-pulped</InputLabel>
-                                <Select
-                                  labelId="post-pulped-label"
-                                  value={postPulped}
-                                  onChange={(e) => setPostPulped(e.target.value)}
-                                  input={<OutlinedInput label="Post-pulped" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={postPulped || null}
+                                onChange={(e, newValue) => setPostPulped(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Post-pulped" fullWidth />
+                                )}
+                              />
+
                               <TextField
                                 label="Airlock"
                                 value={airlock}
@@ -1775,19 +1748,16 @@ useEffect(() => {
                         <Grid item xs={12}>
                           <Card>
                             <CardContent>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="second-fermentation-label">Second Fermentation</InputLabel>
-                                <Select
-                                  labelId="second-fermentation-label"
-                                  value={secondFermentation}
-                                  onChange={(e) => setSecondFermentation(e.target.value)}
-                                  input={<OutlinedInput label="Second Fermentation" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={secondFermentation || null}
+                                onChange={(e, newValue) => setSecondFermentation(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Fermentation" fullWidth />
+                                )}
+                              />
+
                               <FormControl fullWidth sx={{ marginTop: '16px' }}>
                                 <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
                                 <Select
@@ -1803,6 +1773,7 @@ useEffect(() => {
                                   ))}
                                 </Select>
                               </FormControl>
+
                               <FormControl fullWidth sx={{ marginTop: '16px' }}>
                                 <InputLabel id="second-washed-delva-label">Washed with Delva</InputLabel>
                                 <Select
@@ -1817,20 +1788,16 @@ useEffect(() => {
                                   <MenuItem value="no">No</MenuItem>
                                 </Select>
                               </FormControl>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="second-washed-label">Washed</InputLabel>
-                                <Select
-                                  labelId="second-washed-label"
-                                  value={secondWashed}
-                                  onChange={(e) => setSecondWashed(e.target.value)}
-                                  input={<OutlinedInput label="Washed" />}
-                                  MenuProps={MenuProps}
-                                  disabled={isSecondFermentationDisabled}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={secondWashed || null}
+                                onChange={(e, newValue) => setSecondWashed(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Washed" fullWidth />
+                                )}
+                              />
+
                               <TextField
                                 label="Starter"
                                 value={secondStarterType}
@@ -1839,21 +1806,17 @@ useEffect(() => {
                                 margin="normal"
                                 disabled={isSecondFermentationDisabled}
                               />
-                              <FormControl fullWidth margin="normal" disabled={fieldDisabled.gas}>
-                                <InputLabel id="second-gas-label">Second Gas</InputLabel>
-                                <Select
-                                  labelId="second-gas-label"
-                                  value={secondGas}
-                                  onChange={(e) => setSecondGas(e.target.value)}
-                                  input={<OutlinedInput label="Second Gas" />}
-                                  disabled={isSecondFermentationDisabled}
-                                >
-                                  <MenuItem value="air">Air</MenuItem>
-                                  <MenuItem value="co2">CO2</MenuItem>
-                                  <MenuItem value="n2">N2</MenuItem>
-                                  <MenuItem value="pure o2">Pure O2</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['air', 'co2', 'n2', 'pure o2']}
+                                value={secondGas || null}
+                                onChange={(e, newValue) => setSecondGas(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Gas" fullWidth />
+                                )}
+                                disabled={isSecondFermentationDisabled}
+                              />
+
                               <TextField
                                 label="Second Pressure (psi)"
                                 type="number"
@@ -1863,20 +1826,16 @@ useEffect(() => {
                                 margin="normal"
                                 disabled={isSecondFermentationDisabled}
                               />
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="second-is-submerged-label">Second Is Submerged</InputLabel>
-                                <Select
-                                  labelId="second-is-submerged-label"
-                                  value={secondIsSubmerged}
-                                  onChange={(e) => setSecondIsSubmerged(e.target.value)}
-                                  input={<OutlinedInput label="Second Is Submerged" />}
-                                  MenuProps={MenuProps}
-                                  disabled={isSecondFermentationDisabled}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={secondIsSubmerged || null}
+                                onChange={(e, newValue) => setSecondIsSubmerged(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Is Submerged" fullWidth />
+                                )}
+                              />
+
                               <TextField
                                 label="Second Total Volume (L)"
                                 type="number"
@@ -1921,47 +1880,35 @@ useEffect(() => {
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <Card>
-                            <CardContent>    
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="second-drying-label">Second Drying</InputLabel>
-                                <Select
-                                  labelId="second-drying-label"
-                                  value={secondDrying}
-                                  onChange={(e) => setSecondDrying(e.target.value)}
-                                  input={<OutlinedInput label="Second Drying" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="rehydration-label">Rehydration</InputLabel>
-                                <Select
-                                  labelId="rehydration-label"
-                                  value={rehydration}
-                                  onChange={(e) => setRehydration(e.target.value)}
-                                  input={<OutlinedInput label="Rehydration" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="drying-label">Drying Method</InputLabel>
-                                <Select
-                                  labelId="drying-label"
-                                  value={drying}
-                                  onChange={(e) => setDrying(e.target.value)}
-                                  input={<OutlinedInput label="Drying Method" />}
-                                  MenuProps={MenuProps}
-                                >
-                                  <MenuItem value="Pulped Natural">Pulped Natural</MenuItem>
-                                  <MenuItem value="Natural">Natural</MenuItem>
-                                  <MenuItem value="Washed">Washed</MenuItem>
-                                </Select>
-                              </FormControl>
+                            <CardContent>
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={secondDrying || null}
+                                onChange={(e, newValue) => setSecondDrying(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Drying" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                options={['yes', 'no']}
+                                value={rehydration || null}
+                                onChange={(e, newValue) => setRehydration(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Rehydration" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                options={['Greenhouse', 'Drying Room']}
+                                value={drying || null}
+                                onChange={(e, newValue) => setDrying(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Drying Method" fullWidth />
+                                )}
+                              />
+
                             </CardContent>
                           </Card>
                         </Grid>
