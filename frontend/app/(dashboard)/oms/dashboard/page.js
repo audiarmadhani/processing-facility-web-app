@@ -1126,16 +1126,21 @@ const Dashboard = () => {
   };
 
   const safeParse = (value) => {
-    try {
-      if (!value) return null;
+    if (!value) return null;
 
-      if (typeof value === 'object') return value; // already parsed
+    // ✅ already object → return directly
+    if (typeof value === 'object') return value;
 
-      return JSON.parse(value);
-    } catch (e) {
-      console.warn('Invalid JSON:', value);
-      return null;
+    // ✅ only parse if it's a STRING
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return null;
+      }
     }
+
+    return null;
   };
 
   // Generate SPK PDF
