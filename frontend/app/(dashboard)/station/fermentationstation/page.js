@@ -308,6 +308,23 @@ const FermentationStation = () => {
     }
   };
 
+  const checkExperimentNumber = async () => {
+    if (!experimentNumber) return;
+
+    const res = await fetch(
+      `/fermentation/check-experiment?batchNumber=${batchNumber}&referenceNumber=${referenceNumber}&experimentNumber=${experimentNumber}`
+    );
+
+    const data = await res.json();
+
+    if (data.exists) {
+      alert('Experiment number already exists for this batch & reference');
+      return false;
+    }
+
+    return true;
+  };
+
   const fetchAvailableTanks = async () => {
     setIsLoadingTanks(true);
     try {
@@ -545,6 +562,10 @@ useEffect(() => {
       setOpenSnackbar(true);
       return;
     }
+
+    const isValid = await checkExperimentNumber();
+
+    if (!isValid) return;
 
     const payload = {
       batchNumber: batchNumber.trim(),
@@ -1410,6 +1431,7 @@ useEffect(() => {
                                 type="number"
                                 value={experimentNumber}
                                 onChange={(e) => setExperimentNumber(e.target.value)}
+                                onBlur={checkExperimentNumber}
                                 fullWidth
                                 required
                                 margin="normal"
@@ -2290,6 +2312,7 @@ useEffect(() => {
                     type="number"
                     value={detailsData.experimentNumber || ''}
                     onChange={(e) => setDetailsData({ ...detailsData, experimentNumber: e.target.value })}
+                    onBlur={checkExperimentNumber}
                     fullWidth
                     variant="outlined"
                     sx={{ mt: 1 }}
@@ -2934,7 +2957,7 @@ useEffect(() => {
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid item xs={4}>
                   <TextField
                     label="Airlock"
