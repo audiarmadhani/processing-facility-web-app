@@ -438,7 +438,7 @@ const FermentationStation = () => {
 
 useEffect(() => {
   if (secondFermentation === 'no') {
-    SetSecondFermentationTank('');
+    setSecondFermentationTank('');
     setSecondWashed('');
     setSecondWashedDelva('');
     setSecondStarterType('');
