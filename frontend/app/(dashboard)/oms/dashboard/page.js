@@ -235,7 +235,7 @@ const Dashboard = () => {
         order.driver_vehicle_number = driver.vehicle_number || 'N/A';
         order.driver_vehicle_type = driver.vehicle_type || 'N/A';
       } else if (order.shipping_method === 'Customer' && order.driver_details) {
-        const driverDetails = safeParse(order.driver_details);
+        const driverDetails = (order.driver_details);
         order.driver_name = driverDetails?.name || 'N/A';
         order.driver_vehicle_number = driverDetails?.vehicle_number_plate || 'N/A';
         order.driver_vehicle_type = driverDetails?.vehicle_type || 'N/A';
@@ -380,7 +380,7 @@ const Dashboard = () => {
         order.driver_vehicle_number = driver.vehicle_number || 'N/A';
         order.driver_vehicle_type = driver.vehicle_type || 'N/A';
       } else if (order.shipping_method === 'Customer' && order.driver_details) {
-        const driverDetails = safeParse(order.driver_details);
+        const driverDetails = (order.driver_details);
         order.driver_name = driverDetails?.name || 'N/A';
         order.driver_vehicle_number = driverDetails?.vehicle_number_plate || 'N/A';
         order.driver_vehicle_type = driverDetails?.vehicle_type || 'N/A';
@@ -655,7 +655,7 @@ const Dashboard = () => {
       orderData.append('customer_id', editOrder.customer_id);
       orderData.append('driver_id', editOrder.shipping_method === 'Self' ? editOrder.driver_id : ''); // Only for Self-Arranged
       orderData.append('shipping_method', editOrder.shipping_method);
-      orderData.append('driver_details', editOrder.driver_details); // For both methods
+      orderData.append('driver_details', JSON.stringify(editOrder.driver_details)); // For both methods
       orderData.append('price', editOrder.price || '0'); // Subtotal in IDR as string
       orderData.append('tax_percentage', editOrder.tax_percentage || '0'); // Tax percentage as string
       orderData.append('items', JSON.stringify(editOrder.items)); // Add items to the FormData as JSON string
@@ -698,7 +698,7 @@ const Dashboard = () => {
           driver_id: fullOrder.driver_id || '', // Default to empty if null
           items: fullOrder.items || [{ product: '', quantity: '', price: '' }],
           shipping_method: fullOrder.shipping_method || 'Customer',
-          driver_details: fullOrder.driver_details ? safeParse(fullOrder.driver_details) : { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
+          driver_details: fullOrder.driver_details ? (fullOrder.driver_details) : { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
           price: fullOrder.price || '0', // Subtotal in IDR as string
           tax_percentage: fullOrder.tax_percentage || '0', // Tax percentage as string
         });
@@ -1123,24 +1123,6 @@ const Dashboard = () => {
   const handleClosePaymentModal = () => {
     setOpenPaymentModal(false);
     setPaymentData({ amount: '', paymentDate: new Date().toISOString().split('T')[0], notes: '' }); // Reset payment data
-  };
-
-  const safeParse = (value) => {
-    if (!value) return null;
-
-    // ✅ already object → return directly
-    if (typeof value === 'object') return value;
-
-    // ✅ only parse if it's a STRING
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return null;
-      }
-    }
-
-    return null;
   };
 
   // Generate SPK PDF
@@ -2168,28 +2150,28 @@ const Dashboard = () => {
                           <TextField
                             fullWidth
                             label="Driver Name"
-                            value={safeParse(selectedOrder.driver_details)?.name || '-'}
+                            value={(selectedOrder.driver_details)?.name || '-'}
                             InputProps={{ readOnly: true }}
                             sx={{ mb: 2 }}
                           />
                           <TextField
                             fullWidth
                             label="Vehicle Number Plate"
-                            value={safeParse(selectedOrder.driver_details)?.vehicle_number_plate || '-'}
+                            value={(selectedOrder.driver_details)?.vehicle_number_plate || '-'}
                             InputProps={{ readOnly: true }}
                             sx={{ mb: 2 }}
                           />
                           <TextField
                             fullWidth
                             label="Vehicle Type"
-                            value={safeParse(selectedOrder.driver_details)?.vehicle_type || '-'}
+                            value={(selectedOrder.driver_details)?.vehicle_type || '-'}
                             InputProps={{ readOnly: true }}
                             sx={{ mb: 2 }}
                           />
                           <TextField
                             fullWidth
                             label="Max Capacity (kg)"
-                            value={safeParse(selectedOrder.driver_details)?.max_capacity || '-'}
+                            value={(selectedOrder.driver_details)?.max_capacity || '-'}
                             InputProps={{ readOnly: true }}
                             sx={{ mb: 2 }}
                           />
