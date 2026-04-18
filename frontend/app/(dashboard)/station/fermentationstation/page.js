@@ -490,6 +490,7 @@ useEffect(() => {
       if (data) {
         setFarmerName(data.farmerName || '');
         setType(data.type || '');
+        setVariety(data.variety || ''); // ✅ ADD THIS
       } else {
         setFarmerName('');
         setType('');
@@ -520,12 +521,9 @@ useEffect(() => {
 
   const handleProcessingTypeChange = (value) => {
     setProcessingType(value);
-    const matchingReferences = referenceMappings.filter(mapping => mapping.processingType === value);
-    if (matchingReferences.length > 0) {
-      setReferenceNumber(matchingReferences[0].referenceNumber);
-    } else {
-      setReferenceNumber('');
-    }
+
+    // ❌ REMOVE auto-fill
+    // DO NOTHING to referenceNumber
   };
 
   const handleTankChange = (value) => {
@@ -945,50 +943,63 @@ useEffect(() => {
 
     const fields = [
       { label: 'Date', value: derivedDate },
-      { label: 'Batch number', value: batchNumber || '' },
-      { label: 'Reference number', value: referenceNumber || '' },
+      { label: 'Batch number', value: batchNumber || 'N/A' },
+      { label: 'Reference number', value: referenceNumber || 'N/A' },
       { label: 'Version', value: version || '' },
-      { label: 'Full Reference Number', value: fullReferenceNumber || '' },
-      { label: 'Farmer', value: farmerName || '' },
-      { label: 'Variety', value: variety || '' },
-      { label: 'Product line', value: productLine || '' },
-      { label: 'Experiment', value: experimentNumber || '' },
-      { label: 'Received coffee cherry', value: '' }, // Second step
-      { label: 'Process', value: processingType || '' },
-      { label: 'Pre-fermentation in bag', value: preStorage || '' },
-      { label: 'Pre-fermentation time', value: preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : '' },
-      { label: 'Wesorter', value: wesorter || '' },
-      { label: 'Pre-classifier', value: preClassifier || '' },
-      { label: 'Fermentation', value: fermentation || '' },
-      { label: 'Fermentation tank', value: tank || '' },
-      { label: 'Airlock', value: airlock || '' },
-      { label: 'Tank amount', value: tankAmount || '' },
-      { label: 'Pulped', value: prePulped || '' },
-      { label: 'Submerged', value: isSubmerged || '' },
-      { label: 'Leachate target', value: leachateTarget ? `${leachateTarget} L` : '' },
-      { label: 'Starter type', value: fermentationStarter || '' },
-      { label: 'Starter target', value: fermentationStarterAmount ? `${fermentationStarterAmount} L` : '' },
-      { label: 'Coffee weight', value: '' }, // Second step
-      { label: 'Water amount', value: '' }, // Second step
-      { label: 'Starter amount', value: '' }, // Second step
-      { label: 'Leachate', value: '' }, // Second step
-      { label: 'Set fermentation time', value: fermentationTimeTarget ? `${fermentationTimeTarget} h` : '' },
-      { label: 'Gas', value: gas || '' },
-      { label: 'Set temperature', value: fermentationTemperature || 'ambient' },
-      { label: 'Set temperature/Brew tank', value: brewTankTemperature ? `${brewTankTemperature} °C` : '' },
-      { label: 'Water temperature', value: '' }, // Second step
-      { label: 'Cooler temperature', value: '' }, // Second step
-      { label: 'Set pH', value: pH || '' },
-      { label: 'Set pressure', value: pressure ? `${pressure} psi` : '' },
-      { label: 'Fermentation start', value: '' }, // Second step
-      { label: 'Fermentation end date goal', value: fermentationEndGoal },
-      { label: 'Fermentation end date', value: '' }, // Second step
-      { label: 'Post fermentation weight', value: '' }, // Second step
-      { label: 'Post fermentation pulped', value: postPulped || '' },
-      { label: 'Post fermentation pulped delva', value: postPulpedDelva || '' },
-      { label: 'Drying', value: drying || '' },
-      { label: 'Drying Area', value: '' }, // Second step
-      { label: 'Special note', value: description || '' },
+      { label: 'Full Reference Number', value: fullReferenceNumber || 'N/A' },
+      { label: 'Processing Type', value: processingType || 'N/A' },
+      { label: 'Experiment Number', value: experimentNumber || 'N/A' },
+      { label: 'Notes', value: description || 'N/A' },
+      { label: 'Farmer', value: farmerName || 'N/A' },
+      { label: 'Type', value: type || 'N/A' },
+      { label: 'Variety', value: variety || 'N/A' },
+      { label: 'Product line', value: productLine || 'N/A' },
+      
+      { label: 'Pre-fermentation in bag', value: preStorage || 'N/A' },
+      { label: 'Pre-fermentation time', value: preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : 'N/A' },
+      { label: 'Pre-Pulped', value: prePulped || 'N/A' },
+      { label: 'Pre-pulped Delva', value: prePulpedDelva || 'N/A' },
+      { label: 'Wesorter', value: wesorter || 'N/A' },
+      { label: 'Pre-classifier', value: preClassifier || 'N/A' },
+
+      { label: 'Cherry Type', value: cherryType || 'N/A' },
+      { label: 'Fermentation', value: fermentation || 'N/A' },
+      { label: 'Fermentation tank', value: tank || 'N/A' },
+      { label: 'Starter type', value: fermentationStarter || 'N/A' },
+      { label: 'Gas', value: gas || 'N/A' },
+      { label: 'Pressure', value: pressure ? `${pressure} psi` : 'N/A' },
+      { label: 'Submerged', value: isSubmerged || 'N/A' },
+      { label: 'Total Volume', value: totalVolume || 'N/A' },
+      { label: 'Stirring', value: stirring || 'N/A' },
+      { label: 'Temperature', value: fermentationTemperature || 'ambient' },
+      { label: 'pH', value: pH || 'N/A' },
+      { label: 'Fermentation Time Target', value: fermentationTimeTarget ? `${fermentationTimeTarget} h` : 'N/A' },
+      { label: 'Fermentation Start', value: fermentationStart || 'N/A' },
+      { label: 'Post Pulped', value: postPulped || 'N/A' },
+      { label: 'Post Pulped Delva', value: postPulpedDelva || 'N/A' },
+      { label: 'Airlock', value: airlock || 'N/A' },
+      { label: 'Tank amount', value: tankAmount || 'N/A' },
+      { label: 'Leachate target', value: leachateTarget ? `${leachateTarget} L` : 'N/A' },
+      { label: 'Brew Tank Temperature', value: brewTankTemperature || 'N/A' },
+      { label: 'Water Temperature', value: waterTemperature || 'N/A' },
+      { label: 'Cooler Temperature', value: coolerTemperature || 'N/A' },
+
+      { label: 'Second Fermentation', value: secondFermentation || 'N/A' },
+      { label: 'Second Fermentation Tank', value: secondFermentationTank || 'N/A' },
+      { label: 'Washed with Delva', value: secondWashedDelva || 'N/A' },
+      { label: 'Second Washed', value: secondWashed || 'N/A' },
+      { label: 'Second Starter', value: secondStarterType || 'N/A' },
+      { label: 'Second Gas', value: secondWashed || 'N/A' },
+      { label: 'Second Pressure', value: secondWashed || 'N/A' },
+      { label: 'Second Submerged', value: secondWashed || 'N/A' },
+      { label: 'Second Total Volume', value: secondWashed || 'N/A' },
+      { label: 'Second Temperature', value: secondWashed || 'N/A' },
+      { label: 'Second Fermentation Time Target', value: secondWashed || 'N/A' },
+      
+      { label: 'Drying', value: drying || 'N/A' },
+      { label: 'Second Drying', value: secondDrying || 'N/A' },
+      { label: 'Rehydration', value: rehydration || 'N/A' },
+      
     ];
 
     // Create table
@@ -1462,12 +1473,10 @@ useEffect(() => {
                                 <Select
                                   labelId="variety-label"
                                   value={variety}
-                                  onChange={(e) => setVariety(e.target.value)}
                                   input={<OutlinedInput label="Variety" />}
-                                  MenuProps={MenuProps}
+                                  disabled
                                 >
-                                  <MenuItem value="cobra">Cobra</MenuItem>
-                                  <MenuItem value="yellow caturra">Yellow Caturra</MenuItem>
+                                  <MenuItem value={variety}>{variety || '-'}</MenuItem>
                                 </Select>
                               </FormControl>
                               <FormControl fullWidth required sx={{ marginTop: '16px' }}>
@@ -1824,20 +1833,15 @@ useEffect(() => {
                                 </Select>
                               </FormControl>
 
-                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
-                                <InputLabel id="second-washed-delva-label">Washed with Delva</InputLabel>
-                                <Select
-                                  labelId="second-washed-delva-label"
-                                  value={secondWashedDelva}
-                                  onChange={(e) => setSecondWashedDelva(e.target.value)}
-                                  input={<OutlinedInput label="Washed with Delva" />}
-                                  MenuProps={MenuProps}
-                                  disabled={isSecondFermentationDisabled}
-                                >
-                                  <MenuItem value="yes">Yes</MenuItem>
-                                  <MenuItem value="no">No</MenuItem>
-                                </Select>
-                              </FormControl>
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondWashedDelva || null}
+                                onChange={(e, newValue) => setSecondWashedDelva(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Washed with Delva" fullWidth />
+                                )}
+                              />
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
@@ -1937,6 +1941,16 @@ useEffect(() => {
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
+                                options={['Greenhouse', 'Drying Room', 'Sun Dry']}
+                                value={drying || null}
+                                onChange={(e, newValue) => setDrying(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Drying Method" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
                                 value={secondDrying || null}
                                 onChange={(e, newValue) => setSecondDrying(newValue || '')}
@@ -1952,16 +1966,6 @@ useEffect(() => {
                                 onChange={(e, newValue) => setRehydration(newValue || '')}
                                 renderInput={(params) => (
                                   <TextField {...params} label="Rehydration" fullWidth />
-                                )}
-                              />
-
-                              <Autocomplete
-                                sx={{ mb: 2 }}   // margin-bottom
-                                options={['Greenhouse', 'Drying Room', 'Sun Dry']}
-                                value={drying || null}
-                                onChange={(e, newValue) => setDrying(newValue || '')}
-                                renderInput={(params) => (
-                                  <TextField {...params} label="Drying Method" fullWidth />
                                 )}
                               />
 
@@ -1992,9 +1996,7 @@ useEffect(() => {
                       color="primary"
                       disabled={
                         !batchNumber ||
-                        !experimentNumber ||
-                        isLoadingTanks ||
-                        tankError
+                        !experimentNumber
                       }
                     >
                       Start Fermentation
@@ -2291,11 +2293,10 @@ useEffect(() => {
                       value={detailsData.processingType || ''}
                       onChange={(e) => {
                         const value = e.target.value;
-                        const matchingReferences = referenceMappings.filter(mapping => mapping.processingType === value);
                         setDetailsData({
                           ...detailsData,
                           processingType: value,
-                          referenceNumber: matchingReferences.length > 0 ? matchingReferences[0].referenceNumber : detailsData.referenceNumber
+                          // ✅ do NOT touch referenceNumber
                         });
                       }}
                       label="Processing Type"
