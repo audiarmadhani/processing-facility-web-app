@@ -943,6 +943,21 @@ useEffect(() => {
       ? dayjs(fermentationStart).add(parseInt(fermentationTimeTarget), 'hour').format('DD/MM/YYYY HH:mm:ss')
       : 'N/A';
 
+    const secondFermentationNA = secondFermentation === 'no';
+
+    const secondValue = (value, formatter = (v) => v) => {
+      if (secondFermentationNA) return 'N/A';
+      if (!value) return 'N/A';
+      return formatter(value);
+    };
+
+    const isPreStorageNo = preStorage === 'no';
+
+    const preValue = (value, fallback = 'N/A') => {
+      if (isPreStorageNo) return fallback;
+      return value || 'N/A';
+    };
+
     const fields = [
       { label: 'Date', value: derivedDate },
       { label: 'Batch number', value: batchNumber || 'N/A' },
@@ -958,9 +973,9 @@ useEffect(() => {
       { label: 'Product line', value: productLine || 'N/A' },
       
       { label: 'Pre-fermentation in bag', value: preStorage || 'N/A' },
-      { label: 'Pre-fermentation time', value: preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : 'N/A' },
-      { label: 'Pre-Pulped', value: prePulped || 'N/A' },
-      { label: 'Pre-pulped Delva', value: prePulpedDelva || 'N/A' },
+      { label: 'Pre-fermentation time', value: isPreStorageNo ? 'N/A' : (preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : 'N/A') },
+      { label: 'Pre-Pulped', value: isPreStorageNo ? 'no' : (prePulped || 'N/A') },
+      { label: 'Pre-pulped Delva', value: isPreStorageNo ? 'no' : (prePulpedDelva || 'N/A') },
       { label: 'Wesorter', value: wesorter || 'N/A' },
       { label: 'Pre-classifier', value: preClassifier || 'N/A' },
 
@@ -987,17 +1002,17 @@ useEffect(() => {
       { label: 'Cooler Temperature', value: coolerTemperature || 'N/A' },
 
       { label: 'Second Fermentation', value: secondFermentation || 'N/A' },
-      { label: 'Second Fermentation Tank', value: secondFermentationTank || 'N/A' },
-      { label: 'Second Post Pulped', value: secondPostPulped || 'N/A' },
-      { label: 'Second Post Pulped Delva', value: secondPostPulpedDelva || 'N/A' },
-      { label: 'Second Washed', value: secondWashed || 'N/A' },
-      { label: 'Second Starter', value: secondStarterType || 'N/A' },
-      { label: 'Second Gas', value: secondWashed || 'N/A' },
-      { label: 'Second Pressure', value: secondWashed || 'N/A' },
-      { label: 'Second Submerged', value: secondWashed || 'N/A' },
-      { label: 'Second Total Volume', value: secondWashed || 'N/A' },
-      { label: 'Second Temperature', value: secondWashed || 'N/A' },
-      { label: 'Second Fermentation Time Target', value: secondWashed || 'N/A' },
+      { label: 'Second Fermentation Tank', value: secondValue(secondFermentationTank) },
+      { label: 'Second Post Pulped', value: secondValue(secondPostPulped) },
+      { label: 'Second Post Pulped Delva', value: secondValue(secondPostPulpedDelva) },
+      { label: 'Second Washed', value: secondValue(secondWashed) },
+      { label: 'Second Starter', value: secondValue(secondStarterType) },
+      { label: 'Second Gas', value: secondValue(secondGas) },
+      { label: 'Second Pressure', value: secondValue(secondPressure, v => `${v} psi`) },
+      { label: 'Second Submerged', value: secondValue(secondIsSubmerged) },
+      { label: 'Second Total Volume', value: secondValue(secondTotalVolume, v => `${v} L`) },
+      { label: 'Second Temperature', value: secondValue(secondTemperature, v => `${v} °C`) },
+      { label: 'Second Fermentation Time Target', value: secondValue(secondFermentationTimeTarget, v => `${v} h`) },
       
       { label: 'Drying', value: drying || 'N/A' },
       { label: 'Second Drying', value: secondDrying || 'N/A' },
@@ -1513,6 +1528,17 @@ useEffect(() => {
                         <Grid item xs={12}>
                           <Card>
                             <CardContent>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={preStorage || null}
+                                onChange={(e, newValue) => setPreStorage(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-fermentation" fullWidth />
+                                )}
+                              />
+
                               <TextField
                                 label="Pre-Fermentation Storage Goal (h)"
                                 type="number"
