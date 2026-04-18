@@ -108,7 +108,8 @@ const FermentationStation = () => {
   const [postPulpedDelva, setPostPulpedDelva] = useState('');
   const [secondFermentation, setSecondFermentation] = useState('');
   const [secondFermentationTank, setSecondFermentationTank] = useState('');
-  const [secondWashedDelva, setSecondWashedDelva] = useState('');
+  const [secondPostPulped, setSecondPostPulped] = useState('');
+  const [secondPostPulpedDelva, setSecondPostPulpedDelva] = useState('');
   const [secondWashed, setSecondWashed] = useState('');
   const [secondFermentationCherryWeight, setSecondFermentationCherryWeight] = useState('');
   const [secondFermentationPulpedWeight, setSecondFermentationPulpedWeight] = useState('');
@@ -462,7 +463,6 @@ useEffect(() => {
   if (secondFermentation === 'no') {
     setSecondFermentationTank('');
     setSecondWashed('');
-    setSecondWashedDelva('');
     setSecondStarterType('');
     setSecondGas('');
     setSecondPressure('');
@@ -621,7 +621,8 @@ useEffect(() => {
       postPulpedDelva,
       secondFermentation,
       secondFermentationTank,
-      secondWashedDelva,
+      secondPostPulped,
+      secondPostPulpedDelva,
       secondWashed,
       secondFermentationCherryWeight: secondFermentationCherryWeight ? parseFloat(secondFermentationCherryWeight) : null,
       secondFermentationPulpedWeight: secondFermentationPulpedWeight ? parseFloat(secondFermentationPulpedWeight) : null,
@@ -744,7 +745,8 @@ useEffect(() => {
     setPostPulpedDelva('');
     setSecondFermentation('');
     setSecondFermentationTank('');
-    setSecondWashedDelva('');
+    setSecondPostPulped('');
+    setSecondPostPulpedDelva('');
     setSecondWashed('');
     setSecondFermentationCherryWeight('');
     setSecondFermentationPulpedWeight('');
@@ -986,7 +988,8 @@ useEffect(() => {
 
       { label: 'Second Fermentation', value: secondFermentation || 'N/A' },
       { label: 'Second Fermentation Tank', value: secondFermentationTank || 'N/A' },
-      { label: 'Washed with Delva', value: secondWashedDelva || 'N/A' },
+      { label: 'Second Post Pulped', value: secondPostPulped || 'N/A' },
+      { label: 'Second Post Pulped Delva', value: secondPostPulpedDelva || 'N/A' },
       { label: 'Second Washed', value: secondWashed || 'N/A' },
       { label: 'Second Starter', value: secondStarterType || 'N/A' },
       { label: 'Second Gas', value: secondWashed || 'N/A' },
@@ -1836,10 +1839,20 @@ useEffect(() => {
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
                                 options={['yes', 'no']}
-                                value={secondWashedDelva || null}
-                                onChange={(e, newValue) => setSecondWashedDelva(newValue || '')}
+                                value={secondPostPulped || null}
+                                onChange={(e, newValue) => setSecondPostPulped(newValue || '')}
                                 renderInput={(params) => (
-                                  <TextField {...params} label="Washed with Delva" fullWidth />
+                                  <TextField {...params} label="Second Post-pulped" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondPostPulpedDelva || null}
+                                onChange={(e, newValue) => setSecondPostPulpedDelva(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Post-pulped Delva" fullWidth />
                                 )}
                               />
 
@@ -3078,13 +3091,26 @@ useEffect(() => {
                 </Grid>
                 <Grid item xs={4}>
                   <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
-                    <InputLabel id="second-washed-delva-details-label">Washed with Delva</InputLabel>
+                    <InputLabel id="second-post-pulped-details-label">Second Post-pulped</InputLabel>
                     <Select
-                      labelId="second-washed-delva-details-label"
-                      value={detailsData.secondWashedDelva || ''}
-                      onChange={(e) => setDetailsData({ ...detailsData, secondWashedDelva: e.target.value })}
-                      label="Washed with Delva"
-                      disabled={isDetailsSecondFermentationDisabled}
+                      labelId="second-post-pulped-details-label"
+                      value={detailsData.secondPostPulped || ''}
+                      onChange={(e) => setDetailsData({ ...detailsData, secondPostPulped: e.target.value })}
+                      label="Second Post-pulped"
+                    >
+                      <MenuItem value="yes">Yes</MenuItem>
+                      <MenuItem value="no">No</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={4}>
+                  <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
+                    <InputLabel id="second-post-pulped-delva-label">Second Post-pulped Delva</InputLabel>
+                    <Select
+                      labelId="second-post-pulped-delva-label"
+                      value={detailsData.secondPostPulpedDelva || ''}
+                      onChange={(e) => setDetailsData({ ...detailsData, secondPostPulpedDelva: e.target.value })}
+                      label="second-post-pulped Delva"
                     >
                       <MenuItem value="yes">Yes</MenuItem>
                       <MenuItem value="no">No</MenuItem>
