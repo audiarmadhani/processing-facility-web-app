@@ -824,7 +824,8 @@ const PreprocessingStation = () => {
       "CM Natural", "CM Washed", "CM Pulped Natural",
       "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
       "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
-      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural",
+      "N2 Natural", "N2 Washed", "N2 Pulped Natural"
     ],
     "Competition Lot": [
       "CM Natural", "CM Washed", "CM Pulped Natural",
