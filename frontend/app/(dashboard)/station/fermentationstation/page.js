@@ -1638,7 +1638,6 @@ useEffect(() => {
                                     {...params}
                                     label="Fermentation Tank"
                                     fullWidth
-                                    required
                                     InputProps={{
                                       ...params.InputProps,
                                       endAdornment: (
