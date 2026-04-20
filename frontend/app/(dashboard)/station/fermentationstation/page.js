@@ -554,8 +554,8 @@ useEffect(() => {
       return;
     }
 
-    if (!batchNumber || !tank || !fermentationStart) {
-      setSnackbarMessage('batchNumber, tank, and fermentationStart are required.');
+    if (!batchNumber) {
+      setSnackbarMessage('batchNumber is required');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;

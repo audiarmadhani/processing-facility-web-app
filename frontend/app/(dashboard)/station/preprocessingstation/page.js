@@ -800,8 +800,7 @@ const PreprocessingStation = () => {
 
   const producerOptions = {
     "": [""],
-    HQ: ["Regional Lot", "Micro Lot", "Experimental Lot", "Competition Lot"],
-    BTM: ["Commercial Lot"],
+    HQ: ["Regional Lot", "Micro Lot", "Experimental Lot", "Experiment Lot", "Competition Lot", "Commercial Lot", "Community Lot"],
   };
 
   const productLineOptions = {
@@ -820,6 +819,13 @@ const PreprocessingStation = () => {
       "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
       "O2 Natural", "O2 Washed", "O2 Pulped Natural"
     ],
+    "Experiment Lot": [
+      "Natural", "Washed", "Pulped Natural",
+      "CM Natural", "CM Washed", "CM Pulped Natural",
+      "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
+      "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+    ],
     "Competition Lot": [
       "CM Natural", "CM Washed", "CM Pulped Natural",
       "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
@@ -827,6 +833,9 @@ const PreprocessingStation = () => {
       "O2 Natural", "O2 Washed", "O2 Pulped Natural"
     ],
     "Commercial Lot": ["Natural", "Washed"],
+    "Community Lot": [
+      "Natural", "Washed", "Pulped Natural", "Wet Hulled"
+    ],
   };
 
   const processingTypeOptions = {
