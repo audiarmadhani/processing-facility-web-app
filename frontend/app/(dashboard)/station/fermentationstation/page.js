@@ -1738,7 +1738,6 @@ useEffect(() => {
                                 value={fermentationStart}
                                 onChange={(e) => setFermentationStart(e.target.value)}
                                 fullWidth
-                                required
                                 margin="normal"
                                 InputLabelProps={{ shrink: true }}
                               />
@@ -2234,7 +2233,6 @@ useEffect(() => {
             value={endDateTime}
             onChange={(e) => setEndDateTime(e.target.value)}
             fullWidth
-            required
             margin="normal"
             InputLabelProps={{ shrink: true }}
             inputProps={{
