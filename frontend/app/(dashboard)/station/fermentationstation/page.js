@@ -974,8 +974,8 @@ useEffect(() => {
       
       { label: 'Pre-fermentation in bag', value: preStorage || 'N/A' },
       { label: 'Pre-fermentation time', value: isPreStorageNo ? 'N/A' : (preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : 'N/A') },
-      { label: 'Pre-Pulped', value: isPreStorageNo ? 'no' : (prePulped || 'N/A') },
-      { label: 'Pre-pulped Delva', value: isPreStorageNo ? 'no' : (prePulpedDelva || 'N/A') },
+      { label: 'Pre-Pulped', value: prePulped || 'N/A' },
+      { label: 'Pre-pulped Delva', value: prePulpedDelva || 'N/A' },
       { label: 'Wesorter', value: wesorter || 'N/A' },
       { label: 'Pre-classifier', value: preClassifier || 'N/A' },
 
