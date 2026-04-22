@@ -2070,6 +2070,7 @@ useEffect(() => {
               <Tab label="Washing Track" value="Washing Track" />
               <Tab label="BB" value="Blue Barrel" />
               <Tab label="Bucket" value="Fermentation Bucket" />
+              <Tab label="None" value="none" />
             </Tabs>
             <div style={{ height: 800, width: '100%' }}>
               <DataGrid
@@ -2081,6 +2082,14 @@ useEffect(() => {
 
                     if (tabValue === 'Fermentation Bucket') {
                       return row.tank?.startsWith('BUC-');
+                    }
+
+                    // ⚪ NONE (⭐ NEW LOGIC)
+                    if (tabValue === 'none') {
+                      return (
+                        row.preStorage === 'yes' &&   // already pre-fermented
+                        (!row.tank || row.tank === '') // no vessel assigned
+                      );
                     }
 
                     return row.tank === tabValue;
