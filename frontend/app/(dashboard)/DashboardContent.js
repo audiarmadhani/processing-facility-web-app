@@ -150,7 +150,7 @@ function Dashboard() {
     this_year: 'This Year',
     last_year: 'Last Year',
   };
-  const [timeframe, setTimeframe] = useState('this_month');
+  const [timeframe, setTimeframe] = useState('this_year');
   const selectedRangeLabel = timeframeLabels[timeframe];
   const fetchBatchTrackingData = useCallback(async () => {
     console.log('Starting fetchBatchTrackingData');
@@ -181,6 +181,7 @@ function Dashboard() {
       setIsLoadingBatchTracking(false);
     }
   }, [batchFilter]);
+
   const fetchArabicaTargets = useCallback(async () => {
     console.log('Starting fetchArabicaTargets');
     setIsLoadingTargets(true);
@@ -215,6 +216,7 @@ function Dashboard() {
       setIsLoadingTargets(false);
     }
   }, []);
+
   const fetchHeqaTargets = useCallback(async () => {
     console.log('Starting fetchHeqaTargets');
     setIsLoadingTargets(true);
@@ -612,7 +614,7 @@ function Dashboard() {
             <Grid container spacing={3}>
 
               {/* Land Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '650px', sm: '650px', md: '650px' } }}>
+              {/* <Grid item xs={12} md={12} sx={{ height: { xs: '650px', sm: '650px', md: '650px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -771,7 +773,7 @@ function Dashboard() {
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
                 
               {/* Total Arabica Weight */}
               <Grid item xs={12} md={2.4} sx={{ height: { xs: 'auto', md: '220px' } }}> {/* Adjust the height as needed */}
@@ -1064,7 +1066,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Arabica Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
+              {/* <Grid item xs={12} md={12} sx={{ height: { xs: '300px', sm: '300px', md: '300px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1177,10 +1179,10 @@ function Dashboard() {
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Heqa Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '450px', sm: '450px', md: '450px' } }}>
+              {/* <Grid item xs={12} md={12} sx={{ height: { xs: '450px', sm: '450px', md: '450px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1337,7 +1339,7 @@ function Dashboard() {
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Arabica Farmers Contribution Bar Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
@@ -1713,7 +1715,7 @@ function Dashboard() {
               </Grid> */}
 
               {/* Robusta Target Achievement */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
+              {/* <Grid item xs={12} md={12} sx={{ height: { xs: '400px', sm: '400px', md: '400px' } }}>
                 <Card variant="outlined" sx={{ height: '100%' }}>
                   <CardContent sx={{ height: '100%' }}>
                     <Typography variant="h6" gutterBottom>
@@ -1826,7 +1828,7 @@ function Dashboard() {
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              </Grid> */}
 
               {/* Robusta Farmers Contribution Bar Chart */}
               <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
