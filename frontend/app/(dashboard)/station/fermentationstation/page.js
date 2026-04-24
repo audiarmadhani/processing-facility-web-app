@@ -1005,7 +1005,7 @@ useEffect(() => {
       { label: 'Second Fermentation Tank', value: secondValue(secondFermentationTank) },
       { label: 'Second Post Pulped', value: secondValue(secondPostPulped) },
       { label: 'Second Post Pulped Delva', value: secondValue(secondPostPulpedDelva) },
-      { label: 'Second Washed', value: secondValue(secondWashed) },
+      { label: 'Second Washed', value: secondWashed || 'N/A' },
       { label: 'Second Starter', value: secondValue(secondStarterType) },
       { label: 'Second Gas', value: secondValue(secondGas) },
       { label: 'Second Pressure', value: secondValue(secondPressure, v => `${v} psi`) },
