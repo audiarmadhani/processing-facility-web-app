@@ -689,6 +689,34 @@ useEffect(() => {
     }
   };
 
+  const handleDeleteBatch = async (row) => {
+    const confirmDelete = window.confirm(
+      `Delete batch ${row.batchNumber} (${row.tank || 'No Tank'})?`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/api/fermentation/${row.batchNumber}`,
+        {
+          params: { tank: row.tank || null },
+        }
+      );
+
+      setSnackbarMessage(`Batch ${row.batchNumber} deleted`);
+      setSnackbarSeverity('success');
+
+      await fetchFermentationData();
+    } catch (error) {
+      console.error(error);
+      setSnackbarMessage('Failed to delete batch');
+      setSnackbarSeverity('error');
+    } finally {
+      setOpenSnackbar(true);
+    }
+  };
+
   const resetForm = () => {
     setBatchNumber('');
     setReferenceNumber('');
@@ -1037,6 +1065,151 @@ useEffect(() => {
     doc.save(`HEQA_Fermentation_Order_Sheet_${batchNumber || 'Untitled'}.pdf`);
   };
 
+  const generateOrderSheetRow = (row) => {
+    const doc = new jsPDF();
+
+    // -----------------------------
+    // NORMALIZE DATA SOURCE
+    // -----------------------------
+    const data = row || {};
+
+    const safe = (val, fallback = 'N/A') => {
+      return val !== undefined && val !== null && val !== '' ? val : fallback;
+    };
+
+    const formatUnit = (val, unit) => {
+      if (!val) return 'N/A';
+      return `${val} ${unit}`;
+    };
+
+    // -----------------------------
+    // DERIVED VALUES
+    // -----------------------------
+    const fermentationEndGoal =
+      data.fermentationStart && data.fermentationTimeTarget
+        ? dayjs(data.fermentationStart)
+            .add(parseInt(data.fermentationTimeTarget), 'hour')
+            .format('DD/MM/YYYY HH:mm:ss')
+        : 'N/A';
+
+    const secondFermentationNA = data.secondFermentation === 'no';
+    const isPreStorageNo = data.preStorage === 'no';
+
+    const secondValue = (value, formatter = (v) => v) => {
+      if (secondFermentationNA) return 'N/A';
+      return value ? formatter(value) : 'N/A';
+    };
+
+    const preValue = (value, formatter = (v) => v) => {
+      if (isPreStorageNo) return 'N/A';
+      return value ? formatter(value) : 'N/A';
+    };
+
+    // -----------------------------
+    // TITLE
+    // -----------------------------
+    doc.setFontSize(18);
+    doc.text('HEQA Fermentation Order Sheet', 105, 20, { align: 'center' });
+
+    // -----------------------------
+    // FIELDS (GROUPED)
+    // -----------------------------
+    const fields = [
+      // GENERAL
+      { label: 'Date', value: safe(data.derivedDate) },
+      { label: 'Batch number', value: safe(data.batchNumber) },
+      { label: 'Reference number', value: safe(data.referenceNumber) },
+      { label: 'Version', value: safe(data.version, '-') },
+      { label: 'Full Reference Number', value: safe(data.fullReferenceNumber) },
+      { label: 'Processing Type', value: safe(data.processingType) },
+      { label: 'Experiment Number', value: safe(data.experimentNumber) },
+      { label: 'Notes', value: safe(data.description) },
+
+      // ORIGIN
+      { label: 'Farmer', value: safe(data.farmerName) },
+      { label: 'Type', value: safe(data.type) },
+      { label: 'Variety', value: safe(data.variety) },
+      { label: 'Product line', value: safe(data.productLine) },
+
+      // PRE-FERMENTATION
+      { label: 'Pre-fermentation in bag', value: safe(data.preStorage) },
+      {
+        label: 'Pre-fermentation time',
+        value: preValue(data.preFermentationStorageGoal, v => `${v} h`)
+      },
+      { label: 'Pre-Pulped', value: safe(data.prePulped) },
+      { label: 'Pre-pulped Delva', value: safe(data.prePulpedDelva) },
+      { label: 'Wesorter', value: safe(data.wesorter) },
+      { label: 'Pre-classifier', value: safe(data.preClassifier) },
+
+      // FERMENTATION
+      { label: 'Cherry Type', value: safe(data.cherryType) },
+      { label: 'Fermentation', value: safe(data.fermentation) },
+      { label: 'Fermentation tank', value: safe(data.tank) },
+      { label: 'Starter type', value: safe(data.fermentationStarter) },
+      { label: 'Gas', value: safe(data.gas) },
+      { label: 'Pressure', value: formatUnit(data.pressure, 'psi') },
+      { label: 'Submerged', value: safe(data.isSubmerged) },
+      { label: 'Total Volume', value: safe(data.totalVolume) },
+      { label: 'Stirring', value: safe(data.stirring) },
+      { label: 'Temperature', value: safe(data.fermentationTemperature, 'ambient') },
+      { label: 'pH', value: safe(data.pH) },
+      { label: 'Fermentation Time Target', value: formatUnit(data.fermentationTimeTarget, 'h') },
+      { label: 'Fermentation Start', value: safe(data.fermentationStart) },
+      { label: 'Fermentation End (Calculated)', value: fermentationEndGoal },
+
+      // POST
+      { label: 'Post Pulped', value: safe(data.postPulped) },
+      { label: 'Post Pulped Delva', value: safe(data.postPulpedDelva) },
+      { label: 'Airlock', value: safe(data.airlock) },
+      { label: 'Tank amount', value: safe(data.tankAmount) },
+      { label: 'Leachate target', value: formatUnit(data.leachateTarget, 'L') },
+      { label: 'Brew Tank Temperature', value: safe(data.brewTankTemperature) },
+      { label: 'Water Temperature', value: safe(data.waterTemperature) },
+      { label: 'Cooler Temperature', value: safe(data.coolerTemperature) },
+
+      // SECOND FERMENTATION
+      { label: 'Second Fermentation', value: safe(data.secondFermentation) },
+      { label: 'Second Tank', value: secondValue(data.secondFermentationTank) },
+      { label: 'Second Post Pulped', value: secondValue(data.secondPostPulped) },
+      { label: 'Second Delva', value: secondValue(data.secondPostPulpedDelva) },
+      { label: 'Second Washed', value: safe(data.secondWashed) },
+      { label: 'Second Starter', value: secondValue(data.secondStarterType) },
+      { label: 'Second Gas', value: secondValue(data.secondGas) },
+      { label: 'Second Pressure', value: secondValue(data.secondPressure, v => `${v} psi`) },
+      { label: 'Second Submerged', value: secondValue(data.secondIsSubmerged) },
+      { label: 'Second Volume', value: secondValue(data.secondTotalVolume, v => `${v} L`) },
+      { label: 'Second Temperature', value: secondValue(data.secondTemperature, v => `${v} °C`) },
+      { label: 'Second Time Target', value: secondValue(data.secondFermentationTimeTarget, v => `${v} h`) },
+
+      // DRYING
+      { label: 'Drying', value: safe(data.drying) },
+      { label: 'Second Drying', value: safe(data.secondDrying) },
+      { label: 'Rehydration', value: safe(data.rehydration) },
+    ];
+
+    // -----------------------------
+    // TABLE
+    // -----------------------------
+    autoTable(doc, {
+      startY: 30,
+      head: [['Label', 'Value']],
+      body: fields.map(f => [f.label, f.value]),
+      styles: { fontSize: 10, cellPadding: 2 },
+      headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 100 },
+      },
+      margin: { left: 20, right: 20 },
+    });
+
+    // -----------------------------
+    // SAVE
+    // -----------------------------
+    doc.save(`HEQA_Fermentation_Order_Sheet_${safe(data.batchNumber, 'Untitled')}.pdf`);
+  };
+
   const handleFinishFermentation = async () => {
     try {
       const endDate = dayjs(endDateTime);
@@ -1258,6 +1431,7 @@ useEffect(() => {
             <MenuItem onClick={() => handleTrackWeight(row)}>
               Track Weight
             </MenuItem>
+
             <MenuItem
               onClick={() => {
                 setEndDateTime(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
@@ -1267,9 +1441,20 @@ useEffect(() => {
             >
               Finish
             </MenuItem>
+
             <MenuItem onClick={() => handleDetailsClick(row)}>
               Details
             </MenuItem>
+
+            <MenuItem
+              onClick={() => {
+                generateOrderSheetRow(row);
+                handleMenuClose();
+              }}
+            >
+              Generate Order Sheet
+            </MenuItem>
+
             <MenuItem
               onClick={() => {
                 downloadFermentationDataExcel(row);
@@ -1277,6 +1462,16 @@ useEffect(() => {
               }}
             >
               Download Data
+            </MenuItem>
+
+            <MenuItem
+              onClick={() => {
+                handleDeleteBatch(row);
+                handleMenuClose();
+              }}
+              sx={{ color: 'error.main' }} // 🔴 red for destructive action
+            >
+              Delete
             </MenuItem>
           </Menu>
         </>
