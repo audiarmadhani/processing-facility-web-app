@@ -150,7 +150,7 @@ function Dashboard() {
     this_year: 'This Year',
     last_year: 'Last Year',
   };
-  const [timeframe, setTimeframe] = useState('this_year');
+  const [timeframe, setTimeframe] = useState('this_month');
   const selectedRangeLabel = timeframeLabels[timeframe];
   const fetchBatchTrackingData = useCallback(async () => {
     console.log('Starting fetchBatchTrackingData');
