@@ -1191,25 +1191,22 @@ useEffect(() => {
     // -----------------------------
     // TABLE
     // -----------------------------
-    autoTable(doc, {
+    doc.autoTable({
       startY: 30,
       head: [['Label', 'Value']],
-      body: fields.map(f => [f.label, f.value]),
+      body: fields.map(field => [field.label, field.value]),
       styles: { fontSize: 10, cellPadding: 2 },
       headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] },
       columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 100 },
+        0: { cellWidth: 80 }, // Label column
+        1: { cellWidth: 100 }, // Value column
       },
       margin: { left: 20, right: 20 },
     });
 
-    // -----------------------------
-    // SAVE
-    // -----------------------------
-    doc.save(`HEQA_Fermentation_Order_Sheet_${safe(data.batchNumber, 'Untitled')}.pdf`);
+    doc.save(`HEQA_Fermentation_Order_Sheet_${batchNumber || 'Untitled'}.pdf`);
   };
-
+  
   const handleFinishFermentation = async () => {
     try {
       const endDate = dayjs(endDateTime);
