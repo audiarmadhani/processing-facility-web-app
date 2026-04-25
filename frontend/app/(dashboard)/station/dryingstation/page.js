@@ -1149,7 +1149,7 @@ const DryingStation = () => {
         <Grid item xs={12}>
           <Card variant="outlined">
             <CardContent>
-              <Typography variant="h5">Pending Drying</Typography>
+              <Typography variant="h5" gutterBottom>Pending Drying</Typography>
 
               <div style={{ height: 500 }}>
                 <DataGrid
@@ -1157,7 +1157,7 @@ const DryingStation = () => {
                   getRowId={(row) => row.batchNumber}
                   columns={[
                     { field: 'batchNumber', headerName: 'Batch', width: 150 },
-                    { field: 'farmerName', headerName: 'Farmer', width: 150 },
+                    { field: 'farmerName', headerName: 'Farmer', width: 250 },
                     { field: 'processingType', headerName: 'Process', width: 180 },
                     { field: 'type', headerName: 'Type', width: 100 },
 
@@ -1182,6 +1182,17 @@ const DryingStation = () => {
                       )
                     }
                   ]}
+                  pageSizeOptions={[100, 200, 500]}
+                  slots={{ toolbar: GridToolbar }}
+                  sx={ { 
+                    border: '1px solid rgba(0,0,0,0.12)', 
+                    '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
+                  }}
+                  rowHeight={35}
+                  pagination
+                  initialState={{
+                    pagination: { paginationModel: { pageSize: 100 } }
+                  }}
                 />
               </div>
             </CardContent>
