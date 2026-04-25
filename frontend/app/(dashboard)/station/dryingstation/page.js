@@ -812,7 +812,7 @@ const DryingStation = () => {
 
   const fetchPendingDrying = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/pending-drying`);
+      const res = await fetch(`https://processing-facility-backend.onrender.com/api/pending-drying`);
       const data = await res.json();
       setPendingDrying(data);
     } catch (err) {
@@ -822,7 +822,7 @@ const DryingStation = () => {
 
   const handleAssignDrying = async (batchNumber, dryingArea) => {
     try {
-      await fetch(`${API_BASE_URL}/api/assign-drying`, {
+      await fetch(`https://processing-facility-backend.onrender.com/api/assign-drying`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batchNumber, dryingArea })
@@ -1145,37 +1145,13 @@ const DryingStation = () => {
   return (
     <ErrorBoundary>
       <Grid container spacing={3} sx={{ p: 2 }}>
-        <Grid item xs={12}>
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h5" gutterBottom>Drying Station</Typography>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleRefreshData}
-                disabled={isLoading}
-                startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
-                sx={{ mb: 2 }}
-              >
-                {isLoading ? 'Refreshing...' : 'Refresh Data'}
-              </Button>
-              <Grid container spacing={3}>
-                {dryingAreas.map(area => (
-                  <Grid item xs={12} key={area}>
-                    {renderDataGrid(area)}
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
 
         <Grid item xs={12}>
           <Card variant="outlined">
             <CardContent>
-              <Typography variant="h6">Pending Drying</Typography>
+              <Typography variant="h5">Pending Drying</Typography>
 
-              <div style={{ height: 400 }}>
+              <div style={{ height: 500 }}>
                 <DataGrid
                   rows={pendingDrying}
                   getRowId={(row) => row.batchNumber}
@@ -1208,6 +1184,31 @@ const DryingStation = () => {
                   ]}
                 />
               </div>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h5" gutterBottom>Drying Station</Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleRefreshData}
+                disabled={isLoading}
+                startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+                sx={{ mb: 2 }}
+              >
+                {isLoading ? 'Refreshing...' : 'Refresh Data'}
+              </Button>
+              <Grid container spacing={3}>
+                {dryingAreas.map(area => (
+                  <Grid item xs={12} key={area}>
+                    {renderDataGrid(area)}
+                  </Grid>
+                ))}
+              </Grid>
             </CardContent>
           </Card>
         </Grid>
