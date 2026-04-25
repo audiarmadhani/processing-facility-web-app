@@ -98,6 +98,7 @@ const DryingStation = () => {
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
   const [deletedWeights, setDeletedWeights] = useState([]);
   const isFetchingRef = useRef(false);
+  const [pendingDrying, setPendingDrying] = useState([]);
 
   const dryingAreas = useMemo(() => [
     "Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", 
@@ -674,7 +675,10 @@ const DryingStation = () => {
     setAreaLoading(dryingAreas.reduce((acc, area) => ({ ...acc, [area]: true }), {}));
 
     try {
-      await Promise.all(dryingAreas.map(area => fetchAreaData(area, true)));
+      await Promise.all([
+        fetchPendingDrying(),
+        ...dryingAreas.map(area => fetchAreaData(area, true))
+      ]);
     } catch (error) {
       console.error('Error refreshing data:', error);
       setSnackbarMessage(error.message || 'Error refreshing data');
@@ -691,7 +695,10 @@ const DryingStation = () => {
     if (!isFetchingRef.current) {
       isFetchingRef.current = true;
       setIsLoading(true);
-      Promise.all(dryingAreas.map(area => fetchAreaData(area)))
+      Promise.all([
+        fetchPendingDrying(),
+        ...dryingAreas.map(area => fetchAreaData(area))
+      ])
         .catch(error => {
           console.error('Initial data fetch error:', error);
           setSnackbarMessage('Failed to load initial data');
@@ -802,6 +809,37 @@ const DryingStation = () => {
   const handleCloseDeleteConfirmDialog = useCallback(() => {
     setOpenDeleteConfirmDialog(false);
   }, []);
+
+  const fetchPendingDrying = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/pending-drying`);
+      const data = await res.json();
+      setPendingDrying(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAssignDrying = async (batchNumber, dryingArea) => {
+    try {
+      await fetch(`${API_BASE_URL}/api/assign-drying`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchNumber, dryingArea })
+      });
+
+      setSnackbarMessage(`Assigned ${batchNumber} → ${dryingArea}`);
+      setSnackbarSeverity('success');
+
+      await handleRefreshData();
+
+    } catch (err) {
+      setSnackbarMessage('Failed to assign drying');
+      setSnackbarSeverity('error');
+    } finally {
+      setOpenSnackbar(true);
+    }
+  };
 
   const columns = useMemo(() => [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
@@ -1128,6 +1166,48 @@ const DryingStation = () => {
                   </Grid>
                 ))}
               </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6">Pending Drying</Typography>
+
+              <div style={{ height: 400 }}>
+                <DataGrid
+                  rows={pendingDrying}
+                  getRowId={(row) => row.batchNumber}
+                  columns={[
+                    { field: 'batchNumber', headerName: 'Batch', width: 150 },
+                    { field: 'farmerName', headerName: 'Farmer', width: 150 },
+                    { field: 'processingType', headerName: 'Process', width: 180 },
+                    { field: 'type', headerName: 'Type', width: 100 },
+
+                    {
+                      field: 'action',
+                      headerName: 'Assign',
+                      width: 200,
+                      renderCell: ({ row }) => (
+                        <Select
+                          size="small"
+                          defaultValue=""
+                          displayEmpty
+                          onChange={(e) =>
+                            handleAssignDrying(row.batchNumber, e.target.value)
+                          }
+                        >
+                          <MenuItem value="">Assign</MenuItem>
+                          {dryingAreas.map(area => (
+                            <MenuItem key={area} value={area}>{area}</MenuItem>
+                          ))}
+                        </Select>
+                      )
+                    }
+                  ]}
+                />
+              </div>
             </CardContent>
           </Card>
         </Grid>
