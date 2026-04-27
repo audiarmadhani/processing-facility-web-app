@@ -99,6 +99,12 @@ const DryingStation = () => {
   const [deletedWeights, setDeletedWeights] = useState([]);
   const isFetchingRef = useRef(false);
   const [pendingDrying, setPendingDrying] = useState([]);
+  const [openAssignDialog, setOpenAssignDialog] = useState(false);
+  const [assignBatch, setAssignBatch] = useState(null);
+  const [assignArea, setAssignArea] = useState('');
+  const [assignDate, setAssignDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
 
   const dryingAreas = useMemo(() => [
     "Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", 
@@ -820,12 +826,16 @@ const DryingStation = () => {
     }
   };
 
-  const handleAssignDrying = async (batchNumber, dryingArea) => {
+  const handleAssignDrying = async (batchNumber, dryingArea, enteredAt) => {
     try {
       await fetch(`https://processing-facility-backend.onrender.com/api/assign-drying`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batchNumber, dryingArea })
+        body: JSON.stringify({ 
+          batchNumber,
+          dryingArea,
+          entered_at: enteredAt
+        })
       });
 
       setSnackbarMessage(`Assigned ${batchNumber} → ${dryingArea}`);
@@ -1164,21 +1174,20 @@ const DryingStation = () => {
                     {
                       field: 'action',
                       headerName: 'Assign',
-                      width: 200,
+                      width: 150,
                       renderCell: ({ row }) => (
-                        <Select
+                        <Button
+                          variant="contained"
                           size="small"
-                          defaultValue=""
-                          displayEmpty
-                          onChange={(e) =>
-                            handleAssignDrying(row.batchNumber, e.target.value)
-                          }
+                          onClick={() => {
+                            setAssignBatch(row.batchNumber);
+                            setAssignArea(''); // reset
+                            setAssignDate(new Date().toISOString().slice(0, 10));
+                            setOpenAssignDialog(true);
+                          }}
                         >
-                          <MenuItem value="">Assign</MenuItem>
-                          {dryingAreas.map(area => (
-                            <MenuItem key={area} value={area}>{area}</MenuItem>
-                          ))}
-                        </Select>
+                          Assign
+                        </Button>
                       )
                     }
                   ]}
@@ -1557,6 +1566,68 @@ const DryingStation = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseEnvDialog}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={openAssignDialog} onClose={() => setOpenAssignDialog(false)}>
+          <DialogTitle>Assign to Drying</DialogTitle>
+
+          <DialogContent>
+            <Typography sx={{ mb: 2 }}>
+              Batch: <b>{assignBatch}</b>
+            </Typography>
+
+            {/* ✅ NEW: Area selector */}
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Drying Area</InputLabel>
+              <Select
+                value={assignArea}
+                onChange={(e) => setAssignArea(e.target.value)}
+                label="Drying Area"
+              >
+                {dryingAreas.map(area => (
+                  <MenuItem key={area} value={area}>
+                    {area}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Existing date input */}
+            <TextField
+              label="Entered Date"
+              type="date"
+              value={assignDate}
+              onChange={(e) => setAssignDate(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={() => setOpenAssignDialog(false)}>
+              Cancel
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={async () => {
+                if (!assignArea) {
+                  setSnackbarMessage('Please select drying area');
+                  setSnackbarSeverity('error');
+                  setOpenSnackbar(true);
+                  return;
+                }
+
+                await handleAssignDrying(assignBatch, assignArea, assignDate);
+
+                setOpenAssignDialog(false);
+                setAssignBatch(null);
+                setAssignArea('');
+              }}
+            >
+              Confirm
+            </Button>
           </DialogActions>
         </Dialog>
 
