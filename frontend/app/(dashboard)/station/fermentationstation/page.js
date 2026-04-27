@@ -218,7 +218,7 @@ const FermentationStation = () => {
 
   const fieldDisabled = {
     // temperature related
-    fermentationTemperature: isCarrybrew || isBucketOrBB,
+    fermentationTemperature: isBucketOrBB,
     brewTankTemperature: isBiomaster || isBucketOrBB,
     waterTemperature: isBiomaster || isBucketOrBB,
     coolerTemperature: isBiomaster || isBucketOrBB,
@@ -245,7 +245,7 @@ const FermentationStation = () => {
     detailsTank?.startsWith('BUC-');
 
   const detailsFieldDisabled = {
-    fermentationTemperature: detailsIsCarrybrew || detailsIsBucketOrBB,
+    fermentationTemperature: detailsIsBucketOrBB,
     brewTankTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
     waterTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
     coolerTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
@@ -3553,7 +3553,7 @@ useEffect(() => {
                       label="Drying Area"
                     >
                       <MenuItem value="greenhouse">Greenhouse</MenuItem>
-                      <MenuItem value="outside">Outside</MenuItem>
+                      <MenuItem value="sun dry">Sun Dry</MenuItem>
                       <MenuItem value="drying room">Drying Room</MenuItem>
                     </Select>
                   </FormControl>
@@ -3735,9 +3735,9 @@ useEffect(() => {
                       onChange={(e) => setDetailsData({ ...detailsData, drying: e.target.value })}
                       label="Drying Method"
                     >
-                      <MenuItem value="Pulped Natural">Pulped Natural</MenuItem>
-                      <MenuItem value="Natural">Natural</MenuItem>
-                      <MenuItem value="Washed">Washed</MenuItem>
+                      <MenuItem value="Greenhouse">Greenhouse</MenuItem>
+                      <MenuItem value="Drying Room">Drying Room</MenuItem>
+                      <MenuItem value="Sun Dry">Sun Dry</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
