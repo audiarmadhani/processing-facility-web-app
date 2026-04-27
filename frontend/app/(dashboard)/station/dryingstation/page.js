@@ -105,6 +105,8 @@ const DryingStation = () => {
   const [assignDate, setAssignDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
+  const [openFinishDialog, setOpenFinishDialog] = useState(false);
+  const [selectedRowForFinish, setSelectedRowForFinish] = useState(null);
 
   const dryingAreas = useMemo(() => [
     "Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", 
@@ -851,6 +853,42 @@ const DryingStation = () => {
     }
   };
 
+  const handleFinishDrying = useCallback(async () => {
+    if (!selectedRowForFinish) return;
+
+    try {
+      const res = await fetch(
+        `https://processing-facility-backend.onrender.com/api/finish-drying`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            batchNumber: selectedRowForFinish.batchNumber,
+            rfid: selectedRowForFinish.rfid
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      setSnackbarMessage(`Batch ${selectedRowForFinish.batchNumber} finished drying`);
+      setSnackbarSeverity('success');
+
+      await handleRefreshData();
+
+    } catch (err) {
+      setSnackbarMessage(err.message || 'Failed to finish drying');
+      setSnackbarSeverity('error');
+    } finally {
+      setOpenSnackbar(true);
+      setOpenFinishDialog(false);
+      setSelectedRowForFinish(null);
+    }
+
+  }, [selectedRowForFinish, handleRefreshData]);
+
   const columns = useMemo(() => [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 160 },
@@ -869,47 +907,40 @@ const DryingStation = () => {
       )
     },
     {
-      field: 'details',
-      headerName: 'Details',
-      width: 110,
+      field: 'actions',
+      headerName: 'Actions',
+      width: 180,
       sortable: false,
       renderCell: ({ row }) => (
-        <Button variant="outlined" size="small" onClick={() => handleDetailsClick(row)}>
-          Details
-        </Button>
-      )
-    },
-    {
-      field: 'move',
-      headerName: 'Move',
-      width: 110,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Button
-          variant="outlined"
-          color="secondary"
-          size="small"
-          onClick={() => handleMoveClick(row)}
-          disabled={row.status !== 'In Drying'}
-        >
-          Move
-        </Button>
-      )
-    },
-    {
-      field: 'trackWeight',
-      headerName: 'Track Weight',
-      width: 130,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Button
-          variant="outlined"
-          color="info"
-          size="small"
-          onClick={() => handleWeightClick(row)}
-        >
-          Track Weight
-        </Button>
+        <FormControl size="small" fullWidth>
+          <Select
+            displayEmpty
+            defaultValue=""
+            onChange={(e) => {
+              const action = e.target.value;
+
+              if (action === 'details') handleDetailsClick(row);
+              if (action === 'move') handleMoveClick(row);
+              if (action === 'weight') handleWeightClick(row);
+              if (action === 'finish') {
+                setSelectedRowForFinish(row);
+                setOpenFinishDialog(true);
+              }
+
+              e.target.value = ""; // reset after selection
+            }}
+          >
+            <MenuItem value="">Actions</MenuItem>
+            <MenuItem value="details">Details</MenuItem>
+            <MenuItem value="move" disabled={row.status !== 'In Drying'}>
+              Move
+            </MenuItem>
+            <MenuItem value="weight">Track Weight</MenuItem>
+            <MenuItem value="finish" disabled={row.status !== 'In Drying'}>
+              Finish Drying
+            </MenuItem>
+          </Select>
+        </FormControl>
       )
     },
     { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },
@@ -1625,6 +1656,37 @@ const DryingStation = () => {
                 setAssignBatch(null);
                 setAssignArea('');
               }}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={openFinishDialog}
+          onClose={() => setOpenFinishDialog(false)}
+        >
+          <DialogTitle>Finish Drying</DialogTitle>
+
+          <DialogContent>
+            <Typography>
+              Are you sure you want to finish drying for batch:
+            </Typography>
+
+            <Typography sx={{ mt: 2, fontWeight: 'bold' }}>
+              {selectedRowForFinish?.batchNumber}
+            </Typography>
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={() => setOpenFinishDialog(false)}>
+              Cancel
+            </Button>
+
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleFinishDrying}
             >
               Confirm
             </Button>
