@@ -1023,7 +1023,7 @@ const DryingStation = () => {
                 border: '1px solid rgba(0,0,0,0.12)', 
                 '& .MuiDataGrid-footerContainer': { borderTop: 'none' }
               }}
-              rowHeight={35}
+              rowHeight={40}
               pagination
               initialState={{
                 pagination: { paginationModel: { pageSize: 50 } }
