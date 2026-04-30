@@ -1365,6 +1365,21 @@ useEffect(() => {
     return `${days}d ${hours}h ${minutes}m`;
   };
 
+  const handleDeleteWeight = async (id) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this entry?');
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`/api/fermentation/weight/${id}`, {
+        params: { batchNumber }
+      });
+      fetchWeights();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete weight');
+    }
+  };
+
 
   const fermentationColumns = [
     {
@@ -2388,12 +2403,15 @@ useEffect(() => {
                 <TableCell>Processing Type</TableCell>
                 <TableCell>Weight (kg)</TableCell>
                 <TableCell>Producer</TableCell>
+                <TableCell>Actions</TableCell> {/* NEW */}
               </TableRow>
             </TableHead>
             <TableBody>
               {weightMeasurements.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">No weight measurements recorded.</TableCell>
+                  <TableCell colSpan={5} align="center">
+                    No weight measurements recorded.
+                  </TableCell>
                 </TableRow>
               ) : (
                 weightMeasurements.map(m => (
@@ -2402,6 +2420,18 @@ useEffect(() => {
                     <TableCell>{m.processingType}</TableCell>
                     <TableCell>{parseFloat(m.weight).toFixed(2)}</TableCell>
                     <TableCell>{m.producer}</TableCell>
+
+                    {/* NEW DELETE BUTTON CELL */}
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        onClick={() => handleDeleteWeight(m.id, m.batchNumber)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
