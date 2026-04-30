@@ -1491,6 +1491,11 @@ useEffect(() => {
     },
     { field: 'tank', headerName: 'Tank', width: 140 },
     {
+      field: 'description',
+      headerName: 'Description',
+      minWidth: 250
+    },
+    {
       field: 'elapsedTime',
       headerName: 'Elapsed Time',
       width: 130,
@@ -2272,6 +2277,7 @@ useEffect(() => {
               onChange={(e, newValue) => setTabValue(newValue)}
               sx={{ marginBottom: '16px' }}
             >
+              <Tab label="All Tank" value="All Tank" />
               <Tab label="Biomaster" value="Biomaster" />
               <Tab label="Carrybrew" value="Carrybrew" />
               <Tab label="Washing Track" value="Washing Track" />
@@ -2283,6 +2289,11 @@ useEffect(() => {
               <DataGrid
                 rows={fermentationData
                   .filter(row => {
+                    // 🟢 ALL TANK (FIX)
+                    if (tabValue === 'All Tank') {
+                      return true;
+                    }
+
                     if (tabValue === 'Blue Barrel') {
                       return row.tank?.startsWith('BB-');
                     }
@@ -2291,11 +2302,11 @@ useEffect(() => {
                       return row.tank?.startsWith('BUC-');
                     }
 
-                    // ⚪ NONE (⭐ NEW LOGIC)
+                    // ⚪ NONE
                     if (tabValue === 'none') {
                       return (
-                        row.preStorage === 'yes' &&   // already pre-fermented
-                        (!row.tank || row.tank === '') // no vessel assigned
+                        row.preStorage === 'yes' &&
+                        (!row.tank || row.tank === '')
                       );
                     }
 
