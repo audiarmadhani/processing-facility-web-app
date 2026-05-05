@@ -67,6 +67,15 @@ const DryMillStation = () => {
   const [sampleData, setSampleData] = useState([]);
   const [openMergeDialog, setOpenMergeDialog] = useState(false);
 
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  const [openEnterDialog, setOpenEnterDialog] = useState(false);
+  const [openExitDialog, setOpenExitDialog] = useState(false);
+
+  const [enteredAt, setEnteredAt] = useState('');
+  const [exitedAt, setExitedAt] = useState('');
+
   // ---------- Process-sheet state (4 steps, grade totals only) ----------
 const PROCESS_STEPS = ['Huller', 'Suton', 'Sizer', 'Handpicking'];
 const GRADE_ORDER = ['Specialty Grade', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Asalan'];
@@ -719,6 +728,79 @@ const handleSaveHullerOutput = async () => {
   }
 };
 
+const handleOpenMenu = (event, row) => {
+  setAnchorEl(event.currentTarget);
+  setSelectedRow(row);
+};
+
+const handleCloseMenu = () => {
+  setAnchorEl(null);
+  setSelectedRow(null);
+};
+
+// ---- ENTER DRY MILL ----
+const handleOpenEnter = () => {
+  setEnteredAt('');
+  setOpenEnterDialog(true);
+  handleCloseMenu();
+};
+
+const handleSubmitEnter = async () => {
+  try {
+    await axios.post(
+      `${API_BASE_URL}/dry-mill/${selectedRow.batchNumber}/enter`,
+      {
+        entered_at: enteredAt,
+        processingType: selectedRow.processingType,
+      }
+    );
+
+    setSnackbarMessage('Batch entered dry mill');
+    setSnackbarSeverity('success');
+
+    setOpenEnterDialog(false);
+    await fetchDryMillData();
+
+  } catch (err) {
+    setSnackbarMessage(err.response?.data?.error || 'Failed to enter dry mill');
+    setSnackbarSeverity('error');
+  } finally {
+    setOpenSnackbar(true);
+  }
+};
+
+// ---- EXIT DRY MILL ----
+const handleOpenExit = () => {
+  setExitedAt('');
+  setOpenExitDialog(true);
+  handleCloseMenu();
+};
+
+const handleSubmitExit = async () => {
+  try {
+    await axios.post(
+      `${API_BASE_URL}/dry-mill/${selectedRow.batchNumber}/exit`,
+      {
+        exited_at: exitedAt,
+        processingType: selectedRow.processingType,
+        updatedBy: session?.user?.name,
+      }
+    );
+
+    setSnackbarMessage('Batch exited dry mill');
+    setSnackbarSeverity('success');
+
+    setOpenExitDialog(false);
+    await fetchDryMillData();
+
+  } catch (err) {
+    setSnackbarMessage(err.response?.data?.error || 'Failed to exit dry mill');
+    setSnackbarSeverity('error');
+  } finally {
+    setOpenSnackbar(true);
+  }
+};
+
   const parentColumns = useMemo(
     () => [
       {
@@ -786,36 +868,49 @@ const handleSaveHullerOutput = async () => {
         ),
       },
       {
-        field: "sampleTracking",
-        headerName: "Sample Tracking",
-        width: 170,
+        field: 'actions',
+        headerName: 'Actions',
+        width: 140,
         sortable: false,
-        renderCell: (params) => (
-          <Button
-            variant="contained"
-            color="secondary"
-            size="small"
-            onClick={() => handleSampleTrackingClick(params.row)}
-            disabled={isLoading}
-          >
-            Sample Tracking
-          </Button>
-        ),
-      },
-      {
-        field: "details",
-        headerName: "Track Weight",
-        width: 170,
-        sortable: false,
-        renderCell: (params) => (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => handleDetailsClick(params.row)}
-            disabled={isLoading}
-          >
-            Track Weight
-          </Button>
+        renderCell: ({ row }) => (
+          <>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={(e) => handleOpenMenu(e, row)}
+            >
+              Actions
+            </Button>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl) && selectedRow?.id === row.id}
+              onClose={handleCloseMenu}
+            >
+              {/* ENTER */}
+              {!row.entered_at && (
+                <MenuItem onClick={handleOpenEnter}>
+                  Enter Dry Mill
+                </MenuItem>
+              )}
+
+              {/* EXIT */}
+              {row.entered_at && !row.exited_at && (
+                <MenuItem onClick={handleOpenExit}>
+                  Exit Dry Mill
+                </MenuItem>
+              )}
+
+              {/* EXISTING ACTIONS */}
+              <MenuItem onClick={() => handleTrackWeight(row)}>
+                Track Weight
+              </MenuItem>
+
+              <MenuItem onClick={() => handleSampleTracking(row)}>
+                Sample Tracking
+              </MenuItem>
+            </Menu>
+          </>
         ),
       },
       { field: "farmerName", headerName: "Farmer Name", width: 160 },
@@ -1655,6 +1750,53 @@ const handleSaveHullerOutput = async () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={openEnterDialog} onClose={() => setOpenEnterDialog(false)}>
+        <DialogTitle>Enter Dry Mill</DialogTitle>
+
+        <DialogContent>
+          <TextField
+            label="Enter Date"
+            type="datetime-local"
+            fullWidth
+            value={enteredAt}
+            onChange={(e) => setEnteredAt(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenEnterDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitEnter}>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openExitDialog} onClose={() => setOpenExitDialog(false)}>
+        <DialogTitle>Exit Dry Mill</DialogTitle>
+
+        <DialogContent>
+          <TextField
+            label="Exit Date"
+            type="datetime-local"
+            fullWidth
+            value={exitedAt}
+            onChange={(e) => setExitedAt(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenExitDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitExit}>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
