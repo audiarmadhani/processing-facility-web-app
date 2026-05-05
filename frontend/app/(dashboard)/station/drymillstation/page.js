@@ -883,34 +883,33 @@ const handleSubmitExit = async () => {
               Actions
             </Button>
 
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl) && selectedRow?.id === row.id}
-              onClose={handleCloseMenu}
-            >
-              {/* ENTER */}
-              {!row.dryMillEntered && (
-                <MenuItem onClick={handleOpenEnter}>
-                  Enter Dry Mill
+            {selectedRow?.id === row.id && (
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleCloseMenu}
+              >
+                {!row.dryMillEntered && (
+                  <MenuItem onClick={handleOpenEnter}>
+                    Enter Dry Mill
+                  </MenuItem>
+                )}
+
+                {row.dryMillEntered && !row.dryMillExited && (
+                  <MenuItem onClick={handleOpenExit}>
+                    Exit Dry Mill
+                  </MenuItem>
+                )}
+
+                <MenuItem onClick={() => handleDetailsClick(row)}>
+                  Track Weight
                 </MenuItem>
-              )}
 
-              {/* EXIT */}
-              {row.dryMillEntered && !row.dryMillExited && (
-                <MenuItem onClick={handleOpenExit}>
-                  Exit Dry Mill
+                <MenuItem onClick={() => handleSampleTrackingClick(row)}>
+                  Sample Tracking
                 </MenuItem>
-              )}
-
-              {/* EXISTING ACTIONS */}
-              <MenuItem onClick={() => handleDetailsClick(row)}>
-                Track Weight
-              </MenuItem>
-
-              <MenuItem onClick={() => handleSampleTrackingClick(row)}>
-                Sample Tracking
-              </MenuItem>
-            </Menu>
+              </Menu>
+            )}
           </>
         ),
       },
