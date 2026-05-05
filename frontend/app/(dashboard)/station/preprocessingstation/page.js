@@ -585,7 +585,6 @@ const PreprocessingStation = () => {
           producer: editProducer,
           productLine: editProductLine,
           processingType: editProcessingType,
-          updatedBy: session?.user?.name || 'Unknown',
         }
       );
 
@@ -1587,7 +1586,7 @@ const PreprocessingStation = () => {
                 </Button>
               </DialogActions>
             </Dialog>
-            
+
           </CardContent>
         </Card>
       </Grid>
