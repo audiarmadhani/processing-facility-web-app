@@ -749,7 +749,7 @@ const handleOpenEnter = () => {
 const handleSubmitEnter = async () => {
   try {
     await axios.post(
-      `${API_BASE_URL}/dry-mill/${selectedRow.batchNumber}/enter`,
+      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedRow.batchNumber}/enter`,
       {
         entered_at: enteredAt,
         processingType: selectedRow.processingType,
@@ -780,7 +780,7 @@ const handleOpenExit = () => {
 const handleSubmitExit = async () => {
   try {
     await axios.post(
-      `${API_BASE_URL}/dry-mill/${selectedRow.batchNumber}/exit`,
+      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedRow.batchNumber}/exit`,
       {
         exited_at: exitedAt,
         processingType: selectedRow.processingType,
@@ -889,25 +889,25 @@ const handleSubmitExit = async () => {
               onClose={handleCloseMenu}
             >
               {/* ENTER */}
-              {!row.entered_at && (
+              {!row.dryMillEntered && (
                 <MenuItem onClick={handleOpenEnter}>
                   Enter Dry Mill
                 </MenuItem>
               )}
 
               {/* EXIT */}
-              {row.entered_at && !row.exited_at && (
+              {row.dryMillEntered && !row.dryMillExited && (
                 <MenuItem onClick={handleOpenExit}>
                   Exit Dry Mill
                 </MenuItem>
               )}
 
               {/* EXISTING ACTIONS */}
-              <MenuItem onClick={() => handleTrackWeight(row)}>
+              <MenuItem onClick={() => handleDetailsClick(row)}>
                 Track Weight
               </MenuItem>
 
-              <MenuItem onClick={() => handleSampleTracking(row)}>
+              <MenuItem onClick={() => handleSampleTrackingClick(row)}>
                 Sample Tracking
               </MenuItem>
             </Menu>
