@@ -78,6 +78,11 @@ const PreprocessingStation = () => {
   const [rfidScanIndex, setRfidScanIndex] = useState(0);
   const [rfidScanMessage, setRfidScanMessage] = useState('');
   const [splitWeights, setSplitWeights] = useState([]);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [editProducer, setEditProducer] = useState('');
+  const [editProductLine, setEditProductLine] = useState('');
+  const [editProcessingType, setEditProcessingType] = useState('');
 
   // Debug re-renders
   useEffect(() => {
@@ -562,6 +567,45 @@ const PreprocessingStation = () => {
     }
   };
 
+  const handleOpenEditMetadata = (row) => {
+    setSelectedBatch(row.batchNumber);
+
+    setEditProducer(row.producer === 'N/A' ? '' : row.producer);
+    setEditProductLine(row.productLine === 'N/A' ? '' : row.productLine);
+    setEditProcessingType(row.processingType === 'N/A' ? '' : row.processingType);
+
+    setOpenEditDialog(true);
+  };
+
+  const handleUpdateMetadata = async () => {
+    try {
+      await axios.patch(
+        `${API_BASE_URL}/preprocessing/update-metadata/${selectedBatch}`,
+        {
+          producer: editProducer,
+          productLine: editProductLine,
+          processingType: editProcessingType,
+          updatedBy: session?.user?.name || 'Unknown',
+        }
+      );
+
+      setSnackBarMessage('Metadata updated successfully');
+      setSnackBarSeverity('success');
+
+      setOpenEditDialog(false);
+
+      // 🔁 IMPORTANT refresh
+      await fetchPreprocessingData();
+
+    } catch (err) {
+      console.error(err);
+      setSnackBarMessage(err.response?.data?.error || 'Update failed');
+      setSnackBarSeverity('error');
+    } finally {
+      setOpenSnackBar(true);
+    }
+  };
+
   const handleError = (message, error) => {
     console.error(message, error);
     setSnackBarMessage(message);
@@ -982,6 +1026,21 @@ const PreprocessingStation = () => {
       width: 100,
       sortable: true,
       renderCell: ({ value }) => (value ? 'Yes' : 'No'),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 150,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => handleOpenEditMetadata(row)}
+        >
+          Edit
+        </Button>
+      ),
     },
   ];
 
@@ -1472,6 +1531,63 @@ const PreprocessingStation = () => {
                 </Button>
               </DialogActions>
             </Dialog>
+
+            <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth>
+              <DialogTitle>Edit Processing Info</DialogTitle>
+
+              <DialogContent>
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Producer</InputLabel>
+                  <Select
+                    value={editProducer}
+                    onChange={(e) => setEditProducer(e.target.value)}
+                    label="Producer"
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    <MenuItem value="HQ">HEQA</MenuItem>
+                    <MenuItem value="BTM">BTM</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Product Line</InputLabel>
+                  <Select
+                    value={editProductLine}
+                    onChange={(e) => setEditProductLine(e.target.value)}
+                    label="Product Line"
+                    disabled={!editProducer}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {producerOptions[editProducer]?.map((option) => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth>
+                  <InputLabel>Processing Type</InputLabel>
+                  <Select
+                    value={editProcessingType}
+                    onChange={(e) => setEditProcessingType(e.target.value)}
+                    label="Processing Type"
+                    disabled={!editProductLine}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {productLineOptions[editProductLine]?.map((option) => (
+                      <MenuItem key={option} value={option}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </DialogContent>
+
+              <DialogActions>
+                <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+                <Button variant="contained" onClick={handleUpdateMetadata}>
+                  Save
+                </Button>
+              </DialogActions>
+            </Dialog>
+            
           </CardContent>
         </Card>
       </Grid>
