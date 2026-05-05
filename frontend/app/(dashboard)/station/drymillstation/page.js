@@ -1073,7 +1073,7 @@ const handleSubmitExit = async () => {
           includeOutliers: true,
           expand: true,
         }}
-        rowHeight={35}
+        rowHeight={40}
         sx={{ height: 600, width: "100%" }}
       />
     ),
