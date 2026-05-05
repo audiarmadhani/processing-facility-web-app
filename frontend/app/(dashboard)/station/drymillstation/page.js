@@ -36,6 +36,8 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
 import jsPDF from "jspdf";
 import SaveIcon from '@mui/icons-material/Save';
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import IconButton from "@mui/material/IconButton";
 
 // Constants for scanned_at values
 const SCAN_LOCATIONS = {
@@ -870,18 +872,17 @@ const handleSubmitExit = async () => {
       },
       {
         field: 'actions',
-        headerName: 'Actions',
-        width: 140,
+        headerName: '',
+        width: 80,
         sortable: false,
         renderCell: ({ row }) => (
           <>
-            <Button
+            <IconButton
               size="small"
-              variant="outlined"
               onClick={(e) => handleOpenMenu(e, row)}
             >
-              Actions
-            </Button>
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
 
             {selectedRow?.id === row.id && (
               <Menu
