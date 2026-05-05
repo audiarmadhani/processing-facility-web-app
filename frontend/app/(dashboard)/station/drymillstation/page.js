@@ -872,47 +872,64 @@ const handleSubmitExit = async () => {
       },
       {
         field: 'actions',
-        headerName: '',
-        width: 80,
+        headerName: 'Actions',
+        width: 180,
         sortable: false,
         renderCell: ({ row }) => (
-          <>
-            <IconButton
-              size="small"
-              onClick={(e) => handleOpenMenu(e, row)}
+          <FormControl size="small" fullWidth>
+            <Select
+              displayEmpty
+              defaultValue=""
+              onChange={(e) => {
+                const action = e.target.value;
+
+                if (action === 'enter') {
+                  setSelectedBatch(row);
+                  setOpenEnterDialog(true);
+                }
+
+                if (action === 'exit') {
+                  setSelectedBatch(row);
+                  setOpenExitDialog(true);
+                }
+
+                if (action === 'weight') {
+                  handleWeightClick(row);
+                }
+
+                if (action === 'sample') {
+                  handleSampleTrackingClick(row);
+                }
+
+                e.target.value = ""; // 🔥 important (same as drying page)
+              }}
             >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
+              <MenuItem value="">Actions</MenuItem>
 
-            {selectedRow?.id === row.id && (
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleCloseMenu}
+              <MenuItem
+                value="enter"
+                disabled={row.dryMillEntered}
               >
-                {!row.dryMillEntered && (
-                  <MenuItem onClick={handleOpenEnter}>
-                    Enter Dry Mill
-                  </MenuItem>
-                )}
+                Enter Dry Mill
+              </MenuItem>
 
-                {row.dryMillEntered && !row.dryMillExited && (
-                  <MenuItem onClick={handleOpenExit}>
-                    Exit Dry Mill
-                  </MenuItem>
-                )}
+              <MenuItem
+                value="exit"
+                disabled={!row.dryMillEntered || row.dryMillExited}
+              >
+                Exit Dry Mill
+              </MenuItem>
 
-                <MenuItem onClick={() => handleDetailsClick(row)}>
-                  Track Weight
-                </MenuItem>
+              <MenuItem value="weight">
+                Track Weight
+              </MenuItem>
 
-                <MenuItem onClick={() => handleSampleTrackingClick(row)}>
-                  Sample Tracking
-                </MenuItem>
-              </Menu>
-            )}
-          </>
-        ),
+              <MenuItem value="sample">
+                Sample Tracking
+              </MenuItem>
+            </Select>
+          </FormControl>
+        )
       },
       { field: "farmerName", headerName: "Farmer Name", width: 160 },
       { field: "farmVarieties", headerName: "Farm Varieties", width: 160 },
