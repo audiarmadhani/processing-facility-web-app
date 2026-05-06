@@ -1365,15 +1365,18 @@ useEffect(() => {
     return `${days}d ${hours}h ${minutes}m`;
   };
 
-  const handleDeleteWeight = async (id) => {
-    const confirmDelete = window.confirm('Are you sure you want to delete this entry?');
-    if (!confirmDelete) return;
-
+  const handleDeleteWeight = async (row) => {
     try {
-      await axios.delete(`/api/fermentation/weight/${id}`, {
-        params: { batchNumber }
+      await axios.delete('/api/fermentation-weight-measurements', {
+        params: {
+          batchNumber: row.batchNumber,
+          processingType: row.processingType,
+          measurement_date: row.measurement_date
+        }
       });
+
       fetchWeights();
+
     } catch (err) {
       console.error(err);
       alert('Failed to delete weight');
@@ -2438,7 +2441,7 @@ useEffect(() => {
                         variant="contained"
                         color="error"
                         size="small"
-                        onClick={() => handleDeleteWeight(m.id, m.batchNumber)}
+                        onClick={() => handleDeleteWeight(weight)}
                       >
                         Delete
                       </Button>
