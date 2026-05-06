@@ -301,7 +301,7 @@ const FermentationStation = () => {
       flexBasis: '100% !important',
       maxWidth: {
         xs: '100% !important',
-        md: 'calc(50% - 8px) !important',
+        md: 'calc(70% - 8px) !important',
       },
     },
     '& .MuiTextField-root': {
