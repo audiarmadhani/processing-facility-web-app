@@ -1365,21 +1365,36 @@ useEffect(() => {
     return `${days}d ${hours}h ${minutes}m`;
   };
 
-  const handleDeleteWeight = async (row) => {
+  const handleDeleteWeight = async (weight) => {
+    console.log('Deleting:', weight);
+
     try {
-      await axios.delete('/api/fermentation-weight-measurements', {
-        params: {
-          batchNumber: row.batchNumber,
-          processingType: row.processingType,
-          measurement_date: row.measurement_date
+      const response = await axios.delete(
+        `${API_BASE_URL}/api/fermentation-weight-measurements`,
+        {
+          params: {
+            batchNumber: weight.batchNumber,
+            processingType: weight.processingType,
+            measurement_date: weight.measurement_date,
+          },
         }
-      });
+      );
 
-      fetchWeights();
+      console.log(response.data);
 
+      await fetchWeightMeasurements(selectedBatch.batchNumber);
+
+      setSnackbarMessage('Weight deleted successfully');
+      setSnackbarSeverity('success');
     } catch (err) {
       console.error(err);
-      alert('Failed to delete weight');
+
+      setSnackbarMessage(
+        err.response?.data?.error || 'Failed to delete weight'
+      );
+      setSnackbarSeverity('error');
+    } finally {
+      setOpenSnackbar(true);
     }
   };
 
@@ -2447,13 +2462,12 @@ useEffect(() => {
                     {/* NEW DELETE BUTTON CELL */}
                     <TableCell>
                       <Button
-                        variant="contained"
-                        color="error"
-                        size="small"
-                        onClick={() => handleDeleteWeight(weight)}
-                      >
-                        Delete
-                      </Button>
+                      color="error"
+                      size="small"
+                      onClick={() => handleDeleteWeight(m)}
+                    >
+                      Delete
+                    </Button>
                     </TableCell>
                   </TableRow>
                 ))
