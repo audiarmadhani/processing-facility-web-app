@@ -1874,6 +1874,15 @@ useEffect(() => {
                                 margin="normal"
                               />
 
+                              <TextField
+                                fullWidth
+                                label="Starter Amount"
+                                type="number"
+                                value={fermentationStarterAmount}
+                                onChange={(e) => setFermentationStarterAmount(e.target.value)}
+                                sx={{ marginTop: '16px' }}
+                              />
+
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
                                 options={['air', 'co2', 'n2', 'pure o2']}
