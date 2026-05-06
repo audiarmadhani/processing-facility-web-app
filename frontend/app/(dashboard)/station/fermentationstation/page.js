@@ -270,10 +270,13 @@ const FermentationStation = () => {
 
   const accordionFormContentSx = {
     display: 'grid',
-    gridTemplateColumns: {
-      xs: '1fr',
-      md: 'repeat(2, minmax(0, 1fr))',
+    gridTemplateColumns: '1fr',
+    width: {
+      xs: '100%',
+      md: 'calc(50% - 8px)',
     },
+    maxWidth: '100%',
+    marginInline: 'auto',
     gap: 2,
     alignItems: 'start',
     '& .MuiTextField-root': {
@@ -291,6 +294,16 @@ const FermentationStation = () => {
   };
 
   const accordionDetailsSx = {
+    '& .MuiGrid-container': {
+      justifyContent: 'center',
+    },
+    '& .MuiGrid-item': {
+      flexBasis: '100% !important',
+      maxWidth: {
+        xs: '100% !important',
+        md: 'calc(50% - 8px) !important',
+      },
+    },
     '& .MuiTextField-root': {
       marginTop: '0 !important',
       marginBottom: '0 !important',
