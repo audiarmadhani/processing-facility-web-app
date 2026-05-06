@@ -1373,9 +1373,10 @@ useEffect(() => {
         `${API_BASE_URL}/api/fermentation-weight-measurements`,
         {
           params: {
+            id: weight.id,
             batchNumber: weight.batchNumber,
             processingType: weight.processingType,
-            measurement_date: weight.measurement_date,
+            measurement_date: dayjs(weight.measurement_date).format('YYYY-MM-DD'),
           },
         }
       );
