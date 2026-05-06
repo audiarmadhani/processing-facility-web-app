@@ -268,6 +268,43 @@ const FermentationStation = () => {
     },
   };
 
+  const accordionFormContentSx = {
+    display: 'grid',
+    gridTemplateColumns: {
+      xs: '1fr',
+      md: 'repeat(2, minmax(0, 1fr))',
+    },
+    gap: 2,
+    alignItems: 'start',
+    '& .MuiTextField-root': {
+      margin: '0 !important',
+    },
+    '& .MuiAutocomplete-root': {
+      margin: '0 !important',
+    },
+    '& .MuiFormControl-root': {
+      margin: '0 !important',
+    },
+    '& .MuiTypography-root': {
+      gridColumn: '1 / -1',
+    },
+  };
+
+  const accordionDetailsSx = {
+    '& .MuiTextField-root': {
+      marginTop: '0 !important',
+      marginBottom: '0 !important',
+    },
+    '& .MuiAutocomplete-root': {
+      marginTop: '0 !important',
+      marginBottom: '0 !important',
+    },
+    '& .MuiFormControl-root': {
+      marginTop: '0 !important',
+      marginBottom: '0 !important',
+    },
+  };
+
   const isSecondFermentationDisabled = secondFermentation === 'no';
 
   const isDetailsSecondFermentationDisabled =
@@ -1607,11 +1644,11 @@ useEffect(() => {
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6" gutterBottom>Cherry Information</Typography>
                     </AccordionSummary>
-                    <AccordionDetails>
+                    <AccordionDetails sx={accordionDetailsSx}>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <Card>
-                            <CardContent>
+                            <CardContent sx={accordionFormContentSx}>
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
@@ -1754,11 +1791,11 @@ useEffect(() => {
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6" gutterBottom>Pre-Fermentation Section</Typography>
                     </AccordionSummary>
-                    <AccordionDetails>
+                    <AccordionDetails sx={accordionDetailsSx}>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <Card>
-                            <CardContent>
+                            <CardContent sx={accordionFormContentSx}>
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
@@ -1832,11 +1869,11 @@ useEffect(() => {
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6" gutterBottom>Fermentation Section</Typography>
                     </AccordionSummary>
-                    <AccordionDetails>
+                    <AccordionDetails sx={accordionDetailsSx}>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <Card>
-                            <CardContent>
+                            <CardContent sx={accordionFormContentSx}>
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
@@ -2068,11 +2105,11 @@ useEffect(() => {
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6" gutterBottom>Second Fermentation Section</Typography>
                     </AccordionSummary>
-                    <AccordionDetails>
+                    <AccordionDetails sx={accordionDetailsSx}>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <Card>
-                            <CardContent>
+                            <CardContent sx={accordionFormContentSx}>
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
@@ -2210,11 +2247,11 @@ useEffect(() => {
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6" gutterBottom>Drying Section</Typography>
                     </AccordionSummary>
-                    <AccordionDetails>
+                    <AccordionDetails sx={accordionDetailsSx}>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <Card>
-                            <CardContent>
+                            <CardContent sx={accordionFormContentSx}>
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
@@ -2537,7 +2574,7 @@ useEffect(() => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Cherry Information</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={accordionDetailsSx}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
                   <TextField
@@ -2816,7 +2853,7 @@ useEffect(() => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Pre-Fermentation Details</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={accordionDetailsSx}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
                   <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
@@ -2968,7 +3005,7 @@ useEffect(() => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Fermentation Details</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={accordionDetailsSx}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
                   <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
@@ -3349,7 +3386,7 @@ useEffect(() => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Second Fermentation Details</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={accordionDetailsSx}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
                   <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
@@ -3609,7 +3646,7 @@ useEffect(() => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Drying Details</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={accordionDetailsSx}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
                   <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
@@ -3817,7 +3854,7 @@ useEffect(() => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" gutterBottom>Post Drying Details</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={accordionDetailsSx}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
                   <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
