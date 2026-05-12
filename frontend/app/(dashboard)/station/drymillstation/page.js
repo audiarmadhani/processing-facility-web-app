@@ -753,12 +753,26 @@ const handleOpenEnter = () => {
 };
 
 const handleSubmitEnter = async () => {
+  if (!selectedBatch?.batchNumber || !selectedBatch?.processingType) {
+    setSnackbarMessage('No batch selected for dry mill entry');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+
+  if (!enteredAt) {
+    setSnackbarMessage('Enter date is required');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+
   try {
     await axios.post(
-      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedRow.batchNumber}/enter`,
+      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/enter`,
       {
         entered_at: enteredAt,
-        processingType: selectedRow.processingType,
+        processingType: selectedBatch.processingType,
       }
     );
 
@@ -766,7 +780,7 @@ const handleSubmitEnter = async () => {
     setSnackbarSeverity('success');
 
     setOpenEnterDialog(false);
-    setSelectedRow(null);
+    setSelectedBatch(null);
     await fetchDryMillData();
 
   } catch (err) {
@@ -785,12 +799,26 @@ const handleOpenExit = () => {
 };
 
 const handleSubmitExit = async () => {
+  if (!selectedBatch?.batchNumber || !selectedBatch?.processingType) {
+    setSnackbarMessage('No batch selected for dry mill exit');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+
+  if (!exitedAt) {
+    setSnackbarMessage('Exit date is required');
+    setSnackbarSeverity('error');
+    setOpenSnackbar(true);
+    return;
+  }
+
   try {
     await axios.post(
-      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedRow.batchNumber}/exit`,
+      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/exit`,
       {
         exited_at: exitedAt,
-        processingType: selectedRow.processingType,
+        processingType: selectedBatch.processingType,
         updatedBy: session?.user?.name,
       }
     );
@@ -799,7 +827,7 @@ const handleSubmitExit = async () => {
     setSnackbarSeverity('success');
 
     setOpenExitDialog(false);
-    setSelectedRow(null);
+    setSelectedBatch(null);
     await fetchDryMillData();
 
   } catch (err) {
@@ -1779,7 +1807,7 @@ const handleSubmitExit = async () => {
         open={openEnterDialog}
         onClose={() => {
           setOpenEnterDialog(false);
-          setSelectedRow(null);
+          setSelectedBatch(null);
         }}
       >
         <DialogTitle>Enter Dry Mill</DialogTitle>
@@ -1800,7 +1828,7 @@ const handleSubmitExit = async () => {
           <Button
             onClick={() => {
               setOpenEnterDialog(false);
-              setSelectedRow(null);
+              setSelectedBatch(null);
             }}
           >
             Cancel
@@ -1815,7 +1843,7 @@ const handleSubmitExit = async () => {
         open={openExitDialog}
         onClose={() => {
           setOpenExitDialog(false);
-          setSelectedRow(null);
+          setSelectedBatch(null);
         }}
       >
         <DialogTitle>Exit Dry Mill</DialogTitle>
@@ -1836,7 +1864,7 @@ const handleSubmitExit = async () => {
           <Button
             onClick={() => {
               setOpenExitDialog(false);
-              setSelectedRow(null);
+              setSelectedBatch(null);
             }}
           >
             Cancel
