@@ -741,11 +741,15 @@ const handleCloseMenu = () => {
   setSelectedRow(null);
 };
 
+const handleCloseActionMenu = () => {
+  setAnchorEl(null);
+};
+
 // ---- ENTER DRY MILL ----
 const handleOpenEnter = () => {
   setEnteredAt('');
   setOpenEnterDialog(true);
-  handleCloseMenu();
+  handleCloseActionMenu();
 };
 
 const handleSubmitEnter = async () => {
@@ -762,6 +766,7 @@ const handleSubmitEnter = async () => {
     setSnackbarSeverity('success');
 
     setOpenEnterDialog(false);
+    setSelectedRow(null);
     await fetchDryMillData();
 
   } catch (err) {
@@ -776,7 +781,7 @@ const handleSubmitEnter = async () => {
 const handleOpenExit = () => {
   setExitedAt('');
   setOpenExitDialog(true);
-  handleCloseMenu();
+  handleCloseActionMenu();
 };
 
 const handleSubmitExit = async () => {
@@ -794,6 +799,7 @@ const handleSubmitExit = async () => {
     setSnackbarSeverity('success');
 
     setOpenExitDialog(false);
+    setSelectedRow(null);
     await fetchDryMillData();
 
   } catch (err) {
@@ -1769,7 +1775,13 @@ const handleSubmitExit = async () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openEnterDialog} onClose={() => setOpenEnterDialog(false)}>
+      <Dialog
+        open={openEnterDialog}
+        onClose={() => {
+          setOpenEnterDialog(false);
+          setSelectedRow(null);
+        }}
+      >
         <DialogTitle>Enter Dry Mill</DialogTitle>
 
         <DialogContent>
@@ -1785,14 +1797,27 @@ const handleSubmitExit = async () => {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setOpenEnterDialog(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setOpenEnterDialog(false);
+              setSelectedRow(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button variant="contained" onClick={handleSubmitEnter}>
             Confirm
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openExitDialog} onClose={() => setOpenExitDialog(false)}>
+      <Dialog
+        open={openExitDialog}
+        onClose={() => {
+          setOpenExitDialog(false);
+          setSelectedRow(null);
+        }}
+      >
         <DialogTitle>Exit Dry Mill</DialogTitle>
 
         <DialogContent>
@@ -1808,7 +1833,14 @@ const handleSubmitExit = async () => {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setOpenExitDialog(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setOpenExitDialog(false);
+              setSelectedRow(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button variant="contained" onClick={handleSubmitExit}>
             Confirm
           </Button>
