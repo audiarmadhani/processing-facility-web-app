@@ -2103,12 +2103,7 @@ router.post("/drymill/process-event", async (req, res) => {
         NOW(),
         NOW()
       )
-      ON CONFLICT (
-        "batchNumber",
-        "processingType",
-        "producer",
-        "processStep",
-        COALESCE("grade", '')
+      ON CONFLICT ON CONSTRAINT drymill_process_events_unique_constraint
       )
       DO UPDATE SET
         "inputWeight" = EXCLUDED."inputWeight",
