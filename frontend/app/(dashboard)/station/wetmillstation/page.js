@@ -96,12 +96,20 @@ const WetmillStation = () => {
         .map(batch => batch.batchNumber);
   
       let weightsResult = [];
+      let lotMappingsResult = [];
       if (batchNumbers.length > 0) {
-        const weightsResponse = await fetch(
-          `https://processing-facility-backend.onrender.com/api/wetmill-weight-measurements/aggregated?batchNumbers=${batchNumbers.join(',')}`
-        );
+        const [weightsResponse, lotMappingsResponse] = await Promise.all([
+          fetch(
+            `https://processing-facility-backend.onrender.com/api/wetmill-weight-measurements/aggregated?batchNumbers=${batchNumbers.join(',')}`
+          ),
+          fetch(
+            `https://processing-facility-backend.onrender.com/api/wetmill-lot-mappings?batchNumbers=${batchNumbers.join(',')}`
+          ),
+        ]);
         if (!weightsResponse.ok) throw new Error('Failed to fetch aggregated weights');
+        if (!lotMappingsResponse.ok) throw new Error('Failed to fetch lot mappings');
         weightsResult = await weightsResponse.json();
+        lotMappingsResult = await lotMappingsResponse.json();
       }
   
       const batchWeights = {};
@@ -109,6 +117,17 @@ const WetmillStation = () => {
         if (batchNumber) {
           const key = `${batchNumber}_${producer || 'N/A'}`;
           batchWeights[key] = { total: total_weight, date: measurement_date };
+        }
+      });
+
+      const lotMappingsByBatch = {};
+      lotMappingsResult.forEach(({ batchNumber, lotNumbers, referenceNumbers, lotMapping }) => {
+        if (batchNumber) {
+          lotMappingsByBatch[batchNumber] = {
+            lotNumbers: Array.isArray(lotNumbers) ? lotNumbers : [],
+            referenceNumbers: Array.isArray(referenceNumbers) ? referenceNumbers : [],
+            lotMapping: Array.isArray(lotMapping) ? lotMapping : [],
+          };
         }
       });
   
@@ -123,6 +142,7 @@ const WetmillStation = () => {
   
           const batchWetmillData = wetmillData.filter(data => data.batchNumber === batch.batchNumber);
           const latestWetmillEntry = batchWetmillData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+          const preprocessingMapping = lotMappingsByBatch[batch.batchNumber] || {};
   
           const batchDryingData = dryingData.filter(data => data.batchNumber === batch.batchNumber);
           const latestDryingEntry = batchDryingData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
@@ -143,9 +163,9 @@ const WetmillStation = () => {
             lastProcessingDate: batch.lastProcessingDate ? new Date(batch.lastProcessingDate).toISOString().slice(0, 10) : 'N/A',
             weight: batchWeights[`${batch.batchNumber}_N/A`]?.total || batchWeights[`${batch.batchNumber}_HQ`]?.total || batchWeights[`${batch.batchNumber}_BTM`]?.total || 'N/A',
             producer: latestWetmillEntry?.producer || 'N/A',
-            lotNumbers: latestWetmillEntry?.lotNumbers || ['N/A'],
-            referenceNumbers: latestWetmillEntry?.referenceNumbers || ['N/A'],
-            lotMapping: latestWetmillEntry?.lotMapping || [],
+            lotNumbers: latestWetmillEntry?.lotNumbers?.length ? latestWetmillEntry.lotNumbers : preprocessingMapping.lotNumbers || ['N/A'],
+            referenceNumbers: latestWetmillEntry?.referenceNumbers?.length ? latestWetmillEntry.referenceNumbers : preprocessingMapping.referenceNumbers || ['N/A'],
+            lotMapping: latestWetmillEntry?.lotMapping?.length ? latestWetmillEntry.lotMapping : preprocessingMapping.lotMapping || [],
           };
         })
         .sort((a, b) => {
