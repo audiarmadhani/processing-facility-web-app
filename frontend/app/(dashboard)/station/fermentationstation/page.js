@@ -200,11 +200,11 @@ const FermentationStation = () => {
   ];
   const [availableProcessingTypes, setAvailableProcessingTypes] = useState(defaultProcessingTypes);
 
-  const blueBarrelCodes = Array.from({ length: 15 }, (_, i) => 
+  const blueBarrelCodes = Array.from({ length: 100 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
   );
 
-  const bucketCodes = Array.from({ length: 10 }, (_, i) => 
+  const bucketCodes = Array.from({ length: 100 }, (_, i) => 
     `BUC-HQ-${String(i + 1).padStart(4, '0')}`
   );
 
@@ -928,6 +928,8 @@ useEffect(() => {
       setDate('receivedAt', detailsData.receivedAt);
       setDate('fermentationStart', detailsData.fermentationStart);
       setDate('fermentationEnd', detailsData.fermentationEnd);
+      setDate('preFermentationStorageStart', detailsData.preFermentationStorageStart);
+      setDate('preFermentationStorageEnd', detailsData.preFermentationStorageEnd);
 
       // -------------------------
       // 🔢 NUMBERS
@@ -970,6 +972,8 @@ useEffect(() => {
       setIfValid('secondGas', detailsData.secondGas);
       setIfValid('isSubmerged', detailsData.isSubmerged);
       setIfValid('secondIsSubmerged', detailsData.secondIsSubmerged);
+      setIfValid('fermentationStarter', detailsData.fermentationStarter);
+      setNumber('fermentationStarterAmount', detailsData.fermentationStarterAmount);
 
       // -------------------------
       // 🧾 META
@@ -1036,6 +1040,12 @@ useEffect(() => {
       return value || 'N/A';
     };
 
+    const formatPreFermDisplay = (dt) => {
+      if (!dt) return 'N/A';
+      const d = dayjs(dt);
+      return d.isValid() ? d.format('DD/MM/YYYY HH:mm:ss') : 'N/A';
+    };
+
     const fields = [
       { label: 'Date', value: derivedDate },
       { label: 'Batch number', value: batchNumber || 'N/A' },
@@ -1052,6 +1062,8 @@ useEffect(() => {
       
       { label: 'Pre-fermentation in bag', value: preStorage || 'N/A' },
       { label: 'Pre-fermentation time', value: isPreStorageNo ? 'N/A' : (preFermentationStorageGoal ? `${preFermentationStorageGoal} h` : 'N/A') },
+      { label: 'Pre-Fermentation Storage Start', value: isPreStorageNo ? 'N/A' : formatPreFermDisplay(preFermentationStorageStart) },
+      { label: 'Pre-Fermentation Storage End', value: isPreStorageNo ? 'N/A' : formatPreFermDisplay(preFermentationStorageEnd) },
       { label: 'Pre-Pulped', value: prePulped || 'N/A' },
       { label: 'Pre-pulped Delva', value: prePulpedDelva || 'N/A' },
       { label: 'Wesorter', value: wesorter || 'N/A' },
@@ -1061,6 +1073,7 @@ useEffect(() => {
       { label: 'Fermentation', value: fermentation || 'N/A' },
       { label: 'Fermentation tank', value: tank || 'N/A' },
       { label: 'Starter type', value: fermentationStarter || 'N/A' },
+      { label: 'Starter amount (L)', value: fermentationStarterAmount !== '' && fermentationStarterAmount != null ? `${fermentationStarterAmount} L` : 'N/A' },
       { label: 'Gas', value: gas || 'N/A' },
       { label: 'Pressure', value: pressure ? `${pressure} psi` : 'N/A' },
       { label: 'Submerged', value: isSubmerged || 'N/A' },
@@ -1155,6 +1168,12 @@ useEffect(() => {
       return value ? formatter(value) : 'N/A';
     };
 
+    const formatPreFermDisplayRow = (raw) => {
+      if (!raw) return 'N/A';
+      const d = dayjs(raw);
+      return d.isValid() ? d.format('DD/MM/YYYY HH:mm:ss') : String(raw);
+    };
+
     // -----------------------------
     // TITLE
     // -----------------------------
@@ -1187,6 +1206,14 @@ useEffect(() => {
         label: 'Pre-fermentation time',
         value: preValue(data.preFermentationStorageGoal, v => `${v} h`)
       },
+      {
+        label: 'Pre-Fermentation Storage Start',
+        value: isPreStorageNo ? 'N/A' : formatPreFermDisplayRow(data.preFermentationStorageStart)
+      },
+      {
+        label: 'Pre-Fermentation Storage End',
+        value: isPreStorageNo ? 'N/A' : formatPreFermDisplayRow(data.preFermentationStorageEnd)
+      },
       { label: 'Pre-Pulped', value: safe(data.prePulped) },
       { label: 'Pre-pulped Delva', value: safe(data.prePulpedDelva) },
       { label: 'Wesorter', value: safe(data.wesorter) },
@@ -1197,6 +1224,15 @@ useEffect(() => {
       { label: 'Fermentation', value: safe(data.fermentation) },
       { label: 'Fermentation tank', value: safe(data.tank) },
       { label: 'Starter type', value: safe(data.fermentationStarter) },
+      {
+        label: 'Starter amount (L)',
+        value:
+          data.fermentationStarterAmount !== undefined &&
+          data.fermentationStarterAmount !== null &&
+          data.fermentationStarterAmount !== ''
+            ? `${data.fermentationStarterAmount} L`
+            : 'N/A'
+      },
       { label: 'Gas', value: safe(data.gas) },
       { label: 'Pressure', value: formatUnit(data.pressure, 'psi') },
       { label: 'Submerged', value: safe(data.isSubmerged) },
@@ -1254,7 +1290,7 @@ useEffect(() => {
       margin: { left: 20, right: 20 },
     });
 
-    doc.save(`HEQA_Fermentation_Order_Sheet_${batchNumber || 'Untitled'}.pdf`);
+    doc.save(`HEQA_Fermentation_Order_Sheet_${data.batchNumber || 'Untitled'}.pdf`);
   };
   
   const handleFinishFermentation = async () => {
@@ -1827,6 +1863,26 @@ useEffect(() => {
                                 onChange={(e) => setPreFermentationStorageGoal(e.target.value)}
                                 fullWidth
                                 margin="normal"
+                              />
+
+                              <TextField
+                                label="Pre-Fermentation Storage Start"
+                                type="datetime-local"
+                                value={preFermentationStorageStart}
+                                onChange={(e) => setPreFermentationStorageStart(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                InputLabelProps={{ shrink: true }}
+                              />
+
+                              <TextField
+                                label="Pre-Fermentation Storage End"
+                                type="datetime-local"
+                                value={preFermentationStorageEnd}
+                                onChange={(e) => setPreFermentationStorageEnd(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                InputLabelProps={{ shrink: true }}
                               />
 
                               <Autocomplete

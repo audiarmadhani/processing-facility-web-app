@@ -883,6 +883,8 @@ router.patch('/fermentation/details/:batchNumber', async (req, res) => {
     setDate('harvestAt', d.harvestAt);
     setDate('harvestDate', d.harvestDate);
     setDate('receivedAt', d.receivedAt);
+    setDate('preFermentationStorageStart', d.preFermentationStorageStart);
+    setDate('preFermentationStorageEnd', d.preFermentationStorageEnd);
 
     // Numbers
     setNumber('pressure', d.pressure);
@@ -921,6 +923,8 @@ router.patch('/fermentation/details/:batchNumber', async (req, res) => {
     setIfValid('quality', d.quality);
     setIfValid('brix', d.brix);
     setIfValid('tank', d.tank);
+    setIfValid('fermentationStarter', d.fermentationStarter);
+    setNumber('fermentationStarterAmount', d.fermentationStarterAmount);
 
     // -------------------------
     // 🚨 NOTHING TO UPDATE
