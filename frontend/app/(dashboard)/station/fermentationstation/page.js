@@ -200,11 +200,11 @@ const FermentationStation = () => {
   ];
   const [availableProcessingTypes, setAvailableProcessingTypes] = useState(defaultProcessingTypes);
 
-  const blueBarrelCodes = Array.from({ length: 100 }, (_, i) => 
+  const blueBarrelCodes = Array.from({ length: 50 }, (_, i) => 
     `BB-HQ-${String(i + 1).padStart(4, '0')}`
   );
 
-  const bucketCodes = Array.from({ length: 100 }, (_, i) => 
+  const bucketCodes = Array.from({ length: 50 }, (_, i) => 
     `BUC-HQ-${String(i + 1).padStart(4, '0')}`
   );
 
