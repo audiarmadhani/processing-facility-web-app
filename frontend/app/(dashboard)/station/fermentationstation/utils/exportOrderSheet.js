@@ -84,7 +84,7 @@ export function generateOrderSheet(formState) {
       { label: 'Fermentation', value: fermentation || 'N/A' },
       { label: 'Fermentation tank', value: tank || 'N/A' },
       { label: 'Starter type', value: fermentationStarter || 'N/A' },
-      { label: 'Starter amount', value: fermentationStarterAmount !== '' && fermentationStarterAmount != null ? `${fermentationStarterAmount} L` : 'N/A' },
+      { label: 'Starter amount', value: fermentationStarterAmount !== '' && fermentationStarterAmount != null ? `${fermentationStarterAmount} gr` : 'N/A' },
       { label: 'Gas', value: gas || 'N/A' },
       { label: 'Pressure', value: pressure ? `${pressure} psi` : 'N/A' },
       { label: 'Submerged', value: isSubmerged || 'N/A' },
