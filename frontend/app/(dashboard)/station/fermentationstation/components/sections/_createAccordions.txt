@@ -1,0 +1,671 @@
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Cherry Information</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={accordionDetailsSx}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent sx={accordionFormContentSx}>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={availableBatches}
+                                getOptionLabel={(option) => option.batchNumber || ''}
+                                value={
+                                  availableBatches.find(b => b.batchNumber === batchNumber) || null
+                                }
+                                onChange={(e, newValue) => {
+                                  handleBatchNumberChange(newValue?.batchNumber || '');
+                                }}
+                                renderOption={(props, option) => (
+                                  <li {...props}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                      <Typography>{option.batchNumber}</Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Farmer: {option.farmerName}, {option.weight}kg, Type: {option.type}
+                                      </Typography>
+                                    </Box>
+                                  </li>
+                                )}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Batch Number" required fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={referenceMappings.filter(
+                                  m => !processingType || m.processingType === processingType
+                                )}
+                                getOptionLabel={(option) => option.referenceNumber || ''}
+                                value={
+                                  referenceMappings.find(m => m.referenceNumber === referenceNumber) || null
+                                }
+                                onChange={(e, newValue) => {
+                                  handleReferenceNumberChange(newValue?.referenceNumber || '');
+                                }}
+                                isOptionEqualToValue={(option, value) =>
+                                  option.referenceNumber === value.referenceNumber
+                                }
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Reference Number" fullWidth />
+                                )}
+                              />
+
+                              <TextField
+                                label="Version"
+                                type="number"
+                                value={version}
+                                onChange={(e) => setVersion(e.target.value)}
+                                fullWidth
+                                required
+                                margin="normal"
+                              />
+
+                              <Typography variant="body2" sx={{ mt: 1 }}>
+                                Full Reference: {referenceNumber && version
+                                  ? `${referenceNumber}-${version}`
+                                  : '-'}
+                              </Typography>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={[...new Set(referenceMappings.map(m => m.processingType))]}
+                                value={processingType || null}
+                                onChange={(e, newValue) => {
+                                  handleProcessingTypeChange(newValue || '');
+                                }}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Processing Type" fullWidth required />
+                                )}
+                              />
+
+                              <TextField
+                                label="Experiment Number"
+                                type="number"
+                                value={experimentNumber}
+                                onChange={(e) => setExperimentNumber(e.target.value)}
+                                onBlur={checkExperimentNumber}
+                                fullWidth
+                                required
+                                margin="normal"
+                              />
+                              <TextField
+                                label="Description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+                              <TextField
+                                label="Farmer Name"
+                                value={farmerName}
+                                disabled
+                                fullWidth
+                                margin="normal"
+                              />
+                              <TextField
+                                label="Type"
+                                value={type}
+                                disabled
+                                fullWidth
+                                margin="normal"
+                              />
+                              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                                <InputLabel id="variety-label">Variety</InputLabel>
+                                <Select
+                                  labelId="variety-label"
+                                  value={variety}
+                                  input={<OutlinedInput label="Variety" />}
+                                  disabled
+                                >
+                                  <MenuItem value={variety}>{variety || '-'}</MenuItem>
+                                </Select>
+                              </FormControl>
+                              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                                <InputLabel id="product-line-label">Product</InputLabel>
+                                <Select
+                                  labelId="product-line-label"
+                                  value={productLine}
+                                  onChange={(e) => setProductLine(e.target.value)}
+                                  input={<OutlinedInput label="Product" />}
+                                  MenuProps={MenuProps}
+                                >
+                                  <MenuItem value="production lot">Production Lot</MenuItem>
+                                  <MenuItem value="experiment lot">Experiment Lot</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Pre-Fermentation Section</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={accordionDetailsSx}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent sx={accordionFormContentSx}>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={preStorage || null}
+                                onChange={(e, newValue) => setPreStorage(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-fermentation" fullWidth />
+                                )}
+                              />
+
+                              <TextField
+                                label="Pre-Fermentation Storage Goal (h)"
+                                type="number"
+                                value={preFermentationStorageGoal}
+                                onChange={(e) => setPreFermentationStorageGoal(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+
+                              <TextField
+                                label="Pre-Fermentation Storage Start"
+                                type="datetime-local"
+                                value={preFermentationStorageStart}
+                                onChange={(e) => setPreFermentationStorageStart(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                InputLabelProps={{ shrink: true }}
+                              />
+
+                              <TextField
+                                label="Pre-Fermentation Storage End"
+                                type="datetime-local"
+                                value={preFermentationStorageEnd}
+                                onChange={(e) => setPreFermentationStorageEnd(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                InputLabelProps={{ shrink: true }}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={prePulped || null}
+                                onChange={(e, newValue) => setPrePulped(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-pulped" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={prePulpedDelva || null}
+                                onChange={(e, newValue) => setPrePulpedDelva(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-pulped Delva" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={wesorter || null}
+                                onChange={(e, newValue) => setWesorter(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Wesorter" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={preClassifier || null}
+                                onChange={(e, newValue) => setPreClassifier(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Pre-classifier" fullWidth />
+                                )}
+                              />
+
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Fermentation Section</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={accordionDetailsSx}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent sx={accordionFormContentSx}>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['whole cherry', 'pulped']}
+                                value={cherryType || null}
+                                onChange={(e, newValue) => setCherryType(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Cherry Type" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={fermentation || null}
+                                onChange={(e, newValue) => setFermentation(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Fermentation" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={availableTanks}
+                                value={tank || null}
+                                onChange={(e, newValue) => handleTankChange(newValue || '')}
+                                loading={isLoadingTanks}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    label="Fermentation Tank"
+                                    fullWidth
+                                    InputProps={{
+                                      ...params.InputProps,
+                                      endAdornment: (
+                                        <>
+                                          {isLoadingTanks ? <CircularProgress size={20} /> : null}
+                                          {params.InputProps.endAdornment}
+                                        </>
+                                      ),
+                                    }}
+                                  />
+                                )}
+                              />
+
+                              <TextField
+                                label="Starter"
+                                value={fermentationStarter}
+                                onChange={(e) => setFermentationStarter(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+
+                              <TextField
+                                fullWidth
+                                label="Starter Amount"
+                                type="number"
+                                value={fermentationStarterAmount}
+                                onChange={(e) => setFermentationStarterAmount(e.target.value)}
+                                sx={{ marginTop: '16px' }}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['air', 'co2', 'n2', 'pure o2']}
+                                value={gas || null}
+                                onChange={(e, newValue) => setGas(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Gas" fullWidth />
+                                )}
+                                disabled={fieldDisabled.gas}
+                              />
+
+                              <TextField
+                                label="Pressure (psi)"
+                                type="number"
+                                value={pressure}
+                                onChange={(e) => setPressure(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={isSubmerged || null}
+                                onChange={(e, newValue) => setIsSubmerged(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Is Submerged" fullWidth />
+                                )}
+                              />
+
+                              <TextField
+                                label="Total Volume (L)"
+                                type="number"
+                                value={totalVolume}
+                                onChange={(e) => setTotalVolume(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+                              <TextField
+                                label="Stirring (Hz)"
+                                type="number"
+                                value={stirring}
+                                onChange={(e) => setStirring(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.stirring}
+                              />
+                              <TextField
+                                label="Fermentation Temperature (°C)"
+                                type="number"
+                                value={fermentationTemperature}
+                                onChange={(e) => setFermentationTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.fermentationTemperature}
+                              />
+                              <TextField
+                                label="pH"
+                                type="number"
+                                value={pH}
+                                onChange={(e) => setPH(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.pH}
+                              />
+                              <TextField
+                                label="Fermentation Time Target (h)"
+                                type="number"
+                                value={fermentationTimeTarget}
+                                onChange={(e) => setFermentationTimeTarget(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                              />
+                              <TextField
+                                label="Fermentation Start"
+                                type="datetime-local"
+                                value={fermentationStart}
+                                onChange={(e) => setFermentationStart(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                InputLabelProps={{ shrink: true }}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={postPulped || null}
+                                onChange={(e, newValue) => setPostPulped(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Post-pulped" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={postPulpedDelva || null}
+                                onChange={(e, newValue) => setPostPulpedDelva(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Post-pulped Delva" fullWidth />
+                                )}
+                              />
+
+                              <TextField
+                                label="Airlock"
+                                value={airlock}
+                                onChange={(e) => setAirlock(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.airlock}
+                              />
+                              <TextField
+                                label="Tank Amount"
+                                type="number"
+                                value={detailsData.tankAmount}
+                                onChange={(e) => setTankAmount(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.tankAmount}
+                              />
+                              <TextField
+                                label="Leachate Target (L)"
+                                type="number"
+                                value={detailsData.leachateTarget}
+                                onChange={(e) => setLeachateTarget(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.leachateTarget}
+                              />
+                              <TextField
+                                label="Brew Tank Temperature (°C)"
+                                type="number"
+                                value={detailsData.brewTankTemperature}
+                                onChange={(e) => setBrewTankTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.brewTankTemperature}
+                              />
+                              <TextField
+                                label="Water Temperature (°C)"
+                                type="number"
+                                value={detailsData.waterTemperature}
+                                onChange={(e) => setWaterTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.waterTemperature}
+                              />
+                              <TextField
+                                label="Cooler Temperature (°C)"
+                                type="number"
+                                value={detailsData.coolerTemperature}
+                                onChange={(e) => setCoolerTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={fieldDisabled.coolerTemperature}
+                              />
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Second Fermentation Section</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={accordionDetailsSx}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent sx={accordionFormContentSx}>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondFermentation || null}
+                                onChange={(e, newValue) => setSecondFermentation(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Fermentation" fullWidth />
+                                )}
+                              />
+
+                              <FormControl fullWidth sx={{ marginTop: '16px' }}>
+                                <InputLabel id="second-fermentation-tank-label">Second Fermentation Tank</InputLabel>
+                                <Select
+                                  labelId="second-fermentation-tank-label"
+                                  value={secondFermentationTank}
+                                  onChange={(e) => setSecondFermentationTank(e.target.value)}
+                                  input={<OutlinedInput label="Second Fermentation Tank" />}
+                                  MenuProps={MenuProps}
+                                  disabled={isSecondFermentationDisabled}
+                                >
+                                  {availableTanks.map(tank => (
+                                    <MenuItem key={tank} value={tank}>{tank}</MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondPostPulped || null}
+                                onChange={(e, newValue) => setSecondPostPulped(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Post-pulped" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondPostPulpedDelva || null}
+                                onChange={(e, newValue) => setSecondPostPulpedDelva(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Post-pulped Delva" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondWashed || null}
+                                onChange={(e, newValue) => setSecondWashed(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Washed" fullWidth />
+                                )}
+                              />
+
+                              <TextField
+                                label="Starter"
+                                value={secondStarterType}
+                                onChange={(e) => setSecondStarterType(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={isSecondFermentationDisabled}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['air', 'co2', 'n2', 'pure o2']}
+                                value={secondGas || null}
+                                onChange={(e, newValue) => setSecondGas(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Gas" fullWidth />
+                                )}
+                                disabled={isSecondFermentationDisabled}
+                              />
+
+                              <TextField
+                                label="Second Pressure (psi)"
+                                type="number"
+                                value={secondPressure}
+                                onChange={(e) => setSecondPressure(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={isSecondFermentationDisabled}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondIsSubmerged || null}
+                                onChange={(e, newValue) => setSecondIsSubmerged(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Is Submerged" fullWidth />
+                                )}
+                              />
+
+                              <TextField
+                                label="Second Total Volume (L)"
+                                type="number"
+                                value={secondTotalVolume}
+                                onChange={(e) => setSecondTotalVolume(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={isSecondFermentationDisabled}
+                              />
+                              <TextField
+                                label="Second Temperature (°C)"
+                                type="number"
+                                value={secondTemperature}
+                                onChange={(e) => setSecondTemperature(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={isSecondFermentationDisabled}
+                              />
+                              <TextField
+                                label="Second Fermentation Time Target (h)"
+                                type="number"
+                                value={secondFermentationTimeTarget}
+                                onChange={(e) => setSecondFermentationTimeTarget(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                disabled={isSecondFermentationDisabled}
+                              />
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Accordion sx={{ mb:0, borderRadius: 2, boxShadow: 'none' }} >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6" gutterBottom>Drying Section</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={accordionDetailsSx}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <Card>
+                            <CardContent sx={accordionFormContentSx}>
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['Greenhouse', 'Drying Room', 'Sun Dry']}
+                                value={drying || null}
+                                onChange={(e, newValue) => setDrying(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Drying Method" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={secondDrying || null}
+                                onChange={(e, newValue) => setSecondDrying(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Second Drying" fullWidth />
+                                )}
+                              />
+
+                              <Autocomplete
+                                sx={{ mb: 2 }}   // margin-bottom
+                                options={['yes', 'no']}
+                                value={rehydration || null}
+                                onChange={(e, newValue) => setRehydration(newValue || '')}
+                                renderInput={(params) => (
+                                  <TextField {...params} label="Rehydration" fullWidth />
+                                )}
+                              />
+
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>

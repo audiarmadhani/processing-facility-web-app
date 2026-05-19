@@ -84,7 +84,7 @@ export function generateOrderSheet(formState) {
       { label: 'Fermentation', value: fermentation || 'N/A' },
       { label: 'Fermentation tank', value: tank || 'N/A' },
       { label: 'Starter type', value: fermentationStarter || 'N/A' },
-      { label: 'Starter amount (L)', value: fermentationStarterAmount !== '' && fermentationStarterAmount != null ? `${fermentationStarterAmount} L` : 'N/A' },
+      { label: 'Starter amount', value: fermentationStarterAmount !== '' && fermentationStarterAmount != null ? `${fermentationStarterAmount} L` : 'N/A' },
       { label: 'Gas', value: gas || 'N/A' },
       { label: 'Pressure', value: pressure ? `${pressure} psi` : 'N/A' },
       { label: 'Submerged', value: isSubmerged || 'N/A' },
@@ -236,12 +236,12 @@ export function generateOrderSheetRow(row) {
       { label: 'Fermentation tank', value: safe(data.tank) },
       { label: 'Starter type', value: safe(data.fermentationStarter) },
       {
-        label: 'Starter amount (L)',
+        label: 'Starter amount (gr)',
         value:
           data.fermentationStarterAmount !== undefined &&
           data.fermentationStarterAmount !== null &&
           data.fermentationStarterAmount !== ''
-            ? `${data.fermentationStarterAmount} L`
+            ? `${data.fermentationStarterAmount} gr`
             : 'N/A'
       },
       { label: 'Gas', value: safe(data.gas) },

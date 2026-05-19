@@ -156,7 +156,7 @@ export default function FermentationSection({ mode, form }) {
 
                               <TextField
                                 fullWidth
-                                label="Starter Amount"
+                                label="Starter Amount (gr)"
                                 type="number"
                                 value={fermentationStarterAmount}
                                 onChange={(e) => setFermentationStarterAmount(e.target.value)}
@@ -402,7 +402,7 @@ export default function FermentationSection({ mode, form }) {
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
-                    label="Starter Amount (L)"
+                    label="Starter Amount (gr)"
                     type="number"
                     value={detailsData.fermentationStarterAmount || ''}
                     onChange={(e) => setDetailsData({ ...detailsData, fermentationStarterAmount: e.target.value })}
@@ -477,7 +477,7 @@ export default function FermentationSection({ mode, form }) {
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
-                    label="Starter Used (L)"
+                    label="Starter Used"
                     type="number"
                     value={detailsData.starterUsed || ''}
                     onChange={(e) => setDetailsData({ ...detailsData, starterUsed: e.target.value })}
