@@ -3,6 +3,7 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
+import { calculateFermentationEndGoal, formatFermentationDisplay } from './fermentationDateTime';
 
 export function generateOrderSheet(formState) {
   const {
@@ -23,7 +24,7 @@ export function generateOrderSheet(formState) {
     referenceNumber && version ? `${referenceNumber}-${version}` : '';
 
   const derivedDate = fermentationStart
-    ? dayjs(fermentationStart).format('DD/MM/YYYY HH:mm:ss')
+    ? formatFermentationDisplay(fermentationStart)
     : dayjs().format('DD/MM/YYYY HH:mm:ss');
 
   const doc = new jsPDF();
@@ -32,9 +33,10 @@ export function generateOrderSheet(formState) {
     doc.setFontSize(18);
     doc.text('HEQA Fermentation Order Sheet', 105, 20, { align: 'center' });
 
-    const fermentationEndGoal = fermentationStart && fermentationTimeTarget
-      ? dayjs(fermentationStart).add(parseInt(fermentationTimeTarget), 'hour').format('DD/MM/YYYY HH:mm:ss')
-      : 'N/A';
+    const fermentationEndGoal = calculateFermentationEndGoal(
+      fermentationStart,
+      fermentationTimeTarget
+    );
 
     const secondFermentationNA = secondFermentation === 'no';
 
@@ -51,11 +53,7 @@ export function generateOrderSheet(formState) {
       return value || 'N/A';
     };
 
-    const formatPreFermDisplay = (dt) => {
-      if (!dt) return 'N/A';
-      const d = dayjs(dt);
-      return d.isValid() ? d.format('DD/MM/YYYY HH:mm:ss') : 'N/A';
-    };
+    const formatPreFermDisplay = (dt) => formatFermentationDisplay(dt);
 
     const fields = [
       { label: 'Date', value: derivedDate },
@@ -93,7 +91,8 @@ export function generateOrderSheet(formState) {
       { label: 'Temperature', value: fermentationTemperature || 'ambient' },
       { label: 'pH', value: pH || 'N/A' },
       { label: 'Fermentation Time Target', value: fermentationTimeTarget ? `${fermentationTimeTarget} h` : 'N/A' },
-      { label: 'Fermentation Start', value: fermentationStart || 'N/A' },
+      { label: 'Fermentation Start', value: formatFermentationDisplay(fermentationStart) },
+      { label: 'Fermentation End (Calculated)', value: fermentationEndGoal },
       { label: 'Post Pulped', value: postPulped || 'N/A' },
       { label: 'Post Pulped Delva', value: postPulpedDelva || 'N/A' },
       { label: 'Airlock', value: airlock || 'N/A' },
@@ -159,12 +158,10 @@ export function generateOrderSheetRow(row) {
     // -----------------------------
     // DERIVED VALUES
     // -----------------------------
-    const fermentationEndGoal =
-      data.fermentationStart && data.fermentationTimeTarget
-        ? dayjs(data.fermentationStart)
-            .add(parseInt(data.fermentationTimeTarget), 'hour')
-            .format('DD/MM/YYYY HH:mm:ss')
-        : 'N/A';
+    const fermentationEndGoal = calculateFermentationEndGoal(
+      data.fermentationStart,
+      data.fermentationTimeTarget
+    );
 
     const secondFermentationNA = data.secondFermentation === 'no';
     const isPreStorageNo = data.preStorage === 'no';
@@ -179,11 +176,7 @@ export function generateOrderSheetRow(row) {
       return value ? formatter(value) : 'N/A';
     };
 
-    const formatPreFermDisplayRow = (raw) => {
-      if (!raw) return 'N/A';
-      const d = dayjs(raw);
-      return d.isValid() ? d.format('DD/MM/YYYY HH:mm:ss') : String(raw);
-    };
+    const formatPreFermDisplayRow = (raw) => formatFermentationDisplay(raw);
 
     // -----------------------------
     // TITLE
@@ -252,7 +245,7 @@ export function generateOrderSheetRow(row) {
       { label: 'Temperature', value: safe(data.fermentationTemperature, 'ambient') },
       { label: 'pH', value: safe(data.pH) },
       { label: 'Fermentation Time Target', value: formatUnit(data.fermentationTimeTarget, 'h') },
-      { label: 'Fermentation Start', value: safe(data.fermentationStart) },
+      { label: 'Fermentation Start', value: formatFermentationDisplay(data.fermentationStart) },
       { label: 'Fermentation End (Calculated)', value: fermentationEndGoal },
 
       // POST

@@ -12,6 +12,7 @@ import {
 } from '../constants';
 import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
+import { formatFermentationDisplay } from '../utils/fermentationDateTime';
 import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow } from '../utils/exportOrderSheet';
 import { downloadFermentationDataExcel } from '../utils/exportFullXlsx';
 
@@ -148,7 +149,7 @@ export function useFermentationForm(session) {
   const [referenceMappings, setReferenceMappings] = useState([]);
 
   const derivedDate = fermentationStart
-    ? dayjs(fermentationStart).format('DD/MM/YYYY HH:mm:ss')
+    ? formatFermentationDisplay(fermentationStart)
     : dayjs().format('DD/MM/YYYY HH:mm:ss');
 
   const [availableProcessingTypes, setAvailableProcessingTypes] = useState(defaultProcessingTypes);

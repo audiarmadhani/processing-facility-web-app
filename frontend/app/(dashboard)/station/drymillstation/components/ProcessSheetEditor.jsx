@@ -40,8 +40,15 @@ const normalizeProcessStep = (label) => {
 };
 
 // ---------- Yield helpers ----------
+const parseWeightInput = (v) => {
+  const normalized = String(v ?? '').trim().replace(',', '.');
+  if (!normalized) return NaN;
+  const n = parseFloat(normalized);
+  return isNaN(n) ? NaN : n;
+};
+
 const toNumber = (v) => {
-  const n = parseFloat(v);
+  const n = parseWeightInput(v);
   return isNaN(n) ? 0 : n;
 };
 
@@ -121,7 +128,7 @@ useEffect(() => {
 
     const step = normalizeProcessStep(procLabel);
     const valueStr = processTables?.[procLabel]?.grades?.[gradeName]?.weight ?? '';
-    const parsed = parseFloat(valueStr);
+    const parsed = parseWeightInput(valueStr);
 
     if (isNaN(parsed) || parsed <= 0) {
       showSnackbar('Enter a valid positive weight.', 'error');
@@ -163,7 +170,7 @@ const handleSaveHullerOutput = async () => {
     return;
   }
   const outStr = processTables?.Huller?.outputWeight || '';
-  const parsed = parseFloat(outStr);
+  const parsed = parseWeightInput(outStr);
   if (isNaN(parsed) || parsed <= 0) {
     showSnackbar('Enter a valid positive huller output weight.', 'error');
     return;
