@@ -11,6 +11,7 @@ import {
   producers,
 } from '../constants';
 import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
+import { BAG_TANK } from '../constants';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
 import { formatFermentationDisplay } from '../utils/fermentationDateTime';
 import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow } from '../utils/exportOrderSheet';
@@ -158,7 +159,8 @@ export function useFermentationForm(session) {
   const isBiomaster = tank === 'Biomaster';
   const isBucketOrBB =
     tank?.startsWith('BB-') ||
-    tank?.startsWith('BUC-');
+    tank?.startsWith('BUC-') ||
+    tank === BAG_TANK;
 
   const fieldDisabled = {
     // temperature related
@@ -186,7 +188,8 @@ export function useFermentationForm(session) {
   const detailsIsBiomaster = detailsTank === 'Biomaster';
   const detailsIsBucketOrBB =
     detailsTank?.startsWith('BB-') ||
-    detailsTank?.startsWith('BUC-');
+    detailsTank?.startsWith('BUC-') ||
+    detailsTank === BAG_TANK;
 
   const detailsFieldDisabled = {
     fermentationTemperature: detailsIsBucketOrBB,

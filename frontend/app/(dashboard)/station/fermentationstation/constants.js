@@ -20,6 +20,9 @@ export const bucketCodes = Array.from({ length: 50 }, (_, i) =>
   `BUC-HQ-${String(i + 1).padStart(4, '0')}`
 );
 
+/** Fermentation vessel type for batches fermented in a bag (listed after buckets). */
+export const BAG_TANK = 'Bag';
+
 export const producers = ['HQ', 'BTM'];
 
 export const accordionFormContentSx = {

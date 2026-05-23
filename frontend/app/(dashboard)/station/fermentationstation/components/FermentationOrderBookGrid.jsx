@@ -2,6 +2,7 @@
 
 import { Typography, Button, Card, CardContent, Tabs, Tab } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { BAG_TANK } from '../constants';
 
 export default function FermentationOrderBookGrid({ book }) {
   return (
@@ -29,6 +30,7 @@ export default function FermentationOrderBookGrid({ book }) {
           <Tab label="Washing Track" value="Washing Track" />
           <Tab label="BB" value="Blue Barrel" />
           <Tab label="Bucket" value="Fermentation Bucket" />
+          <Tab label="Bag" value={BAG_TANK} />
           <Tab label="None" value="none" />
         </Tabs>
         <div style={{ height: 800, width: '100%' }}>
@@ -42,6 +44,9 @@ export default function FermentationOrderBookGrid({ book }) {
               }
               if (book.tabValue === 'Fermentation Bucket') {
                 return row.tank?.startsWith('BUC-');
+              }
+              if (book.tabValue === BAG_TANK) {
+                return row.tank === BAG_TANK;
               }
               if (book.tabValue === 'none') {
                 return row.preStorage === 'yes' && (!row.tank || row.tank === '');
