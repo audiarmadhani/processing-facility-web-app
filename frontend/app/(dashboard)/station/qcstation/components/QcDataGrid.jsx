@@ -45,8 +45,8 @@ export function QcPendingGrid({ receivingData, onRefresh }) {
   );
 }
 
-export function QcCompletedGrid({ qcData, onRefresh }) {
-  const qcColumns = getQcColumns();
+export function QcCompletedGrid({ qcData, onRefresh, onOpenCapture }) {
+  const qcColumns = getQcColumns(onOpenCapture);
 
   return (
     <Card style={{ marginTop: '16px' }} variant="outlined">
@@ -64,9 +64,9 @@ export function QcCompletedGrid({ qcData, onRefresh }) {
         </Button>
         <div style={{ height: 1000, width: '100%' }}>
           <DataGrid
-            rows={qcData.map((row, index) => ({
-              id: index + 1,
+            rows={qcData.map((row) => ({
               ...row,
+              id: row.id ?? row.batchNumber,
             }))}
             columns={qcColumns}
             pageSize={5}
@@ -85,11 +85,11 @@ export function QcCompletedGrid({ qcData, onRefresh }) {
   );
 }
 
-export default function QcDataGrid({ receivingData, qcData, onRefresh }) {
+export default function QcDataGrid({ receivingData, qcData, onRefresh, onOpenCapture }) {
   return (
     <>
       <QcPendingGrid receivingData={receivingData} onRefresh={onRefresh} />
-      <QcCompletedGrid qcData={qcData} onRefresh={onRefresh} />
+      <QcCompletedGrid qcData={qcData} onRefresh={onRefresh} onOpenCapture={onOpenCapture} />
     </>
   );
 }

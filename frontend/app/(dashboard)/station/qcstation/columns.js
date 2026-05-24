@@ -1,28 +1,61 @@
 'use client';
 
+import { Button, Chip } from '@mui/material';
 import { generateQcPdf } from './utils/generateQcPdf';
+import { hasMlResults } from './utils/cherryQcImagePipeline';
 
-export function getQcColumns() {
+export function getQcColumns(onOpenCapture) {
   return [
     {
-      field: "export",
-      headerName: "Export Data",
+      field: 'export',
+      headerName: 'Export Data',
       width: 130,
+      sortable: false,
       renderCell: (params) => (
         <button
           onClick={() => generateQcPdf(params.row)}
           style={{
-            padding: "6px 12px",
-            backgroundColor: "#1976d2",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
+            padding: '6px 12px',
+            backgroundColor: '#1976d2',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
           }}
         >
           Export PDF
         </button>
       ),
+    },
+    {
+      field: 'cherryPhoto',
+      headerName: 'Cherry photo',
+      width: 130,
+      sortable: false,
+      renderCell: ({ row }) => {
+        const hasPhoto = hasMlResults(row);
+        return (
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => onOpenCapture(row)}
+          >
+            {hasPhoto ? 'Retake photo' : 'Add photo'}
+          </Button>
+        );
+      },
+    },
+    {
+      field: 'photoStatus',
+      headerName: 'Photo status',
+      width: 120,
+      sortable: false,
+      renderCell: ({ row }) =>
+        hasMlResults(row) ? (
+          <Chip label="ML recorded" color="success" size="small" variant="outlined" />
+        ) : (
+          <Chip label="No photo" color="warning" size="small" variant="outlined" />
+        ),
     },
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
     { field: 'receivingDate', headerName: 'Receiving Date', width: 150 },
@@ -38,9 +71,9 @@ export function getQcColumns() {
         return new Intl.NumberFormat('id-ID', {
           style: 'currency',
           currency: 'IDR',
-          maximumFractionDigits: 0
+          maximumFractionDigits: 0,
         }).format(value);
-      }
+      },
     },
     {
       field: 'total_price',
@@ -52,34 +85,34 @@ export function getQcColumns() {
         return new Intl.NumberFormat('id-ID', {
           style: 'currency',
           currency: 'IDR',
-          maximumFractionDigits: 0
+          maximumFractionDigits: 0,
         }).format(value);
-      }
+      },
     },
     { field: 'type', headerName: 'Type', width: 110 },
     { field: 'ripeness', headerName: 'Ripeness', width: 140 },
     { field: 'color', headerName: 'Color', width: 140 },
     {
-      field: "foreignMatter",
-      headerName: "Foreign Matter",
+      field: 'foreignMatter',
+      headerName: 'Foreign Matter',
       width: 150,
       renderCell: (params) => {
         const color =
-          params.value === "None"
-            ? "rgb(123, 216, 123)"
-            : params.value === "Some"
-            ? "rgb(228, 228, 149)"
-            : params.value === "Yes"
-            ? "rgb(241, 145, 145)"
-            : "transparent";
+          params.value === 'None'
+            ? 'rgb(123, 216, 123)'
+            : params.value === 'Some'
+            ? 'rgb(228, 228, 149)'
+            : params.value === 'Yes'
+            ? 'rgb(241, 145, 145)'
+            : 'transparent';
 
         return (
           <div
             style={{
               backgroundColor: color,
-              color: color === "rgba(255, 0, 0, 0.5)" || color === "rgba(0, 255, 0, 0.5)" ? "black" : "black",
-              padding: "8px",
-              borderRadius: "4px",
+              color: 'black',
+              padding: '8px',
+              borderRadius: '4px',
             }}
           >
             {params.value}

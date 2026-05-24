@@ -43,7 +43,7 @@ export default function QcAssessmentForm({ station }) {
     handleRfidScan,
     handleBatchNumberSearch,
     handleSubmit,
-    setOpen,
+    openFormCapture,
   } = station;
 
   return (
@@ -297,10 +297,14 @@ export default function QcAssessmentForm({ station }) {
             />
           )}
 
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            You can capture a cherry photo now or add one later from the completed QC table.
+          </Typography>
+
           <Button
             variant="contained"
             color="secondary"
-            onClick={() => setOpen(true)}
+            onClick={openFormCapture}
             style={{ marginTop: '16px', marginRight: '16px' }}
             disabled={!batchNumber}
           >

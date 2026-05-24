@@ -8,7 +8,7 @@ import { QC_ALLOWED_ROLES } from './constants';
 import { useQcStation } from './hooks/useQcStation';
 import QcAssessmentForm from './components/QcAssessmentForm';
 import { QcPendingGrid, QcCompletedGrid } from './components/QcDataGrid';
-import RoboflowCapture from './components/RoboflowCapture';
+import CherryQcCaptureDialog from './components/CherryQcCaptureDialog';
 
 function QCStation() {
   const { data: session, status } = useSession();
@@ -32,15 +32,19 @@ function QCStation() {
           <QcCompletedGrid
             qcData={station.qcData}
             onRefresh={station.fetchData}
+            onOpenCapture={station.openGridCapture}
           />
         </Grid>
       </Grid>
 
-      <RoboflowCapture
+      <CherryQcCaptureDialog
         open={station.open}
-        onClose={() => station.setOpen(false)}
+        onClose={station.handleCloseCapture}
         webcamRef={station.webcamRef}
-        onCapture={station.handleCapture}
+        batchNumber={station.captureBatchNumber}
+        busy={station.captureBusy}
+        onCaptureFromCamera={station.handleCaptureFromCamera}
+        onCaptureFromFile={station.handleCaptureFromFile}
       />
 
       <StationSnackbar {...station.snackbar.snackbarProps} />
