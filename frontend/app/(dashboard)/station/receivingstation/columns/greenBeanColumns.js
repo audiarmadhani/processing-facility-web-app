@@ -1,6 +1,8 @@
 import { formatIdr, formatReceivingDate } from '../../_shared/utils/format';
+import { buildWeightStatusColumn, buildWeightActionsColumn } from './weightColumns';
 
-export const greenBeanColumns = [
+export function buildGreenBeanColumns({ onRecordWeight, isPendingWeight }) {
+  return [
   { field: 'batchNumber', headerName: 'Batch Number', width: 160, sortable: true },
   {
     field: 'receivingDate',
@@ -27,10 +29,22 @@ export const greenBeanColumns = [
   },
   { field: 'type', headerName: 'Type', width: 110, sortable: true },
   { field: 'farmVarieties', headerName: 'Varieties', width: 150, sortable: true },
-  { field: 'weight', headerName: 'Total Weight (kg)', width: 150, sortable: true },
+  {
+    field: 'weight',
+    headerName: 'Total Weight (kg)',
+    width: 150,
+    sortable: true,
+    renderCell: ({ value, row }) => {
+      const pending = isPendingWeight(row);
+      return pending ? '—' : value;
+    },
+  },
+  buildWeightStatusColumn(),
   { field: 'processingType', headerName: 'Processing Type', width: 150, sortable: true },
   { field: 'grade', headerName: 'Grade', width: 120, sortable: true },
   { field: 'producer', headerName: 'Producer', width: 150, sortable: true },
   { field: 'notes', headerName: 'Notes', width: 250, sortable: true },
   { field: 'createdBy', headerName: 'Created By', width: 180, sortable: true },
-];
+  buildWeightActionsColumn(onRecordWeight, isPendingWeight),
+  ];
+}

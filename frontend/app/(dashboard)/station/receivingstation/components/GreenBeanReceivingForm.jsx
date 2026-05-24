@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import { defaultMenuProps } from '../../_shared/constants/menuProps';
 import FarmerDetailFields from './FarmerDetailFields';
-import BagWeightsFields from './BagWeightsFields';
 
 export default function GreenBeanReceivingForm({
   farmerList,
@@ -36,20 +35,17 @@ export default function GreenBeanReceivingForm({
   setMoisture,
   notes,
   setNotes,
-  bagCountInput,
-  onBagCountInputChange,
-  onBagCountBlur,
-  bagWeights,
-  onBagWeightChange,
-  totalWeight,
   assigningRFID,
   onSubmit,
 }) {
   return (
     <Card variant="outlined">
       <CardContent>
-        <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 1 }}>
           Green Bean Receiving Form
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Create the batch and assign RFID first. Record bag weights from the table after creation.
         </Typography>
         <form onSubmit={onSubmit}>
           <Grid container spacing={2}>
@@ -161,15 +157,6 @@ export default function GreenBeanReceivingForm({
                 fullWidth
               />
             </Grid>
-            <BagWeightsFields
-              bagCountInput={bagCountInput}
-              onBagCountInputChange={onBagCountInputChange}
-              onBagCountBlur={onBagCountBlur}
-              bagWeights={bagWeights}
-              onBagWeightChange={onBagWeightChange}
-              totalWeight={totalWeight}
-              bagCountStep="0.1"
-            />
             <Grid item xs={12}>
               <Button
                 variant="contained"

@@ -6,15 +6,15 @@ import TabPanel from '../_shared/components/TabPanel';
 import StationAccessGate from '../_shared/components/StationAccessGate';
 import StationSnackbar from '../_shared/components/StationSnackbar';
 import { useReceivingStation, RECEIVING_ALLOWED_ROLES } from './hooks/useReceivingStation';
-import { cherryColumns } from './columns/cherryColumns';
-import { greenBeanColumns } from './columns/greenBeanColumns';
 import CherryReceivingForm from './components/CherryReceivingForm';
 import GreenBeanReceivingForm from './components/GreenBeanReceivingForm';
 import ReceivingDataPanel from './components/ReceivingDataPanel';
+import RecordWeightDialog from './components/RecordWeightDialog';
 
 function ReceivingStation() {
   const { data: session, status } = useSession();
   const station = useReceivingStation(session);
+  const rw = station.recordWeight;
 
   return (
     <StationAccessGate
@@ -41,12 +41,6 @@ function ReceivingStation() {
                 setProducer={station.setProducer}
                 notes={station.notes}
                 setNotes={station.setNotes}
-                bagCountInput={station.bagCountInput}
-                onBagCountInputChange={station.handleBagCountInputChange}
-                onBagCountBlur={station.handleBagCountBlur}
-                bagWeights={station.bagWeights}
-                onBagWeightChange={station.handleBagWeightChange}
-                totalWeight={station.totalWeight}
                 brix={station.brix}
                 setBrix={station.setBrix}
                 assigningRFID={station.assigningRFID}
@@ -57,7 +51,7 @@ function ReceivingStation() {
               <ReceivingDataPanel
                 title="Cherry Receiving Data"
                 rows={station.cherryData}
-                columns={cherryColumns}
+                columns={station.cherryColumns}
               />
             </Grid>
           </Grid>
@@ -84,12 +78,6 @@ function ReceivingStation() {
                 setMoisture={station.setMoisture}
                 notes={station.notes}
                 setNotes={station.setNotes}
-                bagCountInput={station.bagCountInput}
-                onBagCountInputChange={station.handleBagCountInputChange}
-                onBagCountBlur={station.handleBagCountBlur}
-                bagWeights={station.bagWeights}
-                onBagWeightChange={station.handleBagWeightChange}
-                totalWeight={station.totalWeight}
                 assigningRFID={station.assigningRFID}
                 onSubmit={station.handleSubmit}
               />
@@ -98,11 +86,27 @@ function ReceivingStation() {
               <ReceivingDataPanel
                 title="Green Bean Data"
                 rows={station.greenBeanData}
-                columns={greenBeanColumns}
+                columns={station.greenBeanColumns}
               />
             </Grid>
           </Grid>
         </TabPanel>
+
+        <RecordWeightDialog
+          open={rw.dialogOpen}
+          batchNumber={rw.selectedBatch?.batchNumber}
+          isEdit={rw.selectedBatch && !rw.isPendingWeight(rw.selectedBatch)}
+          loading={rw.loading}
+          saving={rw.saving}
+          bagCountInput={rw.bagCountInput}
+          onBagCountInputChange={rw.handleBagCountInputChange}
+          onBagCountBlur={rw.handleBagCountBlur}
+          bagWeights={rw.bagWeights}
+          onBagWeightChange={rw.handleBagWeightChange}
+          totalWeight={rw.totalWeight}
+          onClose={rw.closeDialog}
+          onSave={rw.handleSave}
+        />
 
         <StationSnackbar {...station.snackbar.snackbarProps} />
       </Box>

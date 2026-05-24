@@ -27,12 +27,6 @@ export default function CherryReceivingForm({
   setProducer,
   notes,
   setNotes,
-  bagCountInput,
-  onBagCountInputChange,
-  onBagCountBlur,
-  bagWeights,
-  onBagWeightChange,
-  totalWeight,
   brix,
   setBrix,
   assigningRFID,
@@ -41,8 +35,11 @@ export default function CherryReceivingForm({
   return (
     <Card variant="outlined">
       <CardContent>
-        <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 1 }}>
           Cherry Receiving Form
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Create the batch and assign RFID first. Record bag weights from the table after creation.
         </Typography>
         <form onSubmit={onSubmit}>
           <Grid container spacing={2}>
@@ -90,18 +87,6 @@ export default function CherryReceivingForm({
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="Number of Bags"
-                type="number"
-                value={bagCountInput}
-                onChange={onBagCountInputChange}
-                onBlur={onBagCountBlur}
-                fullWidth
-                required
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
                 label="Notes"
                 multiline
                 rows={4}
@@ -109,24 +94,6 @@ export default function CherryReceivingForm({
                 onChange={(e) => setNotes(e.target.value)}
                 fullWidth
               />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h6">Bag Weights</Typography>
-            </Grid>
-            {bagWeights.map((weight, index) => (
-              <Grid item xs={6} md={3} key={index}>
-                <TextField
-                  label={`Bag ${index + 1}`}
-                  type="number"
-                  value={weight}
-                  onChange={(e) => onBagWeightChange(index, e.target.value)}
-                  fullWidth
-                  inputProps={{ step: 0.1, min: 0 }}
-                />
-              </Grid>
-            ))}
-            <Grid item xs={12}>
-              <Typography variant="h6">Total Weight: {totalWeight.toFixed(2)} kg</Typography>
             </Grid>
             <Grid item xs={12}>
               <TextField

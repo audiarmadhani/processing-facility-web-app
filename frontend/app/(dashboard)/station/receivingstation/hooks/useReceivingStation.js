@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiUrl } from '../../_shared/config';
 import { useSnackbar } from '../../_shared/hooks/useSnackbar';
+import { useRecordWeight } from './useRecordWeight';
+import { buildCherryColumns } from '../columns/cherryColumns';
+import { buildGreenBeanColumns } from '../columns/greenBeanColumns';
 
 export const RECEIVING_ALLOWED_ROLES = ['admin', 'manager', 'staff', 'receiving'];
 
@@ -12,9 +15,6 @@ export function useReceivingStation(session) {
   const [farmerList, setFarmerList] = useState([]);
   const [selectedFarmerDetails, setSelectedFarmerDetails] = useState(null);
   const [notes, setNotes] = useState('');
-  const [bagCountInput, setBagCountInput] = useState('1');
-  const [bagWeights, setBagWeights] = useState(['']);
-  const [totalWeight, setTotalWeight] = useState(0);
   const [brix, setBrix] = useState('');
   const [type, setType] = useState('');
   const [producer, setProducer] = useState('');
@@ -78,19 +78,36 @@ export function useReceivingStation(session) {
   useEffect(() => {
     fetchFarmerList();
     fetchReceivingData();
-    const calculatedTotalWeight = bagWeights.reduce(
-      (total, weight) => total + parseFloat(weight || 0),
-      0
-    );
-    setTotalWeight(calculatedTotalWeight);
-  }, [bagWeights, session, fetchReceivingData]);
+  }, [session, fetchReceivingData]);
+
+  const recordWeight = useRecordWeight({
+    session,
+    onSaved: fetchReceivingData,
+    showSuccess: snackbar.showSuccess,
+    showError: snackbar.showError,
+  });
+
+  const cherryColumns = useMemo(
+    () =>
+      buildCherryColumns({
+        onRecordWeight: recordWeight.openRecordWeight,
+        isPendingWeight: recordWeight.isPendingWeight,
+      }),
+    [recordWeight.openRecordWeight, recordWeight.isPendingWeight]
+  );
+
+  const greenBeanColumns = useMemo(
+    () =>
+      buildGreenBeanColumns({
+        onRecordWeight: recordWeight.openRecordWeight,
+        isPendingWeight: recordWeight.isPendingWeight,
+      }),
+    [recordWeight.openRecordWeight, recordWeight.isPendingWeight]
+  );
 
   const resetForm = () => {
     setSelectedFarmerDetails(null);
-    setBagWeights(['']);
     setNotes('');
-    setBagCountInput('1');
-    setTotalWeight(0);
     setType('');
     setProducer('');
     setBrix('');
@@ -98,28 +115,6 @@ export function useReceivingStation(session) {
     setGrade('');
     setPrice('');
     setMoisture('');
-  };
-
-  const handleBagWeightChange = (index, value) => {
-    const updatedBagWeights = [...bagWeights];
-    updatedBagWeights[index] = value;
-    setBagWeights(updatedBagWeights);
-  };
-
-  const handleBagCountInputChange = (e) => {
-    setBagCountInput(e.target.value);
-  };
-
-  const handleBagCountBlur = () => {
-    const parsedValue = parseInt(bagCountInput, 10);
-    const newValue = isNaN(parsedValue) || parsedValue < 1 ? 1 : parsedValue;
-    setBagCountInput(newValue.toString());
-
-    if (newValue > bagWeights.length) {
-      setBagWeights([...bagWeights, ...Array(newValue - bagWeights.length).fill('')]);
-    } else {
-      setBagWeights(bagWeights.slice(0, newValue));
-    }
   };
 
   const handleFarmerChange = (event, newValue) => {
@@ -170,10 +165,6 @@ export function useReceivingStation(session) {
       snackbar.showError('Please select a producer.');
       return;
     }
-    if (bagWeights.some((weight) => !weight || parseFloat(weight) <= 0)) {
-      snackbar.showError('Please enter valid weights for all bags.');
-      return;
-    }
     if (tabValue === 1) {
       if (!processingType) {
         snackbar.showError('Please select a processing type.');
@@ -210,18 +201,14 @@ export function useReceivingStation(session) {
       farmerID: selectedFarmerDetails.farmerID,
       farmerName: selectedFarmerDetails.farmerName,
       notes,
-      weight: totalWeight,
-      totalBags: bagWeights.length,
+      weight: 0,
+      totalBags: 0,
       type,
       producer,
       brix: commodityType === 'Cherry' ? (brix ? parseFloat(brix) : null) : null,
       processingType: commodityType === 'Green Bean' ? processingType : null,
       grade: commodityType === 'Green Bean' ? grade : null,
       commodityType,
-      bagPayload: bagWeights.map((weight, index) => ({
-        bagNumber: index + 1,
-        weight: parseFloat(weight) || 0,
-      })),
       createdBy: session.user.name,
       updatedBy: session.user.name,
       rfid: scannedRFID,
@@ -242,7 +229,9 @@ export function useReceivingStation(session) {
       if (response.ok) {
         const responseData = await response.json();
         const batchNumber = responseData.receivingData.batchNumber;
-        snackbar.showSuccess(`Batch ${batchNumber} created and RFID tag assigned!`);
+        snackbar.showSuccess(
+          `Batch ${batchNumber} created. Record weights from the table when ready.`
+        );
         await clearRfidData();
         resetForm();
         fetchReceivingData();
@@ -269,17 +258,13 @@ export function useReceivingStation(session) {
     handleTabChange,
     cherryData,
     greenBeanData,
+    cherryColumns,
+    greenBeanColumns,
     farmerList,
     selectedFarmerDetails,
     handleFarmerChange,
     notes,
     setNotes,
-    bagCountInput,
-    handleBagCountInputChange,
-    handleBagCountBlur,
-    bagWeights,
-    handleBagWeightChange,
-    totalWeight,
     brix,
     setBrix,
     type,
@@ -296,5 +281,6 @@ export function useReceivingStation(session) {
     setMoisture,
     assigningRFID,
     handleSubmit,
+    recordWeight,
   };
 }
