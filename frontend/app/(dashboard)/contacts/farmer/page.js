@@ -79,7 +79,7 @@ function FarmerInputStation() {
 
   const varietyOptions = {
     Arabica: ['Cobra', 'Yellow Caturra', 'Kopyol'],
-    Robusta: ['BP42']
+    Robusta: ['BP42', 'Huni']
   };
 
   useEffect(() => {
