@@ -20,3 +20,8 @@ node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node
 
 coffee-processing.db
 database.sqlite
+
+# Dashboard app — canonical repo: github.com/audiarmadhani/processingfacility-dashboard
+/dashboard/*
+!/dashboard/REPOSITORY.md
+!/dashboard/README.md

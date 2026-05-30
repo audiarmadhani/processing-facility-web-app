@@ -6,7 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "concurrently \"npm run start-backend\" \"npm run start-frontend\"",
     "start-frontend": "cd frontend && npm run dev",
-    "start-backend": "cd backend && npm run start"
+    "start-backend": "cd backend && npm run start",
+    "start-dashboard": "echo 'Dashboard: clone https://github.com/audiarmadhani/processingfacility-dashboard && cd processingfacility-dashboard && npm run dev' && exit 1",
+    "build-dashboard": "echo 'Dashboard: clone https://github.com/audiarmadhani/processingfacility-dashboard && cd processingfacility-dashboard && npm run build' && exit 1"
   },
   "keywords": [],
   "author": "",
