@@ -12,7 +12,7 @@ Standalone read-only analytics dashboard for the processing facility. Deployed o
 | `/fermentation` | Fermentation analytics |
 | `/finance` | Finance charts |
 | `/inventory` | IMS inventory charts |
-| `/production-analytics` | Advanced production analytics |
+| `/tv` | Fullscreen TV dashboard — single scrollable page; full page reload every hour |
 
 ## Local development
 
