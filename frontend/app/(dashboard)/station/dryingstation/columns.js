@@ -15,7 +15,7 @@ export function getDryingColumns({
     {
       field: 'status',
       headerName: 'Status',
-      width: 100,
+      width: 110,
       renderCell: ({ value }) => (
         <Chip
           label={value}
@@ -24,6 +24,31 @@ export function getDryingColumns({
           sx={{ borderRadius: '16px', fontWeight: 'medium' }}
         />
       ),
+    },
+    {
+      field: 'priority',
+      headerName: 'Priority',
+      width: 110,
+      renderCell: ({ value }) => {
+        if (value == null) return '—';
+        const chipColor =
+          value === 'High' ? 'error' : value === 'Medium' ? 'warning' : 'default';
+        return (
+          <Chip
+            label={value}
+            color={chipColor}
+            size="small"
+            variant={value === 'Low' ? 'outlined' : 'filled'}
+          />
+        );
+      },
+    },
+    {
+      field: 'currentMoisture',
+      headerName: 'Current Moisture (%)',
+      width: 160,
+      renderCell: ({ value }) =>
+        value != null && value !== '' ? `${parseFloat(value).toFixed(1)}%` : '—',
     },
     {
       field: 'actions',

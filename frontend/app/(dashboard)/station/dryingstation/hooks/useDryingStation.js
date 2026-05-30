@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { computeDryingPriority, sortDryingRows } from '../utils/dryingRowHelpers';
 
 const debounce = (func, wait) => {
   let timeout;
@@ -141,13 +142,30 @@ export function useDryingStation(session) {
       );
   
       let weightsResult = [];
+      let latestMoistureResult = [];
       if (areaBatchNumbers.length > 0) {
-        const weightsResponse = await fetch(
-          `https://processing-facility-backend.onrender.com/api/drying-weight-measurements/aggregated?batchNumbers=${areaBatchNumbers.join(',')}`
-        );
+        const batchQuery = areaBatchNumbers.join(',');
+        const [weightsResponse, moistureResponse] = await Promise.all([
+          fetch(
+            `https://processing-facility-backend.onrender.com/api/drying-weight-measurements/aggregated?batchNumbers=${batchQuery}`
+          ),
+          fetch(
+            `https://processing-facility-backend.onrender.com/api/drying-measurements/latest?batchNumbers=${batchQuery}`
+          ),
+        ]);
         if (!weightsResponse.ok) throw new Error('Failed to fetch aggregated weights');
         weightsResult = await weightsResponse.json();
+        if (moistureResponse.ok) {
+          latestMoistureResult = await moistureResponse.json();
+        }
       }
+
+      const latestMoistureByBatch = {};
+      latestMoistureResult.forEach(({ batchNumber, moisture }) => {
+        if (batchNumber) {
+          latestMoistureByBatch[batchNumber] = moisture;
+        }
+      });
   
       const batchWeights = {};
       weightsResult.forEach(({ batchNumber, total_weight, measurement_date }) => {
@@ -174,10 +192,14 @@ export function useDryingStation(session) {
           const batchDryingData = dryingDataRaw.filter(data => 
             data.batchNumber === batch.batchNumber && data.dryingArea === area);
           const latestEntry = batchDryingData[0];
-  
+          const status = latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying';
+          const currentMoisture = latestMoistureByBatch[batch.batchNumber] ?? null;
+
           return {
             ...batch,
-            status: latestEntry ? (latestEntry.exited_at ? 'Dried' : 'In Drying') : 'Not in Drying',
+            status,
+            currentMoisture,
+            priority: computeDryingPriority(status, currentMoisture),
             dryingArea: latestEntry?.dryingArea || 'N/A',
             startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
             endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
@@ -193,19 +215,7 @@ export function useDryingStation(session) {
             rfid: latestEntry?.rfid || 'N/A',
           };
         })
-        // .sort((a, b) => {
-        //   const statusOrder = { 'In Drying': 0, 'Dried': 1 };
-        //   const statusA = statusOrder[a.status] || 3;
-        //   const statusB = statusOrder[b.status] || 3;
-        //   if (statusA !== statusB) return statusA - statusB;
-        //   const dateA = a.startDryingDate === 'N/A' ? '' : a.startDryingDate;
-        //   const dateB = b.startDryingDate === 'N/A' ? '' : b.startDryingDate;
-        //   if (dateA !== dateB) return dateA.localeCompare(dateB);
-        //   const typeOrder = { 'Arabica': 0, 'Robusta': 1 };
-        //   const typeA = typeOrder[a.type] ?? 2;
-        //   const typeB = typeOrder[b.type] ?? 2;
-        //   return typeA - typeB;
-        // });
+        .sort(sortDryingRows);
   
       const totalWeight = ghweightResult.find(item => item.dryingArea === area)?.total_weight || 0;
   
@@ -577,12 +587,15 @@ export function useDryingStation(session) {
       setSnackbarMessage('Drying measurement added successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
+      if (selectedBatch?.dryingArea) {
+        await fetchAreaData(selectedBatch.dryingArea, true);
+      }
     } catch (error) {
       setSnackbarMessage(error.message || 'Failed to add drying measurement');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
-  }, [newMoisture, newMeasurementDate, selectedBatch, dryingMeasurements]);
+  }, [newMoisture, newMeasurementDate, selectedBatch, dryingMeasurements, fetchAreaData]);
 
   const handleMoveBatch = useCallback(async () => {
     if (!newDryingArea) {

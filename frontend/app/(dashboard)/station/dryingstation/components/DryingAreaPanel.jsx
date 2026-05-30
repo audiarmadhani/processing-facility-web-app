@@ -62,6 +62,15 @@ function AreaDataGrid({ area, areaData, columns }) {
           disableRowSelectionOnClick
           getRowId={(row) => row.batchNumber}
           slots={{ toolbar: GridToolbar }}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 50 } },
+            columns: {
+              columnVisibilityModel: {
+                priority: true,
+                currentMoisture: true,
+              },
+            },
+          }}
           sx={{
             maxHeight: 600,
             border: '1px solid rgba(0,0,0,0.12)',
@@ -69,9 +78,6 @@ function AreaDataGrid({ area, areaData, columns }) {
           }}
           rowHeight={40}
           pagination
-          initialState={{
-            pagination: { paginationModel: { pageSize: 50 } },
-          }}
         />
       )}
     </div>
