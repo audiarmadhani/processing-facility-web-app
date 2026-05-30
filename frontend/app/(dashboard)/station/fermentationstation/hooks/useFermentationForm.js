@@ -14,7 +14,8 @@ import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
 import { BAG_TANK } from '../constants';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
 import { formatFermentationDisplay } from '../utils/fermentationDateTime';
-import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow } from '../utils/exportOrderSheet';
+import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow as generateOrderSheetRowPdf } from '../utils/exportOrderSheet';
+import { resolveCherryQuantity } from '../utils/resolveCherryQuantity';
 import { downloadFermentationDataExcel } from '../utils/exportFullXlsx';
 
 export function useFermentationForm(session) {
@@ -40,6 +41,9 @@ export function useFermentationForm(session) {
   const [damagedWeight, setDamagedWeight] = useState('');
   const [lostWeight, setLostWeight] = useState('');
   const [preprocessingWeight, setPreprocessingWeight] = useState('');
+  const [cherryWeight, setCherryWeight] = useState(null);
+  const [cherryWeightSource, setCherryWeightSource] = useState(null);
+  const [cherryWeightLoading, setCherryWeightLoading] = useState(false);
   const [quality, setQuality] = useState('');
   const [brix, setBrix] = useState('');
   const [preStorage, setPreStorage] = useState('');
@@ -367,11 +371,37 @@ export function useFermentationForm(session) {
         `${API_BASE_URL}/api/fermentation/details/${batchNumber}?${queryParams.toString()}`
       );
 
-      setDetailsData(response.data?.[0] || {});
+      const data = response.data?.[0] || {};
+      setDetailsData(data);
+      await loadCherryWeight(batchNumber, data.preprocessingWeight);
 
     } catch (error) {
       console.error('Error fetching details data:', error);
       setDetailsData({});
+      setCherryWeight(null);
+      setCherryWeightSource(null);
+    }
+  };
+
+  const loadCherryWeight = async (batchNumber, preprocessingFallback = null) => {
+    if (!batchNumber?.trim()) {
+      setCherryWeight(null);
+      setCherryWeightSource(null);
+      setCherryWeightLoading(false);
+      return;
+    }
+
+    setCherryWeightLoading(true);
+    try {
+      const { value, source } = await resolveCherryQuantity(batchNumber, preprocessingFallback);
+      setCherryWeight(value);
+      setCherryWeightSource(source);
+    } catch (error) {
+      console.error('Error loading cherry weight:', error);
+      setCherryWeight(null);
+      setCherryWeightSource(null);
+    } finally {
+      setCherryWeightLoading(false);
     }
   };
 
@@ -420,13 +450,18 @@ useEffect(() => {
       resetForm();
       return;
     }
+
+    setCherryWeight(null);
+    setCherryWeightSource(null);
+
     try {
       const response = await axios.get(`${API_BASE_URL}/api/receiving/${batchNumber}`);
       const data = Array.isArray(response.data) ? response.data[0] : response.data;
       if (data) {
         setFarmerName(data.farmerName || '');
         setType(data.type || '');
-        setVariety(data.variety || ''); // ✅ ADD THIS
+        setVariety(data.variety || '');
+        await loadCherryWeight(batchNumber);
       } else {
         setFarmerName('');
         setType('');
@@ -672,6 +707,9 @@ useEffect(() => {
     setDamagedWeight('');
     setLostWeight('');
     setPreprocessingWeight('');
+    setCherryWeight(null);
+    setCherryWeightSource(null);
+    setCherryWeightLoading(false);
     setQuality('');
     setBrix('');
     setPreStorage('');
@@ -900,7 +938,15 @@ useEffect(() => {
     }
   };
 
-  const generateOrderSheet = () => {
+  const generateOrderSheet = async () => {
+    let cherryQuantity = cherryWeight;
+    if (cherryQuantity == null && batchNumber) {
+      const { value, source } = await resolveCherryQuantity(batchNumber, preprocessingWeight || null);
+      cherryQuantity = value;
+      setCherryWeight(value);
+      setCherryWeightSource(source);
+    }
+
     generateOrderSheetPdf({
       batchNumber, referenceNumber, version, experimentNumber, processingType, description,
       farmerName, type, variety, productLine, preStorage, preFermentationStorageGoal,
@@ -912,8 +958,16 @@ useEffect(() => {
       waterTemperature, coolerTemperature, secondFermentation, secondFermentationTank,
       secondPostPulped, secondPostPulpedDelva, secondWashed, secondStarterType, secondGas,
       secondPressure, secondIsSubmerged, secondTotalVolume, secondTemperature,
-      secondFermentationTimeTarget, drying, secondDrying, rehydration,
+      secondFermentationTimeTarget, drying, secondDrying, rehydration, cherryQuantity,
     });
+  };
+
+  const generateOrderSheetRow = async (row) => {
+    const { value: cherryQuantity } = await resolveCherryQuantity(
+      row.batchNumber,
+      row.preprocessingWeight ?? null
+    );
+    generateOrderSheetRowPdf({ ...row, cherryQuantity });
   };
 
   const handleFinishFermentation = async () => {
@@ -1187,8 +1241,8 @@ useEffect(() => {
             </MenuItem>
 
             <MenuItem
-              onClick={() => {
-                generateOrderSheetRow(row);
+              onClick={async () => {
+                await generateOrderSheetRow(row);
                 handleMenuClose();
               }}
             >
@@ -1266,6 +1320,9 @@ useEffect(() => {
     damagedWeight, setDamagedWeight,
     lostWeight, setLostWeight,
     preprocessingWeight, setPreprocessingWeight,
+    cherryWeight,
+    cherryWeightSource,
+    cherryWeightLoading,
     quality, setQuality,
     brix, setBrix,
     preStorage, setPreStorage,

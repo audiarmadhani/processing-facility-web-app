@@ -36,6 +36,9 @@ export default function CherryInformationSection({ mode, form }) {
     handleBatchNumberChange,
     handleProcessingTypeChange,
     handleReferenceNumberChange,
+    cherryWeight,
+    cherryWeightSource,
+    cherryWeightLoading,
     processingType,
     productLine,
     referenceMappings,
@@ -99,6 +102,39 @@ export default function CherryInformationSection({ mode, form }) {
                                 renderInput={(params) => (
                                   <TextField {...params} label="Batch Number" required fullWidth />
                                 )}
+                              />
+
+                              <TextField
+                                label="Cherry weight (kg)"
+                                value={
+                                  cherryWeightLoading
+                                    ? ''
+                                    : cherryWeight != null
+                                      ? Number(cherryWeight).toFixed(2)
+                                      : batchNumber
+                                        ? '—'
+                                        : ''
+                                }
+                                disabled
+                                fullWidth
+                                margin="normal"
+                                helperText={
+                                  cherryWeightLoading
+                                    ? 'Loading cherry weight...'
+                                    : cherryWeightSource === 'wetmill'
+                                      ? 'Source: Wet mill (for cross-check)'
+                                      : cherryWeightSource === 'preprocessing'
+                                        ? 'Source: Preprocessing (for cross-check)'
+                                        : batchNumber
+                                          ? 'No cherry weight available'
+                                          : ''
+                                }
+                                InputProps={{
+                                  endAdornment: cherryWeightLoading ? (
+                                    <CircularProgress size={20} />
+                                  ) : null,
+                                }}
+                                sx={{ mb: 2 }}
                               />
 
                               <Autocomplete
@@ -230,6 +266,40 @@ export default function CherryInformationSection({ mode, form }) {
                     disabled
                     variant="outlined"
                     sx={{ mt: 1 }}
+                  />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField
+                    label="Cherry weight (kg)"
+                    value={
+                      cherryWeightLoading
+                        ? ''
+                        : cherryWeight != null
+                          ? Number(cherryWeight).toFixed(2)
+                          : detailsData.batchNumber
+                            ? '—'
+                            : ''
+                    }
+                    disabled
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    helperText={
+                      cherryWeightLoading
+                        ? 'Loading cherry weight...'
+                        : cherryWeightSource === 'wetmill'
+                          ? 'Source: Wet mill (for cross-check)'
+                          : cherryWeightSource === 'preprocessing'
+                            ? 'Source: Preprocessing (for cross-check)'
+                            : detailsData.batchNumber
+                              ? 'No cherry weight available'
+                              : ''
+                    }
+                    InputProps={{
+                      endAdornment: cherryWeightLoading ? (
+                        <CircularProgress size={20} />
+                      ) : null,
+                    }}
                   />
                 </Grid>
                 <Grid item xs={4}>

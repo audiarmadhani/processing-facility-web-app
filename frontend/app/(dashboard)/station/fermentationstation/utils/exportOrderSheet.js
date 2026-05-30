@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
 import { calculateFermentationEndGoal, formatFermentationDisplay } from './fermentationDateTime';
+import { formatCherryQuantityKg } from './resolveCherryQuantity';
 
 export function generateOrderSheet(formState) {
   const {
@@ -17,7 +18,7 @@ export function generateOrderSheet(formState) {
     waterTemperature, coolerTemperature, secondFermentation, secondFermentationTank,
     secondPostPulped, secondPostPulpedDelva, secondWashed, secondStarterType, secondGas,
     secondPressure, secondIsSubmerged, secondTotalVolume, secondTemperature,
-    secondFermentationTimeTarget, drying, secondDrying, rehydration,
+    secondFermentationTimeTarget, drying, secondDrying, rehydration, cherryQuantity,
   } = formState;
 
   const fullReferenceNumber =
@@ -61,6 +62,7 @@ export function generateOrderSheet(formState) {
       { label: 'Reference number', value: referenceNumber || 'N/A' },
       { label: 'Version', value: version || '' },
       { label: 'Full Reference Number', value: fullReferenceNumber || 'N/A' },
+      { label: 'Cherry quantity', value: formatCherryQuantityKg(cherryQuantity) },
       { label: 'Processing Type', value: processingType || 'N/A' },
       { label: 'Experiment Number', value: experimentNumber || 'N/A' },
       { label: 'Notes', value: description || 'N/A' },
@@ -194,6 +196,7 @@ export function generateOrderSheetRow(row) {
       { label: 'Reference number', value: safe(data.referenceNumber) },
       { label: 'Version', value: safe(data.version, '-') },
       { label: 'Full Reference Number', value: safe(data.fullReferenceNumber) },
+      { label: 'Cherry quantity', value: formatCherryQuantityKg(data.cherryQuantity) },
       { label: 'Processing Type', value: safe(data.processingType) },
       { label: 'Experiment Number', value: safe(data.experimentNumber) },
       { label: 'Notes', value: safe(data.description) },
