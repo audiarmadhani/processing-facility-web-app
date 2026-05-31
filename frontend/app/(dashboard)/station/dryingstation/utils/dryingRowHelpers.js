@@ -7,6 +7,14 @@ export function computeDryingPriority(status, currentMoisture) {
   return 'Low';
 }
 
+/** Format a DB timestamp as YYYY-MM-DD in WITA (Asia/Makassar). */
+export function formatDryingDateWita(isoTimestamp) {
+  if (!isoTimestamp) return 'N/A';
+  const date = new Date(isoTimestamp);
+  if (isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+}
+
 export function sortDryingRows(a, b) {
   const priorityOrder = { High: 0, Medium: 1, Low: 2 };
   const prioritySort = (row) => {

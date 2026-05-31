@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { computeDryingPriority, sortDryingRows } from '../utils/dryingRowHelpers';
+import { computeDryingPriority, formatDryingDateWita, sortDryingRows } from '../utils/dryingRowHelpers';
 
 const debounce = (func, wait) => {
   let timeout;
@@ -201,8 +201,8 @@ export function useDryingStation(session) {
             currentMoisture,
             priority: computeDryingPriority(status, currentMoisture),
             dryingArea: latestEntry?.dryingArea || 'N/A',
-            startDryingDate: latestEntry?.entered_at ? new Date(latestEntry.entered_at).toISOString().slice(0, 10) : 'N/A',
-            endDryingDate: latestEntry?.exited_at ? new Date(latestEntry.exited_at).toISOString().slice(0, 10) : 'N/A',
+            startDryingDate: formatDryingDateWita(latestEntry?.entered_at),
+            endDryingDate: formatDryingDateWita(latestEntry?.exited_at),
             weight: batchWeights[batch.batchNumber] ? parseFloat(batchWeights[batch.batchNumber].total).toFixed(2) : '0',
             wetmillWeight: wetmillWeights[batch.batchNumber] ? parseFloat(wetmillWeights[batch.batchNumber]).toFixed(2) : '0',
             type: batch.type || 'N/A',
