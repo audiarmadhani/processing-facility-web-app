@@ -54,6 +54,9 @@ export function useDryingStation(session) {
   );
   const [openFinishDialog, setOpenFinishDialog] = useState(false);
   const [selectedRowForFinish, setSelectedRowForFinish] = useState(null);
+  const [finishDate, setFinishDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
 
   const dryingAreas = useMemo(() => [
     "Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", 
@@ -813,7 +816,23 @@ export function useDryingStation(session) {
   };
 
   const handleFinishDrying = useCallback(async () => {
-    if (!selectedRowForFinish) return;
+    if (!selectedRowForFinish || !finishDate) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (finishDate > today) {
+      setSnackbarMessage('Finish date cannot be in the future.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const startDate = selectedRowForFinish.startDryingDate;
+    if (startDate && startDate !== 'N/A' && finishDate < startDate) {
+      setSnackbarMessage('Finish date cannot be before start drying date.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
 
     try {
       const res = await fetch(
@@ -823,7 +842,8 @@ export function useDryingStation(session) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             batchNumber: selectedRowForFinish.batchNumber,
-            rfid: selectedRowForFinish.rfid
+            rfid: selectedRowForFinish.rfid,
+            exited_at: finishDate,
           })
         }
       );
@@ -846,7 +866,7 @@ export function useDryingStation(session) {
       setSelectedRowForFinish(null);
     }
 
-  }, [selectedRowForFinish, handleRefreshData]);
+  }, [selectedRowForFinish, finishDate, handleRefreshData]);
 
 
 
@@ -936,6 +956,8 @@ export function useDryingStation(session) {
     setOpenFinishDialog,
     selectedRowForFinish,
     setSelectedRowForFinish,
+    finishDate,
+    setFinishDate,
     dryingAreas,
     deviceMapping,
     formatDateForDisplay,

@@ -38,6 +38,7 @@ function DryingStationPage() {
         onWeightClick: station.handleWeightClick,
         onFinishClick: (row) => {
           station.setSelectedRowForFinish(row);
+          station.setFinishDate(new Date().toISOString().slice(0, 10));
           station.setOpenFinishDialog(true);
         },
       }),
@@ -46,6 +47,7 @@ function DryingStationPage() {
       station.handleMoveClick,
       station.handleWeightClick,
       station.setSelectedRowForFinish,
+      station.setFinishDate,
       station.setOpenFinishDialog,
     ]
   );
@@ -241,6 +243,9 @@ function DryingStationPage() {
           <FinishDryingDialog
             open={station.openFinishDialog}
             batchNumber={station.selectedRowForFinish?.batchNumber}
+            finishDate={station.finishDate}
+            minFinishDate={station.selectedRowForFinish?.startDryingDate}
+            onDateChange={station.setFinishDate}
             onClose={() => station.setOpenFinishDialog(false)}
             onConfirm={station.handleFinishDrying}
           />
