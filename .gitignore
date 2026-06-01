@@ -25,3 +25,8 @@ database.sqlite
 /dashboard/*
 !/dashboard/REPOSITORY.md
 !/dashboard/README.md
+
+# Driver app — canonical repo: github.com/audiarmadhani/processing-facility-driver-app
+/driver-app/*
+!/driver-app/REPOSITORY.md
+!/driver-app/README.md
