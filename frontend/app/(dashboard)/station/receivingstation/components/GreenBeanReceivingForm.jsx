@@ -35,6 +35,8 @@ export default function GreenBeanReceivingForm({
   setMoisture,
   notes,
   setNotes,
+  driverPickupHandoffCode,
+  setDriverPickupHandoffCode,
   assigningRFID,
   onSubmit,
 }) {
@@ -155,6 +157,21 @@ export default function GreenBeanReceivingForm({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 fullWidth
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Driver pickup code (optional)"
+                value={driverPickupHandoffCode}
+                onChange={(e) =>
+                  setDriverPickupHandoffCode(
+                    e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6)
+                  )
+                }
+                fullWidth
+                placeholder="6 characters from driver"
+                inputProps={{ maxLength: 6, style: { letterSpacing: '0.2em' } }}
+                helperText="Optional code from the driver app to link this batch to a farm pickup."
               />
             </Grid>
             <Grid item xs={12}>

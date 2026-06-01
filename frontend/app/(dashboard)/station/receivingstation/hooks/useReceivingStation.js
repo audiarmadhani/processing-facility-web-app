@@ -23,6 +23,7 @@ export function useReceivingStation(session) {
   const [assigningRFID, setAssigningRFID] = useState(false);
   const [price, setPrice] = useState('');
   const [moisture, setMoisture] = useState('');
+  const [driverPickupHandoffCode, setDriverPickupHandoffCode] = useState('');
 
   const [tabValue, setTabValue] = useState(0);
   const [cherryData, setCherryData] = useState([]);
@@ -115,6 +116,7 @@ export function useReceivingStation(session) {
     setGrade('');
     setPrice('');
     setMoisture('');
+    setDriverPickupHandoffCode('');
   };
 
   const handleFarmerChange = (event, newValue) => {
@@ -214,6 +216,9 @@ export function useReceivingStation(session) {
       rfid: scannedRFID,
       price: commodityType === 'Green Bean' ? (price !== '' ? Number(price) : null) : null,
       moisture: commodityType === 'Green Bean' ? (moisture !== '' ? Number(moisture) : null) : null,
+      driverPickupHandoffCode: driverPickupHandoffCode.trim()
+        ? driverPickupHandoffCode.trim().toUpperCase()
+        : null,
     };
 
     try {
@@ -279,6 +284,8 @@ export function useReceivingStation(session) {
     setPrice,
     moisture,
     setMoisture,
+    driverPickupHandoffCode,
+    setDriverPickupHandoffCode,
     assigningRFID,
     handleSubmit,
     recordWeight,

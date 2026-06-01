@@ -29,6 +29,8 @@ export default function CherryReceivingForm({
   setNotes,
   brix,
   setBrix,
+  driverPickupHandoffCode,
+  setDriverPickupHandoffCode,
   assigningRFID,
   onSubmit,
 }) {
@@ -103,6 +105,21 @@ export default function CherryReceivingForm({
                 onChange={(e) => setBrix(e.target.value)}
                 fullWidth
                 inputProps={{ step: 0.1, min: 0 }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Driver pickup code (optional)"
+                value={driverPickupHandoffCode}
+                onChange={(e) =>
+                  setDriverPickupHandoffCode(
+                    e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6)
+                  )
+                }
+                fullWidth
+                placeholder="6 characters from driver"
+                inputProps={{ maxLength: 6, style: { letterSpacing: '0.2em' } }}
+                helperText="Enter the code the driver received after farm pickup to link this batch later."
               />
             </Grid>
             <Grid item xs={12}>

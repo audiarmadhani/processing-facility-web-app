@@ -43,6 +43,8 @@ function ReceivingStation() {
                 setNotes={station.setNotes}
                 brix={station.brix}
                 setBrix={station.setBrix}
+                driverPickupHandoffCode={station.driverPickupHandoffCode}
+                setDriverPickupHandoffCode={station.setDriverPickupHandoffCode}
                 assigningRFID={station.assigningRFID}
                 onSubmit={station.handleSubmit}
               />
@@ -78,6 +80,8 @@ function ReceivingStation() {
                 setMoisture={station.setMoisture}
                 notes={station.notes}
                 setNotes={station.setNotes}
+                driverPickupHandoffCode={station.driverPickupHandoffCode}
+                setDriverPickupHandoffCode={station.setDriverPickupHandoffCode}
                 assigningRFID={station.assigningRFID}
                 onSubmit={station.handleSubmit}
               />
