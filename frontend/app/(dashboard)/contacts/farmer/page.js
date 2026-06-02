@@ -78,7 +78,7 @@ function FarmerInputStation() {
   const contractTypeOptions = ['Contract', 'Beli Putus'];
 
   const varietyOptions = {
-    Arabica: ['Cobra', 'Yellow Caturra', 'Kopyol'],
+    Arabica: ['Cobra', 'Yellow Caturra', 'Kopyol','S-795','USDA','Abbysinia'],
     Robusta: ['BP42', 'Huni']
   };
 
