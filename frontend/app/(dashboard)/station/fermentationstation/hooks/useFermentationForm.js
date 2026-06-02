@@ -28,6 +28,7 @@ export function useFermentationForm(session) {
       : '';
   const [experimentNumber, setExperimentNumber] = useState('');
   const [processingType, setProcessingType] = useState('');
+  const [purpose, setPurpose] = useState('');
   const [description, setDescription] = useState('');
   const [farmerName, setFarmerName] = useState('');
   const [type, setType] = useState('');
@@ -542,6 +543,7 @@ useEffect(() => {
       version,
       experimentNumber,
       processingType,
+      purpose,
       description,
       farmerName,
       type,
@@ -694,6 +696,7 @@ useEffect(() => {
     setVersion('');
     setExperimentNumber('');
     setProcessingType('');
+    setPurpose('');
     setDescription('');
     setFarmerName('');
     setType('');
@@ -839,6 +842,7 @@ useEffect(() => {
       setInt('version', detailsData.version);
       setIfValid('experimentNumber', detailsData.experimentNumber);
       setIfValid('processingType', detailsData.processingType);
+      setIfValid('purpose', detailsData.purpose);
       setIfValid('description', detailsData.description);
       setIfValid('farmerName', detailsData.farmerName);
       setIfValid('type', detailsData.type);
@@ -948,7 +952,7 @@ useEffect(() => {
     }
 
     generateOrderSheetPdf({
-      batchNumber, referenceNumber, version, experimentNumber, processingType, description,
+      batchNumber, referenceNumber, version, experimentNumber, processingType, purpose, description,
       farmerName, type, variety, productLine, preStorage, preFermentationStorageGoal,
       preFermentationStorageStart, preFermentationStorageEnd, prePulped, prePulpedDelva,
       wesorter, preClassifier, cherryType, fermentation, tank, fermentationStarter,
@@ -1307,6 +1311,7 @@ useEffect(() => {
     fullReferenceNumber,
     experimentNumber, setExperimentNumber,
     processingType, setProcessingType,
+    purpose, setPurpose,
     description, setDescription,
     farmerName, setFarmerName,
     type, setType,

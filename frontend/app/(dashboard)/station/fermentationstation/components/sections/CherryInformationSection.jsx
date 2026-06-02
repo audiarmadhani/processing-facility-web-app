@@ -31,6 +31,7 @@ export default function CherryInformationSection({ mode, form }) {
     batchNumber,
     checkExperimentNumber,
     description,
+    purpose,
     experimentNumber,
     farmerName,
     handleBatchNumberChange,
@@ -44,6 +45,7 @@ export default function CherryInformationSection({ mode, form }) {
     referenceMappings,
     referenceNumber,
     setDescription,
+    setPurpose,
     setExperimentNumber,
     setProductLine,
     setVersion,
@@ -194,6 +196,15 @@ export default function CherryInformationSection({ mode, form }) {
                                 fullWidth
                                 required
                                 margin="normal"
+                              />
+                              <TextField
+                                label="Purpose"
+                                value={purpose}
+                                onChange={(e) => setPurpose(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                multiline
+                                minRows={3}
                               />
                               <TextField
                                 label="Description"
@@ -374,6 +385,18 @@ export default function CherryInformationSection({ mode, form }) {
                     fullWidth
                     variant="outlined"
                     sx={{ mt: 1 }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Purpose"
+                    value={detailsData.purpose || ''}
+                    onChange={(e) => setDetailsData({ ...detailsData, purpose: e.target.value })}
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    multiline
+                    minRows={3}
                   />
                 </Grid>
                 <Grid item xs={4}>

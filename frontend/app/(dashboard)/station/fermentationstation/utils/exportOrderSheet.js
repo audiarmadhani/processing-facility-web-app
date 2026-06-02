@@ -8,7 +8,7 @@ import { formatCherryQuantityKg } from './resolveCherryQuantity';
 
 export function generateOrderSheet(formState) {
   const {
-    batchNumber, referenceNumber, version, experimentNumber, processingType, description,
+    batchNumber, referenceNumber, version, experimentNumber, processingType, purpose, description,
     farmerName, type, variety, productLine, preStorage, preFermentationStorageGoal,
     preFermentationStorageStart, preFermentationStorageEnd, prePulped, prePulpedDelva,
     wesorter, preClassifier, cherryType, fermentation, tank, fermentationStarter,
@@ -65,6 +65,7 @@ export function generateOrderSheet(formState) {
       { label: 'Cherry quantity', value: formatCherryQuantityKg(cherryQuantity) },
       { label: 'Processing Type', value: processingType || 'N/A' },
       { label: 'Experiment Number', value: experimentNumber || 'N/A' },
+      { label: 'Purpose', value: purpose || 'N/A' },
       { label: 'Notes', value: description || 'N/A' },
       { label: 'Farmer', value: farmerName || 'N/A' },
       { label: 'Type', value: type || 'N/A' },
@@ -199,6 +200,7 @@ export function generateOrderSheetRow(row) {
       { label: 'Cherry quantity', value: formatCherryQuantityKg(data.cherryQuantity) },
       { label: 'Processing Type', value: safe(data.processingType) },
       { label: 'Experiment Number', value: safe(data.experimentNumber) },
+      { label: 'Purpose', value: safe(data.purpose) },
       { label: 'Notes', value: safe(data.description) },
 
       // ORIGIN
