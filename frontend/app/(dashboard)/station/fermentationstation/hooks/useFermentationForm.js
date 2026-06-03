@@ -9,9 +9,13 @@ import {
   API_BASE_URL,
   defaultProcessingTypes,
   producers,
+  BAG_TANK,
+  getRowTanks,
+  tanksToDisplay,
+  normalizeTanksSelection,
+  isBarrelOrBucket,
 } from '../constants';
 import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
-import { BAG_TANK } from '../constants';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
 import { formatFermentationDisplay } from '../utils/fermentationDateTime';
 import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow as generateOrderSheetRowPdf } from '../utils/exportOrderSheet';
@@ -59,7 +63,7 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const [cherryType, setCherryType] = useState('');
   const [fermentationCherryWeight, setFermentationCherryWeight] = useState('');
   const [fermentation, setFermentation] = useState('');
-  const [tank, setTank] = useState('');
+  const [tanks, setTanks] = useState([]);
   const [fermentationStarter, setFermentationStarter] = useState('');
   const [fermentationStarterAmount, setFermentationStarterAmount] = useState('');
   const [gas, setGas] = useState('');
@@ -169,12 +173,13 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
 
   const [availableProcessingTypes, setAvailableProcessingTypes] = useState(defaultProcessingTypes);
 
-  const isCarrybrew = tank === 'Carrybrew';
-  const isBiomaster = tank === 'Biomaster';
-  const isBucketOrBB =
-    tank?.startsWith('BB-') ||
-    tank?.startsWith('BUC-') ||
-    tank === BAG_TANK;
+  const tank = tanksToDisplay(tanks);
+
+  const isCarrybrew = tanks.includes('Carrybrew');
+  const isBiomaster = tanks.includes('Biomaster');
+  const isBucketOrBB = tanks.some(
+    (t) => isBarrelOrBucket(t) || t === BAG_TANK
+  );
 
   const fieldDisabled = {
     // temperature related
@@ -196,14 +201,14 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
     tankAmount: isBiomaster || isBucketOrBB,
   };
 
-  const detailsTank = detailsData.tank;
+  const detailsTanks = getRowTanks(detailsData);
+  const tanksLocked = detailsData.status === 'In Progress';
 
-  const detailsIsCarrybrew = detailsTank === 'Carrybrew';
-  const detailsIsBiomaster = detailsTank === 'Biomaster';
-  const detailsIsBucketOrBB =
-    detailsTank?.startsWith('BB-') ||
-    detailsTank?.startsWith('BUC-') ||
-    detailsTank === BAG_TANK;
+  const detailsIsCarrybrew = detailsTanks.includes('Carrybrew');
+  const detailsIsBiomaster = detailsTanks.includes('Biomaster');
+  const detailsIsBucketOrBB = detailsTanks.some(
+    (t) => isBarrelOrBucket(t) || t === BAG_TANK
+  );
 
   const detailsFieldDisabled = {
     fermentationTemperature: detailsIsBucketOrBB,
@@ -284,7 +289,9 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const fetchAvailableTanks = async () => {
     setIsLoadingTanks(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-tanks`);
+      const excludeId = editingEntryId || detailsData?.id;
+      const params = excludeId ? { excludeFermentationId: excludeId } : {};
+      const response = await axios.get(`${API_BASE_URL}/api/fermentation/available-tanks`, { params });
       if (!Array.isArray(response.data)) {
         console.error('fetchAvailableTanks: Expected array, got:', response.data);
         setAvailableTanks([]);
@@ -294,7 +301,8 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
         setOpenSnackbar(true);
         return;
       }
-      setAvailableTanks(response.data);
+      const keepSelected = [...new Set([...tanks, ...detailsTanks])];
+      setAvailableTanks([...new Set([...response.data, ...keepSelected])]);
       setTankError(null);
     } catch (error) {
       console.error('Error fetching available tanks:', error, 'Response:', error.response);
@@ -384,8 +392,9 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
 
       if (entryId && !batchNumber) {
         const response = await axios.get(`${API_BASE_URL}/api/fermentation/details/id/${entryId}`);
-        const data = response.data?.[0] || {};
-        setDetailsData(data);
+        const raw = response.data?.[0] || {};
+        const rowTanks = getRowTanks(raw);
+        setDetailsData({ ...raw, tanks: rowTanks, tank: tanksToDisplay(rowTanks) });
         await loadCherryWeight(null);
         return;
       }
@@ -398,7 +407,9 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
         `${API_BASE_URL}/api/fermentation/details/${batchNumber}?${queryParams.toString()}`
       );
 
-      const data = response.data?.[0] || {};
+      const raw = response.data?.[0] || {};
+      const rowTanks = getRowTanks(raw);
+      const data = { ...raw, tanks: rowTanks, tank: tanksToDisplay(rowTanks) };
       setDetailsData(data);
       await loadCherryWeight(batchNumber, data.preprocessingWeight);
 
@@ -450,7 +461,7 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   if (fieldDisabled.brewTankTemperature) setBrewTankTemperature('');
   if (fieldDisabled.waterTemperature) setWaterTemperature('');
   if (fieldDisabled.coolerTemperature) setCoolerTemperature('');
-}, [tank]);
+}, [tanks]);
 
 useEffect(() => {
   if (secondFermentation === 'no') {
@@ -524,14 +535,24 @@ useEffect(() => {
     // DO NOTHING to referenceNumber
   };
 
-  const handleTankChange = (value) => {
-    setTank(value);
-    if (value !== 'Carrybrew') {
+  const handleTanksChange = (_, newValue) => {
+    const normalized = normalizeTanksSelection(newValue);
+    setTanks(normalized);
+    if (!normalized.includes('Carrybrew')) {
       setLeachateTarget('');
       setBrewTankTemperature('');
       setWaterTemperature('');
       setCoolerTemperature('');
     }
+  };
+
+  const handleDetailsTanksChange = (_, newValue) => {
+    const normalized = normalizeTanksSelection(newValue);
+    setDetailsData((prev) => ({
+      ...prev,
+      tanks: normalized,
+      tank: tanksToDisplay(normalized),
+    }));
   };
 
   const handleCloseSnackbar = () => {
@@ -545,6 +566,12 @@ useEffect(() => {
   const validateOrderSheetFields = () => {
     if (!referenceNumber || !version || !experimentNumber) {
       setSnackbarMessage('Reference number, version, and experiment number are required.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return false;
+    }
+    if (!tanks.length) {
+      setSnackbarMessage('At least one fermentation tank is required.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return false;
@@ -586,6 +613,7 @@ useEffect(() => {
     cherryType,
     fermentationCherryWeight: fermentationCherryWeight ? parseFloat(fermentationCherryWeight) : null,
     fermentation,
+    tanks,
     tank,
     fermentationStarter,
     fermentationStarterAmount: fermentationStarterAmount ? parseFloat(fermentationStarterAmount) : null,
@@ -683,7 +711,7 @@ useEffect(() => {
       if (status === 'Awaiting Batch') {
         setSnackbarMessage('Order sheet saved — awaiting batch assignment.');
       } else {
-        setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${tank}.`);
+        setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${tank || 'assigned tanks'}.`);
       }
       setSnackbarSeverity('success');
       resetForm();
@@ -709,7 +737,7 @@ useEffect(() => {
   const handleDeleteBatch = async (row) => {
     const batchLabel = row.batchNumber || 'TBD';
     const confirmDelete = window.confirm(
-      `Delete order sheet ${batchLabel} (${row.tank || 'No Tank'})?`
+      `Delete order sheet ${batchLabel} (${tanksToDisplay(getRowTanks(row)) || 'No Tank'})?`
     );
 
     if (!confirmDelete) return;
@@ -777,7 +805,7 @@ useEffect(() => {
     setCherryType('');
     setFermentationCherryWeight('');
     setFermentation('');
-    setTank('');
+    setTanks([]);
     setFermentationStarter('');
     setFermentationStarterAmount('');
     setGas('');
@@ -852,9 +880,14 @@ useEffect(() => {
 
   const handleUpdateDetails = async () => {
     try {
-      const payload = {
-        tank: detailsData.tank,
-      };
+      const payload = {};
+
+      if (detailsData.status !== 'In Progress') {
+        const detailTanks = getRowTanks(detailsData);
+        if (detailTanks.length) {
+          payload.tanks = detailTanks;
+        }
+      }
 
       if (selectedBatch?.batchNumber) {
         payload.batchNumber = selectedBatch.batchNumber;
@@ -1506,7 +1539,12 @@ useEffect(() => {
         </>
       ),
     },
-    { field: 'tank', headerName: 'Tank', width: 140 },
+    {
+      field: 'tank',
+      headerName: 'Tank',
+      width: 220,
+      valueGetter: (value, row) => tanksToDisplay(getRowTanks(row)) || value || '',
+    },
     {
       field: 'description',
       headerName: 'Description',
@@ -1587,7 +1625,12 @@ useEffect(() => {
     cherryType, setCherryType,
     fermentationCherryWeight, setFermentationCherryWeight,
     fermentation, setFermentation,
-    tank, setTank,
+    tanks, setTanks,
+    tank,
+    handleTanksChange,
+    handleDetailsTanksChange,
+    tanksLocked,
+    detailsTanks,
     fermentationStarter, setFermentationStarter,
     fermentationStarterAmount, setFermentationStarterAmount,
     gas, setGas,
@@ -1717,7 +1760,8 @@ useEffect(() => {
     handleBatchNumberChange,
     handleReferenceNumberChange,
     handleProcessingTypeChange,
-    handleTankChange,
+    handleTanksChange,
+    handleDetailsTanksChange,
     handleSubmit,
     handleStartFermentation,
     resetForm,

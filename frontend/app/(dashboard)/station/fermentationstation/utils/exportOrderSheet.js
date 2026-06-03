@@ -5,6 +5,7 @@ import 'jspdf-autotable';
 import dayjs from 'dayjs';
 import { calculateFermentationEndGoal, formatFermentationDisplay } from './fermentationDateTime';
 import { formatCherryQuantityKg } from './resolveCherryQuantity';
+import { getRowTanks, tanksToDisplay } from '../constants';
 
 function orderSheetBatchLabel(batchNumber) {
   return batchNumber?.trim() ? batchNumber : 'TBD';
@@ -245,7 +246,7 @@ export function generateOrderSheetRow(row) {
       // FERMENTATION
       { label: 'Cherry Type', value: safe(data.cherryType) },
       { label: 'Fermentation', value: safe(data.fermentation) },
-      { label: 'Fermentation tank', value: safe(data.tank) },
+      { label: 'Fermentation tank', value: tanksToDisplay(getRowTanks(data)) || safe(data.tank) },
       { label: 'Starter type', value: safe(data.fermentationStarter) },
       {
         label: 'Starter amount (gr)',

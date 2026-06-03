@@ -17,7 +17,11 @@ import {
 import { Autocomplete } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import { accordionFormContentSx, accordionDetailsSx } from '../../constants';
+import {
+  accordionFormContentSx,
+  accordionDetailsSx,
+  isTankOptionDisabled,
+} from '../../constants';
 import { wideMenuProps as MenuProps } from '../../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../../utils/formatDateTimeLocal';
 
@@ -40,7 +44,10 @@ export default function FermentationSection({ mode, form }) {
     fermentationTimeTarget,
     fieldDisabled,
     gas,
-    handleTankChange,
+    handleTanksChange,
+    handleDetailsTanksChange,
+    tanksLocked,
+    detailsTanks,
     isLoadingTanks,
     isSubmerged,
     leachateTarget,
@@ -70,6 +77,7 @@ export default function FermentationSection({ mode, form }) {
     setTotalVolume,
     setWaterTemperature,
     stirring,
+    tanks,
     tank,
     tankAmount,
     totalVolume,
@@ -123,15 +131,18 @@ export default function FermentationSection({ mode, form }) {
                               />
 
                               <Autocomplete
-                                sx={{ mb: 2 }}   // margin-bottom
+                                sx={{ mb: 2 }}
+                                multiple
                                 options={availableTanks}
-                                value={tank || null}
-                                onChange={(e, newValue) => handleTankChange(newValue || '')}
+                                value={tanks}
+                                onChange={handleTanksChange}
+                                getOptionDisabled={(option) => isTankOptionDisabled(option, tanks)}
                                 loading={isLoadingTanks}
                                 renderInput={(params) => (
                                   <TextField
                                     {...params}
-                                    label="Fermentation Tank"
+                                    label="Fermentation Tank(s)"
+                                    helperText="Select one shared vessel, or one or more blue barrels / buckets."
                                     fullWidth
                                     InputProps={{
                                       ...params.InputProps,
@@ -375,20 +386,28 @@ export default function FermentationSection({ mode, form }) {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
-                    <InputLabel id="fermentation-tank-details-label">Fermentation Tank</InputLabel>
-                    <Select
-                      labelId="fermentation-tank-details-label"
-                      value={detailsData.tank || ''}
-                      onChange={(e) => setDetailsData({ ...detailsData, tank: e.target.value })}
-                      label="Fermentation Tank"
-                    >
-                      {availableTanks.map(tank => (
-                        <MenuItem key={tank} value={tank}>{tank}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                <Grid item xs={12}>
+                  <Autocomplete
+                    multiple
+                    options={availableTanks}
+                    value={detailsTanks}
+                    onChange={handleDetailsTanksChange}
+                    disabled={tanksLocked}
+                    getOptionDisabled={(option) => isTankOptionDisabled(option, detailsTanks)}
+                    loading={isLoadingTanks}
+                    sx={{ mt: 1 }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Fermentation Tank(s)"
+                        helperText={
+                          tanksLocked
+                            ? 'Tank assignment is locked while fermentation is in progress.'
+                            : 'Select one shared vessel, or one or more blue barrels / buckets.'
+                        }
+                      />
+                    )}
+                  />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField

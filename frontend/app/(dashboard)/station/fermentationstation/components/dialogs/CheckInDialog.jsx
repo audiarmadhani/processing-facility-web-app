@@ -126,9 +126,9 @@ export default function CheckInDialog({
       <DialogContent>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <Chip label={periodLabel} color="primary" size="small" />
-          {row?.tank && (
+          {(row?.tank || row?.tanks?.length) && (
             <Typography variant="body2" color="text.secondary">
-              Tank: {row.tank}
+              Tank: {row.tanks?.length ? row.tanks.join(', ') : row.tank}
             </Typography>
           )}
         </Box>

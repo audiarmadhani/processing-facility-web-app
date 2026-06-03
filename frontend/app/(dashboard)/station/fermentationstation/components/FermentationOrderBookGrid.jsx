@@ -2,7 +2,7 @@
 
 import { Typography, Button, Card, CardContent, Tabs, Tab } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
-import { BAG_TANK } from '../constants';
+import { BAG_TANK, getRowTanks } from '../constants';
 
 export default function FermentationOrderBookGrid({ book }) {
   return (
@@ -36,22 +36,23 @@ export default function FermentationOrderBookGrid({ book }) {
         <div style={{ height: 800, width: '100%' }}>
           <DataGrid
             rows={book.fermentationData.filter((row) => {
+              const rowTanks = getRowTanks(row);
               if (book.tabValue === 'All Tank') {
                 return true;
               }
               if (book.tabValue === 'Blue Barrel') {
-                return row.tank?.startsWith('BB-');
+                return rowTanks.some((t) => t.startsWith('BB-'));
               }
               if (book.tabValue === 'Fermentation Bucket') {
-                return row.tank?.startsWith('BUC-');
+                return rowTanks.some((t) => t.startsWith('BUC-'));
               }
               if (book.tabValue === BAG_TANK) {
-                return row.tank === BAG_TANK;
+                return rowTanks.includes(BAG_TANK);
               }
               if (book.tabValue === 'none') {
-                return row.preStorage === 'yes' && (!row.tank || row.tank === '');
+                return row.preStorage === 'yes' && rowTanks.length === 0;
               }
-              return row.tank === book.tabValue;
+              return rowTanks.includes(book.tabValue);
             })}
             columns={book.fermentationColumns}
             pageSize={5}
