@@ -34,6 +34,11 @@ function PreprocessingStation() {
 
   const columns = getPreprocessingColumns({
     handleOpenEditMetadata: station.handleOpenEditMetadata,
+    handleGenerateOrderSheetPdf: station.handleGenerateOrderSheetPdf,
+    actionAnchorEl: station.actionAnchorEl,
+    selectedActionRow: station.selectedActionRow,
+    handleActionMenuOpen: station.handleActionMenuOpen,
+    handleActionMenuClose: station.handleActionMenuClose,
   });
 
   return (

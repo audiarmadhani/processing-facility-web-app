@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { MENU_PROPS } from '../columns';
+import {
+  generateWetMillOrderSheetFromForm,
+  generateWetMillOrderSheetFromRow,
+} from '../utils/exportWetMillOrderSheet';
 
 export const PREPROCESSING_ALLOWED_ROLES = ['admin', 'manager', 'preprocessing'];
 
@@ -22,6 +26,7 @@ export function usePreprocessingStation(session) {
   const [weightAvailable, setWeightAvailable] = useState('0.00');
   const [totalProcessedWeight, setTotalProcessedWeight] = useState('0.00');
   const [farmerName, setFarmerName] = useState('');
+  const [batchType, setBatchType] = useState('');
   const [receivingDate, setReceivingDate] = useState('');
   const [qcDate, setQCDate] = useState('');
   const [totalWeight, setTotalWeight] = useState('');
@@ -58,6 +63,8 @@ export function usePreprocessingStation(session) {
   const [editProducer, setEditProducer] = useState('');
   const [editProductLine, setEditProductLine] = useState('');
   const [editProcessingType, setEditProcessingType] = useState('');
+  const [actionAnchorEl, setActionAnchorEl] = useState(null);
+  const [selectedActionRow, setSelectedActionRow] = useState(null);
 
   // Debug re-renders
   useEffect(() => {
@@ -146,6 +153,7 @@ export function usePreprocessingStation(session) {
         await fetchAvailableWeight(batchNumber, totalWeightNum);
 
       setFarmerName(data.farmerName || 'Multiple');
+      setBatchType(data.type || '');
       setReceivingDate(formatDate(data.receivingDate));
       setQCDate(formatDate(data.qcDate));
       setTotalWeight(totalWeightNum.toFixed(2));
@@ -534,11 +542,41 @@ export function usePreprocessingStation(session) {
     try {
       const response = await axios.post(`${API_BASE_URL}/preprocessing`, preprocessingData, { timeout: 15000 });
       const { lotNumber, referenceNumber } = response.data.preprocessingData[0] || {};
-      setLotNumber(lotNumber || 'N/A');
-      setReferenceNumber(referenceNumber || 'N/A');
-      setSnackBarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${parsedWeight} kg. Lot Number: ${lotNumber || 'N/A'}`);
+      const resolvedLot = lotNumber || 'N/A';
+      const resolvedRef = referenceNumber || 'N/A';
+      setLotNumber(resolvedLot);
+      setReferenceNumber(resolvedRef);
+      setSnackBarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${parsedWeight} kg. Lot Number: ${resolvedLot}`);
       setSnackBarSeverity('success');
       setOpenSnackBar(true);
+
+      try {
+        generateWetMillOrderSheetFromForm({
+          batchNumber: trimmedBatchNumber,
+          farmerName,
+          lotNumber: resolvedLot,
+          referenceNumber: resolvedRef,
+          receivingDate,
+          qcDate,
+          totalWeight,
+          totalBags,
+          weightToWetMill: parsedWeight,
+          producer,
+          productLine,
+          processingType,
+          quality,
+          type: batchType,
+          notes: notes.trim() || null,
+        });
+      } catch (pdfError) {
+        console.error('Wet mill order sheet PDF failed:', pdfError);
+        setSnackBarMessage(
+          `Preprocessing saved, but order sheet PDF could not be generated: ${pdfError.message}`
+        );
+        setSnackBarSeverity('warning');
+        setOpenSnackBar(true);
+      }
+
       await fetchPreprocessingData();
       resetForm();
     } catch (error) {
@@ -550,12 +588,42 @@ export function usePreprocessingStation(session) {
     }
   };
 
-  const handleOpenEditMetadata = (row) => {
-    setSelectedBatch(row.batchNumber);
+  const handleActionMenuOpen = (event, row) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionRow(row);
+  };
 
-    setEditProducer(row.producer === 'N/A' ? '' : row.producer);
-    setEditProductLine(row.productLine === 'N/A' ? '' : row.productLine);
-    setEditProcessingType(row.processingType === 'N/A' ? '' : row.processingType);
+  const handleActionMenuClose = () => {
+    setActionAnchorEl(null);
+    setSelectedActionRow(null);
+  };
+
+  const handleGenerateOrderSheetPdf = (row) => {
+    const targetRow = row || selectedActionRow;
+    handleActionMenuClose();
+    if (!targetRow) return;
+
+    try {
+      generateWetMillOrderSheetFromRow(targetRow);
+      setSnackBarMessage(`Order sheet downloaded for batch ${targetRow.batchNumber}.`);
+      setSnackBarSeverity('success');
+    } catch (error) {
+      console.error('Generate PDF failed:', error);
+      setSnackBarMessage(error.message || 'Failed to generate order sheet PDF.');
+      setSnackBarSeverity('error');
+    } finally {
+      setOpenSnackBar(true);
+    }
+  };
+
+  const handleOpenEditMetadata = (row) => {
+    const targetRow = row || selectedActionRow;
+    handleActionMenuClose();
+    setSelectedBatch(targetRow.batchNumber);
+
+    setEditProducer(targetRow.producer === 'N/A' ? '' : targetRow.producer);
+    setEditProductLine(targetRow.productLine === 'N/A' ? '' : targetRow.productLine);
+    setEditProcessingType(targetRow.processingType === 'N/A' ? '' : targetRow.processingType);
 
     setOpenEditDialog(true);
   };
@@ -603,6 +671,7 @@ export function usePreprocessingStation(session) {
     setLotNumber('N/A');
     setReferenceNumber('N/A');
     setFarmerName('');
+    setBatchType('');
     setReceivingDate('');
     setQCDate('');
     setTotalWeight('');
@@ -700,6 +769,8 @@ export function usePreprocessingStation(session) {
           id: `${row.id}-${row.batchNumber}`,
           batchNumber: row.batchNumber,
           type: receivingBatch.type || 'N/A',
+          farmerName: receivingBatch.farmerName || 'N/A',
+          totalBags: receivingBatch.totalBags || 'N/A',
           producer: row.producer || 'N/A',
           productLine: row.productLine || 'N/A',
           processingType: row.processingType || 'N/A',
@@ -971,7 +1042,12 @@ export function usePreprocessingStation(session) {
     handleCloseSplitDialog,
     handleSplitCountChange,
     handleSubmit,
+    actionAnchorEl,
+    selectedActionRow,
+    handleActionMenuOpen,
+    handleActionMenuClose,
     handleOpenEditMetadata,
+    handleGenerateOrderSheetPdf,
     handleUpdateMetadata,
     resetForm,
   };

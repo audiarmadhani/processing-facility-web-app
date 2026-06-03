@@ -1,6 +1,7 @@
 'use client';
 
-import { Button, Checkbox } from '@mui/material';
+import { Button, Checkbox, Menu, MenuItem } from '@mui/material';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 export const MENU_PROPS = {
   PaperProps: {
@@ -85,7 +86,14 @@ export function getUnprocessedColumns({ selectedBatches, setSelectedBatches, ope
 
 }
 
-export function getPreprocessingColumns({ handleOpenEditMetadata }) {
+export function getPreprocessingColumns({
+  handleOpenEditMetadata,
+  handleGenerateOrderSheetPdf,
+  actionAnchorEl,
+  selectedActionRow,
+  handleActionMenuOpen,
+  handleActionMenuClose,
+}) {
     return [
     { 
       field: 'batchNumber', 
@@ -128,13 +136,24 @@ export function getPreprocessingColumns({ handleOpenEditMetadata }) {
       width: 150,
       sortable: false,
       renderCell: ({ row }) => (
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => handleOpenEditMetadata(row)}
-        >
-          Edit
-        </Button>
+        <>
+          <Button
+            variant="contained"
+            size="small"
+            endIcon={<ArrowDropDownIcon />}
+            onClick={(event) => handleActionMenuOpen(event, row)}
+          >
+            Action
+          </Button>
+          <Menu
+            anchorEl={actionAnchorEl}
+            open={Boolean(actionAnchorEl) && selectedActionRow?.id === row.id}
+            onClose={handleActionMenuClose}
+          >
+            <MenuItem onClick={() => handleOpenEditMetadata(row)}>Edit</MenuItem>
+            <MenuItem onClick={() => handleGenerateOrderSheetPdf(row)}>Generate PDF</MenuItem>
+          </Menu>
+        </>
       ),
     },
   ];
