@@ -30,14 +30,6 @@ export default function FermentationCreateForm({ form }) {
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2, flexWrap: 'wrap' }}>
                 <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={form.handleSaveDraft}
-                  disabled={!form.referenceNumber || !form.version || !form.experimentNumber}
-                >
-                  Save Draft
-                </Button>
-                <Button
                   variant="contained"
                   color="secondary"
                   onClick={form.generateOrderSheet}
@@ -49,9 +41,9 @@ export default function FermentationCreateForm({ form }) {
                   type="submit"
                   variant="contained"
                   color="primary"
-                  disabled={!form.experimentNumber}
+                  disabled={!form.referenceNumber || !form.version || !form.experimentNumber}
                 >
-                  Start Fermentation
+                  {form.batchNumber ? 'Start Fermentation' : 'Save (Awaiting Batch)'}
                 </Button>
               </Box>
             </Grid>

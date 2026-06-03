@@ -660,7 +660,7 @@ useEffect(() => {
     createdBy: session?.user?.name,
   });
 
-  const submitFermentation = async (intent) => {
+  const submitFermentation = async () => {
     if (!session || !session.user) {
       setSnackbarMessage('No user session found.');
       setSnackbarSeverity('error');
@@ -673,17 +673,15 @@ useEffect(() => {
     const isValid = await checkExperimentNumber();
     if (!isValid) return;
 
-    const payload = { ...buildFermentationPayload(), intent };
+    const payload = buildFermentationPayload();
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
       if (response.data?.id) setEditingEntryId(response.data.id);
 
       const status = response.data?.status;
-      if (intent === 'draft') {
-        setSnackbarMessage('Draft saved successfully.');
-      } else if (status === 'Awaiting Batch') {
-        setSnackbarMessage('Fermentation started — awaiting batch assignment.');
+      if (status === 'Awaiting Batch') {
+        setSnackbarMessage('Order sheet saved — awaiting batch assignment.');
       } else {
         setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${tank}.`);
       }
@@ -701,14 +699,9 @@ useEffect(() => {
     }
   };
 
-  const handleSaveDraft = async (e) => {
-    e?.preventDefault();
-    await submitFermentation('draft');
-  };
-
   const handleStartFermentation = async (e) => {
     e?.preventDefault();
-    await submitFermentation('start');
+    await submitFermentation();
   };
 
   const handleSubmit = handleStartFermentation;
@@ -1317,8 +1310,6 @@ useEffect(() => {
 
   const statusChipProps = (status) => {
     switch (status) {
-      case 'Draft':
-        return { label: 'Draft', color: 'default', sx: { bgcolor: '#ECEFF1', color: '#37474F' } };
       case 'Awaiting Batch':
         return { label: 'Awaiting Batch', color: 'warning', sx: { bgcolor: '#FFE0B2', color: '#E65100' } };
       case 'In Progress':
@@ -1334,8 +1325,6 @@ useEffect(() => {
     switch (status) {
       case 'Finished':
         return { backgroundColor: '#C8E6C9', color: '#1B5E20' };
-      case 'Draft':
-        return { backgroundColor: '#ECEFF1', color: '#37474F' };
       case 'Awaiting Batch':
         return { backgroundColor: '#FFE0B2', color: '#E65100' };
       default:
@@ -1465,7 +1454,7 @@ useEffect(() => {
               Check in
             </MenuItem>
 
-            {!rowHasBatch(row) && ['Draft', 'Awaiting Batch'].includes(row.status) && (
+            {!rowHasBatch(row) && row.status === 'Awaiting Batch' && (
               <MenuItem onClick={() => handleAssignBatchClick(row)}>
                 Assign Batch
               </MenuItem>
@@ -1730,7 +1719,6 @@ useEffect(() => {
     handleProcessingTypeChange,
     handleTankChange,
     handleSubmit,
-    handleSaveDraft,
     handleStartFermentation,
     resetForm,
     checkExperimentNumber,
