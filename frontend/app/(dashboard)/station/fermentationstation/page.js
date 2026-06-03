@@ -7,10 +7,8 @@ import StationSnackbar from '../_shared/components/StationSnackbar';
 import { FERMENTATION_ALLOWED_ROLES } from './constants';
 import { useFermentationForm } from './hooks/useFermentationForm';
 import { useFermentationOrderBook } from './hooks/useFermentationOrderBook';
-import { useFermentationCheckInReminders } from './hooks/useFermentationCheckInReminders';
 import FermentationCreateForm from './components/FermentationCreateForm';
 import FermentationOrderBookGrid from './components/FermentationOrderBookGrid';
-import CheckInReminderBanner from './components/CheckInReminderBanner';
 import AssignBatchDialog from './components/dialogs/AssignBatchDialog';
 import CheckInDialog from './components/dialogs/CheckInDialog';
 import WeightTrackingDialog from './components/dialogs/WeightTrackingDialog';
@@ -19,8 +17,7 @@ import BatchDetailsDialog from './components/dialogs/BatchDetailsDialog';
 
 function FermentationStation() {
   const { data: session, status } = useSession();
-  const reminders = useFermentationCheckInReminders();
-  const form = useFermentationForm(session, { onCheckInSuccess: reminders.refresh });
+  const form = useFermentationForm(session);
   const book = useFermentationOrderBook(form);
 
   return (
@@ -30,13 +27,6 @@ function FermentationStation() {
       allowedRoles={FERMENTATION_ALLOWED_ROLES}
     >
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <CheckInReminderBanner
-            reminders={reminders}
-            onCheckIn={form.handleCheckInClick}
-          />
-        </Grid>
-
         <Grid item xs={12}>
           <FermentationCreateForm form={form} />
         </Grid>
