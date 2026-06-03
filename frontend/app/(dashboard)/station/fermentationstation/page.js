@@ -9,6 +9,7 @@ import { useFermentationForm } from './hooks/useFermentationForm';
 import { useFermentationOrderBook } from './hooks/useFermentationOrderBook';
 import FermentationCreateForm from './components/FermentationCreateForm';
 import FermentationOrderBookGrid from './components/FermentationOrderBookGrid';
+import AssignBatchDialog from './components/dialogs/AssignBatchDialog';
 import WeightTrackingDialog from './components/dialogs/WeightTrackingDialog';
 import FinishBatchDialog from './components/dialogs/FinishBatchDialog';
 import BatchDetailsDialog from './components/dialogs/BatchDetailsDialog';
@@ -36,6 +37,15 @@ function FermentationStation() {
         <WeightTrackingDialog book={book} form={form} />
         <FinishBatchDialog book={book} form={form} />
         <BatchDetailsDialog form={form} />
+        <AssignBatchDialog
+          open={form.openAssignBatchDialog}
+          row={form.assignBatchRow}
+          availableBatches={form.availableBatches}
+          assignBatchNumber={form.assignBatchNumber}
+          onBatchChange={form.setAssignBatchNumber}
+          onClose={form.handleCloseAssignBatchDialog}
+          onConfirm={form.handleConfirmAssignBatch}
+        />
       </Grid>
 
       <StationSnackbar

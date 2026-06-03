@@ -6,6 +6,20 @@ import dayjs from 'dayjs';
 import { calculateFermentationEndGoal, formatFermentationDisplay } from './fermentationDateTime';
 import { formatCherryQuantityKg } from './resolveCherryQuantity';
 
+function orderSheetBatchLabel(batchNumber) {
+  return batchNumber?.trim() ? batchNumber : 'TBD';
+}
+
+function orderSheetFilename(batchNumber, experimentNumber) {
+  if (batchNumber?.trim()) {
+    return `HEQA_Fermentation_Order_Sheet_${batchNumber}.pdf`;
+  }
+  if (experimentNumber != null && experimentNumber !== '') {
+    return `HEQA_Fermentation_Order_Sheet_EXP_${experimentNumber}.pdf`;
+  }
+  return 'HEQA_Fermentation_Order_Sheet_Untitled.pdf';
+}
+
 export function generateOrderSheet(formState) {
   const {
     batchNumber, referenceNumber, version, experimentNumber, processingType, purpose, description,
@@ -58,7 +72,7 @@ export function generateOrderSheet(formState) {
 
     const fields = [
       { label: 'Date', value: derivedDate },
-      { label: 'Batch number', value: batchNumber || 'N/A' },
+      { label: 'Batch number', value: orderSheetBatchLabel(batchNumber) },
       { label: 'Reference number', value: referenceNumber || 'N/A' },
       { label: 'Version', value: version || '' },
       { label: 'Full Reference Number', value: fullReferenceNumber || 'N/A' },
@@ -138,7 +152,7 @@ export function generateOrderSheet(formState) {
       margin: { left: 20, right: 20 },
     });
 
-    doc.save(`HEQA_Fermentation_Order_Sheet_${batchNumber || 'Untitled'}.pdf`);
+    doc.save(orderSheetFilename(batchNumber, experimentNumber));
 }
 
 export function generateOrderSheetRow(row) {
@@ -193,7 +207,7 @@ export function generateOrderSheetRow(row) {
     const fields = [
       // GENERAL
       { label: 'Date', value: safe(data.derivedDate) },
-      { label: 'Batch number', value: safe(data.batchNumber) },
+      { label: 'Batch number', value: orderSheetBatchLabel(data.batchNumber) },
       { label: 'Reference number', value: safe(data.referenceNumber) },
       { label: 'Version', value: safe(data.version, '-') },
       { label: 'Full Reference Number', value: safe(data.fullReferenceNumber) },
@@ -299,5 +313,5 @@ export function generateOrderSheetRow(row) {
       margin: { left: 20, right: 20 },
     });
 
-    doc.save(`HEQA_Fermentation_Order_Sheet_${data.batchNumber || 'Untitled'}.pdf`);
+    doc.save(orderSheetFilename(data.batchNumber, data.experimentNumber));
   };

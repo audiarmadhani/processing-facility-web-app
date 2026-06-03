@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { Button, Menu, MenuItem, Box } from '@mui/material';
+import { Button, Menu, MenuItem, Box, Chip } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
   API_BASE_URL,
@@ -141,6 +141,10 @@ export function useFermentationForm(session) {
   const [tabValue, setTabValue] = useState('Biomaster');
   const [openWeightDialog, setOpenWeightDialog] = useState(false);
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState(null);
+  const [openAssignBatchDialog, setOpenAssignBatchDialog] = useState(false);
+  const [assignBatchRow, setAssignBatchRow] = useState(null);
+  const [assignBatchNumber, setAssignBatchNumber] = useState('');
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [weightMeasurements, setWeightMeasurements] = useState([]);
   const [newWeight, setNewWeight] = useState('');
@@ -250,11 +254,16 @@ export function useFermentationForm(session) {
     }
   };
 
-  const checkExperimentNumber = async () => {
-    if (!experimentNumber) return;
+  const checkExperimentNumber = async (overrideExperiment, overrideExcludeId) => {
+    const exp = overrideExperiment ?? experimentNumber;
+    if (!exp) return true;
+
+    const excludeId = overrideExcludeId ?? editingEntryId ?? detailsData?.id ?? selectedBatch?.id;
+    const params = new URLSearchParams({ experimentNumber: exp });
+    if (excludeId) params.set('excludeId', String(excludeId));
 
     const res = await fetch(
-      `https://processing-facility-backend.onrender.com/api/fermentation/check-experiment?experimentNumber=${experimentNumber}`
+      `${API_BASE_URL}/api/fermentation/check-experiment?${params.toString()}`
     );
 
     const data = await res.json();
@@ -305,7 +314,7 @@ export function useFermentationForm(session) {
         setOpenSnackbar(true);
         return;
       }
-      setFermentationData(response.data.map((row, index) => ({ id: index + 1, ...row })));
+      setFermentationData(response.data.map((row) => ({ ...row })));
     } catch (error) {
       console.error('Error fetching fermentation data:', error, 'Response:', error.response);
       setSnackbarMessage('Failed to fetch fermentation data. Please try again.');
@@ -362,8 +371,20 @@ export function useFermentationForm(session) {
     }
   };
 
-  const fetchDetailsData = async (batchNumber, referenceNumber, experimentNumber) => {
+  const fetchDetailsData = async (rowOrBatch, referenceNumber, experimentNumber) => {
     try {
+      const isRow = rowOrBatch && typeof rowOrBatch === 'object';
+      const batchNumber = isRow ? rowOrBatch.batchNumber : rowOrBatch;
+      const entryId = isRow ? rowOrBatch.id : null;
+
+      if (entryId && !batchNumber) {
+        const response = await axios.get(`${API_BASE_URL}/api/fermentation/details/id/${entryId}`);
+        const data = response.data?.[0] || {};
+        setDetailsData(data);
+        await loadCherryWeight(null);
+        return;
+      }
+
       const queryParams = new URLSearchParams();
       if (referenceNumber) queryParams.append('referenceNumber', referenceNumber);
       if (experimentNumber) queryParams.append('experimentNumber', experimentNumber);
@@ -445,10 +466,14 @@ useEffect(() => {
   }
 }, [secondFermentation]);
 
-  const handleBatchNumberChange = async (batchNumber) => {
-    setBatchNumber(batchNumber);
-    if (!batchNumber) {
-      resetForm();
+  const handleBatchNumberChange = async (newBatchNumber) => {
+    setBatchNumber(newBatchNumber);
+    if (!newBatchNumber) {
+      setCherryWeight(null);
+      setCherryWeightSource(null);
+      setFarmerName('');
+      setType('');
+      setVariety('');
       return;
     }
 
@@ -456,24 +481,20 @@ useEffect(() => {
     setCherryWeightSource(null);
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/receiving/${batchNumber}`);
+      const response = await axios.get(`${API_BASE_URL}/api/receiving/${newBatchNumber}`);
       const data = Array.isArray(response.data) ? response.data[0] : response.data;
       if (data) {
-        setFarmerName(data.farmerName || '');
-        setType(data.type || '');
-        setVariety(data.variety || '');
-        await loadCherryWeight(batchNumber);
+        setFarmerName((prev) => prev || data.farmerName || '');
+        setType((prev) => prev || data.type || '');
+        setVariety((prev) => prev || data.variety || '');
+        await loadCherryWeight(newBatchNumber);
       } else {
-        setFarmerName('');
-        setType('');
         setSnackbarMessage('No data found for selected batch.');
         setSnackbarSeverity('warning');
         setOpenSnackbar(true);
       }
     } catch (error) {
       console.error('Error fetching batch details:', error, 'Response:', error.response);
-      setFarmerName('');
-      setType('');
       setSnackbarMessage(error.response?.data?.message || 'Failed to fetch batch details.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -516,9 +537,125 @@ useEffect(() => {
     return value || null;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const validateOrderSheetFields = () => {
+    if (!referenceNumber || !version || !experimentNumber) {
+      setSnackbarMessage('Reference number, version, and experiment number are required.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return false;
+    }
+    return true;
+  };
 
+  const buildFermentationPayload = () => ({
+    batchNumber: batchNumber?.trim() || null,
+    referenceNumber,
+    version,
+    experimentNumber,
+    processingType,
+    purpose,
+    description,
+    farmerName: batchNumber ? farmerName : null,
+    type: batchNumber ? type : null,
+    variety: batchNumber ? variety : null,
+    harvestDate: toRaw(harvestDate),
+    harvestAt: toRaw(harvestAt),
+    receivedAt: toRaw(receivedAt),
+    receivedWeight: receivedWeight ? parseFloat(receivedWeight) : null,
+    rejectWeight: rejectWeight ? parseFloat(rejectWeight) : null,
+    defectWeight: defectWeight ? parseFloat(defectWeight) : null,
+    damagedWeight: damagedWeight ? parseFloat(damagedWeight) : null,
+    lostWeight: lostWeight ? parseFloat(lostWeight) : null,
+    preprocessingWeight: preprocessingWeight ? parseFloat(preprocessingWeight) : null,
+    quality: quality ? parseFloat(quality) : null,
+    brix: brix ? parseFloat(brix) : null,
+    preStorage,
+    preStorageCondition,
+    preFermentationStorageGoal: preFermentationStorageGoal ? parseFloat(preFermentationStorageGoal) : null,
+    preFermentationStorageStart: toRaw(preFermentationStorageStart),
+    preFermentationStorageEnd: toRaw(preFermentationStorageEnd),
+    prePulped,
+    prePulpedDelva,
+    preFermentationTimeAfterPulping: preFermentationTimeAfterPulping ? parseFloat(preFermentationTimeAfterPulping) : null,
+    prePulpedWeight: prePulpedWeight ? parseFloat(prePulpedWeight) : null,
+    cherryType,
+    fermentationCherryWeight: fermentationCherryWeight ? parseFloat(fermentationCherryWeight) : null,
+    fermentation,
+    tank,
+    fermentationStarter,
+    fermentationStarterAmount: fermentationStarterAmount ? parseFloat(fermentationStarterAmount) : null,
+    gas,
+    pressure: pressure ? parseFloat(pressure) : null,
+    isSubmerged,
+    totalVolume: totalVolume ? parseFloat(totalVolume) : null,
+    waterUsed: waterUsed ? parseFloat(waterUsed) : null,
+    starterUsed: starterUsed ? parseFloat(starterUsed) : null,
+    stirring: stirring ? parseFloat(stirring) : null,
+    fermentationTemperature,
+    pH: pH ? parseFloat(pH) : null,
+    fermentationTimeTarget: fermentationTimeTarget ? parseInt(fermentationTimeTarget) : null,
+    fermentationStart: toRaw(fermentationStart),
+    fermentationEnd: toRaw(fermentationEnd),
+    finalPH: finalPH ? parseFloat(finalPH) : null,
+    finalTDS: finalTDS ? parseFloat(finalTDS) : null,
+    finalTemperature,
+    postFermentationWeight: postFermentationWeight ? parseFloat(postFermentationWeight) : null,
+    postPulped,
+    postPulpedDelva,
+    secondFermentation,
+    secondFermentationTank,
+    secondPostPulped,
+    secondPostPulpedDelva,
+    secondWashed,
+    secondFermentationCherryWeight: secondFermentationCherryWeight ? parseFloat(secondFermentationCherryWeight) : null,
+    secondFermentationPulpedWeight: secondFermentationPulpedWeight ? parseFloat(secondFermentationPulpedWeight) : null,
+    secondStarterType,
+    secondGas,
+    secondPressure: secondPressure ? parseFloat(secondPressure) : null,
+    secondIsSubmerged,
+    secondTotalVolume: secondTotalVolume ? parseFloat(secondTotalVolume) : null,
+    secondWaterUsed: secondWaterUsed ? parseFloat(secondWaterUsed) : null,
+    secondMosstoUsed: secondMosstoUsed ? parseFloat(secondMosstoUsed) : null,
+    secondActualVolume: secondActualVolume ? parseFloat(secondActualVolume) : null,
+    secondTemperature,
+    secondFermentationTimeTarget: secondFermentationTimeTarget ? parseInt(secondFermentationTimeTarget) : null,
+    secondFermentationStart: toRaw(secondFermentationStart),
+    secondFermentationEnd: toRaw(secondFermentationEnd),
+    dryingArea,
+    avgTemperature: avgTemperature ? parseFloat(avgTemperature) : null,
+    preDryingWeight: preDryingWeight ? parseFloat(preDryingWeight) : null,
+    finalMoisture: finalMoisture ? parseFloat(finalMoisture) : null,
+    postDryingWeight: postDryingWeight ? parseFloat(postDryingWeight) : null,
+    dryingStart: toRaw(dryingStart),
+    dryingEnd: toRaw(dryingEnd),
+    secondDrying,
+    secondDryingArea,
+    secondAverageTemperature: secondAverageTemperature ? parseFloat(secondAverageTemperature) : null,
+    secondFinalMoisture: secondFinalMoisture ? parseFloat(secondFinalMoisture) : null,
+    secondPostDryingWeight: secondPostDryingWeight ? parseFloat(secondPostDryingWeight) : null,
+    secondDryingStart: toRaw(secondDryingStart),
+    secondDryingEnd: toRaw(secondDryingEnd),
+    rehydration,
+    storage,
+    storageTemperature: storageTemperature ? parseFloat(storageTemperature) : null,
+    hullingTime: toRaw(hullingTime),
+    bagType,
+    postHullingWeight: postHullingWeight ? parseFloat(postHullingWeight) : null,
+    productLine,
+    wesorter,
+    preClassifier,
+    airlock,
+    tankAmount: tankAmount ? parseInt(tankAmount) : null,
+    leachateTarget: leachateTarget ? parseFloat(leachateTarget) : null,
+    leachate: leachate ? parseFloat(leachate) : null,
+    brewTankTemperature: brewTankTemperature ? parseFloat(brewTankTemperature) : null,
+    waterTemperature: waterTemperature ? parseFloat(waterTemperature) : null,
+    coolerTemperature: coolerTemperature ? parseFloat(coolerTemperature) : null,
+    drying,
+    createdBy: session?.user?.name,
+  });
+
+  const submitFermentation = async (intent) => {
     if (!session || !session.user) {
       setSnackbarMessage('No user session found.');
       setSnackbarSeverity('error');
@@ -526,128 +663,25 @@ useEffect(() => {
       return;
     }
 
-    if (!batchNumber) {
-      setSnackbarMessage('batchNumber is required');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
+    if (!validateOrderSheetFields()) return;
 
     const isValid = await checkExperimentNumber();
-
     if (!isValid) return;
 
-    const payload = {
-      batchNumber: batchNumber.trim(),
-      referenceNumber,
-      version,
-      experimentNumber,
-      processingType,
-      purpose,
-      description,
-      farmerName,
-      type,
-      variety,
-      harvestDate: toRaw(harvestDate),
-      harvestAt: toRaw(harvestAt),
-      receivedAt: toRaw(receivedAt),
-      receivedWeight: receivedWeight ? parseFloat(receivedWeight) : null,
-      rejectWeight: rejectWeight ? parseFloat(rejectWeight) : null,
-      defectWeight: defectWeight ? parseFloat(defectWeight) : null,
-      damagedWeight: damagedWeight ? parseFloat(damagedWeight) : null,
-      lostWeight: lostWeight ? parseFloat(lostWeight) : null,
-      preprocessingWeight: preprocessingWeight ? parseFloat(preprocessingWeight) : null,
-      quality: quality ? parseFloat(quality) : null,
-      brix: brix ? parseFloat(brix) : null,
-      preStorage,
-      preStorageCondition,
-      preFermentationStorageGoal: preFermentationStorageGoal ? parseFloat(preFermentationStorageGoal) : null,
-      preFermentationStorageStart: toRaw(preFermentationStorageStart),
-      preFermentationStorageEnd: toRaw(preFermentationStorageEnd),
-      prePulped,
-      prePulpedDelva,
-      preFermentationTimeAfterPulping: preFermentationTimeAfterPulping ? parseFloat(preFermentationTimeAfterPulping) : null,
-      prePulpedWeight: prePulpedWeight ? parseFloat(prePulpedWeight) : null,
-      cherryType,
-      fermentationCherryWeight: fermentationCherryWeight ? parseFloat(fermentationCherryWeight) : null,
-      fermentation,
-      tank,
-      fermentationStarter,
-      fermentationStarterAmount: fermentationStarterAmount ? parseFloat(fermentationStarterAmount) : null,
-      gas,
-      pressure: pressure ? parseFloat(pressure) : null,
-      isSubmerged,
-      totalVolume: totalVolume ? parseFloat(totalVolume) : null,
-      waterUsed: waterUsed ? parseFloat(waterUsed) : null,
-      starterUsed: starterUsed ? parseFloat(starterUsed) : null,
-      stirring: stirring ? parseFloat(stirring) : null,
-      fermentationTemperature,
-      pH: pH ? parseFloat(pH) : null,
-      fermentationTimeTarget: fermentationTimeTarget ? parseInt(fermentationTimeTarget) : null,
-      fermentationStart: toRaw(fermentationStart),
-      fermentationEnd: toRaw(fermentationEnd),
-      finalPH: finalPH ? parseFloat(finalPH) : null,
-      finalTDS: finalTDS ? parseFloat(finalTDS) : null,
-      finalTemperature,
-      postFermentationWeight: postFermentationWeight ? parseFloat(postFermentationWeight) : null,
-      postPulped,
-      postPulpedDelva,
-      secondFermentation,
-      secondFermentationTank,
-      secondPostPulped,
-      secondPostPulpedDelva,
-      secondWashed,
-      secondFermentationCherryWeight: secondFermentationCherryWeight ? parseFloat(secondFermentationCherryWeight) : null,
-      secondFermentationPulpedWeight: secondFermentationPulpedWeight ? parseFloat(secondFermentationPulpedWeight) : null,
-      secondStarterType,
-      secondGas,
-      secondPressure: secondPressure ? parseFloat(secondPressure) : null,
-      secondIsSubmerged,
-      secondTotalVolume: secondTotalVolume ? parseFloat(secondTotalVolume) : null,
-      secondWaterUsed: secondWaterUsed ? parseFloat(secondWaterUsed) : null,
-      secondMosstoUsed: secondMosstoUsed ? parseFloat(secondMosstoUsed) : null,
-      secondActualVolume: secondActualVolume ? parseFloat(secondActualVolume) : null,
-      secondTemperature,
-      secondFermentationTimeTarget: secondFermentationTimeTarget ? parseInt(secondFermentationTimeTarget) : null,
-      secondFermentationStart: toRaw(secondFermentationStart),
-      secondFermentationEnd: toRaw(secondFermentationEnd),
-      dryingArea,
-      avgTemperature: avgTemperature ? parseFloat(avgTemperature) : null,
-      preDryingWeight: preDryingWeight ? parseFloat(preDryingWeight) : null,
-      finalMoisture: finalMoisture ? parseFloat(finalMoisture) : null,
-      postDryingWeight: postDryingWeight ? parseFloat(postDryingWeight) : null,
-      dryingStart: toRaw(dryingStart),
-      dryingEnd: toRaw(dryingEnd),
-      secondDrying,
-      secondDryingArea,
-      secondAverageTemperature: secondAverageTemperature ? parseFloat(secondAverageTemperature) : null,
-      secondFinalMoisture: secondFinalMoisture ? parseFloat(secondFinalMoisture) : null,
-      secondPostDryingWeight: secondPostDryingWeight ? parseFloat(secondPostDryingWeight) : null,
-      secondDryingStart: toRaw(secondDryingStart),
-      secondDryingEnd: toRaw(secondDryingEnd),
-      rehydration,
-      storage,
-      storageTemperature: storageTemperature ? parseFloat(storageTemperature) : null,
-      hullingTime: toRaw(hullingTime),
-      bagType,
-      postHullingWeight: postHullingWeight ? parseFloat(postHullingWeight) : null,
-      productLine,
-      wesorter,
-      preClassifier,
-      airlock,
-      tankAmount: tankAmount ? parseInt(tankAmount) : null,
-      leachateTarget: leachateTarget ? parseFloat(leachateTarget) : null,
-      leachate: leachate ? parseFloat(leachate) : null,
-      brewTankTemperature: brewTankTemperature ? parseFloat(brewTankTemperature) : null,
-      waterTemperature: waterTemperature ? parseFloat(waterTemperature) : null,
-      coolerTemperature: coolerTemperature ? parseFloat(coolerTemperature) : null,
-      drying,
-      createdBy: session.user.name,
-    };
+    const payload = { ...buildFermentationPayload(), intent };
 
     try {
-      await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
-      setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${tank}.`);
+      const response = await axios.post(`${API_BASE_URL}/api/fermentation`, payload);
+      if (response.data?.id) setEditingEntryId(response.data.id);
+
+      const status = response.data?.status;
+      if (intent === 'draft') {
+        setSnackbarMessage('Draft saved successfully.');
+      } else if (status === 'Awaiting Batch') {
+        setSnackbarMessage('Fermentation started — awaiting batch assignment.');
+      } else {
+        setSnackbarMessage(`Fermentation started for batch ${batchNumber} in ${tank}.`);
+      }
       setSnackbarSeverity('success');
       resetForm();
       await fetchFermentationData();
@@ -655,35 +689,53 @@ useEffect(() => {
       await fetchAvailableTanks();
     } catch (error) {
       console.error('Error submitting fermentation data:', error, 'Response:', error.response);
-      setSnackbarMessage(error.response?.data?.error || 'Failed to start fermentation. Please try again.');
+      setSnackbarMessage(error.response?.data?.error || 'Failed to save fermentation. Please try again.');
       setSnackbarSeverity('error');
     } finally {
       setOpenSnackbar(true);
     }
   };
 
+  const handleSaveDraft = async (e) => {
+    e?.preventDefault();
+    await submitFermentation('draft');
+  };
+
+  const handleStartFermentation = async (e) => {
+    e?.preventDefault();
+    await submitFermentation('start');
+  };
+
+  const handleSubmit = handleStartFermentation;
+
   const handleDeleteBatch = async (row) => {
+    const batchLabel = row.batchNumber || 'TBD';
     const confirmDelete = window.confirm(
-      `Delete batch ${row.batchNumber} (${row.tank || 'No Tank'})?`
+      `Delete order sheet ${batchLabel} (${row.tank || 'No Tank'})?`
     );
 
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(
-        `${API_BASE_URL}/api/fermentation/${row.batchNumber}`,
-        {
-          params: { tank: row.tank || null },
-        }
-      );
+      if (row.id) {
+        await axios.delete(`${API_BASE_URL}/api/fermentation/id/${row.id}`);
+      } else if (row.batchNumber) {
+        await axios.delete(
+          `${API_BASE_URL}/api/fermentation/${row.batchNumber}`,
+          { params: { tank: row.tank || null } }
+        );
+      } else {
+        throw new Error('Cannot delete entry');
+      }
 
-      setSnackbarMessage(`Batch ${row.batchNumber} deleted`);
+      setSnackbarMessage(`Order sheet ${batchLabel} deleted`);
       setSnackbarSeverity('success');
 
       await fetchFermentationData();
+      await fetchAvailableBatches();
     } catch (error) {
       console.error(error);
-      setSnackbarMessage('Failed to delete batch');
+      setSnackbarMessage(error.response?.data?.error || 'Failed to delete entry');
       setSnackbarSeverity('error');
     } finally {
       setOpenSnackbar(true);
@@ -797,14 +849,18 @@ useEffect(() => {
     setWaterTemperature('');
     setCoolerTemperature('');
     setDrying('');
+    setEditingEntryId(null);
   };
 
   const handleUpdateDetails = async () => {
     try {
       const payload = {
-        batchNumber: selectedBatch.batchNumber,
-        tank: detailsData.tank, // keep identity field
+        tank: detailsData.tank,
       };
+
+      if (selectedBatch?.batchNumber) {
+        payload.batchNumber = selectedBatch.batchNumber;
+      }
 
       // -------------------------
       // 🧠 HELPERS
@@ -921,12 +977,14 @@ useEffect(() => {
       // -------------------------
       // 🚀 API CALL
       // -------------------------
-      await axios.patch(
-        `${API_BASE_URL}/api/fermentation/details/${selectedBatch.batchNumber}`,
-        payload
-      );
+      const updateUrl = selectedBatch?.id && !selectedBatch?.batchNumber
+        ? `${API_BASE_URL}/api/fermentation/details/id/${selectedBatch.id}`
+        : `${API_BASE_URL}/api/fermentation/details/${selectedBatch.batchNumber}`;
 
-      setSnackbarMessage(`Details updated for batch ${selectedBatch.batchNumber}.`);
+      await axios.patch(updateUrl, payload);
+
+      const label = selectedBatch.batchNumber || 'TBD';
+      setSnackbarMessage(`Details updated for batch ${label}.`);
       setSnackbarSeverity('success');
       setOpenDetailsDialog(false);
       await fetchFermentationData();
@@ -967,10 +1025,14 @@ useEffect(() => {
   };
 
   const generateOrderSheetRow = async (row) => {
-    const { value: cherryQuantity } = await resolveCherryQuantity(
-      row.batchNumber,
-      row.preprocessingWeight ?? null
-    );
+    let cherryQuantity = null;
+    if (row.batchNumber) {
+      const { value } = await resolveCherryQuantity(
+        row.batchNumber,
+        row.preprocessingWeight ?? null
+      );
+      cherryQuantity = value;
+    }
     generateOrderSheetRowPdf({ ...row, cherryQuantity });
   };
 
@@ -995,8 +1057,23 @@ useEffect(() => {
         return;
       }
 
-      await axios.put(`${API_BASE_URL}/api/fermentation/finish/${selectedRow.batchNumber}`, { fermentationEnd: endDate });
-      setSnackbarMessage(`Fermentation finished for batch ${selectedRow.batchNumber}.`);
+      const finishPayload = { fermentationEnd: endDate };
+      if (selectedRow.batchNumber) {
+        await axios.put(
+          `${API_BASE_URL}/api/fermentation/finish/${selectedRow.batchNumber}`,
+          finishPayload
+        );
+      } else if (selectedRow.id) {
+        await axios.put(
+          `${API_BASE_URL}/api/fermentation/finish/id/${selectedRow.id}`,
+          finishPayload
+        );
+      } else {
+        throw new Error('Cannot finish fermentation');
+      }
+
+      const label = selectedRow.batchNumber || 'TBD';
+      setSnackbarMessage(`Fermentation finished for batch ${label}.`);
       setSnackbarSeverity('success');
       await fetchFermentationData();
       await fetchAvailableBatches();
@@ -1104,14 +1181,83 @@ useEffect(() => {
     handleMenuClose();
 
     try {
-      await fetchDetailsData(
-        row.batchNumber,
-        row.referenceNumber,
-        row.experimentNumber
-      );
+      await fetchDetailsData(row);
       setOpenDetailsDialog(true);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleAssignBatchClick = (row) => {
+    setAssignBatchRow(row);
+    setAssignBatchNumber('');
+    setOpenAssignBatchDialog(true);
+    handleMenuClose();
+    fetchAvailableBatches();
+  };
+
+  const handleCloseAssignBatchDialog = () => {
+    setOpenAssignBatchDialog(false);
+    setAssignBatchRow(null);
+    setAssignBatchNumber('');
+  };
+
+  const handleConfirmAssignBatch = async () => {
+    if (!assignBatchRow?.id || !assignBatchNumber) return;
+
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/api/fermentation/${assignBatchRow.id}/assign-batch`,
+        { batchNumber: assignBatchNumber }
+      );
+
+      const newStatus = response.data?.status;
+      setSnackbarMessage(
+        newStatus === 'In Progress'
+          ? `Batch ${assignBatchNumber} assigned — fermentation now in progress.`
+          : `Batch ${assignBatchNumber} assigned successfully.`
+      );
+      setSnackbarSeverity('success');
+      handleCloseAssignBatchDialog();
+      await fetchFermentationData();
+      await fetchAvailableBatches();
+      await fetchAvailableTanks();
+    } catch (error) {
+      console.error('Error assigning batch:', error);
+      setSnackbarMessage(error.response?.data?.error || 'Failed to assign batch.');
+      setSnackbarSeverity('error');
+    } finally {
+      setOpenSnackbar(true);
+    }
+  };
+
+  const rowHasBatch = (row) => Boolean(row.batchNumber?.trim());
+
+  const statusChipProps = (status) => {
+    switch (status) {
+      case 'Draft':
+        return { label: 'Draft', color: 'default', sx: { bgcolor: '#ECEFF1', color: '#37474F' } };
+      case 'Awaiting Batch':
+        return { label: 'Awaiting Batch', color: 'warning', sx: { bgcolor: '#FFE0B2', color: '#E65100' } };
+      case 'In Progress':
+        return { label: 'In Progress', color: 'info', sx: { bgcolor: '#FFF9C4', color: '#F57F17' } };
+      case 'Finished':
+        return { label: 'Finished', color: 'success', sx: { bgcolor: '#C8E6C9', color: '#1B5E20' } };
+      default:
+        return { label: status || 'Unknown', color: 'default' };
+    }
+  };
+
+  const batchCellStyle = (status) => {
+    switch (status) {
+      case 'Finished':
+        return { backgroundColor: '#C8E6C9', color: '#1B5E20' };
+      case 'Draft':
+        return { backgroundColor: '#ECEFF1', color: '#37474F' };
+      case 'Awaiting Batch':
+        return { backgroundColor: '#FFE0B2', color: '#E65100' };
+      default:
+        return { backgroundColor: '#FFF9C4', color: '#F57F17' };
     }
   };
 
@@ -1173,8 +1319,8 @@ useEffect(() => {
       headerName: 'Batch Number',
       width: 220,
       renderCell: ({ row }) => {
-        const status = row.status?.toLowerCase();
-        const isFinished = status === 'finished';
+        const displayBatch = row.batchNumber || 'TBD';
+        const cellStyle = batchCellStyle(row.status);
 
         return (
           <Box
@@ -1184,15 +1330,12 @@ useEffect(() => {
               display: 'flex',
               alignItems: 'center',
               px: 1.5,
-
-              backgroundColor: isFinished ? '#C8E6C9' : '#FFF9C4',
-              color: isFinished ? '#1B5E20' : '#F57F17',
-
               fontWeight: 600,
-              borderRadius: 0, // 🔥 remove rounded
+              borderRadius: 0,
+              ...cellStyle,
             }}
           >
-            {row.batchNumber}
+            {displayBatch}
           </Box>
         );
       },
@@ -1226,16 +1369,25 @@ useEffect(() => {
               'aria-labelledby': `actions-button-${row.id}`,
             }}
           >
-            <MenuItem onClick={() => handleTrackWeight(row)}>
+            <MenuItem
+              onClick={() => handleTrackWeight(row)}
+              disabled={!rowHasBatch(row)}
+            >
               Track Weight
             </MenuItem>
+
+            {!rowHasBatch(row) && ['Draft', 'Awaiting Batch'].includes(row.status) && (
+              <MenuItem onClick={() => handleAssignBatchClick(row)}>
+                Assign Batch
+              </MenuItem>
+            )}
 
             <MenuItem
               onClick={() => {
                 setEndDateTime(dayjs().format('YYYY-MM-DDTHH:mm:ss'));
                 setOpenFinishDialog(true);
               }}
-              disabled={row.status === 'Finished'}
+              disabled={!rowHasBatch(row) || row.status !== 'In Progress'}
             >
               Finish
             </MenuItem>
@@ -1267,7 +1419,8 @@ useEffect(() => {
                 handleDeleteBatch(row);
                 handleMenuClose();
               }}
-              sx={{ color: 'error.main' }} // 🔴 red for destructive action
+              disabled={row.status === 'In Progress'}
+              sx={{ color: 'error.main' }}
             >
               Delete
             </MenuItem>
@@ -1300,7 +1453,21 @@ useEffect(() => {
       renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
-    { field: 'status', headerName: 'Status', width: 120 },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 150,
+      renderCell: ({ row }) => {
+        const chip = statusChipProps(row.status);
+        return (
+          <Chip
+            label={chip.label}
+            size="small"
+            sx={{ fontWeight: 600, ...chip.sx }}
+          />
+        );
+      },
+    },
     { field: 'createdBy', headerName: 'Created By', width: 150 },
   ];
 
@@ -1427,6 +1594,14 @@ useEffect(() => {
     setOpenWeightDialog,
     openDetailsDialog,
     setOpenDetailsDialog,
+    editingEntryId,
+    openAssignBatchDialog,
+    assignBatchRow,
+    assignBatchNumber,
+    setAssignBatchNumber,
+    handleAssignBatchClick,
+    handleCloseAssignBatchDialog,
+    handleConfirmAssignBatch,
     selectedBatch,
     weightMeasurements,
     newWeight,
@@ -1458,6 +1633,8 @@ useEffect(() => {
     handleProcessingTypeChange,
     handleTankChange,
     handleSubmit,
+    handleSaveDraft,
+    handleStartFermentation,
     resetForm,
     checkExperimentNumber,
     generateOrderSheet,

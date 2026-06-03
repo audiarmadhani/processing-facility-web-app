@@ -28,12 +28,20 @@ export default function FermentationCreateForm({ form }) {
             <DryingSection mode="create" form={form} />
 
             <Grid item xs={12}>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2, flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={form.handleSaveDraft}
+                  disabled={!form.referenceNumber || !form.version || !form.experimentNumber}
+                >
+                  Save Draft
+                </Button>
                 <Button
                   variant="contained"
                   color="secondary"
                   onClick={form.generateOrderSheet}
-                  disabled={!form.batchNumber || !form.experimentNumber}
+                  disabled={!form.experimentNumber}
                 >
                   Generate Order Sheet
                 </Button>
@@ -41,7 +49,7 @@ export default function FermentationCreateForm({ form }) {
                   type="submit"
                   variant="contained"
                   color="primary"
-                  disabled={!form.batchNumber || !form.experimentNumber}
+                  disabled={!form.experimentNumber}
                 >
                   Start Fermentation
                 </Button>

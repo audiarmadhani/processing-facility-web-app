@@ -82,7 +82,7 @@ export default function CherryInformationSection({ mode, form }) {
                             <CardContent sx={accordionFormContentSx}>
 
                               <Autocomplete
-                                sx={{ mb: 2 }}   // margin-bottom
+                                sx={{ mb: 2 }}
                                 options={availableBatches}
                                 getOptionLabel={(option) => option.batchNumber || ''}
                                 value={
@@ -102,7 +102,12 @@ export default function CherryInformationSection({ mode, form }) {
                                   </li>
                                 )}
                                 renderInput={(params) => (
-                                  <TextField {...params} label="Batch Number" required fullWidth />
+                                  <TextField
+                                    {...params}
+                                    label="Batch Number (optional)"
+                                    fullWidth
+                                    helperText="Optional — assign later if cherry has not arrived"
+                                  />
                                 )}
                               />
 
@@ -121,15 +126,15 @@ export default function CherryInformationSection({ mode, form }) {
                                 fullWidth
                                 margin="normal"
                                 helperText={
-                                  cherryWeightLoading
-                                    ? 'Loading cherry weight...'
-                                    : cherryWeightSource === 'wetmill'
-                                      ? 'Source: Wet mill (for cross-check)'
-                                      : cherryWeightSource === 'preprocessing'
-                                        ? 'Source: Preprocessing (for cross-check)'
-                                        : batchNumber
-                                          ? 'No cherry weight available'
-                                          : ''
+                                  !batchNumber
+                                    ? 'Assign a batch to view cherry weight'
+                                    : cherryWeightLoading
+                                      ? 'Loading cherry weight...'
+                                      : cherryWeightSource === 'wetmill'
+                                        ? 'Source: Wet mill (for cross-check)'
+                                        : cherryWeightSource === 'preprocessing'
+                                          ? 'Source: Preprocessing (for cross-check)'
+                                          : 'No cherry weight available'
                                 }
                                 InputProps={{
                                   endAdornment: cherryWeightLoading ? (
@@ -219,6 +224,7 @@ export default function CherryInformationSection({ mode, form }) {
                                 disabled
                                 fullWidth
                                 margin="normal"
+                                helperText={!batchNumber ? 'Assign a batch to populate' : ''}
                               />
                               <TextField
                                 label="Type"
@@ -226,8 +232,9 @@ export default function CherryInformationSection({ mode, form }) {
                                 disabled
                                 fullWidth
                                 margin="normal"
+                                helperText={!batchNumber ? 'Assign a batch to populate' : ''}
                               />
-                              <FormControl fullWidth required sx={{ marginTop: '16px' }}>
+                              <FormControl fullWidth required={Boolean(batchNumber)} sx={{ marginTop: '16px' }}>
                                 <InputLabel id="variety-label">Variety</InputLabel>
                                 <Select
                                   labelId="variety-label"
@@ -271,7 +278,7 @@ export default function CherryInformationSection({ mode, form }) {
                 <Grid item xs={4}>
                   <TextField
                     label="Batch Number"
-                    value={detailsData.batchNumber || ''}
+                    value={detailsData.batchNumber || 'TBD'}
                     onChange={(e) => setDetailsData({ ...detailsData, batchNumber: e.target.value })}
                     fullWidth
                     disabled
@@ -381,7 +388,7 @@ export default function CherryInformationSection({ mode, form }) {
                     type="number"
                     value={detailsData.experimentNumber || ''}
                     onChange={(e) => setDetailsData({ ...detailsData, experimentNumber: e.target.value })}
-                    onBlur={checkExperimentNumber}
+                    onBlur={() => checkExperimentNumber(detailsData.experimentNumber, detailsData.id)}
                     fullWidth
                     variant="outlined"
                     sx={{ mt: 1 }}
