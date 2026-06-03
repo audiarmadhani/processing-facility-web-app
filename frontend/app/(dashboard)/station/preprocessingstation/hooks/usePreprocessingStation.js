@@ -619,6 +619,7 @@ export function usePreprocessingStation(session) {
   const handleOpenEditMetadata = (row) => {
     const targetRow = row || selectedActionRow;
     handleActionMenuClose();
+    if (!targetRow?.batchNumber) return;
     setSelectedBatch(targetRow.batchNumber);
 
     setEditProducer(targetRow.producer === 'N/A' ? '' : targetRow.producer);
@@ -878,7 +879,9 @@ export function usePreprocessingStation(session) {
 
   const filteredPreprocessingData = producerFilter === 'All'
     ? preprocessingData
-    : preprocessingData.filter(row => row.producer.includes(producerFilter));
+    : preprocessingData.filter(
+        (row) => String(row.producer ?? '').includes(producerFilter)
+      );
 
   useEffect(() => {
     fetchPreprocessingData();
@@ -956,22 +959,25 @@ export function usePreprocessingStation(session) {
   };
 
   useEffect(() => {
-    if (producer && !producerOptions[producer].includes(productLine)) {
+    const allowedProductLines = producerOptions[producer];
+    if (producer && allowedProductLines && !allowedProductLines.includes(productLine)) {
       setProductLine('');
     }
-  }, [producer]);
+  }, [producer, productLine]);
 
   useEffect(() => {
-    if (productLine && !productLineOptions[productLine].includes(processingType)) {
+    const allowedProcessingTypes = productLineOptions[productLine];
+    if (productLine && allowedProcessingTypes && !allowedProcessingTypes.includes(processingType)) {
       setProcessingType('');
     }
-  }, [productLine]);
+  }, [productLine, processingType]);
 
   useEffect(() => {
-    if (processingType && !processingTypeOptions[processingType].includes(quality)) {
+    const allowedQualities = processingTypeOptions[processingType];
+    if (processingType && allowedQualities && !allowedQualities.includes(quality)) {
       setQuality('');
     }
-  }, [processingType]);
+  }, [processingType, quality]);
 
   return {
     session,
