@@ -103,6 +103,32 @@ export function getPreprocessingColumns({
       groupable: true,
       aggregable: false,
     },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 150,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <>
+          <Button
+            variant="contained"
+            size="small"
+            endIcon={<ArrowDropDownIcon />}
+            onClick={(event) => handleActionMenuOpen(event, row)}
+          >
+            Action
+          </Button>
+          <Menu
+            anchorEl={actionAnchorEl}
+            open={Boolean(actionAnchorEl) && selectedActionRow?.id === row.id}
+            onClose={handleActionMenuClose}
+          >
+            <MenuItem onClick={() => handleOpenEditMetadata(row)}>Edit</MenuItem>
+            <MenuItem onClick={() => handleGenerateOrderSheetPdf(row)}>Generate PDF</MenuItem>
+          </Menu>
+        </>
+      ),
+    },
     { field: 'lotNumber', headerName: 'Lot Number', width: 180, sortable: true },
     { field: 'referenceNumber', headerName: 'Reference Number', width: 180, sortable: true },
     { field: 'type', headerName: 'Type', width: 100, sortable: true },
@@ -129,32 +155,6 @@ export function getPreprocessingColumns({
       width: 100,
       sortable: true,
       renderCell: ({ value }) => (value ? 'Yes' : 'No'),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 150,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <>
-          <Button
-            variant="contained"
-            size="small"
-            endIcon={<ArrowDropDownIcon />}
-            onClick={(event) => handleActionMenuOpen(event, row)}
-          >
-            Action
-          </Button>
-          <Menu
-            anchorEl={actionAnchorEl}
-            open={Boolean(actionAnchorEl) && selectedActionRow?.id === row.id}
-            onClose={handleActionMenuClose}
-          >
-            <MenuItem onClick={() => handleOpenEditMetadata(row)}>Edit</MenuItem>
-            <MenuItem onClick={() => handleGenerateOrderSheetPdf(row)}>Generate PDF</MenuItem>
-          </Menu>
-        </>
-      ),
     },
   ];
 
