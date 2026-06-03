@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, Menu, MenuItem, Box, Chip } from '@mui/material';
@@ -18,7 +18,7 @@ import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow as g
 import { resolveCherryQuantity } from '../utils/resolveCherryQuantity';
 import { downloadFermentationDataExcel } from '../utils/exportFullXlsx';
 
-export function useFermentationForm(session) {
+export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const [batchNumber, setBatchNumber] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [version, setVersion] = useState('');
@@ -145,6 +145,11 @@ export function useFermentationForm(session) {
   const [openAssignBatchDialog, setOpenAssignBatchDialog] = useState(false);
   const [assignBatchRow, setAssignBatchRow] = useState(null);
   const [assignBatchNumber, setAssignBatchNumber] = useState('');
+  const [openCheckInDialog, setOpenCheckInDialog] = useState(false);
+  const [checkInRow, setCheckInRow] = useState(null);
+  const [checkInPeriod, setCheckInPeriod] = useState(null);
+  const [checkInBusy, setCheckInBusy] = useState(false);
+  const checkInWebcamRef = useRef(null);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [weightMeasurements, setWeightMeasurements] = useState([]);
   const [newWeight, setNewWeight] = useState('');
@@ -1233,6 +1238,83 @@ useEffect(() => {
 
   const rowHasBatch = (row) => Boolean(row.batchNumber?.trim());
 
+  const handleCheckInClick = async (row, periodOverride) => {
+    handleMenuClose();
+
+    let period = periodOverride;
+    if (!period) {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/fermentation/check-ins/pending`);
+        const activePeriod = response.data?.activePeriod;
+        const dueForRow = [...(response.data?.pending || []), ...(response.data?.overdue || [])]
+          .find((item) => item.id === row.id);
+        period = dueForRow?.missingPeriod || activePeriod;
+      } catch (error) {
+        console.error('Error resolving check-in period:', error);
+      }
+    }
+
+    if (!period) {
+      setSnackbarMessage('Check-in is only available during morning (06:00–12:00 WITA) or evening (17:00–21:00 WITA) windows.');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    setCheckInRow(row);
+    setCheckInPeriod(period);
+    setOpenCheckInDialog(true);
+  };
+
+  const handleCloseCheckInDialog = () => {
+    if (checkInBusy) return;
+    setOpenCheckInDialog(false);
+    setCheckInRow(null);
+    setCheckInPeriod(null);
+  };
+
+  const handleSubmitCheckIn = async ({ notes, imageFile, period }) => {
+    if (!checkInRow?.id || !imageFile || !session?.user?.name) {
+      setSnackbarMessage('Missing check-in data or user session.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    setCheckInBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+      formData.append('batchNumber', checkInRow.batchNumber);
+      formData.append('module', 'Fermentation-CheckIn');
+
+      const uploadRes = await axios.post(`${API_BASE_URL}/api/upload-image`, formData);
+      const imageUrl = uploadRes.data?.url;
+      if (!imageUrl) {
+        throw new Error('Upload did not return an image URL');
+      }
+
+      await axios.post(`${API_BASE_URL}/api/fermentation/${checkInRow.id}/check-in`, {
+        notes,
+        imageUrl,
+        period,
+        createdBy: session.user.name,
+      });
+
+      setSnackbarMessage(`${period === 'morning' ? 'Morning' : 'Evening'} check-in saved for batch ${checkInRow.batchNumber}.`);
+      setSnackbarSeverity('success');
+      handleCloseCheckInDialog();
+      onCheckInSuccess?.();
+    } catch (error) {
+      console.error('Error submitting check-in:', error);
+      setSnackbarMessage(error.response?.data?.error || 'Failed to save check-in.');
+      setSnackbarSeverity('error');
+    } finally {
+      setCheckInBusy(false);
+      setOpenSnackbar(true);
+    }
+  };
+
   const statusChipProps = (status) => {
     switch (status) {
       case 'Draft':
@@ -1374,6 +1456,13 @@ useEffect(() => {
               disabled={!rowHasBatch(row)}
             >
               Track Weight
+            </MenuItem>
+
+            <MenuItem
+              onClick={() => handleCheckInClick(row)}
+              disabled={!rowHasBatch(row) || row.status !== 'In Progress'}
+            >
+              Check in
             </MenuItem>
 
             {!rowHasBatch(row) && ['Draft', 'Awaiting Batch'].includes(row.status) && (
@@ -1602,6 +1691,14 @@ useEffect(() => {
     handleAssignBatchClick,
     handleCloseAssignBatchDialog,
     handleConfirmAssignBatch,
+    openCheckInDialog,
+    checkInRow,
+    checkInPeriod,
+    checkInBusy,
+    checkInWebcamRef,
+    handleCheckInClick,
+    handleCloseCheckInDialog,
+    handleSubmitCheckIn,
     selectedBatch,
     weightMeasurements,
     newWeight,
