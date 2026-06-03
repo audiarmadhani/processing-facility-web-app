@@ -7,7 +7,7 @@ export const bankOptions = [
   'CIMB Niaga', 'OCBC NISP', 'Permata Bank', 'Danamon', 'BPD Bali',
 ];
 
-export const brokerOptions = ['Nyoman', 'Agus TS', 'Ketut Darpa', 'Kanggo'];
+export const brokerOptions = ['Nyoman', 'Agus TS', 'Ketut Darpa', 'Kanggo','Wardika'];
 
 export const paymentMethodOptions = [
   'Bank Transfer to Farmer', 'Bank Transfer to Broker',
