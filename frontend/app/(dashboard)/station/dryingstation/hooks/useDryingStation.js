@@ -562,7 +562,11 @@ export function useDryingStation(session) {
     const today = new Date().toISOString().slice(0, 10);
     const measurementDate = newMeasurementDate || today;
     const selectedDate = new Date(measurementDate);
-    const startDryingDate = selectedBatch?.startDryingDate !== 'N/A' ? new Date(selectedBatch.startDryingDate) : null;
+    const dryingEnteredAt = selectedBatch?.dryingEnteredAt
+      ? new Date(selectedBatch.dryingEnteredAt)
+      : selectedBatch?.startDryingDate && selectedBatch.startDryingDate !== 'N/A'
+        ? new Date(selectedBatch.startDryingDate)
+        : null;
     const now = new Date();
 
     if (isNaN(selectedDate.getTime())) {
@@ -579,11 +583,17 @@ export function useDryingStation(session) {
       return;
     }
 
-    if (startDryingDate && selectedDate < startDryingDate) {
-      setSnackbarMessage('Measurement date cannot be before the start drying date');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
+    if (dryingEnteredAt && !Number.isNaN(dryingEnteredAt.getTime())) {
+      const enteredDay = new Date(dryingEnteredAt);
+      enteredDay.setHours(0, 0, 0, 0);
+      const selectedDay = new Date(selectedDate);
+      selectedDay.setHours(0, 0, 0, 0);
+      if (selectedDay < enteredDay) {
+        setSnackbarMessage('Measurement date cannot be before the start drying date');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+        return;
+      }
     }
 
     try {
@@ -601,7 +611,7 @@ export function useDryingStation(session) {
       const result = await response.json();
       setDryingMeasurements([...dryingMeasurements, result.measurement]);
       setNewMoisture('');
-      setNewMeasurementDate('');
+      setNewMeasurementDate(new Date().toISOString().slice(0, 10));
       setSnackbarMessage('Drying measurement added successfully');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
@@ -700,6 +710,7 @@ export function useDryingStation(session) {
   const handleDetailsClick = useCallback((batch) => {
     setSelectedBatch(batch);
     fetchDryingMeasurements(batch.batchNumber);
+    setNewMeasurementDate(new Date().toISOString().slice(0, 10));
     setOpenDialog(true);
   }, [fetchDryingMeasurements]);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   Button,
   Dialog,
@@ -9,9 +9,28 @@ import {
   DialogActions,
   TextField,
   Grid,
+  Box,
+  Typography,
 } from '@mui/material';
-import { Line } from 'react-chartjs-2';
+import { DataGrid } from '@mui/x-data-grid';
+import { Chart } from 'react-chartjs-2';
 import './chartSetup';
+import {
+  buildMoistureChartData,
+  buildMeasurementTableRows,
+} from '../utils/moistureChartUtils';
+
+const measurementColumns = [
+  { field: 'dateDisplay', headerName: 'Date', width: 140 },
+  {
+    field: 'moisture',
+    headerName: 'Moisture (%)',
+    width: 130,
+    valueFormatter: (value) =>
+      value != null && !Number.isNaN(Number(value)) ? Number(value).toFixed(1) : '—',
+  },
+  { field: 'vsOptimal', headerName: 'vs optimal', width: 120 },
+];
 
 export default function MoistureDialog({
   open,
@@ -24,63 +43,88 @@ export default function MoistureDialog({
   onAddMoisture,
   onClose,
 }) {
-  const generateOptimalCurve = useCallback(() => {
-    if (!selectedBatch || selectedBatch.startDryingDate === 'N/A') return { labels: [], data: [] };
-    const startDate = new Date(selectedBatch.startDryingDate);
-    const labels = [];
-    const data = [];
-    for (let i = 0; i <= 168; i += 24) {
-      const date = new Date(startDate);
-      date.setHours(date.getHours() + i);
-      labels.push(date.toLocaleDateString());
-      data.push(50 * Math.exp(-0.00858 * i));
-    }
-    return { labels, data };
-  }, [selectedBatch]);
+  const [highlightedMeasurementId, setHighlightedMeasurementId] = useState(null);
 
-  const optimalCurve = generateOptimalCurve();
+  useEffect(() => {
+    if (!open) setHighlightedMeasurementId(null);
+  }, [open]);
 
-  const moistureChartData = useMemo(
-    () => ({
-      labels: optimalCurve.labels,
-      datasets: [
-        {
-          label: 'Measured Moisture',
-          data: dryingMeasurements.map((m) => ({
-            x: new Date(m.measurement_date).toLocaleDateString(),
-            y: m.moisture,
-          })),
-          type: 'scatter',
-          backgroundColor: 'rgba(75,192,192,1)',
-          borderColor: 'rgba(75,192,192,0.2)',
-          pointRadius: 5,
-        },
-        {
-          label: 'Optimal Natural Sun Drying Curve',
-          data: optimalCurve.data,
-          fill: false,
-          borderColor: 'rgba(255,99,132,1)',
-          borderDash: [5, 5],
-          tension: 0.4,
-        },
-      ],
-    }),
-    [optimalCurve, dryingMeasurements]
+  const chartModel = useMemo(
+    () =>
+      buildMoistureChartData(
+        selectedBatch,
+        dryingMeasurements,
+        highlightedMeasurementId
+      ),
+    [selectedBatch, dryingMeasurements, highlightedMeasurementId]
+  );
+
+  const tableRows = useMemo(
+    () => buildMeasurementTableRows(dryingMeasurements, selectedBatch),
+    [dryingMeasurements, selectedBatch]
   );
 
   const moistureChartOptions = useMemo(
     () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
       scales: {
-        x: { title: { display: true, text: 'Date' }, type: 'category' },
-        y: { title: { display: true, text: 'Moisture (%)' }, min: 0, max: 60 },
+        x: {
+          type: 'time',
+          time: {
+            unit: 'day',
+            tooltipFormat: 'yyyy-MM-dd',
+          },
+          title: { display: true, text: 'Date (WITA)' },
+        },
+        y: {
+          min: 0,
+          max: chartModel.yMax,
+          title: { display: true, text: 'Moisture (%)' },
+        },
       },
-      plugins: { legend: { display: true }, tooltip: { mode: 'index', intersect: false } },
+      plugins: {
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const y = ctx.parsed?.y;
+              if (y == null || Number.isNaN(y)) return ctx.dataset.label;
+              return `${ctx.dataset.label}: ${y.toFixed(1)}%`;
+            },
+          },
+        },
+      },
     }),
-    []
+    [chartModel.yMax]
   );
 
+  const handleRowMouseEnter = useCallback(({ row }) => {
+    setHighlightedMeasurementId(row.id);
+  }, []);
+
+  const handleRowMouseLeave = useCallback(() => {
+    setHighlightedMeasurementId(null);
+  }, []);
+
+  const handleRowClick = useCallback(({ row }) => {
+    setHighlightedMeasurementId((prev) => (prev === row.id ? null : row.id));
+  }, []);
+
+  const showNoOptimalNote =
+    selectedBatch && !chartModel.hasOptimalCurve && !selectedBatch.dryingEnteredAt;
+
+  const chartKey = `${selectedBatch?.batchNumber ?? 'none'}-${dryingMeasurements.length}-${highlightedMeasurementId ?? 'none'}`;
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      disableEnforceFocus
+    >
       <DialogTitle>Drying Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
@@ -116,7 +160,62 @@ export default function MoistureDialog({
             </Button>
           </Grid>
         </Grid>
-        <Line data={moistureChartData} options={moistureChartOptions} />
+
+        {showNoOptimalNote && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Optimal drying curve unavailable (no drying entry time). Measured points are still
+            shown.
+          </Typography>
+        )}
+
+        {chartModel.datasets.length === 0 ? (
+          <Typography variant="body1" align="center" color="text.secondary" sx={{ py: 4 }}>
+            No moisture measurements or optimal curve data to display.
+          </Typography>
+        ) : (
+          <Box sx={{ position: 'relative', height: 400, width: '100%', mb: 2 }}>
+            <Chart
+              key={chartKey}
+              type="line"
+              data={{ datasets: chartModel.datasets }}
+              options={moistureChartOptions}
+            />
+          </Box>
+        )}
+
+        <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+          Moisture measurements
+        </Typography>
+        <Box sx={{ height: 220, width: '100%' }}>
+          <DataGrid
+            rows={tableRows}
+            columns={measurementColumns}
+            disableRowSelectionOnClick={false}
+            onRowMouseEnter={handleRowMouseEnter}
+            onRowMouseLeave={handleRowMouseLeave}
+            onRowClick={handleRowClick}
+            getRowClassName={({ id }) =>
+              highlightedMeasurementId != null && String(id) === String(highlightedMeasurementId)
+                ? 'moisture-row-highlighted'
+                : ''
+            }
+            pageSizeOptions={[5, 10, 25]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 5 } },
+              sorting: { sortModel: [{ field: 'dateDisplay', sort: 'asc' }] },
+            }}
+            sx={{
+              border: '1px solid rgba(255,255,255,0.12)',
+              '& .moisture-row-highlighted': {
+                backgroundColor: 'rgba(255, 206, 86, 0.15)',
+              },
+              '& .MuiDataGrid-row:hover': {
+                cursor: 'pointer',
+              },
+            }}
+            rowHeight={36}
+          />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
