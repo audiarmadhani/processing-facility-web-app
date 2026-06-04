@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { Box, Button, Checkbox, Chip } from '@mui/material';
+import { Box, Button, Checkbox, Chip, Menu, MenuItem } from '@mui/material';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
   API_BASE_URL,
   batchUniqueId,
@@ -12,6 +13,7 @@ import {
   mapSubBatch,
   statusFromTrackWeightRows,
 } from '../utils/drymillUtils';
+import { generateDryMillOrderSheetFromRow } from '../utils/exportDryMillOrderSheet';
 
 export const SCAN_LOCATIONS = {
   DRY_MILL: 'Dry_Mill',
@@ -43,6 +45,8 @@ export function useDryMillData(session) {
   const [openSampleHistoryDialog, setOpenSampleHistoryDialog] = useState(false);
   const [sampleData, setSampleData] = useState([]);
   const [openMergeDialog, setOpenMergeDialog] = useState(false);
+  const [actionAnchorEl, setActionAnchorEl] = useState(null);
+  const [selectedActionRow, setSelectedActionRow] = useState(null);
 
   const [openEnterDialog, setOpenEnterDialog] = useState(false);
   const [openExitDialog, setOpenExitDialog] = useState(false);
@@ -529,6 +533,107 @@ export function useDryMillData(session) {
     setOpenSampleTrackingDialog(true);
   }, [fetchSampleHistory]);
 
+  const handleActionMenuOpen = useCallback((event, row) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionRow(row);
+  }, []);
+
+  const handleActionMenuClose = useCallback(() => {
+    setActionAnchorEl(null);
+    setSelectedActionRow(null);
+  }, []);
+
+  const handleOpenEnterFromMenu = useCallback(
+    (row) => {
+      const targetRow = row || selectedActionRow;
+      handleActionMenuClose();
+      if (!targetRow) return;
+      setSelectedBatch(targetRow);
+      setEnteredAt('');
+      setOpenEnterDialog(true);
+    },
+    [selectedActionRow, handleActionMenuClose]
+  );
+
+  const handleOpenExitFromMenu = useCallback(
+    (row) => {
+      const targetRow = row || selectedActionRow;
+      handleActionMenuClose();
+      if (!targetRow) return;
+      setSelectedBatch(targetRow);
+      setExitedAt('');
+      setOpenExitDialog(true);
+    },
+    [selectedActionRow, handleActionMenuClose]
+  );
+
+  const handleProcessFromMenu = useCallback(
+    (row) => {
+      const targetRow = row || selectedActionRow;
+      handleActionMenuClose();
+      if (!targetRow) return;
+      handleProcessClick(targetRow);
+    },
+    [selectedActionRow, handleActionMenuClose, handleProcessClick]
+  );
+
+  const handleSampleFromMenu = useCallback(
+    (row) => {
+      const targetRow = row || selectedActionRow;
+      handleActionMenuClose();
+      if (!targetRow) return;
+      handleSampleTrackingClick(targetRow);
+    },
+    [selectedActionRow, handleActionMenuClose, handleSampleTrackingClick]
+  );
+
+  const handleGenerateDryMillOrderSheet = useCallback(
+    async (row) => {
+      const targetRow = row || selectedActionRow;
+      handleActionMenuClose();
+      if (!targetRow?.batchNumber) return;
+
+      let batchNumbers = [targetRow.batchNumber];
+      let dryingWeight = targetRow.drying_weight;
+
+      try {
+        const mergeRes = await axios.get(
+          `${API_BASE_URL}/api/dry-mill/batch-merges/${encodeURIComponent(targetRow.batchNumber)}`,
+          { timeout: 15000 }
+        );
+        if (mergeRes.data?.original_batch_numbers?.length) {
+          batchNumbers = mergeRes.data.original_batch_numbers;
+        }
+        if (mergeRes.data?.total_weight != null && mergeRes.data.total_weight !== '') {
+          dryingWeight = mergeRes.data.total_weight;
+        }
+      } catch (err) {
+        if (err.response?.status !== 404) {
+          console.error('Failed to fetch dry mill merge data:', err);
+          setSnackbarMessage(
+            err.response?.data?.error || 'Failed to load merge data for order sheet.'
+          );
+          setSnackbarSeverity('error');
+          setOpenSnackbar(true);
+          return;
+        }
+      }
+
+      try {
+        generateDryMillOrderSheetFromRow(targetRow, { batchNumbers, dryingWeight });
+        setSnackbarMessage(`Order sheet downloaded for batch ${targetRow.batchNumber}.`);
+        setSnackbarSeverity('success');
+      } catch (error) {
+        console.error('Generate dry mill order sheet failed:', error);
+        setSnackbarMessage(error.message || 'Failed to generate order sheet PDF.');
+        setSnackbarSeverity('error');
+      } finally {
+        setOpenSnackbar(true);
+      }
+    },
+    [selectedActionRow, handleActionMenuClose]
+  );
+
   const handleCloseDialog = () => {
     if (hasUnsavedChanges) {
       if (confirm("You have unsaved changes. Do you want to discard them?")) {
@@ -753,54 +858,49 @@ const handleSubmitExit = async () => {
       {
         field: 'actions',
         headerName: 'Actions',
-        width: 340,
+        width: 150,
         sortable: false,
         renderCell: ({ row }) => (
           <Box
-            sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', py: 0.5 }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <Button
               variant="contained"
               size="small"
-              onClick={() => handleProcessClick(row)}
+              endIcon={<ArrowDropDownIcon />}
+              onClick={(event) => handleActionMenuOpen(event, row)}
               disabled={isLoading}
             >
-              Process
+              Action
             </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                setSelectedBatch(row);
-                setEnteredAt('');
-                setOpenEnterDialog(true);
-              }}
-              disabled={row.dryMillEntered || isLoading}
+            <Menu
+              anchorEl={actionAnchorEl}
+              open={Boolean(actionAnchorEl) && selectedActionRow?.id === row.id}
+              onClose={handleActionMenuClose}
             >
-              Enter
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                setSelectedBatch(row);
-                setExitedAt('');
-                setOpenExitDialog(true);
-              }}
-              disabled={!row.dryMillEntered || row.dryMillExited || isLoading}
-            >
-              Exit
-            </Button>
-            <Button
-              variant="text"
-              size="small"
-              onClick={() => handleSampleTrackingClick(row)}
-              disabled={isLoading}
-            >
-              Sample
-            </Button>
+              <MenuItem onClick={() => handleProcessFromMenu(row)} disabled={isLoading}>
+                Process
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleOpenEnterFromMenu(row)}
+                disabled={row.dryMillEntered || isLoading}
+              >
+                Enter
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleOpenExitFromMenu(row)}
+                disabled={!row.dryMillEntered || row.dryMillExited || isLoading}
+              >
+                Exit
+              </MenuItem>
+              <MenuItem onClick={() => handleSampleFromMenu(row)} disabled={isLoading}>
+                Sample
+              </MenuItem>
+              <MenuItem onClick={() => handleGenerateDryMillOrderSheet(row)}>
+                Generate order sheet
+              </MenuItem>
+            </Menu>
           </Box>
         ),
       },
@@ -820,8 +920,15 @@ const handleSubmitExit = async () => {
       isLoading,
       selectedBatches,
       processStepStatus,
-      handleProcessClick,
-      handleSampleTrackingClick,
+      actionAnchorEl,
+      selectedActionRow,
+      handleActionMenuOpen,
+      handleActionMenuClose,
+      handleProcessFromMenu,
+      handleOpenEnterFromMenu,
+      handleOpenExitFromMenu,
+      handleSampleFromMenu,
+      handleGenerateDryMillOrderSheet,
       handleToggleBatchSelection,
     ]
   );
