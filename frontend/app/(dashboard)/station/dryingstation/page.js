@@ -55,12 +55,22 @@ function DryingStationPage() {
   const pendingColumns = useMemo(
     () =>
       getPendingDryingColumns((row) => {
+        const now = new Date();
         station.setAssignBatch(row.batchNumber);
         station.setAssignArea('');
-        station.setAssignDate(new Date().toISOString().slice(0, 10));
+        station.setAssignDate(now.toISOString().slice(0, 10));
+        station.setAssignTime(
+          `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+        );
         station.setOpenAssignDialog(true);
       }),
-    [station.setAssignBatch, station.setAssignArea, station.setAssignDate, station.setOpenAssignDialog]
+    [
+      station.setAssignBatch,
+      station.setAssignArea,
+      station.setAssignDate,
+      station.setAssignTime,
+      station.setOpenAssignDialog,
+    ]
   );
 
   return (
@@ -218,9 +228,11 @@ function DryingStationPage() {
             assignBatch={station.assignBatch}
             assignArea={station.assignArea}
             assignDate={station.assignDate}
+            assignTime={station.assignTime}
             dryingAreas={station.dryingAreas}
             onAreaChange={station.setAssignArea}
             onDateChange={station.setAssignDate}
+            onTimeChange={station.setAssignTime}
             onClose={() => station.setOpenAssignDialog(false)}
             onConfirm={async () => {
               if (!station.assignArea) {
@@ -232,7 +244,8 @@ function DryingStationPage() {
               await station.handleAssignDrying(
                 station.assignBatch,
                 station.assignArea,
-                station.assignDate
+                station.assignDate,
+                station.assignTime
               );
               station.setOpenAssignDialog(false);
               station.setAssignBatch(null);

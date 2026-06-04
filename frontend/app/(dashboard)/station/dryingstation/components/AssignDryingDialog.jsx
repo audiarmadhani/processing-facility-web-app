@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Box,
   Button,
   Dialog,
   DialogTitle,
@@ -19,9 +20,11 @@ export default function AssignDryingDialog({
   assignBatch,
   assignArea,
   assignDate,
+  assignTime,
   dryingAreas,
   onAreaChange,
   onDateChange,
+  onTimeChange,
   onClose,
   onConfirm,
 }) {
@@ -42,14 +45,25 @@ export default function AssignDryingDialog({
             ))}
           </Select>
         </FormControl>
-        <TextField
-          label="Entered Date"
-          type="date"
-          value={assignDate}
-          onChange={(e) => onDateChange(e.target.value)}
-          fullWidth
-          InputLabelProps={{ shrink: true }}
-        />
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            label="Entered Date"
+            type="date"
+            value={assignDate}
+            onChange={(e) => onDateChange(e.target.value)}
+            sx={{ flex: 1 }}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            label="Entered Time"
+            type="time"
+            value={assignTime}
+            onChange={(e) => onTimeChange(e.target.value)}
+            sx={{ flex: 1 }}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ step: 60 }}
+          />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

@@ -12,6 +12,11 @@ const debounce = (func, wait) => {
   };
 };
 
+function toLocalTimeInputValue(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export const DRYING_ALLOWED_ROLES = ['admin', 'manager', 'drying'];
 
 export function useDryingStation(session) {
@@ -53,6 +58,7 @@ export function useDryingStation(session) {
   const [assignDate, setAssignDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
+  const [assignTime, setAssignTime] = useState(() => toLocalTimeInputValue());
   const [openFinishDialog, setOpenFinishDialog] = useState(false);
   const [selectedRowForFinish, setSelectedRowForFinish] = useState(null);
   const [finishDate, setFinishDate] = useState(
@@ -797,16 +803,20 @@ export function useDryingStation(session) {
     }
   };
 
-  const handleAssignDrying = async (batchNumber, dryingArea, enteredAt) => {
+  const handleAssignDrying = async (batchNumber, dryingArea, enteredDate, enteredTime) => {
+    const timePart =
+      enteredTime && /^\d{1,2}:\d{2}$/.test(enteredTime) ? enteredTime : '00:00';
+    const entered_at = enteredDate ? `${enteredDate}T${timePart}:00` : undefined;
+
     try {
       await fetch(`https://processing-facility-backend.onrender.com/api/assign-drying`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           batchNumber,
           dryingArea,
-          entered_at: enteredAt
-        })
+          entered_at,
+        }),
       });
 
       setSnackbarMessage(`Assigned ${batchNumber} → ${dryingArea}`);
@@ -959,6 +969,8 @@ export function useDryingStation(session) {
     setAssignArea,
     assignDate,
     setAssignDate,
+    assignTime,
+    setAssignTime,
     openFinishDialog,
     setOpenFinishDialog,
     selectedRowForFinish,
