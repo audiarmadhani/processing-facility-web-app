@@ -17,6 +17,13 @@ function formatWeightKg(value) {
   return num.toFixed(2);
 }
 
+function formatMoisturePercent(value) {
+  if (value === undefined || value === null || value === '') return 'N/A';
+  const num = parseFloat(value);
+  if (Number.isNaN(num)) return displayValue(value);
+  return `${num.toFixed(1)}%`;
+}
+
 function formatBatchNumbers(batchNumbers) {
   if (!batchNumbers || batchNumbers.length === 0) return 'N/A';
   if (batchNumbers.length === 1) return batchNumbers[0];
@@ -60,6 +67,7 @@ export function buildDryMillOrderSheetFields(payload) {
     { label: 'Farm varieties', value: displayValue(payload.farmVarieties) },
     { label: 'Type', value: displayValue(payload.type) },
     { label: 'Drying weight (kg)', value: formatWeightKg(payload.dryingWeight) },
+    { label: 'Latest moisture (%)', value: formatMoisturePercent(payload.latestMoisture) },
   ];
 }
 
@@ -106,6 +114,7 @@ export function generateDryMillOrderSheetFromRow(row, options = {}) {
     farmVarieties: row.farmVarieties,
     type: row.type,
     dryingWeight: options.dryingWeight ?? row.drying_weight,
+    latestMoisture: options.latestMoisture ?? row.latestMoisture,
     date: options.date,
   });
 }

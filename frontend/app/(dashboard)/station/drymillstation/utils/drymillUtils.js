@@ -65,8 +65,44 @@ export function mapParentBatch(batch) {
         : batch.lotNumber,
     referenceNumber: batch.referenceNumber || 'N/A',
     dryMillMerged: batch.dryMillMerged === true ? 'Merged' : 'Not Merged',
+    latestMoisture: null,
     id: `${batch.batchNumber}__${producer}__${batch.processingType}`,
   };
+}
+
+/** Map batchNumber -> latest DryingMeasurements row from /drying-measurements/latest */
+export function indexDryingMeasurementsByBatch(measurements) {
+  const map = {};
+  (measurements || []).forEach((row) => {
+    if (row?.batchNumber) map[row.batchNumber] = row;
+  });
+  return map;
+}
+
+/** Most recent moisture reading across one or more batch numbers (e.g. merge originals). */
+export function pickLatestMoistureAcrossBatches(batchNumbers, measurementsByBatch) {
+  if (!batchNumbers?.length) return null;
+
+  let bestMoisture = null;
+  let bestTime = -Infinity;
+
+  for (const bn of batchNumbers) {
+    const rec = measurementsByBatch[bn];
+    if (!rec || rec.moisture == null || rec.moisture === '') continue;
+
+    const dateStr = rec.measurement_date || rec.created_at;
+    const t = dateStr ? new Date(dateStr).getTime() : 0;
+    const time = Number.isNaN(t) ? 0 : t;
+
+    if (time > bestTime) {
+      bestTime = time;
+      bestMoisture = rec.moisture;
+    }
+  }
+
+  if (bestMoisture == null) return null;
+  const num = parseFloat(bestMoisture);
+  return Number.isNaN(num) ? null : num;
 }
 
 export function mapSubBatch(batch) {

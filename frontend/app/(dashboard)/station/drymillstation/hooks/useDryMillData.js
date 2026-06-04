@@ -9,8 +9,10 @@ import {
   batchUniqueId,
   canSelectForMerge,
   isActiveDryMillBatch,
+  indexDryingMeasurementsByBatch,
   mapParentBatch,
   mapSubBatch,
+  pickLatestMoistureAcrossBatches,
   statusFromTrackWeightRows,
 } from '../utils/drymillUtils';
 import { generateDryMillOrderSheetFromRow } from '../utils/exportDryMillOrderSheet';
@@ -98,13 +100,66 @@ export function useDryMillData(session) {
     setDataGridError(message);
   };
 
+  const enrichParentBatchesWithLatestMoisture = useCallback(async (batches) => {
+    if (!batches.length) return batches;
+
+    const mergeKeysByBatch = {};
+    const mergeCandidates = batches.filter((b) => b.batchNumber?.endsWith('-MB'));
+
+    await Promise.all(
+      mergeCandidates.map(async (b) => {
+        try {
+          const res = await axios.get(
+            `${API_BASE_URL}/api/dry-mill/batch-merges/${encodeURIComponent(b.batchNumber)}`,
+            { timeout: 15000 }
+          );
+          if (res.data?.original_batch_numbers?.length) {
+            mergeKeysByBatch[b.batchNumber] = res.data.original_batch_numbers;
+          }
+        } catch (err) {
+          if (err.response?.status !== 404) {
+            console.warn('Failed to fetch dry mill merge for moisture', b.batchNumber, err);
+          }
+        }
+      })
+    );
+
+    const batchNumberSet = new Set();
+    batches.forEach((b) => {
+      const keys = mergeKeysByBatch[b.batchNumber] || [b.batchNumber];
+      keys.forEach((k) => batchNumberSet.add(k));
+    });
+
+    let measurements = [];
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/drying-measurements/latest`, {
+        params: { batchNumbers: [...batchNumberSet].join(',') },
+        timeout: 15000,
+      });
+      measurements = res.data || [];
+    } catch (err) {
+      console.warn('Failed to fetch latest moisture for dry mill', err);
+      return batches.map((b) => ({ ...b, latestMoisture: null }));
+    }
+
+    const byBatch = indexDryingMeasurementsByBatch(measurements);
+    return batches.map((b) => {
+      const keys = mergeKeysByBatch[b.batchNumber] || [b.batchNumber];
+      return {
+        ...b,
+        latestMoisture: pickLatestMoistureAcrossBatches(keys, byBatch),
+      };
+    });
+  }, []);
+
   const fetchDryMillData = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/dry-mill-data`);
       const data = response.data;
 
-      const parentBatchesData = data.map((batch) => mapParentBatch(batch));
+      let parentBatchesData = data.map((batch) => mapParentBatch(batch));
+      parentBatchesData = await enrichParentBatchesWithLatestMoisture(parentBatchesData);
 
       const subBatchesData = data
         .filter(
@@ -130,7 +185,7 @@ export function useDryMillData(session) {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchProcessStatuses]);
+  }, [fetchProcessStatuses, enrichParentBatchesWithLatestMoisture]);
 
   const fetchLatestRfid = useCallback(async () => {
     try {
@@ -595,6 +650,7 @@ export function useDryMillData(session) {
 
       let batchNumbers = [targetRow.batchNumber];
       let dryingWeight = targetRow.drying_weight;
+      let latestMoisture = targetRow.latestMoisture;
 
       try {
         const mergeRes = await axios.get(
@@ -620,7 +676,22 @@ export function useDryMillData(session) {
       }
 
       try {
-        generateDryMillOrderSheetFromRow(targetRow, { batchNumbers, dryingWeight });
+        const moistRes = await axios.get(`${API_BASE_URL}/api/drying-measurements/latest`, {
+          params: { batchNumbers: batchNumbers.join(',') },
+          timeout: 15000,
+        });
+        const byBatch = indexDryingMeasurementsByBatch(moistRes.data || []);
+        latestMoisture = pickLatestMoistureAcrossBatches(batchNumbers, byBatch);
+      } catch (err) {
+        console.warn('Failed to fetch latest moisture for order sheet', err);
+      }
+
+      try {
+        generateDryMillOrderSheetFromRow(targetRow, {
+          batchNumbers,
+          dryingWeight,
+          latestMoisture,
+        });
         setSnackbarMessage(`Order sheet downloaded for batch ${targetRow.batchNumber}.`);
         setSnackbarSeverity('success');
       } catch (error) {
@@ -911,6 +982,13 @@ const handleSubmitExit = async () => {
       { field: "dryMillExited", headerName: "Dry Mill Exited", width: 150 },
       { field: "cherry_weight", headerName: "Cherry Weight (kg)", width: 160 },
       { field: "drying_weight", headerName: "Drying Weight (kg)", width: 160 },
+      {
+        field: 'latestMoisture',
+        headerName: 'Latest Moisture (%)',
+        width: 160,
+        renderCell: ({ value }) =>
+          value != null && value !== '' ? `${parseFloat(value).toFixed(1)}%` : '—',
+      },
       { field: "productLine", headerName: "Product Line", width: 160 },
       { field: "batchType", headerName: "Batch Type", width: 120 },
       { field: "totalBags", headerName: "Total Bags", width: 120 },
