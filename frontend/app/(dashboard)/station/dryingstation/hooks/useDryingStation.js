@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { apiUrl } from '../../_shared/config';
 import { computeDryingPriority, formatDryingDateWita, sortDryingRows } from '../utils/dryingRowHelpers';
 
 const debounce = (func, wait) => {
@@ -106,7 +107,7 @@ export function useDryingStation(session) {
     setAreaLoading(prev => ({ ...prev, [area]: true }));
   
     try {
-      const dryingResponse = await fetch('https://processing-facility-backend.onrender.com/api/drying-data');
+      const dryingResponse = await fetch(apiUrl('/drying-data'));
       if (!dryingResponse.ok) throw new Error('Failed to fetch drying data');
       const dryingDataRaw = await dryingResponse.json();
   
@@ -122,22 +123,28 @@ export function useDryingStation(session) {
       }
   
       const [qcResponse, greenhouseResponse, ghweightResponse, wetmillWeightResponse] = await Promise.all([
-        fetch('https://processing-facility-backend.onrender.com/api/qc'),
-        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-latest'),
-        fetch('https://processing-facility-backend.onrender.com/api/greenhouse-weight'),
-        fetch('https://processing-facility-backend.onrender.com/api/wetmill-weights')
+        fetch(apiUrl('/qc')),
+        fetch(apiUrl('/greenhouse-latest')),
+        fetch(apiUrl('/greenhouse-weight')),
+        fetch(apiUrl('/wetmill-weights')),
       ]);
   
-      if (!qcResponse.ok || !greenhouseResponse.ok || !ghweightResponse.ok || !wetmillWeightResponse.ok) {
+      if (!greenhouseResponse.ok || !ghweightResponse.ok || !wetmillWeightResponse.ok) {
         throw new Error('Failed to fetch data from one or more endpoints');
       }
   
-      const [qcResult, greenhouseResult, ghweightResult, wetmillWeightResult] = await Promise.all([
-        qcResponse.json(),
+      const [greenhouseResult, ghweightResult, wetmillWeightResult] = await Promise.all([
         greenhouseResponse.json(),
         ghweightResponse.json(),
-        wetmillWeightResponse.json()
+        wetmillWeightResponse.json(),
       ]);
+
+      let qcResult = { distinctRows: [] };
+      if (qcResponse.ok) {
+        qcResult = await qcResponse.json();
+      } else {
+        console.warn(`QC data unavailable for ${area} (${qcResponse.status}); continuing without cherry QC rows`);
+      }
   
       
       const pendingPreprocessingData = (qcResult.distinctRows || []).filter(batch => 

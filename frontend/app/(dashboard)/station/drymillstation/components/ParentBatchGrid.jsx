@@ -2,24 +2,13 @@
 
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 
-export default function ParentBatchGrid({
-  rows,
-  columns,
-  rowSelectionModel,
-  onRowSelectionModelChange,
-  isRowSelectable,
-}) {
+export default function ParentBatchGrid({ rows, columns }) {
   return (
     <DataGrid
       rows={rows}
       columns={columns}
       initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
       pageSizeOptions={[10, 50, 100]}
-      checkboxSelection
-      rowSelectionModel={rowSelectionModel}
-      onRowSelectionModelChange={onRowSelectionModelChange}
-      isRowSelectable={isRowSelectable}
-      keepNonExistentRowsSelected
       disableRowSelectionOnClick
       getRowId={(row) => row.id}
       slots={{ toolbar: GridToolbar }}
@@ -30,7 +19,11 @@ export default function ParentBatchGrid({
         expand: true,
       }}
       rowHeight={40}
-      sx={{ height: 600, width: '100%' }}
+      sx={{
+        height: 600,
+        width: '100%',
+        '& .MuiDataGrid-cell': { overflow: 'visible' },
+      }}
     />
   );
 }

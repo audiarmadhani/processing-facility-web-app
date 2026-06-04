@@ -92,13 +92,7 @@ function DryMillStation() {
                 </Button>
               </Box>
             </Box>
-            <ParentBatchGrid
-              rows={dm.getParentBatches()}
-              columns={dm.parentColumns}
-              rowSelectionModel={dm.rowSelectionModel}
-              onRowSelectionModelChange={dm.handleRowSelectionModelChange}
-              isRowSelectable={dm.isRowSelectable}
-            />
+            <ParentBatchGrid rows={dm.sortedParentBatches} columns={dm.parentColumns} />
           </CardContent>
         </Card>
       </Grid>

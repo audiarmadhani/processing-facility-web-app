@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { Box, Button, Chip } from '@mui/material';
+import { Box, Button, Checkbox, Chip } from '@mui/material';
 import {
   API_BASE_URL,
   batchUniqueId,
   canSelectForMerge,
+  isMergeCheckboxDisabled,
   mapParentBatch,
   mapSubBatch,
-  rowIdToBatchUniqueId,
   statusFromTrackWeightRows,
 } from '../utils/drymillUtils';
 
@@ -53,7 +53,7 @@ export function useDryMillData(session) {
   // ---------- Process-sheet state (4 steps, grade totals only) ----------
 
   // add process pick for track weight / grade edits
-  const [rowSelectionModel, setRowSelectionModel] = useState([]);
+  const [selectedBatches, setSelectedBatches] = useState([]);
   const [mergeNotes, setMergeNotes] = useState("");
   const [newBatchNumber, setNewBatchNumber] = useState("");
   const [totalSelectedWeight, setTotalSelectedWeight] = useState(0);
@@ -217,16 +217,10 @@ export function useDryMillData(session) {
     [rfid, fetchDryMillData]
   );
 
-  const selectedBatches = useMemo(
-    () => rowSelectionModel.map(rowIdToBatchUniqueId),
-    [rowSelectionModel]
-  );
-
-  const handleRowSelectionModelChange = useCallback(
-    (newSelection) => {
-      setRowSelectionModel(newSelection);
+  const updateSelectionWeight = useCallback(
+    (batchIds) => {
       const selectedBatchDetails = parentBatches.filter((b) =>
-        newSelection.includes(b.id)
+        batchIds.includes(batchUniqueId(b))
       );
       setTotalSelectedWeight(
         selectedBatchDetails.reduce(
@@ -238,9 +232,18 @@ export function useDryMillData(session) {
     [parentBatches]
   );
 
-  const isRowSelectable = useCallback(
-    (params) => canSelectForMerge(params.row),
-    []
+  const handleToggleBatchSelection = useCallback(
+    (row, checked) => {
+      const uniqueId = batchUniqueId(row);
+      setSelectedBatches((prev) => {
+        const newSelected = checked
+          ? [...prev, uniqueId]
+          : prev.filter((id) => id !== uniqueId);
+        updateSelectionWeight(newSelected);
+        return newSelected;
+      });
+    },
+    [updateSelectionWeight]
   );
 
   const handleOpenMergeDialog = async () => {
@@ -284,7 +287,7 @@ export function useDryMillData(session) {
   };
 
   const clearMergeSelection = () => {
-    setRowSelectionModel([]);
+    setSelectedBatches([]);
     setTotalSelectedWeight(0);
     setMergeNotes('');
     setNewBatchNumber('');
@@ -647,8 +650,8 @@ const handleSubmitExit = async () => {
 };
 
   const mergeSelectedDetails = useMemo(
-    () => parentBatches.filter((b) => rowSelectionModel.includes(b.id)),
-    [parentBatches, rowSelectionModel]
+    () => parentBatches.filter((b) => selectedBatches.includes(batchUniqueId(b))),
+    [parentBatches, selectedBatches]
   );
 
   const renderProcessChips = (row) => {
@@ -675,6 +678,27 @@ const handleSubmitExit = async () => {
 
   const parentColumns = useMemo(
     () => [
+      {
+        field: 'select',
+        headerName: 'Select',
+        width: 90,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) => (
+          <Checkbox
+            size="small"
+            checked={selectedBatches.includes(batchUniqueId(row))}
+            disabled={isMergeCheckboxDisabled(row)}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              handleToggleBatchSelection(row, e.target.checked);
+            }}
+          />
+        ),
+      },
       { field: "batchNumber", headerName: "Batch Number", width: 160 },
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
@@ -725,7 +749,11 @@ const handleSubmitExit = async () => {
         width: 340,
         sortable: false,
         renderCell: ({ row }) => (
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', py: 0.5 }}>
+          <Box
+            sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', py: 0.5 }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <Button
               variant="contained"
               size="small"
@@ -781,7 +809,14 @@ const handleSubmitExit = async () => {
       { field: "totalBags", headerName: "Total Bags", width: 120 },
       { field: "notes", headerName: "Notes", width: 180 },
     ],
-    [isLoading, processStepStatus, handleProcessClick, handleSampleTrackingClick]
+    [
+      isLoading,
+      selectedBatches,
+      processStepStatus,
+      handleProcessClick,
+      handleSampleTrackingClick,
+      handleToggleBatchSelection,
+    ]
   );
 
   const subBatchColumns = useMemo(
@@ -853,7 +888,7 @@ const handleSubmitExit = async () => {
     [isLoading, handleShowSampleHistory]
   );
 
-  const getParentBatches = useCallback(
+  const sortedParentBatches = useMemo(
     () =>
       [...parentBatches].sort((a, b) => {
         const statusOrder = { "In Dry Mill": 0, "Processed": 1, "Not Started": 2 };
@@ -901,10 +936,8 @@ const handleSubmitExit = async () => {
     openSampleHistoryDialog, setOpenSampleHistoryDialog,
     sampleData,
     openMergeDialog, setOpenMergeDialog,
-    rowSelectionModel,
-    handleRowSelectionModelChange,
-    isRowSelectable,
     selectedBatches,
+    sortedParentBatches,
     mergeNotes, setMergeNotes,
     newBatchNumber,
     totalSelectedWeight, setTotalSelectedWeight,
@@ -945,7 +978,6 @@ const handleSubmitExit = async () => {
     parentColumns,
     subBatchColumns,
     sampleOverviewColumns,
-    getParentBatches,
     getSubBatches,
   };
 }

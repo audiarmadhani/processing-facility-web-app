@@ -54,7 +54,7 @@ function PostProcessingQCPage() {
           onOpenCamera={() => station.setOpenCamera(true)}
           onSave={station.handleSaveQC}
           onComplete={station.handleSaveQC}
-          isFormComplete={station.isFormComplete()}
+          isFormComplete={station.isFormComplete}
         />
 
         <GbQcCameraDialog
