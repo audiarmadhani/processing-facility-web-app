@@ -1,10 +1,13 @@
 'use client';
 
 import {
-  Alert, Box, Button, Card, CardContent, CircularProgress, Dialog, DialogActions,
+  Alert, Box, Button, Card, CardContent, CircularProgress, Collapse, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, Snackbar, Table, TableBody, TableCell, TableHead,
   TableRow, TextField, Typography,
 } from '@mui/material';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useState } from 'react';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
 import { EnterDryMillDialog, ExitDryMillDialog } from './components/EnterExitDryMillDialog';
@@ -18,6 +21,7 @@ import { DRY_MILL_ALLOWED_ROLES, useDryMillData } from './hooks/useDryMillData';
 function DryMillStation() {
   const { data: session, status } = useSession();
   const dm = useDryMillData(session);
+  const [subBatchesOpen, setSubBatchesOpen] = useState(false);
 
   const showSnackbar = (message, severity) => {
     dm.setSnackbarMessage(message);
@@ -68,10 +72,15 @@ function DryMillStation() {
                   Filter
                 </Button>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Button variant="contained" color="primary" disabled size="small">
                   New Batch
                 </Button>
+                {dm.selectedBatches.length > 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    {dm.selectedBatches.length} selected · {dm.totalSelectedWeight.toFixed(2)} kg
+                  </Typography>
+                )}
                 <Button
                   variant="contained"
                   color="primary"
@@ -80,16 +89,6 @@ function DryMillStation() {
                   size="small"
                 >
                   Merge
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={dm.handleRefreshData}
-                  startIcon={dm.isLoading ? <CircularProgress size={18} /> : undefined}
-                  disabled={dm.isLoading}
-                  size="small"
-                >
-                  Refresh
                 </Button>
               </Box>
             </Box>
@@ -128,27 +127,59 @@ function DryMillStation() {
       <Grid item xs={12}>
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Green Bean Sub-Batches
-            </Typography>
-            <SubBatchGrid
-              rows={dm.getSubBatches()}
-              columns={dm.subBatchColumns}
-              dataGridError={dm.dataGridError}
-            />
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+              }}
+              onClick={() => setSubBatchesOpen((o) => !o)}
+            >
+              <Box>
+                <Typography variant="h5">Green Bean Sub-Batches</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Reference only — process weights are recorded via Process on each batch above.
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                endIcon={subBatchesOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSubBatchesOpen((o) => !o);
+                }}
+              >
+                {subBatchesOpen ? 'Hide' : 'Show'}
+              </Button>
+            </Box>
+            <Collapse in={subBatchesOpen}>
+              <Box sx={{ mt: 2 }}>
+                <SubBatchGrid
+                  rows={dm.getSubBatches()}
+                  columns={dm.subBatchColumns}
+                  dataGridError={dm.dataGridError}
+                />
+              </Box>
+            </Collapse>
           </CardContent>
         </Card>
       </Grid>
 
       <Dialog open={dm.openDialog} onClose={dm.handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
-          Batch {dm.selectedBatch?.batchNumber} - {dm.selectedBatch?.processingType} ({dm.selectedBatch?.batchType})
+          Process batch {dm.selectedBatch?.batchNumber}
         </DialogTitle>
         <DialogContent>
           {dm.selectedBatch && (
-            <Box sx={{ mb: 1 }}>
+            <Box sx={{ mb: 2 }}>
               <Typography variant="body2">
-                Lot: {dm.selectedBatch.lotNumber} • Ref: {dm.selectedBatch.referenceNumber}
+                {dm.selectedBatch.processingType} · {dm.selectedBatch.producerLabel} ·{' '}
+                {dm.selectedBatch.batchType}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Lot: {dm.selectedBatch.lotNumber} · Ref: {dm.selectedBatch.referenceNumber} ·
+                Drying weight: {dm.selectedBatch.drying_weight} kg
               </Typography>
             </Box>
           )}
@@ -161,6 +192,8 @@ function DryMillStation() {
             showSnackbar={showSnackbar}
             logError={dm.logError}
             fetchDryMillData={dm.fetchDryMillData}
+            setHasUnsavedChanges={dm.setHasUnsavedChanges}
+            onProcessSaved={dm.handleProcessSaved}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
@@ -318,13 +351,11 @@ function DryMillStation() {
         onClose={dm.handleCloseMergeDialog}
         newBatchNumber={dm.newBatchNumber}
         totalSelectedWeight={dm.totalSelectedWeight}
-        setTotalSelectedWeight={dm.setTotalSelectedWeight}
-        selectedBatches={dm.selectedBatches}
-        setSelectedBatches={dm.setSelectedBatches}
+        selectedBatchDetails={dm.mergeSelectedDetails}
         mergeNotes={dm.mergeNotes}
         setMergeNotes={dm.setMergeNotes}
-        parentBatches={dm.parentBatches}
         onMerge={dm.handleMergeBatches}
+        isLoading={dm.isLoading}
       />
 
       <EnterDryMillDialog

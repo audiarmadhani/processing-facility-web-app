@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { Button, Checkbox, Chip, FormControl, MenuItem, Select } from '@mui/material';
+import { Box, Button, Checkbox, Chip } from '@mui/material';
+import {
+  API_BASE_URL,
+  batchUniqueId,
+  canSelectForMerge,
+  mapParentBatch,
+  mapSubBatch,
+  statusFromTrackWeightRows,
+} from '../utils/drymillUtils';
 
 export const SCAN_LOCATIONS = {
   DRY_MILL: 'Dry_Mill',
@@ -35,9 +43,6 @@ export function useDryMillData(session) {
   const [sampleData, setSampleData] = useState([]);
   const [openMergeDialog, setOpenMergeDialog] = useState(false);
 
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedRow, setSelectedRow] = useState(null);
-
   const [openEnterDialog, setOpenEnterDialog] = useState(false);
   const [openExitDialog, setOpenExitDialog] = useState(false);
 
@@ -51,7 +56,34 @@ export function useDryMillData(session) {
   const [mergeNotes, setMergeNotes] = useState("");
   const [newBatchNumber, setNewBatchNumber] = useState("");
   const [totalSelectedWeight, setTotalSelectedWeight] = useState(0);
+  const [processStepStatus, setProcessStepStatus] = useState({});
   const rfidInputRef = useRef(null);
+
+  const fetchProcessStatuses = useCallback(async (batches) => {
+    const eligible = batches.filter((b) => b.dryMillEntered && !b.dryMillExited);
+    if (eligible.length === 0) {
+      setProcessStepStatus({});
+      return;
+    }
+
+    const entries = await Promise.all(
+      eligible.map(async (b) => {
+        try {
+          const res = await axios.get(
+            `${API_BASE_URL}/api/drymill/track-weight/${b.batchNumber}/${b.producer}`,
+            { params: { processingType: b.processingType } }
+          );
+          return [b.id, statusFromTrackWeightRows(res.data)];
+        } catch {
+          return [
+            b.id,
+            { huller: false, suton: false, sizer: false, handpicking: false },
+          ];
+        }
+      })
+    );
+    setProcessStepStatus(Object.fromEntries(entries));
+  }, []);
 
   const logError = (message, error) => {
     setErrorLog((prev) => [
@@ -64,65 +96,25 @@ export function useDryMillData(session) {
   const fetchDryMillData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("https://processing-facility-backend.onrender.com/api/dry-mill-data");
+      const response = await axios.get(`${API_BASE_URL}/api/dry-mill-data`);
       const data = response.data;
 
-      // Include all batches without dryMillExited or not Processed in parentBatches
-      const parentBatchesData = data
-        // .filter((batch) => !batch.dryMillExited || batch.status !== "Processed")
-        .map((batch) => ({
-          batchNumber: batch.batchNumber,
-          status: batch.status,
-          dryMillEntered: batch.dryMillEntered,
-          dryMillExited: batch.dryMillExited,
-          cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
-          drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
-          producer: batch.producer === "HQ" ? "HEQA" : batch.producer || "N/A",
-          farmerName: batch.farmerName || "N/A",
-          productLine: batch.productLine || "N/A",
-          processingType: batch.processingType,
-          totalBags: batch.totalBags || "0",
-          notes: batch.notes || "N/A",
-          type: batch.type || "N/A",
-          farmVarieties: batch.farmVarieties || "N/A",
-          storedDate: batch.storeddatetrunc || null,
-          batchType: batch.batchType || "Cherry",
-          lotNumber: batch.lotNumber === "ID-BTM-A-N-AS" && !batch.dryMillExited ? "ID-BTM-A-N" : batch.lotNumber,
-          referenceNumber: batch.referenceNumber || "N/A",
-          dryMillMerged: batch.dryMillMerged ? "Merged" : "Not Merged",
-          id: `${batch.batchNumber}__${batch.producer}__${batch.processingType}`,
-        }));
+      const parentBatchesData = data.map((batch) => mapParentBatch(batch));
 
-      // Include all sub-batches, including those with quality and totalBags > 0
       const subBatchesData = data
-        .filter((batch) =>
-          (batch.quality && batch.quality !== "N/A" && parseInt(batch.totalBags, 10) > 0) ||
-          (batch.parentBatchNumber && batch.parentBatchNumber !== batch.batchNumber)
+        .filter(
+          (batch) =>
+            (batch.quality &&
+              batch.quality !== 'N/A' &&
+              parseInt(batch.totalBags, 10) > 0) ||
+            (batch.parentBatchNumber &&
+              batch.parentBatchNumber !== batch.batchNumber)
         )
-        .map((batch) => ({
-          id: `${batch.batchNumber}__${batch.producer}__${batch.processingType}`,
-          batchNumber: batch.batchNumber,
-          status: batch.status,
-          dryMillEntered: batch.dryMillEntered,
-          dryMillExited: batch.dryMillExited,
-          storedDate: batch.storeddatetrunc || "N/A",
-          weight: parseFloat(batch.weight || 0).toFixed(2),
-          producer: batch.producer === "HQ" ? "HEQA" : batch.producer || "N/A",
-          farmerName: batch.farmerName || "N/A",
-          productLine: batch.productLine || "N/A",
-          processingType: batch.processingType,
-          quality: batch.quality || "N/A",
-          totalBags: batch.totalBags || "0",
-          notes: batch.notes || "N/A",
-          type: batch.type || "N/A",
-          parentBatchNumber: batch.parentBatchNumber || batch.batchNumber,
-          lotNumber: batch.lotNumber,
-          referenceNumber: batch.referenceNumber || "N/A",
-          bagWeights: batch.bagDetails || [],
-        }));
+        .map((batch) => mapSubBatch(batch));
 
       setParentBatches(parentBatchesData);
       setSubBatches(subBatchesData);
+      await fetchProcessStatuses(parentBatchesData);
       setDataGridError(null);
     } catch (error) {
       const message = error.response?.data?.error || "Error fetching data. Please try again.";
@@ -133,11 +125,11 @@ export function useDryMillData(session) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchProcessStatuses]);
 
   const fetchLatestRfid = useCallback(async () => {
     try {
-      const response = await axios.get("https://processing-facility-backend.onrender.com/api/get-rfid");
+      const response = await axios.get(`${API_BASE_URL}/api/get-rfid`);
       setRfid(response.data.rfid || "");
     } catch (error) {
       const message = error.response?.data?.error || "Failed to fetch RFID.";
@@ -151,7 +143,7 @@ export function useDryMillData(session) {
   const fetchSampleHistory = useCallback(async (batchNumber) => {
     try {
       const response = await axios.get(
-        `https://processing-facility-backend.onrender.com/api/dry-mill/${batchNumber}/sample-history`
+        `${API_BASE_URL}/api/dry-mill/${batchNumber}/sample-history`
       );
       setSampleHistory(response.data || []);
     } catch (error) {
@@ -166,7 +158,7 @@ export function useDryMillData(session) {
 
   const fetchSampleData = useCallback(async () => {
     try {
-      const response = await axios.get("https://processing-facility-backend.onrender.com/api/sample-data");
+      const response = await axios.get(`${API_BASE_URL}/api/sample-data`);
       const data = response.data.map((row) => ({
         id: `${row.batchNumber}-${row.date_taken}-${Math.random().toString(36).substr(2, 9)}`,
         batchNumber: row.batchNumber,
@@ -198,7 +190,7 @@ export function useDryMillData(session) {
       }
       setIsScanning(true);
       try {
-        const response = await axios.post("https://processing-facility-backend.onrender.com/api/scan-rfid", {
+        const response = await axios.post(`${API_BASE_URL}/api/scan-rfid`, {
           rfid,
           scanned_at: SCAN_LOCATIONS.DRY_MILL,
         });
@@ -225,14 +217,35 @@ export function useDryMillData(session) {
   );
 
   const handleOpenMergeDialog = async () => {
-    if (!["admin", "manager"].includes(session.user.role)) {
-      setSnackbarMessage("Only admins or managers can merge batches.");
-      setSnackbarSeverity("error");
+    if (!['admin', 'manager'].includes(session.user.role)) {
+      setSnackbarMessage('Only admins or managers can merge batches.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+    if (selectedBatches.length < 2) {
+      setSnackbarMessage('Select at least two batches to merge.');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
+    }
+    const details = parentBatches.filter((b) => selectedBatches.includes(batchUniqueId(b)));
+    if (
+      !details.every(
+        (b) =>
+          b.producer === details[0].producer &&
+          b.processingType === details[0].processingType
+      )
+    ) {
+      setSnackbarMessage(
+        'All selected batches must have the same producer and processing type.'
+      );
+      setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
     try {
-      const response = await axios.get("https://processing-facility-backend.onrender.com/api/new-batch-number");
+      const response = await axios.get(`${API_BASE_URL}/api/new-batch-number`);
       setNewBatchNumber(response.data.newBatchNumber);
       setOpenMergeDialog(true);
     } catch (error) {
@@ -243,12 +256,17 @@ export function useDryMillData(session) {
     }
   };
 
+  const clearMergeSelection = () => {
+    setSelectedBatches([]);
+    setTotalSelectedWeight(0);
+    setMergeNotes('');
+    setNewBatchNumber('');
+  };
+
   const handleCloseMergeDialog = () => {
     setOpenMergeDialog(false);
-    setSelectedBatches([]);
-    setMergeNotes("");
-    setNewBatchNumber("");
-    setTotalSelectedWeight(0);
+    setMergeNotes('');
+    setNewBatchNumber('');
   };
 
   const handleMergeBatches = async () => {
@@ -259,21 +277,32 @@ export function useDryMillData(session) {
       return;
     }
     const selectedBatchDetails = parentBatches.filter((b) =>
-      selectedBatches.includes(`${b.batchNumber},${b.producer},${b.processingType}`)
+      selectedBatches.includes(batchUniqueId(b))
     );
-    const [, producer, processingType] = selectedBatches[0].split(',');
-    // if (
-    //   !selectedBatchDetails.every(
-    //     (b) => b.producer === producer && b.processingType === processingType
-    //   )
-    // ) {
-    //   setSnackbarMessage("All selected batches must have the same producer and processing type.");
-    //   setSnackbarSeverity("error");
-    //   setOpenSnackbar(true);
-    //   return;
-    // }
+    if (
+      !selectedBatchDetails.every(
+        (b) =>
+          b.producer === selectedBatchDetails[0].producer &&
+          b.processingType === selectedBatchDetails[0].processingType
+      )
+    ) {
+      setSnackbarMessage(
+        'All selected batches must have the same producer and processing type.'
+      );
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+    if (!selectedBatchDetails.every((b) => canSelectForMerge(b))) {
+      setSnackbarMessage(
+        'Selected batches must be entered in dry mill, not exited, and not already merged away.'
+      );
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
     try {
-      const response = await axios.post("https://processing-facility-backend.onrender.com/api/dry-mill/merge", {
+      const response = await axios.post(`${API_BASE_URL}/api/dry-mill/merge`, {
         batchNumbers: selectedBatches, // Send full identifiers with commas
         notes: mergeNotes.trim() || null,
         createdBy: session?.user?.name || "Unknown",
@@ -284,6 +313,7 @@ export function useDryMillData(session) {
       setSnackbarSeverity("success");
       setOpenSnackbar(true);
       await fetchDryMillData();
+      clearMergeSelection();
       handleCloseMergeDialog();
     } catch (error) {
       const message = error.response?.data?.error || "Failed to merge batches.";
@@ -310,7 +340,7 @@ export function useDryMillData(session) {
       }
       try {
         const response = await axios.post(
-          `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/complete`,
+          `${API_BASE_URL}/api/dry-mill/${selectedBatch.batchNumber}/complete`,
           {
             createdBy: session.user.name,
             updatedBy: session.user.name,
@@ -347,7 +377,7 @@ export function useDryMillData(session) {
       }
       try {
         const response = await axios.post(
-          "https://processing-facility-backend.onrender.com/api/warehouse/scan",
+          `${API_BASE_URL}/api/warehouse/scan`,
           {
             rfid,
             scanned_at: SCAN_LOCATIONS.WAREHOUSE,
@@ -383,7 +413,7 @@ export function useDryMillData(session) {
     }
     try {
       const response = await axios.post(
-        `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/add-sample`,
+        `${API_BASE_URL}/api/dry-mill/${selectedBatch.batchNumber}/add-sample`,
         {
           dateTaken: sampleDateTaken,
           weightTaken: parseFloat(sampleWeightTaken),
@@ -437,12 +467,20 @@ export function useDryMillData(session) {
     fetchSampleData();
   };
 
-  const handleDetailsClick = useCallback((batch) => {
+  const handleProcessClick = useCallback((batch) => {
     setSelectedBatch(batch);
+    setHasUnsavedChanges(false);
     setOpenDialog(true);
   }, []);
 
-  const handleWeightClick = handleDetailsClick;
+  const handleDetailsClick = handleProcessClick;
+
+  const handleProcessSaved = useCallback((batchId, rows) => {
+    setProcessStepStatus((prev) => ({
+      ...prev,
+      [batchId]: statusFromTrackWeightRows(rows),
+    }));
+  }, []);
 
   const handleSampleTrackingClick = useCallback((batch) => {
     setSelectedBatch(batch);
@@ -502,27 +540,6 @@ export function useDryMillData(session) {
 
 // Save huller output (single total) — records a process-event
 
-const handleOpenMenu = (event, row) => {
-  setAnchorEl(event.currentTarget);
-  setSelectedRow(row);
-};
-
-const handleCloseMenu = () => {
-  setAnchorEl(null);
-  setSelectedRow(null);
-};
-
-const handleCloseActionMenu = () => {
-  setAnchorEl(null);
-};
-
-// ---- ENTER DRY MILL ----
-const handleOpenEnter = () => {
-  setEnteredAt('');
-  setOpenEnterDialog(true);
-  handleCloseActionMenu();
-};
-
 const handleSubmitEnter = async () => {
   if (!selectedBatch?.batchNumber || !selectedBatch?.processingType) {
     setSnackbarMessage('No batch selected for dry mill entry');
@@ -540,7 +557,7 @@ const handleSubmitEnter = async () => {
 
   try {
     await axios.post(
-      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/enter`,
+      `${API_BASE_URL}/api/dry-mill/${selectedBatch.batchNumber}/enter`,
       {
         entered_at: enteredAt,
         processingType: selectedBatch.processingType,
@@ -562,13 +579,6 @@ const handleSubmitEnter = async () => {
   }
 };
 
-// ---- EXIT DRY MILL ----
-const handleOpenExit = () => {
-  setExitedAt('');
-  setOpenExitDialog(true);
-  handleCloseActionMenu();
-};
-
 const handleSubmitExit = async () => {
   if (!selectedBatch?.batchNumber || !selectedBatch?.processingType) {
     setSnackbarMessage('No batch selected for dry mill exit');
@@ -586,7 +596,7 @@ const handleSubmitExit = async () => {
 
   try {
     await axios.post(
-      `https://processing-facility-backend.onrender.com/api/dry-mill/${selectedBatch.batchNumber}/exit`,
+      `${API_BASE_URL}/api/dry-mill/${selectedBatch.batchNumber}/exit`,
       {
         exited_at: exitedAt,
         processingType: selectedBatch.processingType,
@@ -609,6 +619,33 @@ const handleSubmitExit = async () => {
   }
 };
 
+  const mergeSelectedDetails = useMemo(
+    () => parentBatches.filter((b) => selectedBatches.includes(batchUniqueId(b))),
+    [parentBatches, selectedBatches]
+  );
+
+  const renderProcessChips = (row) => {
+    const st = processStepStatus[row.id];
+    if (!st || !row.dryMillEntered) return null;
+    const chips = [];
+    if (st.huller) chips.push({ label: 'Huller ✓', color: 'success' });
+    if (st.suton) chips.push({ label: 'Suton ✓', color: 'success' });
+    if (st.sizer) chips.push({ label: 'Sizer ✓', color: 'success' });
+    if (st.handpicking) chips.push({ label: 'Handpick ✓', color: 'success' });
+    if (chips.length === 0) {
+      return (
+        <Chip label="Not started" size="small" variant="outlined" />
+      );
+    }
+    return (
+      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+        {chips.map((c) => (
+          <Chip key={c.label} label={c.label} size="small" color={c.color} />
+        ))}
+      </Box>
+    );
+  };
+
   const parentColumns = useMemo(
     () => [
       {
@@ -618,15 +655,15 @@ const handleSubmitExit = async () => {
         sortable: false,
         renderCell: ({ row }) => (
           <Checkbox
-            checked={selectedBatches.includes(`${row.batchNumber},${row.producer},${row.processingType}`)}
+            checked={selectedBatches.includes(batchUniqueId(row))}
             onChange={(e) => {
-              const uniqueId = `${row.batchNumber},${row.producer},${row.processingType}`;
+              const uniqueId = batchUniqueId(row);
               const newSelected = e.target.checked
                 ? [...selectedBatches, uniqueId]
                 : selectedBatches.filter((b) => b !== uniqueId);
               setSelectedBatches(newSelected);
               const selectedBatchDetails = parentBatches.filter((b) =>
-                newSelected.includes(`${b.batchNumber},${b.producer},${b.processingType}`)
+                newSelected.includes(batchUniqueId(b))
               );
               const totalWeight = selectedBatchDetails.reduce(
                 (sum, b) => sum + parseFloat(b.drying_weight || 0),
@@ -634,7 +671,7 @@ const handleSubmitExit = async () => {
               );
               setTotalSelectedWeight(totalWeight);
             }}
-            disabled={row.status !== "In Dry Mill" || row.dryMillExited}
+            disabled={!canSelectForMerge(row)}
           />
         ),
       },
@@ -642,7 +679,7 @@ const handleSubmitExit = async () => {
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "processingType", headerName: "Processing Type", width: 180 },
-      { field: "producer", headerName: "Producer", width: 120 },
+      { field: "producerLabel", headerName: "Producer", width: 120 },
       {
         field: "status",
         headerName: "Status",
@@ -676,65 +713,61 @@ const handleSubmitExit = async () => {
         ),
       },
       {
+        field: 'processProgress',
+        headerName: 'Process',
+        width: 220,
+        sortable: false,
+        renderCell: ({ row }) => renderProcessChips(row),
+      },
+      {
         field: 'actions',
         headerName: 'Actions',
-        width: 180,
+        width: 340,
         sortable: false,
         renderCell: ({ row }) => (
-          <FormControl size="small" fullWidth>
-            <Select
-              displayEmpty
-              defaultValue=""
-              onChange={(e) => {
-                const action = e.target.value;
-
-                if (action === 'enter') {
-                  setSelectedBatch(row);
-                  setOpenEnterDialog(true);
-                }
-
-                if (action === 'exit') {
-                  setSelectedBatch(row);
-                  setOpenExitDialog(true);
-                }
-
-                if (action === 'weight') {
-                  handleWeightClick(row);
-                }
-
-                if (action === 'sample') {
-                  handleSampleTrackingClick(row);
-                }
-
-                e.target.value = ""; // 🔥 important (same as drying page)
-              }}
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', py: 0.5 }}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => handleProcessClick(row)}
+              disabled={isLoading}
             >
-              <MenuItem value="">Actions</MenuItem>
-
-              <MenuItem
-                value="enter"
-                disabled={row.dryMillEntered}
-              >
-                Enter Dry Mill
-              </MenuItem>
-
-              <MenuItem
-                value="exit"
-                disabled={!row.dryMillEntered || row.dryMillExited}
-              >
-                Exit Dry Mill
-              </MenuItem>
-
-              <MenuItem value="weight">
-                Track Weight
-              </MenuItem>
-
-              <MenuItem value="sample">
-                Sample Tracking
-              </MenuItem>
-            </Select>
-          </FormControl>
-        )
+              Process
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                setSelectedBatch(row);
+                setEnteredAt('');
+                setOpenEnterDialog(true);
+              }}
+              disabled={row.dryMillEntered || isLoading}
+            >
+              Enter
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                setSelectedBatch(row);
+                setExitedAt('');
+                setOpenExitDialog(true);
+              }}
+              disabled={!row.dryMillEntered || row.dryMillExited || isLoading}
+            >
+              Exit
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => handleSampleTrackingClick(row)}
+              disabled={isLoading}
+            >
+              Sample
+            </Button>
+          </Box>
+        ),
       },
       { field: "farmerName", headerName: "Farmer Name", width: 160 },
       { field: "farmVarieties", headerName: "Farm Varieties", width: 160 },
@@ -748,7 +781,7 @@ const handleSubmitExit = async () => {
       { field: "totalBags", headerName: "Total Bags", width: 120 },
       { field: "notes", headerName: "Notes", width: 180 },
     ],
-    [isLoading, selectedBatches, parentBatches]
+    [isLoading, selectedBatches, parentBatches, processStepStatus, handleProcessClick, handleSampleTrackingClick]
   );
 
   const subBatchColumns = useMemo(
@@ -757,7 +790,7 @@ const handleSubmitExit = async () => {
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "parentBatchNumber", headerName: "Parent Batch", width: 160 },
-      { field: "producer", headerName: "Producer", width: 120 },
+      { field: "producerLabel", headerName: "Producer", width: 120 },
       {
         field: "status",
         headerName: "Status",
@@ -775,22 +808,6 @@ const handleSubmitExit = async () => {
             size="small"
             sx={{ borderRadius: "16px", fontWeight: "bold" }}
           />
-        ),
-      },
-      {
-        field: "details",
-        headerName: "Details",
-        width: 100,
-        sortable: false,
-        renderCell: (params) => (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => handleDetailsClick(params.row)}
-            disabled={isLoading}
-          >
-            Details
-          </Button>
         ),
       },
       { field: "dryMillEntered", headerName: "Dry Mill Entered", width: 150 },
@@ -907,8 +924,12 @@ const handleSubmitExit = async () => {
     handleAddSample,
     handleShowSampleHistory,
     handleRefreshData,
+    handleProcessClick,
     handleDetailsClick,
+    handleProcessSaved,
     handleSampleTrackingClick,
+    mergeSelectedDetails,
+    processStepStatus,
     handleCloseDialog,
     handleCloseCompleteDialog,
     handleCloseStorageDialog,

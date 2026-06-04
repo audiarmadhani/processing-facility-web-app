@@ -15,7 +15,7 @@ export default function SubBatchGrid({ rows, columns, dataGridError }) {
   if (rows.length === 0) {
     return (
       <Typography variant="body1" color="text.secondary" sx={{ p: 3 }}>
-        No sub-batches available. Please create splits for a batch using the Details button above.
+        No green bean sub-batches to show. This section is for reference only; process weights are recorded via Process on each batch above.
       </Typography>
     );
   }

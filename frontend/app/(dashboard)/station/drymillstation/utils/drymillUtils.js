@@ -1,0 +1,114 @@
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'https://processing-facility-backend.onrender.com';
+
+export function formatProducerLabel(producer) {
+  if (!producer || producer === 'N/A') return 'N/A';
+  if (producer === 'HQ') return 'HEQA';
+  return producer;
+}
+
+export function batchUniqueId(batch) {
+  return `${batch.batchNumber},${batch.producer},${batch.processingType}`;
+}
+
+export function canSelectForMerge(row) {
+  return (
+    row.status === 'In Dry Mill' &&
+    row.dryMillEntered &&
+    !row.dryMillExited &&
+    !row.storedDate &&
+    row.dryMillMerged !== 'Merged'
+  );
+}
+
+export function mapParentBatch(batch) {
+  const producer = batch.producer || 'N/A';
+  return {
+    batchNumber: batch.batchNumber,
+    status: batch.status,
+    dryMillEntered: batch.dryMillEntered,
+    dryMillExited: batch.dryMillExited,
+    cherry_weight: parseFloat(batch.cherry_weight || 0).toFixed(2),
+    drying_weight: parseFloat(batch.drying_weight || 0).toFixed(2),
+    producer,
+    producerLabel: formatProducerLabel(producer),
+    farmerName: batch.farmerName || 'N/A',
+    productLine: batch.productLine || 'N/A',
+    processingType: batch.processingType,
+    totalBags: batch.totalBags || '0',
+    notes: batch.notes || 'N/A',
+    type: batch.type || 'N/A',
+    farmVarieties: batch.farmVarieties || 'N/A',
+    storedDate: batch.storeddatetrunc || null,
+    batchType: batch.batchType || 'Cherry',
+    lotNumber:
+      batch.lotNumber === 'ID-BTM-A-N-AS' && !batch.dryMillExited
+        ? 'ID-BTM-A-N'
+        : batch.lotNumber,
+    referenceNumber: batch.referenceNumber || 'N/A',
+    dryMillMerged: batch.dryMillMerged ? 'Merged' : 'Not Merged',
+    id: `${batch.batchNumber}__${producer}__${batch.processingType}`,
+  };
+}
+
+export function mapSubBatch(batch) {
+  const producer = batch.producer || 'N/A';
+  return {
+    id: `${batch.batchNumber}__${producer}__${batch.processingType}`,
+    batchNumber: batch.batchNumber,
+    status: batch.status,
+    dryMillEntered: batch.dryMillEntered,
+    dryMillExited: batch.dryMillExited,
+    storedDate: batch.storeddatetrunc || 'N/A',
+    weight: parseFloat(batch.weight || 0).toFixed(2),
+    producer,
+    producerLabel: formatProducerLabel(producer),
+    farmerName: batch.farmerName || 'N/A',
+    productLine: batch.productLine || 'N/A',
+    processingType: batch.processingType,
+    quality: batch.quality || 'N/A',
+    totalBags: batch.totalBags || '0',
+    notes: batch.notes || 'N/A',
+    type: batch.type || 'N/A',
+    parentBatchNumber: batch.parentBatchNumber || batch.batchNumber,
+    lotNumber: batch.lotNumber,
+    referenceNumber: batch.referenceNumber || 'N/A',
+    bagWeights: batch.bagDetails || [],
+  };
+}
+
+export function stepPrefsKey(batch) {
+  if (!batch?.batchNumber || !batch?.processingType) return null;
+  return `drymill-steps-${batch.batchNumber}-${batch.processingType}`;
+}
+
+export function loadStepPrefs(batch) {
+  const key = stepPrefsKey(batch);
+  if (!key || typeof window === 'undefined') {
+    return { skipHuller: false, skipSizer: false, skipHandpicking: false };
+  }
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return { skipHuller: false, skipSizer: false, skipHandpicking: false };
+    return { skipHuller: false, skipSizer: false, skipHandpicking: false, ...JSON.parse(raw) };
+  } catch {
+    return { skipHuller: false, skipSizer: false, skipHandpicking: false };
+  }
+}
+
+export function saveStepPrefs(batch, prefs) {
+  const key = stepPrefsKey(batch);
+  if (!key || typeof window === 'undefined') return;
+  localStorage.setItem(key, JSON.stringify(prefs));
+}
+
+export function statusFromTrackWeightRows(rows) {
+  const status = { huller: false, suton: false, sizer: false, handpicking: false };
+  (rows || []).forEach((row) => {
+    const step = row.processStep;
+    if (step in status && parseFloat(row.totalWeight) > 0) {
+      status[step] = true;
+    }
+  });
+  return status;
+}
