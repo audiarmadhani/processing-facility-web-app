@@ -9,6 +9,7 @@ import { useGbQcStation } from './hooks/useGbQcStation';
 import GbQcGrids from './components/GbQcGrids';
 import GbQcDialog from './components/GbQcDialog';
 import GbQcCameraDialog from './components/GbQcCameraDialog';
+import RecordRoastDialog from './components/RecordRoastDialog';
 
 function PostProcessingQCPage() {
   const { data: session, status } = useSession();
@@ -18,12 +19,30 @@ function PostProcessingQCPage() {
     <StationAccessGate status={status} session={session} allowedRoles={GB_QC_ALLOWED_ROLES}>
       <Grid container spacing={3}>
         <GbQcGrids
-          notQcedBatches={station.notQcedBatches}
+          dryingBatches={station.dryingBatches}
+          driedBatches={station.driedBatches}
+          roastBatches={station.roastBatches}
+          readyForQcBatches={station.readyForQcBatches}
           completedQCBatches={station.completedQCBatches}
           isLoading={station.isLoading}
           onRefresh={station.fetchData}
+          onRecordRoast={station.handleOpenRecordRoast}
           onStartQC={station.handleStartQC}
           onExportPdf={station.handleExportToPDF}
+        />
+
+        <RecordRoastDialog
+          open={station.openRoastDialog}
+          batch={station.roastTarget}
+          roastedAt={station.roastedAt}
+          setRoastedAt={station.setRoastedAt}
+          notes={station.roastNotes}
+          setNotes={station.setRoastNotes}
+          startQcAfter={station.startQcAfterRoast}
+          setStartQcAfter={station.setStartQcAfterRoast}
+          isLoading={station.isLoading}
+          onClose={station.handleCloseRoastDialog}
+          onConfirm={station.handleConfirmRecordRoast}
         />
 
         <GbQcDialog

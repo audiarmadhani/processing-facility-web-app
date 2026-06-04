@@ -1,6 +1,8 @@
+import { apiUrl } from '../_shared/config';
+
 export const GB_QC_ALLOWED_ROLES = ['admin', 'manager', 'postprocessing'];
 
-export const API_GB_QC = 'https://processing-facility-backend.onrender.com/api';
+export const gbQcApi = (path) => apiUrl(path);
 
 export const emptyFormData = () => ({
   seranggaHidup: null,

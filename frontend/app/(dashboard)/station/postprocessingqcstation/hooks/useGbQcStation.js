@@ -2,12 +2,22 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { API_GB_QC, emptyFormData } from '../constants';
+import { gbQcApi, emptyFormData } from '../constants';
 import { generateGbQcPdf } from '../utils/generateGbQcPdf';
+import { withPipelineIds } from '../utils/pipelineRowId';
+
+function toDatetimeLocalValue(date = new Date()) {
+  const d = new Date(date);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export function useGbQcStation(session) {
   const webcamRef = useRef(null);
-  const [notQcedBatches, setNotQcedBatches] = useState([]);
+  const [dryingBatches, setDryingBatches] = useState([]);
+  const [driedBatches, setDriedBatches] = useState([]);
+  const [roastBatches, setRoastBatches] = useState([]);
+  const [readyForQcBatches, setReadyForQcBatches] = useState([]);
   const [completedQCBatches, setCompletedQCBatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -16,15 +26,30 @@ export function useGbQcStation(session) {
   const [formData, setFormData] = useState(emptyFormData());
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+  const [openRoastDialog, setOpenRoastDialog] = useState(false);
+  const [roastTarget, setRoastTarget] = useState(null);
+  const [roastedAt, setRoastedAt] = useState(toDatetimeLocalValue());
+  const [roastNotes, setRoastNotes] = useState('');
+  const [startQcAfterRoast, setStartQcAfterRoast] = useState(true);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [notQcedRes, completedQCRes] = await Promise.all([
-        axios.get(`${API_GB_QC}/postprocessing/not-qced`),
-        axios.get(`${API_GB_QC}/postproqcfin`),
+      const [pipelineRes, completedQCRes] = await Promise.all([
+        axios.get(gbQcApi('/gb-qc/pipeline-lists')),
+        axios.get(gbQcApi('/postproqcfin')),
       ]);
-      setNotQcedBatches(notQcedRes.data);
-      setCompletedQCBatches(completedQCRes.data);
+      const { drying = [], dried = [], roast = [], readyForQc = [] } = pipelineRes.data || {};
+      setDryingBatches(withPipelineIds(drying));
+      setDriedBatches(withPipelineIds(dried));
+      setRoastBatches(withPipelineIds(roast));
+      setReadyForQcBatches(withPipelineIds(readyForQc));
+      setCompletedQCBatches(
+        (completedQCRes.data || []).map((row, index) => ({
+          ...row,
+          id: row.batchNumber || `completed-${index}`,
+        }))
+      );
     } catch (error) {
       console.error('Error fetching data:', error);
       setSnackbar({ open: true, message: 'Failed to fetch data!', severity: 'error' });
@@ -40,7 +65,7 @@ export function useGbQcStation(session) {
   const handleStartQC = async (batch) => {
     setSelectedBatch(batch);
     try {
-      const res = await axios.get(`${API_GB_QC}/postproqc/${batch.batchNumber}`);
+      const res = await axios.get(gbQcApi(`/postproqc/${batch.batchNumber}`));
       if (res.data) {
         setFormData(res.data);
       } else {
@@ -50,6 +75,44 @@ export function useGbQcStation(session) {
     } catch (error) {
       console.error('Error fetching QC data for batch:', error);
       setSnackbar({ open: true, message: 'Failed to load QC data!', severity: 'error' });
+    }
+  };
+
+  const handleOpenRecordRoast = (batch) => {
+    setRoastTarget(batch);
+    setRoastedAt(toDatetimeLocalValue());
+    setRoastNotes('');
+    setStartQcAfterRoast(true);
+    setOpenRoastDialog(true);
+  };
+
+  const handleCloseRoastDialog = () => {
+    setOpenRoastDialog(false);
+    setRoastTarget(null);
+  };
+
+  const handleConfirmRecordRoast = async () => {
+    if (!roastTarget) return;
+    setIsLoading(true);
+    try {
+      await axios.post(gbQcApi('/gb-qc/roast'), {
+        batchNumber: roastTarget.batchNumber,
+        processingType: roastTarget.processingType,
+        roastedAt: roastedAt ? new Date(roastedAt).toISOString() : new Date().toISOString(),
+        notes: roastNotes.trim() || null,
+        roastedBy: session?.user?.name || session?.user?.email || 'unknown',
+      });
+      setSnackbar({ open: true, message: 'Roast recorded.', severity: 'success' });
+      handleCloseRoastDialog();
+      await fetchData();
+      if (startQcAfterRoast) {
+        await handleStartQC(roastTarget);
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to record roast';
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -136,7 +199,7 @@ export function useGbQcStation(session) {
         totalBobotKotoran: formData.totalBobotKotoran === '' ? 0 : parseFloat(formData.totalBobotKotoran),
       };
 
-      await axios.post(`${API_GB_QC}/postproqc`, {
+      await axios.post(gbQcApi('/postproqc'), {
         batchNumber: selectedBatch.batchNumber,
         ...submissionData,
         isCompleted,
@@ -167,10 +230,10 @@ export function useGbQcStation(session) {
       formDataUpload.append('batchNumber', selectedBatch.batchNumber);
       formDataUpload.append('module', 'GB-QC');
 
-      const uploadRes = await axios.post(`${API_GB_QC}/upload-image`, formDataUpload);
+      const uploadRes = await axios.post(gbQcApi('/upload-image'), formDataUpload);
       const imageUrl = uploadRes.data.url;
 
-      await axios.post(`${API_GB_QC}/postproqc/image`, {
+      await axios.post(gbQcApi('/postproqc/image'), {
         batchNumber: selectedBatch.batchNumber,
         imageUrl,
       });
@@ -202,7 +265,10 @@ export function useGbQcStation(session) {
 
   return {
     webcamRef,
-    notQcedBatches,
+    dryingBatches,
+    driedBatches,
+    roastBatches,
+    readyForQcBatches,
     completedQCBatches,
     isLoading,
     openDialog,
@@ -214,6 +280,17 @@ export function useGbQcStation(session) {
     setSnackbar,
     fetchData,
     handleStartQC,
+    handleOpenRecordRoast,
+    handleCloseRoastDialog,
+    handleConfirmRecordRoast,
+    openRoastDialog,
+    roastTarget,
+    roastedAt,
+    setRoastedAt,
+    roastNotes,
+    setRoastNotes,
+    startQcAfterRoast,
+    setStartQcAfterRoast,
     handleCloseDialog,
     handleFormChange,
     isFormComplete,
