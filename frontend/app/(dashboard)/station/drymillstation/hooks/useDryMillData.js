@@ -7,7 +7,7 @@ import {
   API_BASE_URL,
   batchUniqueId,
   canSelectForMerge,
-  isMergeCheckboxDisabled,
+  isActiveDryMillBatch,
   mapParentBatch,
   mapSubBatch,
   statusFromTrackWeightRows,
@@ -234,6 +234,14 @@ export function useDryMillData(session) {
 
   const handleToggleBatchSelection = useCallback(
     (row, checked) => {
+      if (checked && !canSelectForMerge(row)) {
+        setSnackbarMessage(
+          'Only batches in dry mill (entered, not exited, not stored, not merged) can be selected for merge.'
+        );
+        setSnackbarSeverity('warning');
+        setOpenSnackbar(true);
+        return;
+      }
       const uniqueId = batchUniqueId(row);
       setSelectedBatches((prev) => {
         const newSelected = checked
@@ -689,7 +697,6 @@ const handleSubmitExit = async () => {
           <Checkbox
             size="small"
             checked={selectedBatches.includes(batchUniqueId(row))}
-            disabled={isMergeCheckboxDisabled(row)}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onChange={(e) => {
@@ -890,15 +897,14 @@ const handleSubmitExit = async () => {
 
   const sortedParentBatches = useMemo(
     () =>
-      [...parentBatches].sort((a, b) => {
-        const statusOrder = { "In Dry Mill": 0, "Processed": 1, "Not Started": 2 };
-        return (
-          (statusOrder[a.status] || 2) - (statusOrder[b.status] || 2) ||
-          new Date(a.dryMillEntered || 0) - new Date(b.dryMillEntered || 0) ||
-          a.producer.localeCompare(b.producer) ||
-          a.processingType.localeCompare(b.processingType)
-        );
-      }),
+      [...parentBatches]
+        .filter(isActiveDryMillBatch)
+        .sort(
+          (a, b) =>
+            new Date(a.dryMillEntered || 0) - new Date(b.dryMillEntered || 0) ||
+            a.producer.localeCompare(b.producer) ||
+            a.processingType.localeCompare(b.processingType)
+        ),
     [parentBatches]
   );
 

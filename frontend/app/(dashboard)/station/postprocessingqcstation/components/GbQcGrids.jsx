@@ -10,10 +10,19 @@ import {
   getCompletedQCColumns,
 } from '../columns';
 
-function PipelineSection({ title, subtitle, count, children }) {
+const PIPELINE_GRID_HEIGHT = 480;
+const ROAST_GRID_HEIGHT = 480;
+
+const pipelineGridDefaults = {
+  height: PIPELINE_GRID_HEIGHT,
+  pageSizeOptions: [25, 50, 100],
+  initialState: { pagination: { paginationModel: { pageSize: 100 } } },
+};
+
+function PipelineSection({ title, subtitle, count, xs = 12, children }) {
   return (
-    <Grid item xs={12}>
-      <Card variant="outlined">
+    <Grid item xs={12} md={xs}>
+      <Card variant="outlined" sx={{ height: '100%' }}>
         <CardContent>
           <Box sx={{ mb: 2 }}>
             <Typography variant="h5" gutterBottom>
@@ -69,13 +78,12 @@ export default function GbQcGrids({
         title="Drying List"
         subtitle="Batches still in the drying process"
         count={dryingBatches.length}
+        xs={6}
       >
         <StationDataGrid
           rows={dryingBatches}
           columns={getDryingColumns()}
-          height={360}
-          pageSizeOptions={[5, 10, 20]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          {...pipelineGridDefaults}
         />
       </PipelineSection>
 
@@ -83,13 +91,12 @@ export default function GbQcGrids({
         title="Dried List"
         subtitle="Drying finished — not yet entered dry mill"
         count={driedBatches.length}
+        xs={6}
       >
         <StationDataGrid
           rows={driedBatches}
           columns={getDriedColumns()}
-          height={360}
-          pageSizeOptions={[5, 10, 20]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          {...pipelineGridDefaults}
         />
       </PipelineSection>
 
@@ -101,9 +108,9 @@ export default function GbQcGrids({
         <StationDataGrid
           rows={roastBatches}
           columns={getRoastColumns(onRecordRoast)}
-          height={360}
-          pageSizeOptions={[5, 10, 20]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          height={ROAST_GRID_HEIGHT}
+          pageSizeOptions={[25, 50, 100]}
+          initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
         />
       </PipelineSection>
 
@@ -111,23 +118,20 @@ export default function GbQcGrids({
         title="Ready for QC"
         subtitle="Roast recorded — start or continue green bean QC"
         count={readyForQcBatches.length}
+        xs={6}
       >
         <StationDataGrid
           rows={readyForQcBatches}
           columns={getReadyForQcColumns(onStartQC)}
-          height={360}
-          pageSizeOptions={[5, 10, 20]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          {...pipelineGridDefaults}
         />
       </PipelineSection>
 
-      <PipelineSection title="Completed QC" count={completedQCBatches.length}>
+      <PipelineSection title="Completed QC" count={completedQCBatches.length} xs={6}>
         <StationDataGrid
           rows={completedQCBatches}
           columns={getCompletedQCColumns(onExportPdf)}
-          height={600}
-          pageSizeOptions={[10, 20, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          {...pipelineGridDefaults}
         />
       </PipelineSection>
     </>

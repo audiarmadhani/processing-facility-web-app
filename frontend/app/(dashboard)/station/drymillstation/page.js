@@ -49,6 +49,9 @@ function DryMillStation() {
             <Typography variant="h5" gutterBottom>
               Dry Mill Station - Active Batches
             </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Batches currently in dry mill. Use Select to choose rows for merge.
+            </Typography>
             <Box
               sx={{
                 mb: 2,
@@ -92,7 +95,13 @@ function DryMillStation() {
                 </Button>
               </Box>
             </Box>
-            <ParentBatchGrid rows={dm.sortedParentBatches} columns={dm.parentColumns} />
+            {dm.sortedParentBatches.length === 0 && !dm.isLoading ? (
+              <Typography variant="body1" color="text.secondary" sx={{ py: 3 }}>
+                No batches are currently in dry mill.
+              </Typography>
+            ) : (
+              <ParentBatchGrid rows={dm.sortedParentBatches} columns={dm.parentColumns} />
+            )}
           </CardContent>
         </Card>
       </Grid>

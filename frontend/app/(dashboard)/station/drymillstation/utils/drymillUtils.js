@@ -11,19 +11,31 @@ export function batchUniqueId(batch) {
   return `${batch.batchNumber},${batch.producer},${batch.processingType}`;
 }
 
-export function isMergeCheckboxDisabled(row) {
-  return (
-    row.status !== 'In Dry Mill' ||
-    row.dryMillExited ||
-    !!row.storedDate ||
-    row.dryMillMerged === 'Merged'
-  );
+export function normalizeStatus(status) {
+  return typeof status === 'string' ? status.trim() : status;
+}
+
+export function hasExitedDryMill(row) {
+  const exited = row?.dryMillExited;
+  return exited != null && exited !== false && exited !== '';
+}
+
+export function isBatchMerged(row) {
+  const merged = row?.dryMillMerged;
+  return merged === 'Merged' || merged === true;
+}
+
+export function isActiveDryMillBatch(row) {
+  return normalizeStatus(row?.status) === 'In Dry Mill';
 }
 
 export function canSelectForMerge(row) {
   return (
-    !isMergeCheckboxDisabled(row) &&
-    row.dryMillEntered
+    isActiveDryMillBatch(row) &&
+    row.dryMillEntered &&
+    !hasExitedDryMill(row) &&
+    !row.storedDate &&
+    !isBatchMerged(row)
   );
 }
 
@@ -52,7 +64,7 @@ export function mapParentBatch(batch) {
         ? 'ID-BTM-A-N'
         : batch.lotNumber,
     referenceNumber: batch.referenceNumber || 'N/A',
-    dryMillMerged: batch.dryMillMerged ? 'Merged' : 'Not Merged',
+    dryMillMerged: batch.dryMillMerged === true ? 'Merged' : 'Not Merged',
     id: `${batch.batchNumber}__${producer}__${batch.processingType}`,
   };
 }
