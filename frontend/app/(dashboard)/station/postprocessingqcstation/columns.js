@@ -56,6 +56,16 @@ export function getDriedColumns() {
       width: 150,
       valueFormatter: (value) => formatDateTime(value),
     },
+    {
+      field: 'dryingDays',
+      headerName: 'Drying days',
+      width: 110,
+      valueFormatter: (value) => {
+        if (value == null || value === '') return '—';
+        const n = Number(value);
+        return Number.isFinite(n) ? `${n} d` : String(value);
+      },
+    },
     { field: 'dryingWeight', headerName: 'Weight (kg)', width: 120 },
     {
       field: 'status',
