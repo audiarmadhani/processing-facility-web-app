@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, Menu, MenuItem, Box, Chip } from '@mui/material';
@@ -17,7 +17,10 @@ import {
 } from '../constants';
 import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
-import { formatFermentationDisplay } from '../utils/fermentationDateTime';
+import {
+  formatFermentationDisplay,
+  getPrimaryFermentationEstimate,
+} from '../utils/fermentationDateTime';
 import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow as generateOrderSheetRowPdf } from '../utils/exportOrderSheet';
 import { resolveCherryQuantity } from '../utils/resolveCherryQuantity';
 import { downloadFermentationDataExcel } from '../utils/exportFullXlsx';
@@ -143,6 +146,7 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [tabValue, setTabValue] = useState('Biomaster');
+  const [estimateNowTick, setEstimateNowTick] = useState(0);
   const [openWeightDialog, setOpenWeightDialog] = useState(false);
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState(null);
@@ -448,6 +452,13 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
     fetchAvailableBatches();
     fetchAvailableTanks();
     fetchReferenceMappings();
+  }, []);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setEstimateNowTick((t) => t + 1);
+    }, 60_000);
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -1417,7 +1428,7 @@ useEffect(() => {
   };
 
 
-  const fermentationColumns = [
+  const fermentationColumns = useMemo(() => [
     {
       field: 'batchNumber',
       headerName: 'Batch Number',
@@ -1557,6 +1568,26 @@ useEffect(() => {
       renderCell: ({ row }) => calculateElapsedTime(row.fermentationStart, row.fermentationEnd),
     },
     {
+      field: 'estimatedEnd',
+      headerName: 'Estimated End',
+      width: 180,
+      sortable: false,
+      renderCell: ({ row }) => {
+        const { endDisplay } = getPrimaryFermentationEstimate(row, dayjs());
+        return endDisplay;
+      },
+    },
+    {
+      field: 'estimatedRemaining',
+      headerName: 'Time Remaining',
+      width: 150,
+      sortable: false,
+      renderCell: ({ row }) => {
+        const { remainingDisplay } = getPrimaryFermentationEstimate(row, dayjs());
+        return remainingDisplay;
+      },
+    },
+    {
       field: 'fermentationStart',
       headerName: 'Start Date',
       width: 180,
@@ -1585,7 +1616,23 @@ useEffect(() => {
       },
     },
     { field: 'createdBy', headerName: 'Created By', width: 150 },
-  ];
+  ], [
+    estimateNowTick,
+    anchorEl,
+    selectedRow,
+    handleMenuClick,
+    handleMenuClose,
+    handleTrackWeight,
+    handleCheckInClick,
+    handleAssignBatchClick,
+    handleDetailsClick,
+    generateOrderSheetRow,
+    downloadFermentationDataExcel,
+    handleDeleteBatch,
+    rowHasBatch,
+    setEndDateTime,
+    setOpenFinishDialog,
+  ]);
 
   return {
     batchNumber, setBatchNumber,
@@ -1778,6 +1825,8 @@ useEffect(() => {
     handleDeleteWeight,
     handleDeleteBatch,
     fermentationColumns,
+    estimateNowTick,
+    getPrimaryFermentationEstimate,
     downloadFermentationDataExcel,
     calculateElapsedTime,
     fetchFermentationData,

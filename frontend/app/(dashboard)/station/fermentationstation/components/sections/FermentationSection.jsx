@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+import dayjs from 'dayjs';
 import {
   Typography,
   Grid,
@@ -24,6 +26,7 @@ import {
 } from '../../constants';
 import { wideMenuProps as MenuProps } from '../../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../../utils/formatDateTimeLocal';
+import { getPrimaryFermentationEstimate } from '../../utils/fermentationDateTime';
 
 
 export default function FermentationSection({ mode, form }) {
@@ -94,8 +97,18 @@ export default function FermentationSection({ mode, form }) {
     postFermentationWeight,
     setDetailsData,
     starterUsed,
-    waterUsed
+    waterUsed,
+    estimateNowTick,
+    getPrimaryFermentationEstimate: getEstimateFromForm,
   } = form;
+
+  const detailsEstimate = useMemo(() => {
+    if (mode !== 'details' || !detailsData) {
+      return { endDisplayDetails: '—', remainingDisplay: '—' };
+    }
+    const compute = getEstimateFromForm || getPrimaryFermentationEstimate;
+    return compute(detailsData, dayjs());
+  }, [mode, detailsData, estimateNowTick, getEstimateFromForm]);
 
   if (mode === 'create') {
     return (
@@ -573,6 +586,28 @@ export default function FermentationSection({ mode, form }) {
                     fullWidth
                     variant="outlined"
                     sx={{ mt: 1 }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField
+                    label="Estimated end date and time"
+                    value={detailsEstimate.endDisplayDetails}
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={4}>
+                  <TextField
+                    label="Estimated time remaining"
+                    value={detailsEstimate.remainingDisplay}
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
