@@ -88,6 +88,7 @@ export function getUnprocessedColumns({ selectedBatches, setSelectedBatches, ope
 
 export function getPreprocessingColumns({
   handleOpenEditMetadata,
+  handleOpenTrackWeight,
   handleGenerateOrderSheetPdf,
   actionAnchorEl,
   selectedActionRow,
@@ -124,6 +125,9 @@ export function getPreprocessingColumns({
             onClose={handleActionMenuClose}
           >
             <MenuItem onClick={() => handleOpenEditMetadata(row)}>Edit</MenuItem>
+            {!row.hasWeight && (
+              <MenuItem onClick={() => handleOpenTrackWeight(row)}>Track weight</MenuItem>
+            )}
             <MenuItem onClick={() => handleGenerateOrderSheetPdf(row)}>Generate PDF</MenuItem>
           </Menu>
         </>
@@ -137,7 +141,17 @@ export function getPreprocessingColumns({
     { field: 'processingType', headerName: 'Processing Type', width: 200, sortable: true },
     { field: 'quality', headerName: 'Quality', width: 130, sortable: true },
     { field: 'weight', headerName: 'Total Weight (kg)', width: 180, sortable: true },
-    { field: 'processedWeight', headerName: 'Processed Weight (kg)', width: 180, sortable: true },
+    {
+      field: 'processedWeight',
+      headerName: 'Processed Weight (kg)',
+      width: 180,
+      sortable: true,
+      renderCell: ({ value }) => (
+        <span style={{ color: value === 'Pending' ? '#ed6c02' : 'inherit', fontWeight: value === 'Pending' ? 600 : 400 }}>
+          {value}
+        </span>
+      ),
+    },
     { field: 'totalProcessedWeight', headerName: 'Total Processed Weight (kg)', width: 180, sortable: true },
     { field: 'availableWeight', headerName: 'Available Weight (kg)', width: 180, sortable: true },
     { field: 'startProcessingDate', headerName: 'Processing Date', width: 180, sortable: true },

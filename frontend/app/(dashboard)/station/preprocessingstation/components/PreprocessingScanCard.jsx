@@ -157,6 +157,7 @@ export default function PreprocessingScanCard({ station }) {
           fullWidth
           margin="normal"
           inputProps={{ step: 0.01, min: 0 }}
+          helperText="Optional — leave blank if unknown; record later from Order Book → Track weight"
         />
       </Grid>
       <Grid item>

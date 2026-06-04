@@ -8,6 +8,7 @@ import MergeBatchesDialog from './components/MergeBatchesDialog';
 import PreprocessingScanCard from './components/PreprocessingScanCard';
 import SplitBatchDialog from './components/SplitBatchDialog';
 import WeightHistoryDialog from './components/WeightHistoryDialog';
+import TrackWeightDialog from './components/TrackWeightDialog';
 import { PREPROCESSING_ALLOWED_ROLES, usePreprocessingStation } from './hooks/usePreprocessingStation';
 
 function PreprocessingStation() {
@@ -34,6 +35,7 @@ function PreprocessingStation() {
 
   const columns = getPreprocessingColumns({
     handleOpenEditMetadata: station.handleOpenEditMetadata,
+    handleOpenTrackWeight: station.handleOpenTrackWeight,
     handleGenerateOrderSheetPdf: station.handleGenerateOrderSheetPdf,
     actionAnchorEl: station.actionAnchorEl,
     selectedActionRow: station.selectedActionRow,
@@ -60,6 +62,15 @@ function PreprocessingStation() {
           setMergeNotes={station.setMergeNotes}
           unprocessedBatches={station.unprocessedBatches}
           onMerge={station.handleMergeBatches}
+        />
+        <TrackWeightDialog
+          open={station.openTrackWeightDialog}
+          row={station.trackWeightRow}
+          weightValue={station.trackWeightValue}
+          onWeightChange={station.setTrackWeightValue}
+          onClose={station.handleCloseTrackWeightDialog}
+          onConfirm={station.handleConfirmTrackWeight}
+          parseWeightInput={station.parseWeightInput}
         />
         <SplitBatchDialog
           open={station.openSplitDialog}

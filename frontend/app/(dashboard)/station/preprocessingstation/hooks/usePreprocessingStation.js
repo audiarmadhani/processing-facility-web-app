@@ -15,6 +15,17 @@ export const API_BASE_URL = 'https://processing-facility-backend.onrender.com/ap
 
 axiosRetry(axios, { retries: 3, retryDelay: (retryCount) => retryCount * 2000 });
 
+function recordHasWeight(weightProcessed) {
+  if (weightProcessed == null || weightProcessed === '') return false;
+  const w = parseFloat(weightProcessed);
+  return !isNaN(w) && w > 0;
+}
+
+function formatProcessedWeightDisplay(weightProcessed) {
+  if (!recordHasWeight(weightProcessed)) return 'Pending';
+  return parseFloat(weightProcessed).toFixed(2);
+}
+
 export function usePreprocessingStation(session) {
   const [rfid, setRfid] = useState('');
   const [rfidTag, setRfidTag] = useState('');
@@ -65,6 +76,9 @@ export function usePreprocessingStation(session) {
   const [editProcessingType, setEditProcessingType] = useState('');
   const [actionAnchorEl, setActionAnchorEl] = useState(null);
   const [selectedActionRow, setSelectedActionRow] = useState(null);
+  const [openTrackWeightDialog, setOpenTrackWeightDialog] = useState(false);
+  const [trackWeightRow, setTrackWeightRow] = useState(null);
+  const [trackWeightValue, setTrackWeightValue] = useState('');
 
   // Debug re-renders
   useEffect(() => {
@@ -505,16 +519,11 @@ export function usePreprocessingStation(session) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const trimmedBatchNumber = batchNumber.trim();
-    const parsedWeight = parseFloat(parseWeightInput(weightProcessed));
+    const weightInput = parseWeightInput(weightProcessed);
+    const hasWeightInput = weightInput !== '' && !isNaN(parseFloat(weightInput)) && parseFloat(weightInput) > 0;
+    const parsedWeight = hasWeightInput ? parseFloat(weightInput) : null;
 
-    if (isNaN(parsedWeight) || parsedWeight <= 0) {
-      setSnackBarMessage('Please enter a valid weight to process.');
-      setSnackBarSeverity('warning');
-      setOpenSnackBar(true);
-      return;
-    }
-
-    if (parsedWeight > parseFloat(weightAvailable)) {
+    if (hasWeightInput && parsedWeight > parseFloat(weightAvailable)) {
       setSnackBarMessage(`Cannot process more weight than available. Available: ${weightAvailable} kg`);
       setSnackBarSeverity('error');
       setOpenSnackBar(true);
@@ -530,7 +539,6 @@ export function usePreprocessingStation(session) {
 
     const preprocessingData = {
       batchNumber: trimmedBatchNumber,
-      weightProcessed: parsedWeight,
       producer,
       productLine,
       processingType,
@@ -538,6 +546,11 @@ export function usePreprocessingStation(session) {
       createdBy: session?.user?.name || 'Unknown',
       notes: notes.trim() || null,
     };
+    if (hasWeightInput) {
+      preprocessingData.weightProcessed = parsedWeight;
+    } else {
+      preprocessingData.weightProcessed = null;
+    }
 
     try {
       const response = await axios.post(`${API_BASE_URL}/preprocessing`, preprocessingData, { timeout: 15000 });
@@ -546,7 +559,10 @@ export function usePreprocessingStation(session) {
       const resolvedRef = referenceNumber || 'N/A';
       setLotNumber(resolvedLot);
       setReferenceNumber(resolvedRef);
-      setSnackBarMessage(`Preprocessing started for batch ${trimmedBatchNumber} on ${parsedWeight} kg. Lot Number: ${resolvedLot}`);
+      const weightMsg = hasWeightInput
+        ? ` on ${parsedWeight} kg`
+        : ' (weight pending — record from Order Book)';
+      setSnackBarMessage(`Preprocessing started for batch ${trimmedBatchNumber}${weightMsg}. Lot Number: ${resolvedLot}`);
       setSnackBarSeverity('success');
       setOpenSnackBar(true);
 
@@ -560,7 +576,7 @@ export function usePreprocessingStation(session) {
           qcDate,
           totalWeight,
           totalBags,
-          weightToWetMill: parsedWeight,
+          weightToWetMill: hasWeightInput ? parsedWeight : null,
           producer,
           productLine,
           processingType,
@@ -627,6 +643,64 @@ export function usePreprocessingStation(session) {
     setEditProcessingType(targetRow.processingType === 'N/A' ? '' : targetRow.processingType);
 
     setOpenEditDialog(true);
+  };
+
+  const handleOpenTrackWeight = (row) => {
+    const targetRow = row || selectedActionRow;
+    handleActionMenuClose();
+    if (!targetRow?.preprocessingRecordId) return;
+    setTrackWeightRow(targetRow);
+    setTrackWeightValue('');
+    setOpenTrackWeightDialog(true);
+  };
+
+  const handleCloseTrackWeightDialog = () => {
+    setOpenTrackWeightDialog(false);
+    setTrackWeightRow(null);
+    setTrackWeightValue('');
+  };
+
+  const handleConfirmTrackWeight = async () => {
+    if (!trackWeightRow?.preprocessingRecordId) return;
+
+    const parsedWeight = parseFloat(parseWeightInput(trackWeightValue));
+    if (isNaN(parsedWeight) || parsedWeight <= 0) {
+      setSnackBarMessage('Please enter a valid weight to process.');
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+
+    const available = parseFloat(trackWeightRow.availableWeight);
+    if (!isNaN(available) && parsedWeight > available) {
+      setSnackBarMessage(`Cannot exceed available weight (${available.toFixed(2)} kg).`);
+      setSnackBarSeverity('error');
+      setOpenSnackBar(true);
+      return;
+    }
+
+    try {
+      await axios.patch(
+        `${API_BASE_URL}/preprocessing/record/${trackWeightRow.preprocessingRecordId}/weight`,
+        {
+          weightProcessed: parsedWeight,
+          updatedBy: session?.user?.name || 'Unknown',
+        },
+        { timeout: 15000 }
+      );
+      setSnackBarMessage(`Weight recorded: ${parsedWeight} kg for batch ${trackWeightRow.batchNumber}.`);
+      setSnackBarSeverity('success');
+      handleCloseTrackWeightDialog();
+      await fetchPreprocessingData();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        `Failed to record weight: ${error.message}`;
+      setSnackBarMessage(errorMessage);
+      setSnackBarSeverity('error');
+    } finally {
+      setOpenSnackBar(true);
+    }
   };
 
   const handleUpdateMetadata = async () => {
@@ -768,6 +842,8 @@ export function usePreprocessingStation(session) {
 
         return {
           id: `${row.id}-${row.batchNumber}`,
+          preprocessingRecordId: row.id,
+          hasWeight: recordHasWeight(row.weightProcessed),
           batchNumber: row.batchNumber,
           type: receivingBatch.type || 'N/A',
           farmerName: receivingBatch.farmerName || 'N/A',
@@ -779,7 +855,7 @@ export function usePreprocessingStation(session) {
           lotNumber: row.lotNumber || 'N/A',
           referenceNumber: row.referenceNumber || 'N/A',
           weight: totalWeight,
-          processedWeight: parseFloat(row.weightProcessed || 0).toFixed(2),
+          processedWeight: formatProcessedWeightDisplay(row.weightProcessed),
           totalProcessedWeight: totalProcessedWeight,
           availableWeight: availableWeight,
           startProcessingDate: formatDate(row.processingDate),
@@ -1053,8 +1129,15 @@ export function usePreprocessingStation(session) {
     handleActionMenuOpen,
     handleActionMenuClose,
     handleOpenEditMetadata,
+    handleOpenTrackWeight,
     handleGenerateOrderSheetPdf,
     handleUpdateMetadata,
+    openTrackWeightDialog,
+    trackWeightRow,
+    trackWeightValue,
+    setTrackWeightValue,
+    handleCloseTrackWeightDialog,
+    handleConfirmTrackWeight,
     resetForm,
   };
 }
