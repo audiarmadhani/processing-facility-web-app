@@ -11,6 +11,13 @@ export function batchUniqueId(batch) {
   return `${batch.batchNumber},${batch.producer},${batch.processingType}`;
 }
 
+export function rowIdToBatchUniqueId(rowId) {
+  const parts = rowId.split('__');
+  if (parts.length < 3) return rowId;
+  const [batchNumber, producer, ...processingTypeParts] = parts;
+  return `${batchNumber},${producer},${processingTypeParts.join('__')}`;
+}
+
 export function canSelectForMerge(row) {
   return (
     row.status === 'In Dry Mill' &&
