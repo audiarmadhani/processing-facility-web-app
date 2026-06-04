@@ -37,8 +37,12 @@ function DryingStationPage() {
         onMoveClick: station.handleMoveClick,
         onWeightClick: station.handleWeightClick,
         onFinishClick: (row) => {
+          const now = new Date();
           station.setSelectedRowForFinish(row);
-          station.setFinishDate(new Date().toISOString().slice(0, 10));
+          station.setFinishDate(now.toISOString().slice(0, 10));
+          station.setFinishTime(
+            `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+          );
           station.setOpenFinishDialog(true);
         },
       }),
@@ -48,6 +52,7 @@ function DryingStationPage() {
       station.handleWeightClick,
       station.setSelectedRowForFinish,
       station.setFinishDate,
+      station.setFinishTime,
       station.setOpenFinishDialog,
     ]
   );
@@ -257,8 +262,10 @@ function DryingStationPage() {
             open={station.openFinishDialog}
             batchNumber={station.selectedRowForFinish?.batchNumber}
             finishDate={station.finishDate}
+            finishTime={station.finishTime}
             minFinishDate={station.selectedRowForFinish?.startDryingDate}
             onDateChange={station.setFinishDate}
+            onTimeChange={station.setFinishTime}
             onClose={() => station.setOpenFinishDialog(false)}
             onConfirm={station.handleFinishDrying}
           />

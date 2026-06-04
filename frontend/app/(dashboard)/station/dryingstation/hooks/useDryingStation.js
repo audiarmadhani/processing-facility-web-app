@@ -64,6 +64,7 @@ export function useDryingStation(session) {
   const [finishDate, setFinishDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
+  const [finishTime, setFinishTime] = useState(() => toLocalTimeInputValue());
 
   const dryingAreas = useMemo(() => [
     "Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", 
@@ -218,6 +219,7 @@ export function useDryingStation(session) {
             priority: computeDryingPriority(status, currentMoisture),
             dryingArea: latestEntry?.dryingArea || 'N/A',
             startDryingDate: formatDryingDateWita(latestEntry?.entered_at),
+            dryingEnteredAt: latestEntry?.entered_at || null,
             endDryingDate: formatDryingDateWita(latestEntry?.exited_at),
             weight: batchWeights[batch.batchNumber] ? parseFloat(batchWeights[batch.batchNumber].total).toFixed(2) : '0',
             wetmillWeight: wetmillWeights[batch.batchNumber] ? parseFloat(wetmillWeights[batch.batchNumber]).toFixed(2) : '0',
@@ -835,17 +837,30 @@ export function useDryingStation(session) {
   const handleFinishDrying = useCallback(async () => {
     if (!selectedRowForFinish || !finishDate) return;
 
-    const today = new Date().toISOString().slice(0, 10);
-    if (finishDate > today) {
-      setSnackbarMessage('Finish date cannot be in the future.');
+    const timePart =
+      finishTime && /^\d{1,2}:\d{2}$/.test(finishTime) ? finishTime : '00:00';
+    const exited_at = `${finishDate}T${timePart}:00`;
+    const exitedAt = new Date(exited_at);
+
+    if (isNaN(exitedAt.getTime())) {
+      setSnackbarMessage('Invalid finish date or time.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
     }
 
-    const startDate = selectedRowForFinish.startDryingDate;
-    if (startDate && startDate !== 'N/A' && finishDate < startDate) {
-      setSnackbarMessage('Finish date cannot be before start drying date.');
+    if (exitedAt > new Date()) {
+      setSnackbarMessage('Finish date and time cannot be in the future.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const enteredAt = selectedRowForFinish.dryingEnteredAt
+      ? new Date(selectedRowForFinish.dryingEnteredAt)
+      : null;
+    if (enteredAt && !isNaN(enteredAt.getTime()) && exitedAt < enteredAt) {
+      setSnackbarMessage('Finish date and time cannot be before drying entry.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -860,7 +875,7 @@ export function useDryingStation(session) {
           body: JSON.stringify({
             batchNumber: selectedRowForFinish.batchNumber,
             rfid: selectedRowForFinish.rfid,
-            exited_at: finishDate,
+            exited_at,
           })
         }
       );
@@ -883,7 +898,7 @@ export function useDryingStation(session) {
       setSelectedRowForFinish(null);
     }
 
-  }, [selectedRowForFinish, finishDate, handleRefreshData]);
+  }, [selectedRowForFinish, finishDate, finishTime, handleRefreshData]);
 
 
 
@@ -977,6 +992,8 @@ export function useDryingStation(session) {
     setSelectedRowForFinish,
     finishDate,
     setFinishDate,
+    finishTime,
+    setFinishTime,
     dryingAreas,
     deviceMapping,
     formatDateForDisplay,
