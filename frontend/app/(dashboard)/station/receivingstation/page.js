@@ -54,6 +54,10 @@ function ReceivingStation() {
                 title="Cherry Receiving Data"
                 rows={station.cherryData}
                 columns={station.cherryColumns}
+                reportDate={station.cherryReportDate}
+                onReportDateChange={station.setCherryReportDate}
+                onGenerateReport={station.handleGenerateCherryReport}
+                reportGenerating={station.cherryReportGenerating}
               />
             </Grid>
           </Grid>

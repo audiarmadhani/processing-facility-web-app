@@ -29,6 +29,7 @@ import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import RouteIcon from '@mui/icons-material/Route';
+import HistoryIcon from '@mui/icons-material/History';
 
 export const metadata = {
   title: "BTM HEQA Platform",
@@ -41,6 +42,7 @@ export const metadata = {
 const NAVIGATION: Navigation = [
   { kind: "header", title: "Main items" },
   { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
+  { segment: "updates", title: "Updates", icon: <HistoryIcon /> },
 
   { kind: "divider" },
 

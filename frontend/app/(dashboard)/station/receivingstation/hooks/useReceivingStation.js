@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import dayjs from 'dayjs';
 import { apiUrl } from '../../_shared/config';
 import { useSnackbar } from '../../_shared/hooks/useSnackbar';
 import { useRecordWeight } from './useRecordWeight';
 import { buildCherryColumns } from '../columns/cherryColumns';
 import { buildGreenBeanColumns } from '../columns/greenBeanColumns';
+import { generateCherryReceiveReport } from '../utils/generateCherryReceiveReport';
 
 export const RECEIVING_ALLOWED_ROLES = ['admin', 'manager', 'staff', 'receiving'];
 
@@ -28,6 +30,8 @@ export function useReceivingStation(session) {
   const [tabValue, setTabValue] = useState(0);
   const [cherryData, setCherryData] = useState([]);
   const [greenBeanData, setGreenBeanData] = useState([]);
+  const [cherryReportDate, setCherryReportDate] = useState(() => dayjs().format('YYYY-MM-DD'));
+  const [cherryReportGenerating, setCherryReportGenerating] = useState(false);
 
   const fetchFarmerList = async () => {
     try {
@@ -257,6 +261,36 @@ export function useReceivingStation(session) {
     resetForm();
   };
 
+  const handleGenerateCherryReport = async () => {
+    if (!cherryReportDate) {
+      snackbar.showError('Select a report date.');
+      return;
+    }
+
+    setCherryReportGenerating(true);
+    try {
+      const response = await fetch(
+        apiUrl(`/receiving/cherry-receive-report?date=${encodeURIComponent(cherryReportDate)}`)
+      );
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to fetch report data');
+      }
+      const data = await response.json();
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      if (rows.length === 0) {
+        snackbar.showError('No cherry receiving batches found for that date.');
+        return;
+      }
+      generateCherryReceiveReport(rows, cherryReportDate);
+      snackbar.showSuccess('Cherry receive report downloaded.');
+    } catch (error) {
+      snackbar.showError(error.message || 'Failed to generate report');
+    } finally {
+      setCherryReportGenerating(false);
+    }
+  };
+
   return {
     snackbar,
     tabValue,
@@ -265,6 +299,10 @@ export function useReceivingStation(session) {
     greenBeanData,
     cherryColumns,
     greenBeanColumns,
+    cherryReportDate,
+    setCherryReportDate,
+    cherryReportGenerating,
+    handleGenerateCherryReport,
     farmerList,
     selectedFarmerDetails,
     handleFarmerChange,
