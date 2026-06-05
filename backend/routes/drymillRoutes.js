@@ -1625,6 +1625,46 @@ router.post('/dry-mill/merge', async (req, res) => {
       return res.status(400).json({ error: 'Cannot merge batches that have sub-batches.' });
     }
 
+    const sourceBatchNumbers = parsedBatches.map((b) => b.batchNumber.toUpperCase());
+
+    const hulledBatches = await sequelize.query(
+      `SELECT DISTINCT UPPER(e."batchNumber") AS "batchNumber"
+       FROM "DryMillProcessEvents" e
+       WHERE e."processStep" = 'huller'
+         AND e."outputWeight" > 0
+         AND e."processingType" = :processingType
+         AND UPPER(e."batchNumber") IN (:batchNumbers)`,
+      {
+        replacements: { batchNumbers: sourceBatchNumbers, processingType },
+        type: sequelize.QueryTypes.SELECT,
+        transaction: t,
+      }
+    );
+    if (hulledBatches.length !== parsedBatches.length) {
+      await t.rollback();
+      return res.status(400).json({
+        error: 'All selected batches must have huller output saved before merging.',
+      });
+    }
+
+    const roastedBatches = await sequelize.query(
+      `SELECT DISTINCT UPPER(rl."batchNumber") AS "batchNumber"
+       FROM "GbQcRoastLog" rl
+       WHERE rl."processingType" = :processingType
+         AND UPPER(rl."batchNumber") IN (:batchNumbers)`,
+      {
+        replacements: { batchNumbers: sourceBatchNumbers, processingType },
+        type: sequelize.QueryTypes.SELECT,
+        transaction: t,
+      }
+    );
+    if (roastedBatches.length !== parsedBatches.length) {
+      await t.rollback();
+      return res.status(400).json({
+        error: 'All selected batches must have a recorded sample roast before merging.',
+      });
+    }
+
     // Use current timestamp as fallback for enteredAt
     const enteredAt = batches.every(b => b.dryMillEntered && !isNaN(new Date(b.dryMillEntered)))
       ? batches.reduce((min, b) => {

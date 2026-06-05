@@ -165,12 +165,8 @@ export function useDryingStation(session) {
       if (areaBatchNumbers.length > 0) {
         const batchQuery = areaBatchNumbers.join(',');
         const [weightsResponse, moistureResponse] = await Promise.all([
-          fetch(
-            `https://processing-facility-backend.onrender.com/api/drying-weight-measurements/aggregated?batchNumbers=${batchQuery}`
-          ),
-          fetch(
-            `https://processing-facility-backend.onrender.com/api/drying-measurements/latest?batchNumbers=${batchQuery}`
-          ),
+          fetch(apiUrl(`/drying-weight-measurements/aggregated?batchNumbers=${encodeURIComponent(batchQuery)}`)),
+          fetch(apiUrl(`/drying-measurements/latest?batchNumbers=${encodeURIComponent(batchQuery)}`)),
         ]);
         if (!weightsResponse.ok) throw new Error('Failed to fetch aggregated weights');
         weightsResult = await weightsResponse.json();
