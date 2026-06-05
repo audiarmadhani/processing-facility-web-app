@@ -33,8 +33,11 @@ export default function MergeBatchesDialog({
         <Typography variant="body1" sx={{ mb: 1 }}>
           New batch number: <strong>{newBatchNumber}</strong>
         </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
+        <Typography variant="body1" sx={{ mb: 1 }}>
           Combined drying weight: <strong>{totalSelectedWeight.toFixed(2)} kg</strong>
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Each batch must already have huller output saved and a sample roast recorded in GB QC.
         </Typography>
         <Typography variant="subtitle2" gutterBottom>
           Batches to merge ({selectedBatchDetails.length})

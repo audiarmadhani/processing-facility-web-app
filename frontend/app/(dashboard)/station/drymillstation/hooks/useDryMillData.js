@@ -7,7 +7,11 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
   API_BASE_URL,
   batchUniqueId,
+  batchPipelineKey,
   canSelectForMerge,
+  getProcessStatusColor,
+  getProcessStatusLabel,
+  hasHullerDone,
   isActiveDryMillBatch,
   indexDryingMeasurementsByBatch,
   mapParentBatch,
@@ -313,6 +317,35 @@ export function useDryMillData(session) {
     [updateSelectionWeight]
   );
 
+  const fetchRoastedBatchKeys = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/gb-qc/pipeline-lists`);
+      const keys = new Set(
+        (res.data?.readyForQc || []).map((row) => batchPipelineKey(row))
+      );
+      return keys;
+    } catch {
+      return new Set();
+    }
+  }, []);
+
+  const validateMergeSelection = useCallback(
+    async (details) => {
+      if (!details.every((b) => canSelectForMerge(b))) {
+        return 'Selected batches must be entered in dry mill, not exited, and not already merged away.';
+      }
+      if (!details.every((b) => hasHullerDone(b, processStepStatus))) {
+        return 'All selected batches must have huller output saved before merging.';
+      }
+      const roastedKeys = await fetchRoastedBatchKeys();
+      if (!details.every((b) => roastedKeys.has(batchPipelineKey(b)))) {
+        return 'All selected batches must have a recorded sample roast before merging.';
+      }
+      return null;
+    },
+    [processStepStatus, fetchRoastedBatchKeys]
+  );
+
   const handleOpenMergeDialog = async () => {
     if (!['admin', 'manager'].includes(session.user.role)) {
       setSnackbarMessage('Only admins or managers can merge batches.');
@@ -337,6 +370,13 @@ export function useDryMillData(session) {
       setSnackbarMessage(
         'All selected batches must have the same producer and processing type.'
       );
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+    const mergeError = await validateMergeSelection(details);
+    if (mergeError) {
+      setSnackbarMessage(mergeError);
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -390,10 +430,9 @@ export function useDryMillData(session) {
       setOpenSnackbar(true);
       return;
     }
-    if (!selectedBatchDetails.every((b) => canSelectForMerge(b))) {
-      setSnackbarMessage(
-        'Selected batches must be entered in dry mill, not exited, and not already merged away.'
-      );
+    const mergeError = await validateMergeSelection(selectedBatchDetails);
+    if (mergeError) {
+      setSnackbarMessage(mergeError);
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -838,25 +877,19 @@ const handleSubmitExit = async () => {
     [parentBatches, selectedBatches]
   );
 
-  const renderProcessChips = (row) => {
-    const st = processStepStatus[row.id];
-    if (!st || !row.dryMillEntered) return null;
-    const chips = [];
-    if (st.huller) chips.push({ label: 'Huller ✓', color: 'success' });
-    if (st.suton) chips.push({ label: 'Suton ✓', color: 'success' });
-    if (st.sizer) chips.push({ label: 'Sizer ✓', color: 'success' });
-    if (st.handpicking) chips.push({ label: 'Handpick ✓', color: 'success' });
-    if (chips.length === 0) {
-      return (
-        <Chip label="Not started" size="small" variant="outlined" />
-      );
+  const renderProcessStatus = (row) => {
+    if (!row.dryMillEntered) {
+      return <Chip label="Not started" size="small" variant="outlined" />;
     }
+    const st = processStepStatus[row.id];
+    const label = getProcessStatusLabel(st);
     return (
-      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-        {chips.map((c) => (
-          <Chip key={c.label} label={c.label} size="small" color={c.color} />
-        ))}
-      </Box>
+      <Chip
+        label={label}
+        size="small"
+        color={getProcessStatusColor(st)}
+        variant={label === 'Not started' ? 'outlined' : 'filled'}
+      />
     );
   };
 
@@ -921,10 +954,10 @@ const handleSubmitExit = async () => {
       },
       {
         field: 'processProgress',
-        headerName: 'Process',
-        width: 220,
+        headerName: 'Process Status',
+        width: 150,
         sortable: false,
-        renderCell: ({ row }) => renderProcessChips(row),
+        renderCell: ({ row }) => renderProcessStatus(row),
       },
       {
         field: 'actions',

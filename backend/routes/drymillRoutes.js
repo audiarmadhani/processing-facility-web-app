@@ -1768,13 +1768,14 @@ router.post('/dry-mill/merge', async (req, res) => {
     console.log('Inserting into DryMillData:', { batchNumber: newBatchNumber, enteredAt });
     await sequelize.query(
       `INSERT INTO "DryMillData" (
-        "batchNumber", "entered_at", "dryMillMerged"
+        "batchNumber", "processingType", "entered_at", "dryMillMerged"
       ) VALUES (
-        :batchNumber, :enteredAt, FALSE
+        :batchNumber, :processingType, :enteredAt, FALSE
       )`,
       {
         replacements: {
           batchNumber: newBatchNumber,
+          processingType,
           enteredAt: enteredAt
         },
         type: sequelize.QueryTypes.INSERT,
@@ -1817,6 +1818,92 @@ router.post('/dry-mill/merge', async (req, res) => {
         transaction: t
       }
     );
+
+    const [hullerTotalRow] = await sequelize.query(
+      `SELECT COALESCE(SUM(e."outputWeight"), 0)::float AS total
+       FROM "DryMillProcessEvents" e
+       WHERE e."processStep" = 'huller'
+         AND e."processingType" = :processingType
+         AND UPPER(e."batchNumber") IN (:batchNumbers)`,
+      {
+        replacements: { batchNumbers: sourceBatchNumbers, processingType },
+        type: sequelize.QueryTypes.SELECT,
+        transaction: t,
+      }
+    );
+    const mergedHullerTotal = parseFloat(hullerTotalRow?.total) || 0;
+    const originalBatchList = parsedBatches.map((b) => b.batchNumber).join(', ');
+
+    if (mergedHullerTotal > 0) {
+      await sequelize.query(
+        `INSERT INTO "DryMillProcessEvents" (
+          "batchNumber", "processingType", "processStep", "producer", "grade",
+          "inputWeight", "outputWeight", "operator", "notes", "step_sequence",
+          "createdAt", "updatedAt"
+        ) VALUES (
+          :batchNumber, :processingType, 'huller', :producer, NULL,
+          0, :outputWeight, :operator, :notes, 1, NOW(), NOW()
+        )
+        ON CONFLICT ON CONSTRAINT drymill_process_events_unique_constraint
+        DO UPDATE SET
+          "outputWeight" = EXCLUDED."outputWeight",
+          "operator" = EXCLUDED."operator",
+          "notes" = EXCLUDED."notes",
+          "updatedAt" = NOW()`,
+        {
+          replacements: {
+            batchNumber: newBatchNumber,
+            processingType,
+            producer,
+            outputWeight: mergedHullerTotal,
+            operator: createdBy,
+            notes: `Merged huller total from: ${originalBatchList}`,
+          },
+          type: sequelize.QueryTypes.INSERT,
+          transaction: t,
+        }
+      );
+    }
+
+    const roastRows = await sequelize.query(
+      `SELECT rl."batchNumber", rl."roastedAt", rl."roastedBy", rl.notes
+       FROM "GbQcRoastLog" rl
+       WHERE rl."processingType" = :processingType
+         AND UPPER(rl."batchNumber") IN (:batchNumbers)
+       ORDER BY rl."roastedAt" DESC`,
+      {
+        replacements: { batchNumbers: sourceBatchNumbers, processingType },
+        type: sequelize.QueryTypes.SELECT,
+        transaction: t,
+      }
+    );
+
+    if (roastRows.length === parsedBatches.length) {
+      const latestRoast = roastRows[0];
+      await sequelize.query(
+        `INSERT INTO "GbQcRoastLog" (
+          "batchNumber", "processingType", "roastedAt", "roastedBy", "notes", "createdAt"
+        ) VALUES (
+          :batchNumber, :processingType, :roastedAt, :roastedBy, :notes, NOW()
+        )
+        ON CONFLICT ("batchNumber", "processingType")
+        DO UPDATE SET
+          "roastedAt" = EXCLUDED."roastedAt",
+          "roastedBy" = EXCLUDED."roastedBy",
+          "notes" = EXCLUDED."notes"`,
+        {
+          replacements: {
+            batchNumber: newBatchNumber,
+            processingType,
+            roastedAt: latestRoast.roastedAt,
+            roastedBy: latestRoast.roastedBy || createdBy,
+            notes: `Merged from sample roasts: ${originalBatchList}`,
+          },
+          type: sequelize.QueryTypes.INSERT,
+          transaction: t,
+        }
+      );
+    }
 
     await t.commit();
     console.log('Merge completed successfully:', { newBatchNumber, totalWeight });
@@ -2133,6 +2220,27 @@ router.post("/drymill/process-event", async (req, res) => {
       return res.status(400).json({
         error: "Invalid outputWeight",
       });
+    }
+
+    const postHullerSteps = ['suton', 'sizer', 'handpicking'];
+    if (postHullerSteps.includes(processStep)) {
+      const [mergedRow] = await sequelize.query(
+        `SELECT "dryMillMerged"
+         FROM "DryMillData"
+         WHERE UPPER("batchNumber") = UPPER(:batchNumber)
+         LIMIT 1`,
+        {
+          replacements: { batchNumber },
+          type: sequelize.QueryTypes.SELECT,
+          transaction: t,
+        }
+      );
+      if (mergedRow?.dryMillMerged === true) {
+        await t.rollback();
+        return res.status(400).json({
+          error: 'This batch was merged away after hulling. Continue processing on the merged batch.',
+        });
+      }
     }
 
     const stepSequenceMap = {

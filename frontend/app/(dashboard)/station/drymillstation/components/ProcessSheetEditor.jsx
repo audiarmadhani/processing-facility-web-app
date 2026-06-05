@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import {
   API_BASE_URL,
+  isMergedDryMillBatch,
   loadStepPrefs,
   saveStepPrefs,
 } from '../utils/drymillUtils';
@@ -116,6 +117,11 @@ export default function ProcessSheetEditor({
     [selectedBatch]
   );
 
+  const isMergedBatch = useMemo(
+    () => isMergedDryMillBatch(selectedBatch),
+    [selectedBatch]
+  );
+
   const markDirty = useCallback(() => {
     setHasUnsavedChanges?.(true);
   }, [setHasUnsavedChanges]);
@@ -162,6 +168,11 @@ export default function ProcessSheetEditor({
     setProcessTables(base);
     setHasUnsavedChanges?.(false);
     onProcessSaved?.(selectedBatch.id, res.data);
+
+    const hullerSaved = parseFloat(base.Huller.outputWeight) > 0;
+    if (isMergedDryMillBatch(selectedBatch) && hullerSaved) {
+      setActiveStep(1);
+    }
   }, [selectedBatch, setHasUnsavedChanges, onProcessSaved]);
 
   useEffect(() => {
@@ -485,22 +496,41 @@ export default function ProcessSheetEditor({
     );
   };
 
+  const hullerLocked = isMergedBatch && hullerTotal > 0;
+
   const renderStepContent = () => {
     if (activeStep === 0) {
       return (
         <Box>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={skipHuller}
-                onChange={(e) => handleSkipChange('skipHuller', e.target.checked)}
-                disabled={isLoading}
+          {!isMergedBatch && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={skipHuller}
+                  onChange={(e) => handleSkipChange('skipHuller', e.target.checked)}
+                  disabled={isLoading}
+                />
+              }
+              label="Skip Huller for this batch"
+              sx={{ mb: 1 }}
+            />
+          )}
+          {hullerLocked ? (
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Huller output was carried forward from merged source batches.
+              </Typography>
+              <TextField
+                label="Huller output (kg)"
+                value={processTables.Huller.outputWeight || ''}
+                type="number"
+                size="small"
+                fullWidth
+                disabled
+                sx={{ mb: 2 }}
               />
-            }
-            label="Skip Huller for this batch"
-            sx={{ mb: 1 }}
-          />
-          {skipHuller ? (
+            </>
+          ) : skipHuller ? (
             <Typography variant="body2" color="text.secondary">
               Suton yields will use drying weight ({dryingWeight.toFixed(2)} kg) as the base.
             </Typography>

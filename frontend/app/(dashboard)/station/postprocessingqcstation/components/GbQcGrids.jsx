@@ -102,7 +102,7 @@ export default function GbQcGrids({
 
       <PipelineSection
         title="Roast List"
-        subtitle="Dry mill complete — record sample roast before QC"
+        subtitle="Hulled batches in dry mill — record sample roast before merge."
         count={roastBatches.length}
       >
         <StationDataGrid

@@ -82,11 +82,12 @@ export function getRoastColumns(onRecordRoast) {
   return [
     ...sharedBatchColumns,
     {
-      field: 'dryMillExitedAt',
-      headerName: 'Dry mill exited',
+      field: 'dryMillEnteredAt',
+      headerName: 'Entered dry mill',
       width: 150,
       valueFormatter: (value) => formatDateTime(value),
     },
+    { field: 'hullerWeight', headerName: 'Huller wt (kg)', width: 120 },
     { field: 'dryingWeight', headerName: 'Drying wt (kg)', width: 120 },
     {
       field: 'status',

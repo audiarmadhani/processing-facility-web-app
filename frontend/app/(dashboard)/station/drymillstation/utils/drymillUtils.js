@@ -156,6 +156,36 @@ export function saveStepPrefs(batch, prefs) {
   localStorage.setItem(key, JSON.stringify(prefs));
 }
 
+export function getProcessStatusLabel(stepStatus) {
+  if (!stepStatus) return 'Not started';
+  if (stepStatus.handpicking) return 'Handpick Done';
+  if (stepStatus.sizer) return 'Sizer Done';
+  if (stepStatus.suton) return 'Suton Done';
+  if (stepStatus.huller) return 'Huller Done';
+  return 'Not started';
+}
+
+export function getProcessStatusColor(stepStatus) {
+  if (!stepStatus) return 'default';
+  if (stepStatus.handpicking) return 'success';
+  if (stepStatus.sizer || stepStatus.suton) return 'warning';
+  if (stepStatus.huller) return 'info';
+  return 'default';
+}
+
+export function hasHullerDone(row, processStepStatus) {
+  return Boolean(processStepStatus?.[row?.id]?.huller);
+}
+
+export function batchPipelineKey(batch) {
+  if (!batch?.batchNumber || !batch?.processingType) return '';
+  return `${batch.batchNumber}|${batch.processingType}`;
+}
+
+export function isMergedDryMillBatch(batch) {
+  return Boolean(batch?.batchNumber?.endsWith('-MB'));
+}
+
 export function statusFromTrackWeightRows(rows) {
   const status = { huller: false, suton: false, sizer: false, handpicking: false };
   (rows || []).forEach((row) => {
