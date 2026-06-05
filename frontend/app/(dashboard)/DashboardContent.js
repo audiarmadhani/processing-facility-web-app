@@ -170,7 +170,7 @@ function Dashboard() {
     this_year: 'This Year',
     last_year: 'Last Year',
   };
-  const [timeframe, setTimeframe] = useState('this_month');
+  const [timeframe, setTimeframe] = useState('this_year');
   const [sankeyCoffeeType, setSankeyCoffeeType] = useState('');
   const [sankeyBatchNumber, setSankeyBatchNumber] = useState('');
   const selectedRangeLabel = timeframeLabels[timeframe];
