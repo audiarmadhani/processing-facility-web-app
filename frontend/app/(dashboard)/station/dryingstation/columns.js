@@ -2,7 +2,7 @@
 
 import { Button, Chip, Menu, MenuItem } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { experimentNumberColumn } from '../../_shared/constants/experimentNumber';
+import { experimentNumberColumn } from '../_shared/constants/experimentNumber';
 
 export function getDryingColumns({
   onDetailsClick,

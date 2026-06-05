@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Chip } from '@mui/material';
-import { experimentNumberColumn } from '../../_shared/constants/experimentNumber';
+import { experimentNumberColumn } from '../_shared/constants/experimentNumber';
 
 export function getWetMillColumns(handleWeightClick) {
   return [
