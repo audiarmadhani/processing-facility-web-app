@@ -67,7 +67,12 @@ export function useGbQcStation(session) {
     try {
       const res = await axios.get(gbQcApi(`/postproqc/${batch.batchNumber}`));
       if (res.data) {
-        setFormData(res.data);
+        setFormData({
+          ...emptyFormData(),
+          ...res.data,
+          tastingNotes: res.data.tastingNotes || '',
+          okForFurtherProcess: res.data.okForFurtherProcess ?? null,
+        });
       } else {
         setFormData(emptyFormData());
       }
@@ -124,7 +129,7 @@ export function useGbQcStation(session) {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'seranggaHidup' || name === 'bijiBauBusuk') {
+    if (name === 'seranggaHidup' || name === 'bijiBauBusuk' || name === 'okForFurtherProcess') {
       setFormData((prevData) => ({
         ...prevData,
         [name]: value === '' ? null : value === 'true',
@@ -139,8 +144,8 @@ export function useGbQcStation(session) {
 
   const isFormComplete = () => {
     return (
-      formData.kelembapan !== '' &&
-      formData.waterActivity !== '' &&
+      formData.tastingNotes.trim() !== '' &&
+      formData.okForFurtherProcess !== null &&
       formData.triage !== '' &&
       formData.bijiHitam !== '' &&
       formData.bijiHitamSebagian !== '' &&
@@ -172,8 +177,10 @@ export function useGbQcStation(session) {
     try {
       const submissionData = {
         ...formData,
-        kelembapan: formData.kelembapan === '' ? 0 : parseFloat(formData.kelembapan),
-        waterActivity: formData.waterActivity === '' ? 0 : parseFloat(formData.waterActivity),
+        tastingNotes: formData.tastingNotes.trim(),
+        okForFurtherProcess: formData.okForFurtherProcess,
+        kelembapan: 0,
+        waterActivity: 0,
         triage: formData.triage === '' ? 0 : parseFloat(formData.triage),
         bijiHitam: formData.bijiHitam === '' ? 0 : parseFloat(formData.bijiHitam),
         bijiHitamSebagian: formData.bijiHitamSebagian === '' ? 0 : parseFloat(formData.bijiHitamSebagian),

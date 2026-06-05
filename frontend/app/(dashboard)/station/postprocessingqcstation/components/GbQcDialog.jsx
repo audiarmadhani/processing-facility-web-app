@@ -73,6 +73,43 @@ export default function GbQcDialog({
         <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
           Enter the QC parameters for this batch. All fields must be filled to complete the QC process.
         </Typography>
+
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12}>
+            <TextField
+              name="tastingNotes"
+              label="Tasting notes"
+              value={formData.tastingNotes}
+              onChange={onFormChange}
+              fullWidth
+              multiline
+              minRows={3}
+              placeholder="Describe aroma, flavor, body, acidity, defects from the sample roast..."
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>OK for further process?</InputLabel>
+              <Select
+                name="okForFurtherProcess"
+                value={
+                  formData.okForFurtherProcess === null
+                    ? ''
+                    : formData.okForFurtherProcess.toString()
+                }
+                onChange={onFormChange}
+                input={<OutlinedInput label="OK for further process?" />}
+              >
+                <MenuItem value="" disabled>
+                  Select OK / Not OK
+                </MenuItem>
+                <MenuItem value="true">OK</MenuItem>
+                <MenuItem value="false">Not OK</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={6}>
             <TextField
@@ -138,40 +175,6 @@ export default function GbQcDialog({
             />
           </Grid>
         </Grid>
-
-        <Accordion defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>Moisture</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  name="kelembapan"
-                  label="Kelembapan (%)"
-                  type="number"
-                  value={formData.kelembapan}
-                  onChange={onFormChange}
-                  fullWidth
-                  inputProps={{ min: 0, step: 0.1 }}
-                  InputProps={{ placeholder: 'Enter moisture percentage' }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  name="waterActivity"
-                  label="Water Activity (aw)"
-                  type="number"
-                  value={formData.waterActivity}
-                  onChange={onFormChange}
-                  fullWidth
-                  inputProps={{ min: 0, max: 1, step: 0.001 }}
-                  placeholder="e.g. 0.55"
-                />
-              </Grid>
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
 
         <Accordion defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>

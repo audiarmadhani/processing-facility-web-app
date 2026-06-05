@@ -5,10 +5,10 @@ export const GB_QC_ALLOWED_ROLES = ['admin', 'manager', 'postprocessing'];
 export const gbQcApi = (path) => apiUrl(path);
 
 export const emptyFormData = () => ({
+  tastingNotes: '',
+  okForFurtherProcess: null,
   seranggaHidup: null,
   bijiBauBusuk: null,
-  kelembapan: '',
-  waterActivity: '',
   triage: '',
   bijiHitam: '',
   bijiHitamSebagian: '',
