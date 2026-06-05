@@ -29,6 +29,10 @@ function PostProcessingQCPage() {
           onRecordRoast={station.handleOpenRecordRoast}
           onStartQC={station.handleStartQC}
           onExportPdf={station.handleExportToPDF}
+          readyQcActionAnchorEl={station.readyQcActionAnchorEl}
+          readyQcActionRow={station.readyQcActionRow}
+          onReadyQcActionMenuOpen={station.handleReadyQcActionMenuOpen}
+          onReadyQcActionMenuClose={station.handleReadyQcActionMenuClose}
         />
 
         <RecordRoastDialog

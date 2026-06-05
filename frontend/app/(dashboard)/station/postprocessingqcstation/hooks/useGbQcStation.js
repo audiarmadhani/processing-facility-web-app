@@ -67,6 +67,18 @@ export function useGbQcStation(session) {
   const [firstCrackMinutes, setFirstCrackMinutes] = useState('');
   const [roastNotes, setRoastNotes] = useState('');
   const [startQcAfterRoast, setStartQcAfterRoast] = useState(true);
+  const [readyQcActionAnchorEl, setReadyQcActionAnchorEl] = useState(null);
+  const [readyQcActionRow, setReadyQcActionRow] = useState(null);
+
+  const handleReadyQcActionMenuOpen = (event, row) => {
+    setReadyQcActionAnchorEl(event.currentTarget);
+    setReadyQcActionRow(row);
+  };
+
+  const handleReadyQcActionMenuClose = () => {
+    setReadyQcActionAnchorEl(null);
+    setReadyQcActionRow(null);
+  };
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -493,5 +505,9 @@ export function useGbQcStation(session) {
     handleSaveQC,
     handleCapture,
     handleExportToPDF,
+    readyQcActionAnchorEl,
+    readyQcActionRow,
+    handleReadyQcActionMenuOpen,
+    handleReadyQcActionMenuClose,
   };
 }

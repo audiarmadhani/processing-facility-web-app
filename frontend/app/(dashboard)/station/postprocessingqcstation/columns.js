@@ -1,6 +1,7 @@
 'use client';
 
-import { Button, Chip } from '@mui/material';
+import { Button, Chip, Menu, MenuItem } from '@mui/material';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -119,7 +120,20 @@ export function getRoastColumns(onRecordRoast) {
   ];
 }
 
-export function getReadyForQcColumns(onStartQC, onRecordRoast) {
+export function getReadyForQcColumns({
+  onStartQC,
+  onRecordRoast,
+  actionAnchorEl,
+  selectedActionRow,
+  handleActionMenuOpen,
+  handleActionMenuClose,
+}) {
+  const runAction = (action, row) => {
+    handleActionMenuClose();
+    if (action === 'roast') onRecordRoast(row);
+    if (action === 'qc') onStartQC(row);
+  };
+
   return [
     ...sharedBatchColumns,
     {
@@ -147,16 +161,26 @@ export function getReadyForQcColumns(onStartQC, onRecordRoast) {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 220,
+      width: 130,
       sortable: false,
       renderCell: ({ row }) => (
         <>
-          <Button variant="outlined" size="small" sx={{ mr: 1 }} onClick={() => onRecordRoast(row)}>
-            Record roast
+          <Button
+            variant="contained"
+            size="small"
+            endIcon={<ArrowDropDownIcon />}
+            onClick={(event) => handleActionMenuOpen(event, row)}
+          >
+            Action
           </Button>
-          <Button variant="contained" size="small" onClick={() => onStartQC(row)}>
-            Start QC
-          </Button>
+          <Menu
+            anchorEl={actionAnchorEl}
+            open={Boolean(actionAnchorEl) && selectedActionRow?.id === row.id}
+            onClose={handleActionMenuClose}
+          >
+            <MenuItem onClick={() => runAction('roast', row)}>Record roast</MenuItem>
+            <MenuItem onClick={() => runAction('qc', row)}>Start QC</MenuItem>
+          </Menu>
         </>
       ),
     },

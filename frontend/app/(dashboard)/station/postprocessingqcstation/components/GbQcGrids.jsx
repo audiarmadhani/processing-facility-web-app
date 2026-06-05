@@ -17,6 +17,7 @@ const pipelineGridDefaults = {
   height: PIPELINE_GRID_HEIGHT,
   pageSizeOptions: [25, 50, 100],
   initialState: { pagination: { paginationModel: { pageSize: 100 } } },
+  getRowId: (row) => row.id,
 };
 
 function PipelineSection({ title, subtitle, count, xs = 12, children }) {
@@ -57,6 +58,10 @@ export default function GbQcGrids({
   onRecordRoast,
   onStartQC,
   onExportPdf,
+  readyQcActionAnchorEl,
+  readyQcActionRow,
+  onReadyQcActionMenuOpen,
+  onReadyQcActionMenuClose,
 }) {
   return (
     <>
@@ -111,6 +116,7 @@ export default function GbQcGrids({
           height={ROAST_GRID_HEIGHT}
           pageSizeOptions={[25, 50, 100]}
           initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
+          getRowId={(row) => row.id}
         />
       </PipelineSection>
 
@@ -122,7 +128,14 @@ export default function GbQcGrids({
       >
         <StationDataGrid
           rows={readyForQcBatches}
-          columns={getReadyForQcColumns(onStartQC, onRecordRoast)}
+          columns={getReadyForQcColumns({
+            onStartQC,
+            onRecordRoast,
+            actionAnchorEl: readyQcActionAnchorEl,
+            selectedActionRow: readyQcActionRow,
+            handleActionMenuOpen: onReadyQcActionMenuOpen,
+            handleActionMenuClose: onReadyQcActionMenuClose,
+          })}
           {...pipelineGridDefaults}
         />
       </PipelineSection>
