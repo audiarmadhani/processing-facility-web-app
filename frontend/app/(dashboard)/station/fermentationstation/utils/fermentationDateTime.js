@@ -101,6 +101,26 @@ export function isFermentationOverdue(row, now = dayjs()) {
   return now.isAfter(endMoment);
 }
 
+/** Grid sort order: 0 = red (overdue), 1 = yellow (active), 2 = green (finished). */
+export function getFermentationBatchSortPriority(row, now = dayjs()) {
+  if (isFermentationFinished(row)) return 2;
+  if (isFermentationOverdue(row, now)) return 0;
+  return 1;
+}
+
+export function compareFermentationBatchesByColor(a, b, now = dayjs()) {
+  const priorityDiff =
+    getFermentationBatchSortPriority(a, now) - getFermentationBatchSortPriority(b, now);
+  if (priorityDiff !== 0) return priorityDiff;
+
+  const startA = parseFermentationDateTime(fermentationStartValue(a));
+  const startB = parseFermentationDateTime(fermentationStartValue(b));
+  if (startA && startB) {
+    return startA.valueOf() - startB.valueOf();
+  }
+  return 0;
+}
+
 const EMPTY_ESTIMATE = {
   endDisplay: '—',
   remainingDisplay: '—',
