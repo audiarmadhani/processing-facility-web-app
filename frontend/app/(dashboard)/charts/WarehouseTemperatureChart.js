@@ -79,7 +79,7 @@ const WarehouseTemperatureChart = ({ data, timeframe }) => {
 
   return (
     <Box sx={{ height: '90%' }}>
-      {data.length === 0 ? (
+      {!data || data.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           <Typography variant="body1" color="error">
             No temperature data available for the selected timeframe.

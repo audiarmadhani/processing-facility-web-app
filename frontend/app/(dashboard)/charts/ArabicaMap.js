@@ -20,7 +20,7 @@ const ArabicaMapComponent = () => {
         const receivingResponse = await fetch("https://processing-facility-backend.onrender.com/api/receiving");
         const receivingData = await receivingResponse.json();
 
-        const receivingMap = receivingData.allRows.reduce((acc, receiving) => {
+        const receivingMap = (Array.isArray(receivingData.allRows) ? receivingData.allRows : []).reduce((acc, receiving) => {
           acc[receiving.farmerID] = {
             price: parseFloat(receiving.price) || 0,
             weight: parseFloat(receiving.weight) || 0,
@@ -28,7 +28,7 @@ const ArabicaMapComponent = () => {
           return acc;
         }, {});
 
-        const aggregatedData = farmerData.arabicaFarmers.reduce((acc, farmer) => {
+        const aggregatedData = (Array.isArray(farmerData.arabicaFarmers) ? farmerData.arabicaFarmers : []).reduce((acc, farmer) => {
           if (farmer.farmType === "Arabica") {
             const kecamatanName = farmer.kecamatan?.toUpperCase() || "UNKNOWN"; // Handle missing kec.
             const desaName = farmer.desa?.toUpperCase() || "UNKNOWN";       // Handle missing desa

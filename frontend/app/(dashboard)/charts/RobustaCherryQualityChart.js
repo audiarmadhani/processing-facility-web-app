@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
 import axios from "axios";
-import { Box, CircularProgress } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 
 const colorCategories = {
   Set3: [
@@ -62,8 +62,17 @@ const RobustaCherryQualityChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  // Conditionally set height based on whether data is available
-  const chartHeight = data && data.length > 0 ? 500 : 'auto';
+  if (data.length === 0) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
+        <Typography variant="body1" color="text.secondary">
+          No cherry quality data for the selected timeframe.
+        </Typography>
+      </Box>
+    );
+  }
+
+  const chartHeight = 500;
 
   const colorScheme = 'Set3';
 

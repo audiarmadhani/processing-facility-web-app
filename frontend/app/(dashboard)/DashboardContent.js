@@ -44,52 +44,58 @@ import RobustaFarmersContributionChart from './charts/RobustaFarmersContribution
 import WarehouseTemperatureChart from './charts/WarehouseTemperatureChart';
 import WetmillTemperatureChart from './charts/WetmillTemperatureChart';
 import TradingViewWidget from './charts/TradingViewWidget';
+import WeightFlowSankeyChart from './charts/WeightFlowSankeyChart';
 const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
 const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
 
+const DEFAULT_METRICS = {
+  totalBatches: 0,
+  totalArabicaWeight: 0,
+  totalRobustaWeight: 0,
+  totalArabicaCost: 0,
+  totalRobustaCost: 0,
+  lastmonthArabicaWeight: 0,
+  lastmonthRobustaWeight: 0,
+  lastmonthArabicaCost: 0,
+  lastmonthRobustaCost: 0,
+  totalWeight: 0,
+  totalCost: 0,
+  activeFarmers: 0,
+  pendingQC: 0,
+  pendingProcessing: 0,
+  avgArabicaCost: 0,
+  avgRobustaCost: 0,
+  lastmonthAvgArabicaCost: 0,
+  lastmonthAvgRobustaCost: 0,
+  totalArabicaProcessed: 0,
+  totalRobustaProcessed: 0,
+  lastmonthArabicaProcessed: 0,
+  lastmonthRobustaProcessed: 0,
+  totalArabicaProduction: 0,
+  totalRobustaProduction: 0,
+  lastmonthArabicaProduction: 0,
+  lastmonthRobustaProduction: 0,
+  arabicaYield: 0,
+  robustaYield: 0,
+  landCoveredArabica: 0,
+  landCoveredRobusta: 0,
+  activeArabicaFarmers: 0,
+  activeRobustaFarmers: 0,
+  pendingArabicaQC: 0,
+  pendingRobustaQC: 0,
+  pendingArabicaProcessing: 0,
+  pendingRobustaProcessing: 0,
+  pendingArabicaWeightProcessing: 0,
+  pendingRobustaWeightProcessing: 0,
+};
+
+const isDashboardMetricsResponse = (data) =>
+  data && typeof data === 'object' && 'totalArabicaWeight' in data;
+
 function Dashboard() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const userRole = session?.user?.role || "user";
-  const [metrics, setMetrics] = useState({
-    totalBatches: 0,
-    totalArabicaWeight: 0,
-    totalRobustaWeight: 0,
-    totalArabicaCost: 0,
-    totalRobustaCost: 0,
-    lastmonthArabicaWeight: 0,
-    lastmonthRobustaWeight: 0,
-    lastmonthArabicaCost: 0,
-    lastmonthRobustaCost: 0,
-    totalWeight: 0,
-    totalCost: 0,
-    activeFarmers: 0,
-    pendingQC: 0,
-    pendingProcessing: 0,
-    avgArabicaCost: 0,
-    avgRobustaCost: 0,
-    lastmonthAvgArabicaCost: 0,
-    lastmonthAvgRobustaCost: 0,
-    totalArabicaProcessed: 0,
-    totalRobustaProcessed: 0,
-    lastmonthArabicaProcessed: 0,
-    lastmonthRobustaProcessed: 0,
-    totalArabicaProduction: 0,
-    totalRobustaProduction: 0,
-    lastmonthArabicaProduction: 0,
-    lastmonthRobustaProduction: 0,
-    arabicaYield: 0,
-    robustaYield: 0,
-    landCoveredArabica: 0,
-    landCoveredRobusta: 0,
-    activeArabicaFarmers: 0,
-    activeRobustaFarmers: 0,
-    pendingArabicaQC: 0,
-    pendingRobustaQC: 0,
-    pendingArabicaProcessing: 0,
-    pendingRobustaProcessing: 0,
-    pendingArabicaWeightProcessing: 0,
-    pendingRobustaWeightProcessing: 0,
-  });
+  const [metrics, setMetrics] = useState({ ...DEFAULT_METRICS });
   const [environmentalMetrics, setEnvironmentalMetrics] = useState({
     warehouse: {
       avgTemperature: 0,
@@ -124,16 +130,30 @@ function Dashboard() {
   const [openDialog, setOpenDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const formatWeight = (weight) => {
-    if (weight >= 1e9) {
-      return `${(weight / 1e9).toFixed(2)} B`;
-    } else if (weight >= 1e6) {
-      return `${(weight / 1e6).toFixed(2)} M`;
-    } else if (weight >= 1e3) {
-      return `${(weight / 1e3).toFixed(2)} K`;
-    } else {
-      return `${new Intl.NumberFormat('de-DE').format(weight)} /kg`;
+    const numericWeight = Number(weight) || 0;
+    if (numericWeight >= 1e9) {
+      return `${(numericWeight / 1e9).toFixed(2)} B`;
+    } else if (numericWeight >= 1e6) {
+      return `${(numericWeight / 1e6).toFixed(2)} M`;
+    } else if (numericWeight >= 1e3) {
+      return `${(numericWeight / 1e3).toFixed(2)} K`;
     }
+    return `${new Intl.NumberFormat('de-DE').format(numericWeight)} /kg`;
   };
+  const hasComparablePrevious = (previous) =>
+    typeof previous === 'number' && Number.isFinite(previous) && previous !== 0;
+  const formatPercentChange = (current, previous) => {
+    if (!hasComparablePrevious(previous)) return null;
+    const currentNum = Number(current) || 0;
+    return Math.abs(((currentNum - previous) / previous) * 100).toFixed(2);
+  };
+  const formatYieldRatio = (yieldValue) => {
+    const yieldNum = Number(yieldValue);
+    if (!yieldNum || !Number.isFinite(yieldNum) || yieldNum <= 0) return 'N/A';
+    return `${(100 / yieldNum).toFixed(1)}:1`;
+  };
+  const formatMetricNumber = (value) =>
+    new Intl.NumberFormat('de-DE').format(Number(value) || 0);
   const timeframes = [
     { value: 'this_week', label: 'This Week' },
     { value: 'last_week', label: 'Last Week' },
@@ -151,6 +171,9 @@ function Dashboard() {
     last_year: 'Last Year',
   };
   const [timeframe, setTimeframe] = useState('this_month');
+  const [sankeyCoffeeType, setSankeyCoffeeType] = useState('');
+  const [sankeyProcessingType, setSankeyProcessingType] = useState('');
+  const [sankeyBatchNumber, setSankeyBatchNumber] = useState('');
   const selectedRangeLabel = timeframeLabels[timeframe];
   const fetchBatchTrackingData = useCallback(async () => {
     console.log('Starting fetchBatchTrackingData');
@@ -165,6 +188,9 @@ function Dashboard() {
       }
       const data = await response.json();
       console.log('Raw batch tracking API response:', data);
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid batch tracking response');
+      }
       const formattedData = data.map((row, index) => ({
         id: index,
         ...row,
@@ -347,28 +373,28 @@ function Dashboard() {
       console.log('Raw Wetmill Data:', wetmillRawData);
       setEnvironmentalMetrics({
         warehouse: {
-          avgTemperature: parseFloat(data.warehouse.avgTemperature) || 0,
-          avgHumidity: parseFloat(data.warehouse.avgHumidity) || 0,
-          maxTemperature: parseFloat(data.warehouse.maxTemperature) || 0,
-          minTemperature: parseFloat(data.warehouse.minTemperature) || 0,
-          maxHumidity: parseFloat(data.warehouse.maxHumidity) || 0,
-          minHumidity: parseFloat(data.warehouse.minHumidity) || 0,
-          temperatureData: warehouseRawData.map(row => ({
+          avgTemperature: parseFloat(data?.warehouse?.avgTemperature) || 0,
+          avgHumidity: parseFloat(data?.warehouse?.avgHumidity) || 0,
+          maxTemperature: parseFloat(data?.warehouse?.maxTemperature) || 0,
+          minTemperature: parseFloat(data?.warehouse?.minTemperature) || 0,
+          maxHumidity: parseFloat(data?.warehouse?.maxHumidity) || 0,
+          minHumidity: parseFloat(data?.warehouse?.minHumidity) || 0,
+          temperatureData: (Array.isArray(warehouseRawData) ? warehouseRawData : []).map(row => ({
             date: row.recorded_at,
             temperature: parseFloat(row.temperature) || 0,
-          })) || [],
+          })),
         },
         wetmill: {
-          avgTemperature: parseFloat(data.wetmill.avgTemperature) || 0,
-          avgHumidity: parseFloat(data.wetmill.avgHumidity) || 0,
-          maxTemperature: parseFloat(data.wetmill.maxTemperature) || 0,
-          minTemperature: parseFloat(data.wetmill.minTemperature) || 0,
-          maxHumidity: parseFloat(data.wetmill.maxHumidity) || 0,
-          minHumidity: parseFloat(data.wetmill.minHumidity) || 0,
-          temperatureData: wetmillRawData.map(row => ({
+          avgTemperature: parseFloat(data?.wetmill?.avgTemperature) || 0,
+          avgHumidity: parseFloat(data?.wetmill?.avgHumidity) || 0,
+          maxTemperature: parseFloat(data?.wetmill?.maxTemperature) || 0,
+          minTemperature: parseFloat(data?.wetmill?.minTemperature) || 0,
+          maxHumidity: parseFloat(data?.wetmill?.maxHumidity) || 0,
+          minHumidity: parseFloat(data?.wetmill?.minHumidity) || 0,
+          temperatureData: (Array.isArray(wetmillRawData) ? wetmillRawData : []).map(row => ({
             date: row.recorded_at,
             temperature: parseFloat(row.temperature) || 0,
-          })) || [],
+          })),
         },
       });
     } catch (err) {
@@ -425,7 +451,10 @@ function Dashboard() {
         }
         const jsonData = await response.json();
         console.log('Dashboard metrics:', jsonData);
-        setMetrics(jsonData);
+        if (!isDashboardMetricsResponse(jsonData)) {
+          throw new Error(jsonData.message || 'Invalid dashboard metrics response');
+        }
+        setMetrics({ ...DEFAULT_METRICS, ...jsonData });
       } catch (err) {
         console.error("Error fetching dashboard metrics:", err);
         setError(err.message);
@@ -463,7 +492,7 @@ function Dashboard() {
     setOpenSnackbar(false);
     setError(null);
   };
-  if (loading) {
+  if (loading || sessionStatus === 'loading') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
@@ -607,6 +636,61 @@ function Dashboard() {
                 </Card>
               </Grid>
             </Grid>
+          </Grid>
+
+          {/* Processing Weight Flow Sankey */}
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Processing Weight Flow
+                </Typography>
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id="sankey-coffee-label">Coffee Type</InputLabel>
+                      <Select
+                        labelId="sankey-coffee-label"
+                        value={sankeyCoffeeType}
+                        label="Coffee Type"
+                        onChange={(e) => setSankeyCoffeeType(e.target.value)}
+                      >
+                        <MenuItem value="">All</MenuItem>
+                        <MenuItem value="Arabica">Arabica</MenuItem>
+                        <MenuItem value="Robusta">Robusta</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Processing Type"
+                      value={sankeyProcessingType}
+                      onChange={(e) => setSankeyProcessingType(e.target.value)}
+                      placeholder="e.g. Washed"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Batch Number"
+                      value={sankeyBatchNumber}
+                      onChange={(e) => setSankeyBatchNumber(e.target.value)}
+                      placeholder="Filter by batch"
+                    />
+                  </Grid>
+                </Grid>
+                <WeightFlowSankeyChart
+                  timeframe={timeframe}
+                  coffeeType={sankeyCoffeeType}
+                  processingType={sankeyProcessingType}
+                  batchNumber={sankeyBatchNumber}
+                  height="550px"
+                />
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* Arabica Section */}
@@ -782,7 +866,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Arabica Cherry Weight</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaWeight)} kg
-                      {metrics.lastmonthArabicaWeight !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthArabicaWeight) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? 'green' : 'red'}
@@ -795,7 +879,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalArabicaWeight >= metrics.lastmonthArabicaWeight ? '+' : '-'}
-                          {Math.abs(((metrics.totalArabicaWeight - metrics.lastmonthArabicaWeight) / metrics.lastmonthArabicaWeight * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalArabicaWeight, metrics.lastmonthArabicaWeight)}%
                         </Typography>
                       )}
                     </Typography>
@@ -813,7 +897,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Arabica Cherry Cost</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {formatWeight(metrics.totalArabicaCost)}
-                      {metrics.lastmonthArabicaCost !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthArabicaCost) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalArabicaCost >= metrics.lastmonthArabicaCost ? 'red' : 'green'}
@@ -826,7 +910,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalArabicaCost >= metrics.lastmonthArabicaCost ? '+' : '-'}
-                          {Math.abs(((metrics.totalArabicaCost - metrics.lastmonthArabicaCost) / metrics.lastmonthArabicaCost * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalArabicaCost, metrics.lastmonthArabicaCost)}%
                         </Typography>
                       )}
                     </Typography>
@@ -845,7 +929,7 @@ function Dashboard() {
                     <Typography variant="body1">Average Arabica Cherry Cost</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.avgArabicaCost)} /kg
-                      {metrics.lastmonthAvgArabicaCost !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthAvgArabicaCost) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.avgArabicaCost >= metrics.lastmonthAvgArabicaCost ? 'red' : 'green'}
@@ -858,7 +942,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.avgArabicaCost >= metrics.lastmonthAvgArabicaCost ? '+' : '-'}
-                          {Math.abs(((metrics.avgArabicaCost - metrics.lastmonthAvgArabicaCost) / metrics.lastmonthAvgArabicaCost * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.avgArabicaCost, metrics.lastmonthAvgArabicaCost)}%
                         </Typography>
                       )}
                     </Typography>
@@ -876,7 +960,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Arabica Processed</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaProcessed)} kg
-                      {metrics.lastmonthArabicaProcessed !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthArabicaProcessed) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? 'green' : 'red'}
@@ -889,7 +973,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalArabicaProcessed >= metrics.lastmonthArabicaProcessed ? '+' : '-'}
-                          {Math.abs(((metrics.totalArabicaProcessed - metrics.lastmonthArabicaProcessed) / metrics.lastmonthArabicaProcessed * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalArabicaProcessed, metrics.lastmonthArabicaProcessed)}%
                         </Typography>
                       )}
                     </Typography>
@@ -906,7 +990,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Arabica Production</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.totalArabicaProduction)} kg
-                      {metrics.lastmonthArabicaProduction !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthArabicaProduction) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalArabicaProduction >= metrics.lastmonthArabicaProduction ? 'green' : 'red'}
@@ -919,7 +1003,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalArabicaProduction >= metrics.lastmonthArabicaProduction ? '+' : '-'}
-                          {Math.abs(((metrics.totalArabicaProduction - metrics.lastmonthArabicaProduction) / metrics.lastmonthArabicaProduction * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalArabicaProduction, metrics.lastmonthArabicaProduction)}%
                         </Typography>
                       )}
                     </Typography>
@@ -943,7 +1027,7 @@ function Dashboard() {
                         gap: 1,
                       }}
                     >
-                      {`${(100 / parseFloat(metrics.arabicaYield)).toFixed(1)}:1`}
+                      {formatYieldRatio(metrics.arabicaYield)}
                     </Typography>
                     <Typography variant="caption">All time</Typography>
                   </CardContent>
@@ -1431,7 +1515,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Robusta Cherry Weight</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaWeight)} kg
-                      {metrics.lastmonthRobustaWeight !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthRobustaWeight) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalRobustaWeight >= metrics.lastmonthRobustaWeight ? 'green' : 'red'}
@@ -1444,7 +1528,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalRobustaWeight >= metrics.lastmonthRobustaWeight ? '+' : '-'}
-                          {Math.abs(((metrics.totalRobustaWeight - metrics.lastmonthRobustaWeight) / metrics.lastmonthRobustaWeight * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalRobustaWeight, metrics.lastmonthRobustaWeight)}%
                         </Typography>
                       )}
                     </Typography>
@@ -1462,7 +1546,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Robusta Cherry Cost</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {formatWeight(metrics.totalRobustaCost)}
-                      {metrics.lastmonthRobustaCost !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthRobustaCost) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalRobustaCost >= metrics.lastmonthRobustaCost ? 'red' : 'green'}
@@ -1475,7 +1559,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalRobustaCost >= metrics.lastmonthRobustaCost ? '+' : '-'}
-                          {Math.abs(((metrics.totalRobustaCost - metrics.lastmonthRobustaCost) / metrics.lastmonthRobustaCost * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalRobustaCost, metrics.lastmonthRobustaCost)}%
                         </Typography>
                       )}
                     </Typography>
@@ -1494,7 +1578,7 @@ function Dashboard() {
                     <Typography variant="body1">Average Robusta Cherry Cost</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.avgRobustaCost)} /kg
-                      {metrics.lastmonthAvgRobustaCost !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthAvgRobustaCost) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.avgRobustaCost >= metrics.lastmonthAvgRobustaCost ? 'red' : 'green'}
@@ -1507,7 +1591,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.avgRobustaCost >= metrics.lastmonthAvgRobustaCost ? '+' : '-'}
-                          {Math.abs(((metrics.avgRobustaCost - metrics.lastmonthAvgRobustaCost) / metrics.lastmonthAvgRobustaCost * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.avgRobustaCost, metrics.lastmonthAvgRobustaCost)}%
                         </Typography>
                       )}
                     </Typography>
@@ -1525,7 +1609,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Robusta Processed</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaProcessed)} kg
-                      {metrics.lastmonthRobustaProcessed !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthRobustaProcessed) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? 'green' : 'red'}
@@ -1538,7 +1622,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalRobustaProcessed >= metrics.lastmonthRobustaProcessed ? '+' : '-'}
-                          {Math.abs(((metrics.totalRobustaProcessed - metrics.lastmonthRobustaProcessed) / metrics.lastmonthRobustaProcessed * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalRobustaProcessed, metrics.lastmonthRobustaProcessed)}%
                         </Typography>
                       )}
                     </Typography>
@@ -1555,7 +1639,7 @@ function Dashboard() {
                     <Typography variant="body1">Total Robusta Production</Typography>
                     <Typography variant="h4" sx={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 1 }}>
                       {new Intl.NumberFormat('de-DE').format(metrics.totalRobustaProduction)} kg
-                      {metrics.lastmonthRobustaProduction !== 0 && (
+                      {hasComparablePrevious(metrics.lastmonthRobustaProduction) && (
                         <Typography
                           variant="subtitle2"
                           color={metrics.totalRobustaProduction >= metrics.lastmonthRobustaProduction ? 'green' : 'red'}
@@ -1568,7 +1652,7 @@ function Dashboard() {
                           }}
                         >
                           {metrics.totalRobustaProduction >= metrics.lastmonthRobustaProduction ? '+' : '-'}
-                          {Math.abs(((metrics.totalRobustaProduction - metrics.lastmonthRobustaProduction) / metrics.lastmonthRobustaProduction * 100).toFixed(2))}%
+                          {formatPercentChange(metrics.totalRobustaProduction, metrics.lastmonthRobustaProduction)}%
                         </Typography>
                       )}
                     </Typography>
@@ -1592,7 +1676,7 @@ function Dashboard() {
                         gap: 1,
                       }}
                     >
-                      {`${(100 / parseFloat(metrics.robustaYield)).toFixed(1)}:1`}
+                      {formatYieldRatio(metrics.robustaYield)}
                     </Typography>
                     <Typography variant="caption">All time</Typography>
                   </CardContent>
@@ -1907,6 +1991,11 @@ function Dashboard() {
           </Grid>
 
         </Grid>
+        <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+          <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        </Snackbar>
       </LocalizationProvider>
     </div>
   );
