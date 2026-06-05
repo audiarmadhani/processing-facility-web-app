@@ -6,6 +6,7 @@ import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import * as d3 from 'd3';
 
 const API_BASE = 'https://processing-facility-backend.onrender.com/api';
+const SANKEY_TIMEFRAME = 'this_year';
 
 const NODE_COLORS = {
   pipeline: '#1976d2',
@@ -20,7 +21,6 @@ function getNodeColor(name) {
 }
 
 const WeightFlowSankeyChart = ({
-  timeframe = 'this_month',
   coffeeType = '',
   batchNumber = '',
   height = '550px',
@@ -37,7 +37,7 @@ const WeightFlowSankeyChart = ({
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ timeframe });
+        const params = new URLSearchParams({ timeframe: SANKEY_TIMEFRAME });
         if (coffeeType) params.set('coffeeType', coffeeType);
         if (batchNumber) params.set('batchNumber', batchNumber);
 
@@ -63,7 +63,7 @@ const WeightFlowSankeyChart = ({
     };
 
     fetchData();
-  }, [timeframe, coffeeType, batchNumber]);
+  }, [coffeeType, batchNumber]);
 
   const drawChart = useCallback((data) => {
     if (!chartRef.current || !data?.length) return;
@@ -228,7 +228,7 @@ const WeightFlowSankeyChart = ({
     <Box sx={{ height, width: '100%' }}>
       {meta && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          {meta.batchCount} batches · {meta.totalReceivingWeight?.toLocaleString()} kg receiving
+          This year · {meta.batchCount} batches · {meta.totalReceivingWeight?.toLocaleString()} kg receiving
           {meta.reorderedBatchCount > 0 ? ` · ${meta.reorderedBatchCount} reordered for monotonic flow` : ''}
         </Typography>
       )}

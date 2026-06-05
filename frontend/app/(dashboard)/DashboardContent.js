@@ -683,7 +683,6 @@ function Dashboard() {
                   </Grid>
                 </Grid>
                 <WeightFlowSankeyChart
-                  timeframe={timeframe}
                   coffeeType={sankeyCoffeeType}
                   batchNumber={sankeyBatchNumber}
                   height="550px"
