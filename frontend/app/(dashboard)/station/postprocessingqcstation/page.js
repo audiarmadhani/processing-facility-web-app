@@ -34,15 +34,22 @@ function PostProcessingQCPage() {
         <RecordRoastDialog
           open={station.openRoastDialog}
           batch={station.roastTarget}
+          roastHistory={station.roastHistory}
           roastedAt={station.roastedAt}
           setRoastedAt={station.setRoastedAt}
+          roastProfile={station.roastProfile}
+          setRoastProfile={station.setRoastProfile}
+          endTemp={station.endTemp}
+          setEndTemp={station.setEndTemp}
+          firstCrackMinutes={station.firstCrackMinutes}
+          setFirstCrackMinutes={station.setFirstCrackMinutes}
           notes={station.roastNotes}
           setNotes={station.setRoastNotes}
           startQcAfter={station.startQcAfterRoast}
           setStartQcAfter={station.setStartQcAfterRoast}
           isLoading={station.isLoading}
           onClose={station.handleCloseRoastDialog}
-          onConfirm={station.handleConfirmRecordRoast}
+          onAddRoast={station.handleAddRoast}
         />
 
         <GbQcDialog
@@ -50,6 +57,8 @@ function PostProcessingQCPage() {
           selectedBatch={station.selectedBatch}
           formData={station.formData}
           onFormChange={station.handleFormChange}
+          onAddCuppingEntry={station.handleAddCuppingEntry}
+          onRemoveCuppingEntry={station.handleRemoveCuppingEntry}
           onClose={station.handleCloseDialog}
           onOpenCamera={() => station.setOpenCamera(true)}
           onSave={station.handleSaveQC}

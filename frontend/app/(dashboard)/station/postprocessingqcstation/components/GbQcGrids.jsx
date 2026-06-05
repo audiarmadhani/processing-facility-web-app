@@ -122,7 +122,7 @@ export default function GbQcGrids({
       >
         <StationDataGrid
           rows={readyForQcBatches}
-          columns={getReadyForQcColumns(onStartQC)}
+          columns={getReadyForQcColumns(onStartQC, onRecordRoast)}
           {...pipelineGridDefaults}
         />
       </PipelineSection>

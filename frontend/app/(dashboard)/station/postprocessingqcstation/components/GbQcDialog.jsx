@@ -17,8 +17,15 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  IconButton,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const DEFECT_FIELDS = [
   { name: 'bijiHitam', label: 'Biji Hitam', placeholder: 'Enter count of black beans' },
@@ -55,17 +62,33 @@ const FOREIGN_MATTER_FIELDS = [
   },
 ];
 
+function formatCuppedDate(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+}
+
+function formatOkLabel(value) {
+  if (value === true) return 'OK';
+  if (value === false) return 'Not OK';
+  return '—';
+}
+
 export default function GbQcDialog({
   open,
   selectedBatch,
   formData,
   onFormChange,
+  onAddCuppingEntry,
+  onRemoveCuppingEntry,
   onClose,
   onOpenCamera,
   onSave,
   onComplete,
   isFormComplete,
 }) {
+  const draft = formData.cuppingDraft || {};
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>Quality Control - Batch {selectedBatch?.batchNumber}</DialogTitle>
@@ -74,28 +97,63 @@ export default function GbQcDialog({
           Enter the QC parameters for this batch. All fields must be filled to complete the QC process.
         </Typography>
 
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          Cupping sessions
+        </Typography>
+        <Table size="small" sx={{ mb: 2 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell>Date cupped</TableCell>
+              <TableCell>Notes</TableCell>
+              <TableCell>OK / Not OK</TableCell>
+              <TableCell width={60} />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {(formData.cuppingEntries || []).length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  No cupping entries yet
+                </TableCell>
+              </TableRow>
+            ) : (
+              formData.cuppingEntries.map((entry, index) => (
+                <TableRow key={entry.id || `draft-${index}`}>
+                  <TableCell>{formatCuppedDate(entry.cuppedAt)}</TableCell>
+                  <TableCell>{entry.notes}</TableCell>
+                  <TableCell>{formatOkLabel(entry.okForFurtherProcess)}</TableCell>
+                  <TableCell>
+                    <IconButton size="small" onClick={() => onRemoveCuppingEntry(index)} aria-label="Remove cupping entry">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={4}>
             <TextField
-              name="tastingNotes"
-              label="Tasting notes"
-              value={formData.tastingNotes}
+              name="cuppingDraft.cuppedAt"
+              label="Date cupped"
+              type="date"
+              value={draft.cuppedAt || ''}
               onChange={onFormChange}
               fullWidth
-              multiline
-              minRows={3}
-              placeholder="Describe aroma, flavor, body, acidity, defects from the sample roast..."
+              InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={8}>
             <FormControl fullWidth>
               <InputLabel>OK for further process?</InputLabel>
               <Select
-                name="okForFurtherProcess"
+                name="cuppingDraft.okForFurtherProcess"
                 value={
-                  formData.okForFurtherProcess === null
+                  draft.okForFurtherProcess === null || draft.okForFurtherProcess === undefined
                     ? ''
-                    : formData.okForFurtherProcess.toString()
+                    : draft.okForFurtherProcess.toString()
                 }
                 onChange={onFormChange}
                 input={<OutlinedInput label="OK for further process?" />}
@@ -107,6 +165,23 @@ export default function GbQcDialog({
                 <MenuItem value="false">Not OK</MenuItem>
               </Select>
             </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              name="cuppingDraft.notes"
+              label="Cupping notes"
+              value={draft.notes || ''}
+              onChange={onFormChange}
+              fullWidth
+              multiline
+              minRows={3}
+              placeholder="Describe aroma, flavor, body, acidity, defects from the sample roast..."
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Button variant="contained" onClick={onAddCuppingEntry}>
+              Add cupping
+            </Button>
           </Grid>
         </Grid>
 

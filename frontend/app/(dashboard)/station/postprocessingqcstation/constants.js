@@ -4,9 +4,15 @@ export const GB_QC_ALLOWED_ROLES = ['admin', 'manager', 'postprocessing'];
 
 export const gbQcApi = (path) => apiUrl(path);
 
-export const emptyFormData = () => ({
-  tastingNotes: '',
+export const emptyCuppingDraft = () => ({
+  cuppedAt: new Date().toISOString().slice(0, 10),
+  notes: '',
   okForFurtherProcess: null,
+});
+
+export const emptyFormData = () => ({
+  cuppingEntries: [],
+  cuppingDraft: emptyCuppingDraft(),
   seranggaHidup: null,
   bijiBauBusuk: null,
   triage: '',

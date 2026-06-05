@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { gbQcApi, emptyFormData } from '../constants';
+import { gbQcApi, emptyFormData, emptyCuppingDraft } from '../constants';
 import { generateGbQcPdf } from '../utils/generateGbQcPdf';
 import { withPipelineIds } from '../utils/pipelineRowId';
 
@@ -10,6 +10,38 @@ function toDatetimeLocalValue(date = new Date()) {
   const d = new Date(date);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function emptyRoastForm() {
+  return {
+    roastedAt: toDatetimeLocalValue(),
+    roastProfile: '',
+    endTemp: '',
+    firstCrackMinutes: '',
+    notes: '',
+  };
+}
+
+function mapCuppingEntry(entry) {
+  const cuppedAt = entry.cuppedAt
+    ? String(entry.cuppedAt).slice(0, 10)
+    : '';
+  return {
+    id: entry.id,
+    cuppedAt,
+    notes: entry.notes || '',
+    okForFurtherProcess: entry.okForFurtherProcess ?? null,
+    cuppedBy: entry.cuppedBy || null,
+  };
+}
+
+function isCuppingEntryComplete(entry) {
+  return (
+    !!entry.cuppedAt &&
+    typeof entry.notes === 'string' &&
+    entry.notes.trim() !== '' &&
+    entry.okForFurtherProcess !== null
+  );
 }
 
 export function useGbQcStation(session) {
@@ -28,7 +60,11 @@ export function useGbQcStation(session) {
 
   const [openRoastDialog, setOpenRoastDialog] = useState(false);
   const [roastTarget, setRoastTarget] = useState(null);
+  const [roastHistory, setRoastHistory] = useState([]);
   const [roastedAt, setRoastedAt] = useState(toDatetimeLocalValue());
+  const [roastProfile, setRoastProfile] = useState('');
+  const [endTemp, setEndTemp] = useState('');
+  const [firstCrackMinutes, setFirstCrackMinutes] = useState('');
   const [roastNotes, setRoastNotes] = useState('');
   const [startQcAfterRoast, setStartQcAfterRoast] = useState(true);
 
@@ -62,19 +98,53 @@ export function useGbQcStation(session) {
     fetchData();
   }, [fetchData]);
 
+  const loadCuppingEntries = async (batchNumber, legacyQcData = null) => {
+    try {
+      const res = await axios.get(gbQcApi(`/gb-qc/cupping/${encodeURIComponent(batchNumber)}`));
+      const entries = (res.data || []).map(mapCuppingEntry);
+      if (entries.length > 0) {
+        return entries;
+      }
+
+      if (legacyQcData?.tastingNotes?.trim()) {
+        return [
+          {
+            id: null,
+            cuppedAt: legacyQcData.updatedAt
+              ? String(legacyQcData.updatedAt).slice(0, 10)
+              : new Date().toISOString().slice(0, 10),
+            notes: legacyQcData.tastingNotes.trim(),
+            okForFurtherProcess: legacyQcData.okForFurtherProcess ?? null,
+            cuppedBy: null,
+          },
+        ];
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching cupping entries:', error);
+      return [];
+    }
+  };
+
   const handleStartQC = async (batch) => {
     setSelectedBatch(batch);
     try {
       const res = await axios.get(gbQcApi(`/postproqc/${batch.batchNumber}`));
-      if (res.data) {
+      const legacyQcData = res.data || null;
+      const cuppingEntries = await loadCuppingEntries(batch.batchNumber, legacyQcData);
+
+      if (legacyQcData) {
         setFormData({
           ...emptyFormData(),
-          ...res.data,
-          tastingNotes: res.data.tastingNotes || '',
-          okForFurtherProcess: res.data.okForFurtherProcess ?? null,
+          ...legacyQcData,
+          cuppingEntries,
+          cuppingDraft: emptyCuppingDraft(),
         });
       } else {
-        setFormData(emptyFormData());
+        setFormData({
+          ...emptyFormData(),
+          cuppingEntries,
+        });
       }
       setOpenDialog(true);
     } catch (error) {
@@ -83,20 +153,56 @@ export function useGbQcStation(session) {
     }
   };
 
-  const handleOpenRecordRoast = (batch) => {
+  const fetchRoastHistory = async (batch) => {
+    if (!batch?.batchNumber || !batch?.processingType) {
+      setRoastHistory([]);
+      return;
+    }
+    try {
+      const res = await axios.get(gbQcApi('/gb-qc/roasts'), {
+        params: {
+          batchNumber: batch.batchNumber,
+          processingType: batch.processingType,
+        },
+      });
+      setRoastHistory(res.data || []);
+    } catch (error) {
+      console.error('Error fetching roast history:', error);
+      setRoastHistory([]);
+    }
+  };
+
+  const resetRoastForm = () => {
+    const defaults = emptyRoastForm();
+    setRoastedAt(defaults.roastedAt);
+    setRoastProfile(defaults.roastProfile);
+    setEndTemp(defaults.endTemp);
+    setFirstCrackMinutes(defaults.firstCrackMinutes);
+    setRoastNotes(defaults.notes);
+  };
+
+  const handleOpenRecordRoast = async (batch) => {
     setRoastTarget(batch);
-    setRoastedAt(toDatetimeLocalValue());
-    setRoastNotes('');
+    resetRoastForm();
     setStartQcAfterRoast(true);
     setOpenRoastDialog(true);
+    await fetchRoastHistory(batch);
   };
 
-  const handleCloseRoastDialog = () => {
+  const handleCloseRoastDialog = async () => {
+    const shouldOpenQc = startQcAfterRoast;
+    const target = roastTarget;
     setOpenRoastDialog(false);
     setRoastTarget(null);
+    setRoastHistory([]);
+    resetRoastForm();
+    await fetchData();
+    if (shouldOpenQc && target) {
+      await handleStartQC(target);
+    }
   };
 
-  const handleConfirmRecordRoast = async () => {
+  const handleAddRoast = async () => {
     if (!roastTarget) return;
     setIsLoading(true);
     try {
@@ -104,15 +210,16 @@ export function useGbQcStation(session) {
         batchNumber: roastTarget.batchNumber,
         processingType: roastTarget.processingType,
         roastedAt: roastedAt ? new Date(roastedAt).toISOString() : new Date().toISOString(),
+        roastProfile: roastProfile.trim(),
+        endTemp: parseFloat(endTemp),
+        firstCrackMinutes: parseFloat(firstCrackMinutes),
         notes: roastNotes.trim() || null,
         roastedBy: session?.user?.name || session?.user?.email || 'unknown',
       });
       setSnackbar({ open: true, message: 'Roast recorded.', severity: 'success' });
-      handleCloseRoastDialog();
+      resetRoastForm();
+      await fetchRoastHistory(roastTarget);
       await fetchData();
-      if (startQcAfterRoast) {
-        await handleStartQC(roastTarget);
-      }
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to record roast';
       setSnackbar({ open: true, message, severity: 'error' });
@@ -129,23 +236,83 @@ export function useGbQcStation(session) {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'seranggaHidup' || name === 'bijiBauBusuk' || name === 'okForFurtherProcess') {
+    if (name === 'seranggaHidup' || name === 'bijiBauBusuk') {
       setFormData((prevData) => ({
         ...prevData,
         [name]: value === '' ? null : value === 'true',
       }));
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
+      return;
     }
+
+    if (name.startsWith('cuppingDraft.')) {
+      const field = name.replace('cuppingDraft.', '');
+      if (field === 'okForFurtherProcess') {
+        setFormData((prevData) => ({
+          ...prevData,
+          cuppingDraft: {
+            ...prevData.cuppingDraft,
+            okForFurtherProcess: value === '' ? null : value === 'true',
+          },
+        }));
+      } else {
+        setFormData((prevData) => ({
+          ...prevData,
+          cuppingDraft: {
+            ...prevData.cuppingDraft,
+            [field]: value,
+          },
+        }));
+      }
+      return;
+    }
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleAddCuppingEntry = () => {
+    const draft = formData.cuppingDraft;
+    if (!isCuppingEntryComplete(draft)) {
+      setSnackbar({
+        open: true,
+        message: 'Fill date cupped, notes, and OK / Not OK before adding.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    setFormData((prevData) => ({
+      ...prevData,
+      cuppingEntries: [
+        ...prevData.cuppingEntries,
+        {
+          id: null,
+          cuppedAt: draft.cuppedAt,
+          notes: draft.notes.trim(),
+          okForFurtherProcess: draft.okForFurtherProcess,
+          cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
+        },
+      ],
+      cuppingDraft: emptyCuppingDraft(),
+    }));
+  };
+
+  const handleRemoveCuppingEntry = (index) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      cuppingEntries: prevData.cuppingEntries.filter((_, i) => i !== index),
+    }));
   };
 
   const isFormComplete = () => {
+    const cuppingComplete =
+      formData.cuppingEntries.length >= 1 &&
+      formData.cuppingEntries.every(isCuppingEntryComplete);
+
     return (
-      formData.tastingNotes.trim() !== '' &&
-      formData.okForFurtherProcess !== null &&
+      cuppingComplete &&
       formData.triage !== '' &&
       formData.bijiHitam !== '' &&
       formData.bijiHitamSebagian !== '' &&
@@ -176,9 +343,6 @@ export function useGbQcStation(session) {
   const handleSaveQC = async (isCompleted) => {
     try {
       const submissionData = {
-        ...formData,
-        tastingNotes: formData.tastingNotes.trim(),
-        okForFurtherProcess: formData.okForFurtherProcess,
         kelembapan: 0,
         waterActivity: 0,
         triage: formData.triage === '' ? 0 : parseFloat(formData.triage),
@@ -204,6 +368,15 @@ export function useGbQcStation(session) {
         rantingSedang: formData.rantingSedang === '' ? 0 : parseFloat(formData.rantingSedang),
         rantingKecil: formData.rantingKecil === '' ? 0 : parseFloat(formData.rantingKecil),
         totalBobotKotoran: formData.totalBobotKotoran === '' ? 0 : parseFloat(formData.totalBobotKotoran),
+        seranggaHidup: formData.seranggaHidup,
+        bijiBauBusuk: formData.bijiBauBusuk,
+        cuppingEntries: formData.cuppingEntries.map((entry) => ({
+          id: entry.id,
+          cuppedAt: entry.cuppedAt,
+          notes: entry.notes.trim(),
+          okForFurtherProcess: entry.okForFurtherProcess,
+        })),
+        cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
       };
 
       await axios.post(gbQcApi('/postproqc'), {
@@ -219,6 +392,13 @@ export function useGbQcStation(session) {
       fetchData();
       if (isCompleted) {
         handleCloseDialog();
+      } else {
+        const cuppingEntries = await loadCuppingEntries(selectedBatch.batchNumber);
+        setFormData((prev) => ({
+          ...prev,
+          cuppingEntries,
+          cuppingDraft: emptyCuppingDraft(),
+        }));
       }
     } catch (error) {
       console.error('Error saving QC data:', error);
@@ -289,17 +469,26 @@ export function useGbQcStation(session) {
     handleStartQC,
     handleOpenRecordRoast,
     handleCloseRoastDialog,
-    handleConfirmRecordRoast,
+    handleAddRoast,
     openRoastDialog,
     roastTarget,
+    roastHistory,
     roastedAt,
     setRoastedAt,
+    roastProfile,
+    setRoastProfile,
+    endTemp,
+    setEndTemp,
+    firstCrackMinutes,
+    setFirstCrackMinutes,
     roastNotes,
     setRoastNotes,
     startQcAfterRoast,
     setStartQcAfterRoast,
     handleCloseDialog,
     handleFormChange,
+    handleAddCuppingEntry,
+    handleRemoveCuppingEntry,
     isFormComplete,
     handleSaveQC,
     handleCapture,

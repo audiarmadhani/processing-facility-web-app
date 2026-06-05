@@ -119,15 +119,16 @@ export function getRoastColumns(onRecordRoast) {
   ];
 }
 
-export function getReadyForQcColumns(onStartQC) {
+export function getReadyForQcColumns(onStartQC, onRecordRoast) {
   return [
     ...sharedBatchColumns,
     {
       field: 'roastedAt',
-      headerName: 'Roasted at',
+      headerName: 'Latest roast',
       width: 160,
       valueFormatter: (value) => formatDateTime(value),
     },
+    { field: 'roastCount', headerName: 'Roasts', width: 90 },
     { field: 'roastedBy', headerName: 'Roasted by', width: 120 },
     { field: 'dryingWeight', headerName: 'Drying wt (kg)', width: 120 },
     {
@@ -146,12 +147,17 @@ export function getReadyForQcColumns(onStartQC) {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 120,
+      width: 220,
       sortable: false,
       renderCell: ({ row }) => (
-        <Button variant="contained" size="small" onClick={() => onStartQC(row)}>
-          Start QC
-        </Button>
+        <>
+          <Button variant="outlined" size="small" sx={{ mr: 1 }} onClick={() => onRecordRoast(row)}>
+            Record roast
+          </Button>
+          <Button variant="contained" size="small" onClick={() => onStartQC(row)}>
+            Start QC
+          </Button>
+        </>
       ),
     },
   ];
