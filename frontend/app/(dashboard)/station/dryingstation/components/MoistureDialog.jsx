@@ -11,7 +11,9 @@ import {
   Grid,
   Box,
   Typography,
+  IconButton,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { DataGrid } from '@mui/x-data-grid';
 import { Chart } from 'react-chartjs-2';
 import './chartSetup';
@@ -20,17 +22,43 @@ import {
   buildMeasurementTableRows,
 } from '../utils/moistureChartUtils';
 
-const measurementColumns = [
-  { field: 'dateDisplay', headerName: 'Date', width: 140 },
-  {
-    field: 'moisture',
-    headerName: 'Moisture (%)',
-    width: 130,
-    valueFormatter: (value) =>
-      value != null && !Number.isNaN(Number(value)) ? Number(value).toFixed(1) : '—',
-  },
-  { field: 'vsOptimal', headerName: 'vs optimal', width: 120 },
-];
+function buildMeasurementColumns(onEditMoisture) {
+  return [
+    { field: 'dateDisplay', headerName: 'Date', width: 140 },
+    {
+      field: 'moisture',
+      headerName: 'Moisture (%)',
+      width: 130,
+      valueFormatter: (value) =>
+        value != null && !Number.isNaN(Number(value)) ? Number(value).toFixed(1) : '—',
+    },
+    { field: 'vsOptimal', headerName: 'vs optimal', width: 120 },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 90,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: ({ row }) => (
+        <IconButton
+          size="small"
+          aria-label="Edit measurement"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditMoisture({
+              id: row.id,
+              moisture: row.moisture,
+              measurement_date: row.measurement_date,
+            });
+          }}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+      ),
+    },
+  ];
+}
 
 export default function MoistureDialog({
   open,
@@ -40,7 +68,10 @@ export default function MoistureDialog({
   onMoistureChange,
   newMeasurementDate,
   onMeasurementDateChange,
-  onAddMoisture,
+  onAddOrUpdateMoisture,
+  editingMoistureId,
+  onEditMoisture,
+  onCancelEditMoisture,
   onClose,
 }) {
   const [highlightedMeasurementId, setHighlightedMeasurementId] = useState(null);
@@ -62,6 +93,11 @@ export default function MoistureDialog({
   const tableRows = useMemo(
     () => buildMeasurementTableRows(dryingMeasurements, selectedBatch),
     [dryingMeasurements, selectedBatch]
+  );
+
+  const columns = useMemo(
+    () => buildMeasurementColumns(onEditMoisture),
+    [onEditMoisture]
   );
 
   const moistureChartOptions = useMemo(
@@ -121,13 +157,16 @@ export default function MoistureDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
       disableEnforceFocus
     >
       <DialogTitle>Drying Details - Batch {selectedBatch?.batchNumber}</DialogTitle>
       <DialogContent>
-        <Grid container spacing={2} sx={{ mb: 2, mt: 1 }}>
+        <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+          {editingMoistureId ? 'Edit measurement' : 'Add measurement'}
+        </Typography>
+        <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={5}>
             <TextField
               label="Moisture (%)"
@@ -152,13 +191,20 @@ export default function MoistureDialog({
             <Button
               variant="contained"
               color="primary"
-              onClick={onAddMoisture}
+              onClick={onAddOrUpdateMoisture}
               fullWidth
               sx={{ height: '100%' }}
             >
-              Add Measurement
+              {editingMoistureId ? 'Update Measurement' : 'Add Measurement'}
             </Button>
           </Grid>
+          {editingMoistureId && (
+            <Grid item xs={12}>
+              <Button variant="outlined" size="small" onClick={onCancelEditMoisture}>
+                Cancel edit
+              </Button>
+            </Grid>
+          )}
         </Grid>
 
         {showNoOptimalNote && (
@@ -186,10 +232,10 @@ export default function MoistureDialog({
         <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
           Moisture measurements
         </Typography>
-        <Box sx={{ height: 220, width: '100%' }}>
+        <Box sx={{ height: 660, width: '100%' }}>
           <DataGrid
             rows={tableRows}
-            columns={measurementColumns}
+            columns={columns}
             disableRowSelectionOnClick={false}
             onRowMouseEnter={handleRowMouseEnter}
             onRowMouseLeave={handleRowMouseLeave}
@@ -199,9 +245,9 @@ export default function MoistureDialog({
                 ? 'moisture-row-highlighted'
                 : ''
             }
-            pageSizeOptions={[5, 10, 25]}
+            pageSizeOptions={[25, 50, 100]}
             initialState={{
-              pagination: { paginationModel: { pageSize: 5 } },
+              pagination: { paginationModel: { pageSize: 100 } },
               sorting: { sortModel: [{ field: 'dateDisplay', sort: 'asc' }] },
             }}
             sx={{

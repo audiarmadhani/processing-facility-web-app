@@ -176,7 +176,10 @@ function DryingStationPage() {
             onMoistureChange={station.setNewMoisture}
             newMeasurementDate={station.newMeasurementDate}
             onMeasurementDateChange={station.setNewMeasurementDate}
-            onAddMoisture={station.handleAddMoisture}
+            onAddOrUpdateMoisture={station.handleAddOrUpdateMoisture}
+            editingMoistureId={station.editingMoistureId}
+            onEditMoisture={station.handleEditMoisture}
+            onCancelEditMoisture={station.handleCancelEditMoisture}
             onClose={station.handleCloseDialog}
           />
 

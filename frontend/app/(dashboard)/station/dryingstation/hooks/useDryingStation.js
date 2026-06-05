@@ -34,6 +34,7 @@ export function useDryingStation(session) {
   const [dryingMeasurements, setDryingMeasurements] = useState([]);
   const [newMoisture, setNewMoisture] = useState('');
   const [newMeasurementDate, setNewMeasurementDate] = useState('');
+  const [editingMoistureId, setEditingMoistureId] = useState(null);
   const [greenhouseData, setGreenhouseData] = useState({});
   const [areaTotalWeights, setAreaTotalWeights] = useState({});
   const [openEnvDialog, setOpenEnvDialog] = useState(false);
@@ -605,7 +606,7 @@ export function useDryingStation(session) {
     }
   }, [deletedWeights, weightMeasurements, selectedBatch, fetchAreaData]);
 
-  const handleAddMoisture = useCallback(async () => {
+  const handleAddOrUpdateMoisture = useCallback(async () => {
     if (!newMoisture || isNaN(newMoisture) || newMoisture < 0 || newMoisture > 100) {
       setSnackbarMessage('Enter a valid moisture value (0-100)');
       setSnackbarSeverity('error');
@@ -651,33 +652,91 @@ export function useDryingStation(session) {
     }
 
     try {
-      const payload = {
-        batchNumber: selectedBatch.batchNumber,
-        moisture: parseFloat(newMoisture),
-        measurement_date: measurementDate
-      };
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-measurement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) throw new Error('Failed to save drying measurement');
-      const result = await response.json();
-      setDryingMeasurements([...dryingMeasurements, result.measurement]);
-      setNewMoisture('');
-      setNewMeasurementDate(new Date().toISOString().slice(0, 10));
-      setSnackbarMessage('Drying measurement added successfully');
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true);
+      const moistureValue = parseFloat(newMoisture);
+
+      if (editingMoistureId) {
+        const payload = {
+          moisture: moistureValue,
+          measurement_date: measurementDate,
+        };
+        const response = await fetch(
+          `https://processing-facility-backend.onrender.com/api/drying-measurement/${editingMoistureId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }
+        );
+        if (!response.ok) throw new Error('Failed to update drying measurement');
+        const result = await response.json();
+        setDryingMeasurements(
+          dryingMeasurements.map((m) =>
+            m.id === editingMoistureId ? result.measurement : m
+          )
+        );
+        setEditingMoistureId(null);
+        setNewMoisture('');
+        setNewMeasurementDate(new Date().toISOString().slice(0, 10));
+        setSnackbarMessage('Drying measurement updated successfully');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+      } else {
+        const payload = {
+          batchNumber: selectedBatch.batchNumber,
+          moisture: moistureValue,
+          measurement_date: measurementDate,
+        };
+        const response = await fetch('https://processing-facility-backend.onrender.com/api/drying-measurement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error('Failed to save drying measurement');
+        const result = await response.json();
+        setDryingMeasurements([...dryingMeasurements, result.measurement]);
+        setNewMoisture('');
+        setNewMeasurementDate(new Date().toISOString().slice(0, 10));
+        setSnackbarMessage('Drying measurement added successfully');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+      }
+
       if (selectedBatch?.dryingArea) {
         await fetchAreaData(selectedBatch.dryingArea, true);
       }
     } catch (error) {
-      setSnackbarMessage(error.message || 'Failed to add drying measurement');
+      setSnackbarMessage(
+        error.message ||
+          (editingMoistureId ? 'Failed to update drying measurement' : 'Failed to add drying measurement')
+      );
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
-  }, [newMoisture, newMeasurementDate, selectedBatch, dryingMeasurements, fetchAreaData]);
+  }, [
+    newMoisture,
+    newMeasurementDate,
+    selectedBatch,
+    dryingMeasurements,
+    editingMoistureId,
+    fetchAreaData,
+  ]);
+
+  const handleEditMoisture = useCallback((measurement) => {
+    setEditingMoistureId(measurement.id);
+    setNewMoisture(parseFloat(measurement.moisture).toString());
+    const date =
+      measurement.measurement_date &&
+      !isNaN(new Date(measurement.measurement_date).getTime())
+        ? String(measurement.measurement_date).slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+    setNewMeasurementDate(date);
+  }, []);
+
+  const handleCancelEditMoisture = useCallback(() => {
+    setEditingMoistureId(null);
+    setNewMoisture('');
+    setNewMeasurementDate(new Date().toISOString().slice(0, 10));
+  }, []);
 
   const handleMoveBatch = useCallback(async () => {
     if (!newDryingArea) {
@@ -775,6 +834,8 @@ export function useDryingStation(session) {
     setSelectedBatch(batch);
     fetchDryingMeasurements(batch.batchNumber);
     setNewMeasurementDate(new Date().toISOString().slice(0, 10));
+    setNewMoisture('');
+    setEditingMoistureId(null);
     setOpenDialog(true);
   }, [fetchDryingMeasurements]);
 
@@ -815,6 +876,7 @@ export function useDryingStation(session) {
     setDryingMeasurements([]);
     setNewMoisture('');
     setNewMeasurementDate('');
+    setEditingMoistureId(null);
   }, []);
 
   const handleCloseMoveDialog = useCallback(() => {
@@ -1087,7 +1149,10 @@ export function useDryingStation(session) {
     handleEditBagWeight,
     handleDeleteBagWeights,
     handleUndoDelete,
-    handleAddMoisture,
+    handleAddOrUpdateMoisture,
+    handleEditMoisture,
+    handleCancelEditMoisture,
+    editingMoistureId,
     handleMoveBatch,
     handleRefreshData,
     actionAnchorEl,
