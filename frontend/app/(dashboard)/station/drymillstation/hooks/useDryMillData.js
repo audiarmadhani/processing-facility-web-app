@@ -19,6 +19,7 @@ import {
   pickLatestMoistureAcrossBatches,
   statusFromTrackWeightRows,
 } from '../utils/drymillUtils';
+import { experimentNumberColumn } from '../../_shared/constants/experimentNumber';
 import { generateDryMillOrderSheetFromRow } from '../utils/exportDryMillOrderSheet';
 
 export const SCAN_LOCATIONS = {
@@ -916,6 +917,7 @@ const handleSubmitExit = async () => {
         ),
       },
       { field: "batchNumber", headerName: "Batch Number", width: 160 },
+      experimentNumberColumn,
       { field: "lotNumber", headerName: "Lot Number", width: 180 },
       { field: "referenceNumber", headerName: "Ref Number", width: 180 },
       { field: "processingType", headerName: "Processing Type", width: 180 },

@@ -43,6 +43,7 @@ export function mapParentBatch(batch) {
   const producer = batch.producer || 'N/A';
   return {
     batchNumber: batch.batchNumber,
+    experimentNumber: batch.experimentNumber ?? null,
     status: batch.status,
     dryMillEntered: batch.dryMillEntered,
     dryMillExited: batch.dryMillExited,

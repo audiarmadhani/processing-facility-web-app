@@ -48,11 +48,12 @@ export const GRADE_ORDER = [
 const STEP_LABELS = ['Huller', 'Suton', 'Sizer', 'Hand picking'];
 
 const createEmptyProcessTables = () => {
+  const stepWarehouse = { warehouseRow: '', warehouseColumn: '' };
   const base = {
-    Huller: { inputWeight: '', outputWeight: '', warehouseRow: '', warehouseColumn: '' },
-    Suton: { grades: {} },
-    Sizer: { grades: {} },
-    Handpicking: { grades: {} },
+    Huller: { inputWeight: '', outputWeight: '', ...stepWarehouse },
+    Suton: { grades: {}, ...stepWarehouse },
+    Sizer: { grades: {}, ...stepWarehouse },
+    Handpicking: { grades: {}, ...stepWarehouse },
   };
 
   GRADE_ORDER.forEach((g) => {
@@ -101,6 +102,83 @@ const calcYield = (num, denom) => {
   if (!denom || denom <= 0) return null;
   return (num / denom) * 100;
 };
+
+const STEP_KEY_TO_PROCESS_STEP = {
+  Huller: 'huller',
+  Suton: 'suton',
+  Sizer: 'sizer',
+  Handpicking: 'handpicking',
+};
+
+const isWarehousePairValid = (row, col) => !((row && !col) || (!row && col));
+
+const applyStepWarehouse = (stepData, eventRow) => {
+  if (!eventRow) return;
+  if (eventRow.warehouseRow) stepData.warehouseRow = eventRow.warehouseRow;
+  if (eventRow.warehouseColumn != null) {
+    stepData.warehouseColumn = String(eventRow.warehouseColumn);
+  }
+};
+
+function WarehousePositionFields({
+  idPrefix,
+  warehouseRow,
+  warehouseColumn,
+  onRowChange,
+  onColumnChange,
+  disabled,
+}) {
+  return (
+    <>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        Warehouse position (optional)
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <FormControl size="small" sx={{ minWidth: 100 }}>
+          <InputLabel id={`${idPrefix}-wh-row`}>Row</InputLabel>
+          <Select
+            labelId={`${idPrefix}-wh-row`}
+            label="Row"
+            value={warehouseRow || ''}
+            onChange={(e) => onRowChange(e.target.value)}
+            disabled={disabled}
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {WAREHOUSE_ROWS.map((row) => (
+              <MenuItem key={row} value={row}>
+                {row}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 100 }}>
+          <InputLabel id={`${idPrefix}-wh-col`}>Column</InputLabel>
+          <Select
+            labelId={`${idPrefix}-wh-col`}
+            label="Column"
+            value={warehouseColumn || ''}
+            onChange={(e) => onColumnChange(e.target.value)}
+            disabled={disabled}
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {WAREHOUSE_COLUMNS.map((col) => (
+              <MenuItem key={col} value={String(col)}>
+                {col}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+          {formatWarehousePosition(warehouseRow, warehouseColumn)}
+        </Typography>
+      </Box>
+    </>
+  );
+}
 
 export default function ProcessSheetEditor({
   active,
@@ -167,9 +245,24 @@ export default function ProcessSheetEditor({
       if (h.inputWeight != null && h.inputWeight !== '') {
         base.Huller.inputWeight = String(h.inputWeight);
       }
-      if (h.warehouseRow) base.Huller.warehouseRow = h.warehouseRow;
-      if (h.warehouseColumn != null) base.Huller.warehouseColumn = String(h.warehouseColumn);
+      applyStepWarehouse(base.Huller, h);
     }
+
+    const gradeSteps = ['Suton', 'Sizer', 'Handpicking'];
+    await Promise.all(
+      gradeSteps.map(async (stepKey) => {
+        const processStep = STEP_KEY_TO_PROCESS_STEP[stepKey];
+        try {
+          const stepRes = await axios.get(
+            `${API_BASE_URL}/api/drymill/step-event/${batchNumber}/${producer}`,
+            { params: { processingType, processStep } }
+          );
+          applyStepWarehouse(base[stepKey], stepRes.data);
+        } catch {
+          // Non-fatal: warehouse fields stay empty
+        }
+      })
+    );
 
     res.data.forEach((row) => {
       const step = row.processStep;
@@ -233,7 +326,7 @@ export default function ProcessSheetEditor({
 
     const whRow = processTables?.Huller?.warehouseRow || '';
     const whCol = processTables?.Huller?.warehouseColumn || '';
-    if ((whRow && !whCol) || (!whRow && whCol)) {
+    if (!isWarehousePairValid(whRow, whCol)) {
       showSnackbar('Select both warehouse row and column, or leave both empty.', 'error');
       return;
     }
@@ -289,6 +382,13 @@ export default function ProcessSheetEditor({
       }
     }
 
+    const whRow = processTables?.[procLabel]?.warehouseRow || '';
+    const whCol = processTables?.[procLabel]?.warehouseColumn || '';
+    if (!isWarehousePairValid(whRow, whCol)) {
+      showSnackbar('Select both warehouse row and column, or leave both empty.', 'error');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const step = normalizeProcessStep(procLabel);
@@ -302,6 +402,8 @@ export default function ProcessSheetEditor({
           grade: gradeName,
           inputWeight: 0,
           outputWeight: parsed,
+          warehouseRow: whRow || null,
+          warehouseColumn: whCol ? Number(whCol) : null,
           operator: session?.user?.name || 'unknown',
           notes: `${procLabel} ${gradeName} recorded via UI: ${parsed.toFixed(2)} kg`,
         });
@@ -415,6 +517,14 @@ export default function ProcessSheetEditor({
     const skipped =
       proc === 'Sizer' ? skipSizer : proc === 'Handpicking' ? skipHandpicking : false;
 
+    const updateStepWarehouse = (field, value) => {
+      markDirty();
+      setProcessTables((prev) => ({
+        ...prev,
+        [proc]: { ...prev[proc], [field]: value },
+      }));
+    };
+
     return (
       <Box>
         {skipKey && (
@@ -520,6 +630,14 @@ export default function ProcessSheetEditor({
                 </TableRow>
               </TableBody>
             </Table>
+            <WarehousePositionFields
+              idPrefix={proc.toLowerCase()}
+              warehouseRow={processTables?.[proc]?.warehouseRow}
+              warehouseColumn={processTables?.[proc]?.warehouseColumn}
+              onRowChange={(value) => updateStepWarehouse('warehouseRow', value)}
+              onColumnChange={(value) => updateStepWarehouse('warehouseColumn', value)}
+              disabled={isLoading || !selectedBatch}
+            />
             <Button
               variant="contained"
               onClick={() => handleSaveAllGrades(proc)}
@@ -630,67 +748,26 @@ export default function ProcessSheetEditor({
                 disabled={isLoading || !selectedBatch}
                 sx={{ mb: 2 }}
               />
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Warehouse position (optional)
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel id="huller-wh-row">Row</InputLabel>
-                  <Select
-                    labelId="huller-wh-row"
-                    label="Row"
-                    value={processTables.Huller.warehouseRow || ''}
-                    onChange={(e) => {
-                      markDirty();
-                      setProcessTables((p) => ({
-                        ...p,
-                        Huller: { ...(p.Huller || {}), warehouseRow: e.target.value },
-                      }));
-                    }}
-                    disabled={isLoading || !selectedBatch}
-                  >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {WAREHOUSE_ROWS.map((row) => (
-                      <MenuItem key={row} value={row}>
-                        {row}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel id="huller-wh-col">Column</InputLabel>
-                  <Select
-                    labelId="huller-wh-col"
-                    label="Column"
-                    value={processTables.Huller.warehouseColumn || ''}
-                    onChange={(e) => {
-                      markDirty();
-                      setProcessTables((p) => ({
-                        ...p,
-                        Huller: { ...(p.Huller || {}), warehouseColumn: e.target.value },
-                      }));
-                    }}
-                    disabled={isLoading || !selectedBatch}
-                  >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {WAREHOUSE_COLUMNS.map((col) => (
-                      <MenuItem key={col} value={String(col)}>
-                        {col}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
-                  {formatWarehousePosition(
-                    processTables.Huller.warehouseRow,
-                    processTables.Huller.warehouseColumn
-                  )}
-                </Typography>
-              </Box>
+              <WarehousePositionFields
+                idPrefix="huller"
+                warehouseRow={processTables.Huller.warehouseRow}
+                warehouseColumn={processTables.Huller.warehouseColumn}
+                onRowChange={(value) => {
+                  markDirty();
+                  setProcessTables((p) => ({
+                    ...p,
+                    Huller: { ...(p.Huller || {}), warehouseRow: value },
+                  }));
+                }}
+                onColumnChange={(value) => {
+                  markDirty();
+                  setProcessTables((p) => ({
+                    ...p,
+                    Huller: { ...(p.Huller || {}), warehouseColumn: value },
+                  }));
+                }}
+                disabled={isLoading || !selectedBatch}
+              />
               <Button
                 variant="contained"
                 onClick={handleSaveHullerOutput}

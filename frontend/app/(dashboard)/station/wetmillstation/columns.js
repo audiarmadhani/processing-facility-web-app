@@ -1,10 +1,12 @@
 'use client';
 
 import { Button, Chip } from '@mui/material';
+import { experimentNumberColumn } from '../../_shared/constants/experimentNumber';
 
 export function getWetMillColumns(handleWeightClick) {
   return [
     { field: 'batchNumber', headerName: 'Batch Number', width: 180 },
+    experimentNumberColumn,
     {
       field: 'status',
       headerName: 'Status',

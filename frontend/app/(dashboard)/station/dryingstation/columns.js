@@ -2,6 +2,7 @@
 
 import { Button, Chip, Menu, MenuItem } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { experimentNumberColumn } from '../../_shared/constants/experimentNumber';
 
 export function getDryingColumns({
   onDetailsClick,
@@ -23,6 +24,7 @@ export function getDryingColumns({
 
   return [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
+    experimentNumberColumn,
     { field: 'farmerName', headerName: 'Farmer Name', width: 160 },
     { field: 'farmVarieties', headerName: 'Farm Varieties', width: 160 },
     {
@@ -124,6 +126,7 @@ export function getEnvColumns() {
 export function getPendingDryingColumns(onAssignClick) {
   return [
     { field: 'batchNumber', headerName: 'Batch', width: 150 },
+    experimentNumberColumn,
     { field: 'farmerName', headerName: 'Farmer', width: 250 },
     { field: 'processingType', headerName: 'Process', width: 180 },
     { field: 'type', headerName: 'Type', width: 100 },
