@@ -30,15 +30,9 @@ function formatPriceId(value) {
   }).format(n);
 }
 
-function formatLotExperiment(lotNumber, experimentNumber) {
-  const parts = [];
-  if (lotNumber != null && String(lotNumber).trim() !== '') {
-    parts.push(String(lotNumber).trim());
-  }
-  if (experimentNumber != null && String(experimentNumber).trim() !== '') {
-    parts.push(`EXP ${String(experimentNumber).trim()}`);
-  }
-  return parts.join(' / ');
+function formatExperiment(experimentNumber) {
+  if (experimentNumber == null || String(experimentNumber).trim() === '') return '';
+  return String(experimentNumber).trim();
 }
 
 export function cherryReceiveReportFilename(reportDate) {
@@ -66,7 +60,7 @@ export function generateCherryReceiveReport(rows, reportDate) {
       weight,
       producer: row.producer || '',
       price,
-      lotExperiment: formatLotExperiment(row.lotNumber, row.experimentNumber),
+      experiment: formatExperiment(row.experimentNumber),
     };
   });
 
@@ -106,7 +100,7 @@ export function generateCherryReceiveReport(rows, reportDate) {
       row.weight > 0 ? formatDecimalId(row.weight) : '',
       row.producer,
       row.price != null ? formatPriceId(row.price) : '',
-      row.lotExperiment,
+      row.experiment,
       ratio,
     ];
   });
@@ -124,7 +118,7 @@ export function generateCherryReceiveReport(rows, reportDate) {
       'Qty',
       'Producer',
       'Price/Kg',
-      'LOT/ Experiment',
+      'Experiment',
       'Ratio',
     ]],
     body: tableBody,
