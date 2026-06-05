@@ -173,6 +173,7 @@ function Dashboard() {
   const [timeframe, setTimeframe] = useState('this_year');
   const [sankeyCoffeeType, setSankeyCoffeeType] = useState('');
   const [sankeyBatchNumber, setSankeyBatchNumber] = useState('');
+  const [sankeyBatchOptions, setSankeyBatchOptions] = useState([]);
   const selectedRangeLabel = timeframeLabels[timeframe];
   const fetchBatchTrackingData = useCallback(async () => {
     console.log('Starting fetchBatchTrackingData');
@@ -206,6 +207,35 @@ function Dashboard() {
       setIsLoadingBatchTracking(false);
     }
   }, [batchFilter]);
+
+  useEffect(() => {
+    const fetchSankeyBatches = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (sankeyCoffeeType) params.set('coffeeType', sankeyCoffeeType);
+        const query = params.toString() ? `?${params.toString()}` : '';
+        const response = await fetch(
+          `https://processing-facility-backend.onrender.com/api/weight-flow-sankey/batches${query}`
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setSankeyBatchOptions(Array.isArray(data.batchNumbers) ? data.batchNumbers : []);
+      } catch (err) {
+        console.error('Error fetching sankey batch options:', err);
+        setSankeyBatchOptions([]);
+      }
+    };
+
+    fetchSankeyBatches();
+  }, [sankeyCoffeeType]);
+
+  useEffect(() => {
+    if (sankeyBatchNumber && !sankeyBatchOptions.includes(sankeyBatchNumber)) {
+      setSankeyBatchNumber('');
+    }
+  }, [sankeyBatchOptions, sankeyBatchNumber]);
 
   const fetchArabicaTargets = useCallback(async () => {
     console.log('Starting fetchArabicaTargets');
@@ -491,9 +521,6 @@ function Dashboard() {
     setOpenSnackbar(false);
     setError(null);
   };
-  const sankeyBatchOptions = Array.from(
-    new Set((batchTrackingData || []).map((row) => row.batchNumber).filter(Boolean))
-  ).sort();
   if (loading || sessionStatus === 'loading') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
