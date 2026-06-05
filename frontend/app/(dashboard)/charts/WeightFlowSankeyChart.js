@@ -22,7 +22,6 @@ function getNodeColor(name) {
 const WeightFlowSankeyChart = ({
   timeframe = 'this_month',
   coffeeType = '',
-  processingType = '',
   batchNumber = '',
   height = '550px',
 }) => {
@@ -40,7 +39,6 @@ const WeightFlowSankeyChart = ({
       try {
         const params = new URLSearchParams({ timeframe });
         if (coffeeType) params.set('coffeeType', coffeeType);
-        if (processingType) params.set('processingType', processingType);
         if (batchNumber) params.set('batchNumber', batchNumber);
 
         const response = await fetch(`${API_BASE}/weight-flow-sankey?${params.toString()}`);
@@ -65,7 +63,7 @@ const WeightFlowSankeyChart = ({
     };
 
     fetchData();
-  }, [timeframe, coffeeType, processingType, batchNumber]);
+  }, [timeframe, coffeeType, batchNumber]);
 
   const drawChart = useCallback((data) => {
     if (!chartRef.current || !data?.length) return;

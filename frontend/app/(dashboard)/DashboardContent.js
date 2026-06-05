@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
-import { TextField, Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
+import { Dialog, DialogContent, DialogTitle, Button } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -172,7 +172,6 @@ function Dashboard() {
   };
   const [timeframe, setTimeframe] = useState('this_month');
   const [sankeyCoffeeType, setSankeyCoffeeType] = useState('');
-  const [sankeyProcessingType, setSankeyProcessingType] = useState('');
   const [sankeyBatchNumber, setSankeyBatchNumber] = useState('');
   const selectedRangeLabel = timeframeLabels[timeframe];
   const fetchBatchTrackingData = useCallback(async () => {
@@ -492,6 +491,9 @@ function Dashboard() {
     setOpenSnackbar(false);
     setError(null);
   };
+  const sankeyBatchOptions = Array.from(
+    new Set((batchTrackingData || []).map((row) => row.batchNumber).filter(Boolean))
+  ).sort();
   if (loading || sessionStatus === 'loading') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -662,30 +664,27 @@ function Dashboard() {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Processing Type"
-                      value={sankeyProcessingType}
-                      onChange={(e) => setSankeyProcessingType(e.target.value)}
-                      placeholder="e.g. Washed"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Batch Number"
-                      value={sankeyBatchNumber}
-                      onChange={(e) => setSankeyBatchNumber(e.target.value)}
-                      placeholder="Filter by batch"
-                    />
+                    <FormControl fullWidth size="small">
+                      <InputLabel id="sankey-batch-label">Batch Number</InputLabel>
+                      <Select
+                        labelId="sankey-batch-label"
+                        value={sankeyBatchNumber}
+                        label="Batch Number"
+                        onChange={(e) => setSankeyBatchNumber(e.target.value)}
+                      >
+                        <MenuItem value="">All</MenuItem>
+                        {sankeyBatchOptions.map((batch) => (
+                          <MenuItem key={batch} value={batch}>
+                            {batch}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
                 </Grid>
                 <WeightFlowSankeyChart
                   timeframe={timeframe}
                   coffeeType={sankeyCoffeeType}
-                  processingType={sankeyProcessingType}
                   batchNumber={sankeyBatchNumber}
                   height="550px"
                 />

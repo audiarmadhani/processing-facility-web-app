@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import axios from 'axios';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 
 const ArabicaAvgCostChart = ({ timeframe = "this_month" }) => {
   const [data, setData] = useState([]);
