@@ -7,7 +7,11 @@ import {
   Box,
   Button,
   Checkbox,
+  FormControl,
   FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Select,
   Step,
   StepLabel,
   Stepper,
@@ -25,6 +29,11 @@ import {
   loadStepPrefs,
   saveStepPrefs,
 } from '../utils/drymillUtils';
+import {
+  WAREHOUSE_ROWS,
+  WAREHOUSE_COLUMNS,
+  formatWarehousePosition,
+} from '../../_shared/constants/warehousePosition';
 
 export const PROCESS_STEPS = ['Huller', 'Suton', 'Sizer', 'Handpicking'];
 export const GRADE_ORDER = [
@@ -40,7 +49,7 @@ const STEP_LABELS = ['Huller', 'Suton', 'Sizer', 'Hand picking'];
 
 const createEmptyProcessTables = () => {
   const base = {
-    Huller: { outputWeight: '' },
+    Huller: { inputWeight: '', outputWeight: '', warehouseRow: '', warehouseColumn: '' },
     Suton: { grades: {} },
     Sizer: { grades: {} },
     Handpicking: { grades: {} },
@@ -149,6 +158,19 @@ export default function ProcessSheetEditor({
 
     const base = createEmptyProcessTables();
 
+    const hullerRes = await axios.get(
+      `${API_BASE_URL}/api/drymill/huller-event/${batchNumber}/${producer}`,
+      { params: { processingType } }
+    );
+    if (hullerRes.data) {
+      const h = hullerRes.data;
+      if (h.inputWeight != null && h.inputWeight !== '') {
+        base.Huller.inputWeight = String(h.inputWeight);
+      }
+      if (h.warehouseRow) base.Huller.warehouseRow = h.warehouseRow;
+      if (h.warehouseColumn != null) base.Huller.warehouseColumn = String(h.warehouseColumn);
+    }
+
     res.data.forEach((row) => {
       const step = row.processStep;
       const grade = row.grade;
@@ -196,10 +218,23 @@ export default function ProcessSheetEditor({
       showSnackbar('Batch missing.', 'error');
       return;
     }
+    const inStr = processTables?.Huller?.inputWeight || '';
     const outStr = processTables?.Huller?.outputWeight || '';
+    const parsedInput = parseWeightInput(inStr);
     const parsed = parseWeightInput(outStr);
+    if (inStr !== '' && (isNaN(parsedInput) || parsedInput < 0)) {
+      showSnackbar('Enter a valid huller input weight or leave blank.', 'error');
+      return;
+    }
     if (isNaN(parsed) || parsed <= 0) {
       showSnackbar('Enter a valid positive huller output weight.', 'error');
+      return;
+    }
+
+    const whRow = processTables?.Huller?.warehouseRow || '';
+    const whCol = processTables?.Huller?.warehouseColumn || '';
+    if ((whRow && !whCol) || (!whRow && whCol)) {
+      showSnackbar('Select both warehouse row and column, or leave both empty.', 'error');
       return;
     }
 
@@ -210,10 +245,12 @@ export default function ProcessSheetEditor({
         processingType: selectedBatch.processingType,
         processStep: 'huller',
         producer: selectedBatch.producer,
-        inputWeight: 0,
+        inputWeight: inStr === '' ? 0 : parsedInput,
         outputWeight: parsed,
+        warehouseRow: whRow || null,
+        warehouseColumn: whCol ? Number(whCol) : null,
         operator: session?.user?.name || 'unknown',
-        notes: `Huller output recorded via UI: ${parsed.toFixed(2)} kg`,
+        notes: `Huller recorded via UI: in ${inStr === '' ? '—' : `${parsedInput.toFixed(2)}`} kg, out ${parsed.toFixed(2)} kg`,
       });
 
       showSnackbar('Huller step saved.', 'success');
@@ -520,6 +557,17 @@ export default function ProcessSheetEditor({
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 Huller output was carried forward from merged source batches.
               </Typography>
+              {processTables.Huller.inputWeight ? (
+                <TextField
+                  label="Huller input (kg)"
+                  value={processTables.Huller.inputWeight}
+                  type="number"
+                  size="small"
+                  fullWidth
+                  disabled
+                  sx={{ mb: 2 }}
+                />
+              ) : null}
               <TextField
                 label="Huller output (kg)"
                 value={processTables.Huller.outputWeight || ''}
@@ -529,6 +577,15 @@ export default function ProcessSheetEditor({
                 disabled
                 sx={{ mb: 2 }}
               />
+              {(processTables.Huller.warehouseRow || processTables.Huller.warehouseColumn) && (
+                <Typography variant="body2" color="text.secondary">
+                  Warehouse:{' '}
+                  {formatWarehousePosition(
+                    processTables.Huller.warehouseRow,
+                    processTables.Huller.warehouseColumn
+                  )}
+                </Typography>
+              )}
             </>
           ) : skipHuller ? (
             <Typography variant="body2" color="text.secondary">
@@ -537,8 +594,25 @@ export default function ProcessSheetEditor({
           ) : (
             <>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Record total output weight after hulling.
+                Record huller input (dried cherry in) and output (hulled green bean out).
               </Typography>
+              <TextField
+                label="Huller input (kg)"
+                value={processTables.Huller.inputWeight || ''}
+                onChange={(e) => {
+                  markDirty();
+                  setProcessTables((p) => ({
+                    ...p,
+                    Huller: { ...(p.Huller || {}), inputWeight: e.target.value },
+                  }));
+                }}
+                type="number"
+                inputProps={{ min: 0, step: 0.01 }}
+                size="small"
+                fullWidth
+                disabled={isLoading || !selectedBatch}
+                sx={{ mb: 2 }}
+              />
               <TextField
                 label="Huller output (kg)"
                 value={processTables.Huller.outputWeight || ''}
@@ -556,6 +630,67 @@ export default function ProcessSheetEditor({
                 disabled={isLoading || !selectedBatch}
                 sx={{ mb: 2 }}
               />
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Warehouse position (optional)
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel id="huller-wh-row">Row</InputLabel>
+                  <Select
+                    labelId="huller-wh-row"
+                    label="Row"
+                    value={processTables.Huller.warehouseRow || ''}
+                    onChange={(e) => {
+                      markDirty();
+                      setProcessTables((p) => ({
+                        ...p,
+                        Huller: { ...(p.Huller || {}), warehouseRow: e.target.value },
+                      }));
+                    }}
+                    disabled={isLoading || !selectedBatch}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {WAREHOUSE_ROWS.map((row) => (
+                      <MenuItem key={row} value={row}>
+                        {row}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel id="huller-wh-col">Column</InputLabel>
+                  <Select
+                    labelId="huller-wh-col"
+                    label="Column"
+                    value={processTables.Huller.warehouseColumn || ''}
+                    onChange={(e) => {
+                      markDirty();
+                      setProcessTables((p) => ({
+                        ...p,
+                        Huller: { ...(p.Huller || {}), warehouseColumn: e.target.value },
+                      }));
+                    }}
+                    disabled={isLoading || !selectedBatch}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {WAREHOUSE_COLUMNS.map((col) => (
+                      <MenuItem key={col} value={String(col)}>
+                        {col}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                  {formatWarehousePosition(
+                    processTables.Huller.warehouseRow,
+                    processTables.Huller.warehouseColumn
+                  )}
+                </Typography>
+              </Box>
               <Button
                 variant="contained"
                 onClick={handleSaveHullerOutput}

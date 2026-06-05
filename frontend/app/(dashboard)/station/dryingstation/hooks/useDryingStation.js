@@ -67,6 +67,9 @@ export function useDryingStation(session) {
     new Date().toISOString().slice(0, 10)
   );
   const [finishTime, setFinishTime] = useState(() => toLocalTimeInputValue());
+  const [warehouseRow, setWarehouseRow] = useState('');
+  const [warehouseColumn, setWarehouseColumn] = useState('');
+  const [warehouseSaving, setWarehouseSaving] = useState(false);
 
   const dryingAreas = useMemo(() => [
     "Drying Area 1", "Drying Area 2", "Drying Area 3", "Drying Area 4", 
@@ -272,6 +275,59 @@ export function useDryingStation(session) {
       setOpenSnackbar(true);
     }
   }, []);
+
+  const fetchWarehousePosition = useCallback(async (batchNumber) => {
+    try {
+      const response = await fetch(apiUrl(`/drying-data/${encodeURIComponent(batchNumber)}/warehouse-position`));
+      if (!response.ok) return;
+      const data = await response.json();
+      setWarehouseRow(data.warehouseRow || '');
+      setWarehouseColumn(data.warehouseColumn != null ? String(data.warehouseColumn) : '');
+    } catch (error) {
+      console.error('Error fetching warehouse position:', error);
+    }
+  }, []);
+
+  const handleSaveWarehousePosition = useCallback(async () => {
+    if (!selectedBatch?.batchNumber) return;
+
+    const hasRow = warehouseRow !== '';
+    const hasCol = warehouseColumn !== '';
+    if (hasRow !== hasCol) {
+      setSnackbarMessage('Select both warehouse row and column, or leave both empty');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    setWarehouseSaving(true);
+    try {
+      const response = await fetch(
+        apiUrl(`/drying-data/${encodeURIComponent(selectedBatch.batchNumber)}/warehouse-position`),
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            warehouseRow: hasRow ? warehouseRow : null,
+            warehouseColumn: hasCol ? Number(warehouseColumn) : null,
+          }),
+        }
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to save warehouse position');
+      }
+      setSnackbarMessage('Warehouse position saved');
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
+    } catch (error) {
+      setSnackbarMessage(error.message || 'Failed to save warehouse position');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } finally {
+      setWarehouseSaving(false);
+    }
+  }, [selectedBatch, warehouseRow, warehouseColumn]);
 
   const fetchWeightMeasurements = useCallback(async (batchNumber) => {
     try {
@@ -730,6 +786,7 @@ export function useDryingStation(session) {
   const handleWeightClick = useCallback((batch) => {
     setSelectedBatch(batch);
     fetchWeightMeasurements(batch.batchNumber);
+    fetchWarehousePosition(batch.batchNumber);
     setNewBagWeight('');
     setNewProcessingType('');
     setNewWeightDate(new Date().toISOString().slice(0, 10));
@@ -743,7 +800,7 @@ export function useDryingStation(session) {
     setSelectedWeightIds([]);
     setDeletedWeights([]);
     setOpenWeightDialog(true);
-  }, [fetchWeightMeasurements, weightMeasurements]);
+  }, [fetchWeightMeasurements, fetchWarehousePosition, weightMeasurements]);
 
   const handleProcessingTypeChange = useCallback(async (value) => {
     setNewProcessingType(value);
@@ -778,6 +835,8 @@ export function useDryingStation(session) {
     setEditingWeightId(null);
     setSelectedWeightIds([]);
     setDeletedWeights([]);
+    setWarehouseRow('');
+    setWarehouseColumn('');
   }, []);
 
   const handleCloseEnvDialog = useCallback(() => {
@@ -1013,6 +1072,12 @@ export function useDryingStation(session) {
     setFinishDate,
     finishTime,
     setFinishTime,
+    warehouseRow,
+    setWarehouseRow,
+    warehouseColumn,
+    setWarehouseColumn,
+    warehouseSaving,
+    handleSaveWarehousePosition,
     dryingAreas,
     deviceMapping,
     formatDateForDisplay,

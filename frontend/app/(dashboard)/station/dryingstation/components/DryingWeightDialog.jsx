@@ -22,6 +22,12 @@ import {
   Grid,
 } from '@mui/material';
 
+import {
+  WAREHOUSE_ROWS,
+  WAREHOUSE_COLUMNS,
+  formatWarehousePosition,
+} from '../../_shared/constants/warehousePosition';
+
 export default function DryingWeightDialog({
   open,
   selectedBatch,
@@ -47,12 +53,85 @@ export default function DryingWeightDialog({
   onOpenDeleteConfirm,
   onEditBagWeight,
   onDeleteSingle,
+  warehouseRow,
+  onWarehouseRowChange,
+  warehouseColumn,
+  onWarehouseColumnChange,
+  onSaveWarehousePosition,
+  warehouseSaving,
   onClose,
 }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Track Weight - Batch {selectedBatch?.batchNumber || 'N/A'}</DialogTitle>
       <DialogContent>
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Warehouse position (batch)
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Where dried green beans for this batch are stored. Optional — can be set later.
+          </Typography>
+          <Grid container spacing={1} alignItems="center">
+            <Grid item xs={12} sm={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="warehouse-row-label">Row</InputLabel>
+                <Select
+                  labelId="warehouse-row-label"
+                  value={warehouseRow}
+                  onChange={(e) => onWarehouseRowChange(e.target.value)}
+                  label="Row"
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  {WAREHOUSE_ROWS.map((row) => (
+                    <MenuItem key={row} value={row}>
+                      {row}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="warehouse-column-label">Column</InputLabel>
+                <Select
+                  labelId="warehouse-column-label"
+                  value={warehouseColumn}
+                  onChange={(e) => onWarehouseColumnChange(e.target.value)}
+                  label="Column"
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  {WAREHOUSE_COLUMNS.map((col) => (
+                    <MenuItem key={col} value={String(col)}>
+                      {col}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant="body2" color="text.secondary">
+                {formatWarehousePosition(warehouseRow, warehouseColumn)}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={2}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={onSaveWarehousePosition}
+                disabled={warehouseSaving}
+                fullWidth
+              >
+                {warehouseSaving ? 'Saving…' : 'Save'}
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" gutterBottom>
             {editingWeightId ? 'Edit Bag Weight' : 'Add Bag Weight'}

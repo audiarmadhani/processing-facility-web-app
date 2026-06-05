@@ -50,15 +50,48 @@ export function formatDurationMs(diffMs) {
   return `${days}d ${hours}h ${minutes}m`;
 }
 
+/** Only the explicit Finish action marks a batch complete (not a planned endDate). */
 export function isFermentationFinished(row) {
-  if (!row) return false;
-  if (row.status === 'Finished') return true;
-  const end = row.fermentationEnd ?? row.endDate;
-  return end != null && end !== '';
+  return row?.status === 'Finished';
 }
 
 function fermentationStartValue(row) {
   return row?.fermentationStart ?? row?.startDate;
+}
+
+function plannedEndValue(row) {
+  return row?.fermentationEnd ?? row?.endDate;
+}
+
+/** Planned/estimated end for in-progress batches (stored end date or start + target hours). */
+export function getEstimatedEndMoment(row) {
+  if (!row || isFermentationFinished(row)) return null;
+
+  const startRaw = fermentationStartValue(row);
+  if (!startRaw) return null;
+  const start = parseFermentationDateTime(startRaw);
+  if (!start) return null;
+
+  const plannedRaw = plannedEndValue(row);
+  if (plannedRaw) {
+    const planned = parseFermentationDateTime(plannedRaw) || dayjs(plannedRaw);
+    if (planned?.isValid?.()) return planned;
+  }
+
+  const target = row.fermentationTimeTarget;
+  if (target === '' || target == null) return null;
+  const hours = parseFloat(target);
+  if (!Number.isFinite(hours)) return null;
+
+  return start.add(hours, 'hour');
+}
+
+/** In progress past planned/estimated end but Finish not clicked. */
+export function isFermentationOverdue(row, now = dayjs()) {
+  if (!row || row.status !== 'In Progress') return false;
+  const endMoment = getEstimatedEndMoment(row);
+  if (!endMoment) return false;
+  return now.isAfter(endMoment);
 }
 
 const EMPTY_ESTIMATE = {
@@ -73,7 +106,7 @@ export function getPrimaryFermentationEstimate(row, now = dayjs()) {
   if (!row) return { ...EMPTY_ESTIMATE };
 
   if (isFermentationFinished(row)) {
-    const endRaw = row.fermentationEnd ?? row.endDate;
+    const endRaw = plannedEndValue(row);
     const endMoment = parseFermentationDateTime(endRaw) || dayjs(endRaw);
     const valid = Boolean(endMoment?.isValid?.());
     return {
@@ -82,23 +115,27 @@ export function getPrimaryFermentationEstimate(row, now = dayjs()) {
       remainingDisplay: 'Complete',
       hasEstimate: Boolean(endRaw),
       endMoment: valid ? endMoment : null,
+      isOverdue: false,
     };
   }
 
-  const startRaw = fermentationStartValue(row);
-  const target = row.fermentationTimeTarget;
-  if (!startRaw || target === '' || target == null) {
+  const endMoment = getEstimatedEndMoment(row);
+  if (!endMoment) {
     return { ...EMPTY_ESTIMATE };
   }
 
-  const start = parseFermentationDateTime(startRaw);
-  const hours = parseFloat(target);
-  if (!start || !Number.isFinite(hours)) {
-    return { ...EMPTY_ESTIMATE };
-  }
-
-  const endMoment = start.add(hours, 'hour');
   const remainingMs = endMoment.diff(now);
+
+  if (remainingMs <= 0) {
+    return {
+      endDisplay: '—',
+      endDisplayDetails: '—',
+      remainingDisplay: 'Overdue',
+      hasEstimate: true,
+      endMoment,
+      isOverdue: true,
+    };
+  }
 
   return {
     endDisplay: endMoment.format('YYYY-MM-DD HH:mm:ss'),
@@ -106,5 +143,6 @@ export function getPrimaryFermentationEstimate(row, now = dayjs()) {
     remainingDisplay: formatDurationMs(remainingMs),
     hasEstimate: true,
     endMoment,
+    isOverdue: false,
   };
 }

@@ -20,6 +20,7 @@ import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
 import {
   formatFermentationDisplay,
   getPrimaryFermentationEstimate,
+  isFermentationOverdue,
 } from '../utils/fermentationDateTime';
 import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow as generateOrderSheetRowPdf } from '../utils/exportOrderSheet';
 import { resolveCherryQuantity } from '../utils/resolveCherryQuantity';
@@ -1365,27 +1366,32 @@ useEffect(() => {
     }
   };
 
-  const batchCellStyle = (status) => {
-    switch (status) {
+  const batchCellStyle = (row) => {
+    switch (row.status) {
       case 'Finished':
         return { backgroundColor: '#C8E6C9', color: '#1B5E20' };
       case 'Awaiting Batch':
         return { backgroundColor: '#FFE0B2', color: '#E65100' };
       default:
+        if (isFermentationOverdue(row, dayjs())) {
+          return { backgroundColor: '#FFCDD2', color: '#B71C1C' };
+        }
         return { backgroundColor: '#FFF9C4', color: '#F57F17' };
     }
   };
 
-  const calculateElapsedTime = (startDate, endDate) => {
+  const calculateElapsedTime = (row) => {
+    const startDate = row?.fermentationStart ?? row?.startDate;
     if (!startDate) return '';
 
     const start = dayjs(startDate);
-    const end = endDate ? dayjs(endDate) : dayjs();
+    if (!start.isValid()) return '';
 
-    if (!start.isValid() || !end.isValid()) return '';
+    const useActualEnd = row.status === 'Finished' && (row.fermentationEnd ?? row.endDate);
+    const end = useActualEnd ? dayjs(row.fermentationEnd ?? row.endDate) : dayjs();
+    if (!end.isValid()) return '';
 
-    const diffMs = end.diff(start);
-
+    const diffMs = Math.max(0, end.diff(start));
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
     const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
@@ -1435,7 +1441,7 @@ useEffect(() => {
       width: 220,
       renderCell: ({ row }) => {
         const displayBatch = row.batchNumber || 'TBD';
-        const cellStyle = batchCellStyle(row.status);
+        const cellStyle = batchCellStyle(row);
 
         return (
           <Box
@@ -1565,7 +1571,7 @@ useEffect(() => {
       field: 'elapsedTime',
       headerName: 'Elapsed Time',
       width: 130,
-      renderCell: ({ row }) => calculateElapsedTime(row.fermentationStart, row.fermentationEnd),
+      renderCell: ({ row }) => calculateElapsedTime(row),
     },
     {
       field: 'estimatedEnd',
@@ -1597,7 +1603,10 @@ useEffect(() => {
       field: 'fermentationEnd',
       headerName: 'End Date',
       width: 180,
-      renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
+      renderCell: ({ row, value }) => {
+        if (row.status !== 'Finished') return '—';
+        return value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '—';
+      },
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
     {

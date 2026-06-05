@@ -218,6 +218,12 @@ function DryingStationPage() {
               station.setSelectedWeightIds([id]);
               station.setOpenDeleteConfirmDialog(true);
             }}
+            warehouseRow={station.warehouseRow}
+            onWarehouseRowChange={station.setWarehouseRow}
+            warehouseColumn={station.warehouseColumn}
+            onWarehouseColumnChange={station.setWarehouseColumn}
+            onSaveWarehousePosition={station.handleSaveWarehousePosition}
+            warehouseSaving={station.warehouseSaving}
             onClose={station.handleCloseWeightDialog}
           />
 
