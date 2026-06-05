@@ -28,6 +28,8 @@ export function useDryingStation(session) {
   const [isLoading, setIsLoading] = useState(false);
   const [areaLoading, setAreaLoading] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
+  const [actionAnchorEl, setActionAnchorEl] = useState(null);
+  const [selectedActionRow, setSelectedActionRow] = useState(null);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [dryingMeasurements, setDryingMeasurements] = useState([]);
   const [newMoisture, setNewMoisture] = useState('');
@@ -707,6 +709,16 @@ export function useDryingStation(session) {
     }
   }, [dryingAreas, fetchAreaData]);
 
+  const handleActionMenuOpen = useCallback((event, row) => {
+    setActionAnchorEl(event.currentTarget);
+    setSelectedActionRow(row);
+  }, []);
+
+  const handleActionMenuClose = useCallback(() => {
+    setActionAnchorEl(null);
+    setSelectedActionRow(null);
+  }, []);
+
   const handleDetailsClick = useCallback((batch) => {
     setSelectedBatch(batch);
     fetchDryingMeasurements(batch.batchNumber);
@@ -1017,6 +1029,10 @@ export function useDryingStation(session) {
     handleAddMoisture,
     handleMoveBatch,
     handleRefreshData,
+    actionAnchorEl,
+    selectedActionRow,
+    handleActionMenuOpen,
+    handleActionMenuClose,
     handleDetailsClick,
     handleMoveClick,
     handleWeightClick,

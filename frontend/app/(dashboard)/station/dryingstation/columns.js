@@ -1,13 +1,26 @@
 'use client';
 
-import { Button, Chip, FormControl, MenuItem, Select } from '@mui/material';
+import { Button, Chip, Menu, MenuItem } from '@mui/material';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 export function getDryingColumns({
   onDetailsClick,
   onMoveClick,
   onWeightClick,
   onFinishClick,
+  actionAnchorEl,
+  selectedActionRow,
+  handleActionMenuOpen,
+  handleActionMenuClose,
 }) {
+  const runAction = (action, row) => {
+    handleActionMenuClose();
+    if (action === 'details') onDetailsClick(row);
+    if (action === 'move') onMoveClick(row);
+    if (action === 'weight') onWeightClick(row);
+    if (action === 'finish') onFinishClick(row);
+  };
+
   return [
     { field: 'batchNumber', headerName: 'Batch Number', width: 150 },
     { field: 'farmerName', headerName: 'Farmer Name', width: 160 },
@@ -53,35 +66,39 @@ export function getDryingColumns({
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 180,
+      width: 150,
       sortable: false,
       renderCell: ({ row }) => (
-        <FormControl size="small" fullWidth>
-          <Select
-            displayEmpty
-            defaultValue=""
-            onChange={(e) => {
-              const action = e.target.value;
-
-              if (action === 'details') onDetailsClick(row);
-              if (action === 'move') onMoveClick(row);
-              if (action === 'weight') onWeightClick(row);
-              if (action === 'finish') onFinishClick(row);
-
-              e.target.value = '';
-            }}
+        <>
+          <Button
+            variant="contained"
+            size="small"
+            endIcon={<ArrowDropDownIcon />}
+            onClick={(event) => handleActionMenuOpen(event, row)}
           >
-            <MenuItem value="">Actions</MenuItem>
-            <MenuItem value="details">Details</MenuItem>
-            <MenuItem value="move" disabled={row.status !== 'In Drying'}>
+            Action
+          </Button>
+          <Menu
+            anchorEl={actionAnchorEl}
+            open={Boolean(actionAnchorEl) && selectedActionRow?.batchNumber === row.batchNumber}
+            onClose={handleActionMenuClose}
+          >
+            <MenuItem onClick={() => runAction('details', row)}>Details</MenuItem>
+            <MenuItem
+              onClick={() => runAction('move', row)}
+              disabled={row.status !== 'In Drying'}
+            >
               Move
             </MenuItem>
-            <MenuItem value="weight">Track Weight</MenuItem>
-            <MenuItem value="finish" disabled={row.status !== 'In Drying'}>
+            <MenuItem onClick={() => runAction('weight', row)}>Track Weight</MenuItem>
+            <MenuItem
+              onClick={() => runAction('finish', row)}
+              disabled={row.status !== 'In Drying'}
+            >
               Finish Drying
             </MenuItem>
-          </Select>
-        </FormControl>
+          </Menu>
+        </>
       ),
     },
     { field: 'startDryingDate', headerName: 'Start Drying Date', width: 150 },

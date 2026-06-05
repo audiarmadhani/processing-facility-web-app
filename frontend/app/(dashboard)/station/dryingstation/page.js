@@ -45,11 +45,19 @@ function DryingStationPage() {
           );
           station.setOpenFinishDialog(true);
         },
+        actionAnchorEl: station.actionAnchorEl,
+        selectedActionRow: station.selectedActionRow,
+        handleActionMenuOpen: station.handleActionMenuOpen,
+        handleActionMenuClose: station.handleActionMenuClose,
       }),
     [
       station.handleDetailsClick,
       station.handleMoveClick,
       station.handleWeightClick,
+      station.actionAnchorEl,
+      station.selectedActionRow,
+      station.handleActionMenuOpen,
+      station.handleActionMenuClose,
       station.setSelectedRowForFinish,
       station.setFinishDate,
       station.setFinishTime,
