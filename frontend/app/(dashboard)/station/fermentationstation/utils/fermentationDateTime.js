@@ -28,6 +28,13 @@ export function formatFermentationDisplay(value) {
   return parsed ? parsed.format('DD/MM/YYYY HH:mm:ss') : String(value);
 }
 
+/** ISO-style grid display without timezone shift from stored UTC strings. */
+export function formatFermentationGridDate(value, empty = '—') {
+  if (value === undefined || value === null || value === '') return empty;
+  const parsed = parseFermentationDateTime(value);
+  return parsed ? parsed.format('YYYY-MM-DD HH:mm:ss') : empty;
+}
+
 export function calculateFermentationEndGoal(fermentationStart, fermentationTimeTarget) {
   if (!fermentationStart || fermentationTimeTarget === '' || fermentationTimeTarget == null) {
     return 'N/A';

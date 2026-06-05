@@ -19,8 +19,10 @@ import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
 import {
   formatFermentationDisplay,
+  formatFermentationGridDate,
   getPrimaryFermentationEstimate,
   isFermentationOverdue,
+  parseFermentationDateTime,
 } from '../utils/fermentationDateTime';
 import { generateOrderSheet as generateOrderSheetPdf, generateOrderSheetRow as generateOrderSheetRowPdf } from '../utils/exportOrderSheet';
 import { resolveCherryQuantity } from '../utils/resolveCherryQuantity';
@@ -1384,12 +1386,14 @@ useEffect(() => {
     const startDate = row?.fermentationStart ?? row?.startDate;
     if (!startDate) return '';
 
-    const start = dayjs(startDate);
-    if (!start.isValid()) return '';
+    const start = parseFermentationDateTime(startDate);
+    if (!start) return '';
 
     const useActualEnd = row.status === 'Finished' && (row.fermentationEnd ?? row.endDate);
-    const end = useActualEnd ? dayjs(row.fermentationEnd ?? row.endDate) : dayjs();
-    if (!end.isValid()) return '';
+    const end = useActualEnd
+      ? parseFermentationDateTime(row.fermentationEnd ?? row.endDate)
+      : dayjs();
+    if (!end?.isValid?.()) return '';
 
     const diffMs = Math.max(0, end.diff(start));
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -1597,15 +1601,17 @@ useEffect(() => {
       field: 'fermentationStart',
       headerName: 'Start Date',
       width: 180,
-      renderCell: ({ value }) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
+      valueGetter: (_value, row) => row?.fermentationStart ?? row?.startDate,
+      renderCell: ({ value }) => formatFermentationGridDate(value, '-'),
     },
     {
       field: 'fermentationEnd',
       headerName: 'End Date',
       width: 180,
+      valueGetter: (_value, row) => row?.fermentationEnd ?? row?.endDate,
       renderCell: ({ row, value }) => {
         if (row.status !== 'Finished') return '—';
-        return value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '—';
+        return formatFermentationGridDate(value);
       },
     },
     { field: 'farmerName', headerName: 'Farmer Name', width: 150 },
