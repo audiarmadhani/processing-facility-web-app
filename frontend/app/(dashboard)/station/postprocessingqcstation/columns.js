@@ -14,12 +14,20 @@ const formatDateTime = (value) => {
   return isNaN(d.getTime()) ? String(value) : d.toLocaleString();
 };
 
+const formatExperimentNumber = (value) => (value == null || value === '' ? '—' : String(value));
+
 const sharedBatchColumns = [
   { field: 'batchNumber', headerName: 'Batch', width: 150 },
   { field: 'processingType', headerName: 'Processing Type', width: 160 },
   { field: 'farmerName', headerName: 'Farmer', width: 140 },
   { field: 'lotNumber', headerName: 'Lot', width: 160 },
   { field: 'referenceNumber', headerName: 'Ref', width: 150 },
+  {
+    field: 'experimentNumber',
+    headerName: 'Experiment #',
+    width: 130,
+    valueFormatter: (value) => formatExperimentNumber(value),
+  },
   { field: 'producer', headerName: 'Producer', width: 110 },
 ];
 
@@ -164,6 +172,12 @@ export function getCompletedQCColumns(onExportPdf) {
     },
     { field: 'batchNumber', headerName: 'Batch', width: 150 },
     { field: 'referenceNumber', headerName: 'Reference', width: 150 },
+    {
+      field: 'experimentNumber',
+      headerName: 'Experiment #',
+      width: 130,
+      valueFormatter: (value) => formatExperimentNumber(value),
+    },
     { field: 'storedDate', headerName: 'Stored', width: 120, valueFormatter: (value) => formatDate(value) },
     { field: 'qcDate', headerName: 'QC date', width: 120, valueFormatter: (value) => formatDate(value) },
     { field: 'generalQuality', headerName: 'Quality', width: 160 },
