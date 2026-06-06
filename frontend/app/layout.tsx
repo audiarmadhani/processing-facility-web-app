@@ -30,6 +30,7 @@ import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import RouteIcon from '@mui/icons-material/Route';
 import HistoryIcon from '@mui/icons-material/History';
+import InventoryIcon from '@mui/icons-material/Inventory';
 
 export const metadata = {
   title: "BTM HEQA Platform",
@@ -102,6 +103,7 @@ const NAVIGATION: Navigation = [
     icon: <WarehouseIcon />,
     children: [
       { segment: "dashboard", title: "IMS Dashboard", icon: <WarehouseIcon /> },
+      { segment: "office-inventory", title: "Office Inventory", icon: <InventoryIcon /> },
     ],
   },
 
