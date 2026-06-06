@@ -78,7 +78,7 @@ export default function OfficeInventoryGrids({
           <Typography variant="subtitle2" gutterBottom>
             Current stock ({stockRows.length} items)
           </Typography>
-          <Box sx={{ height: 600, width: '100%' }}>
+          <Box sx={{ height: 1200, width: '100%' }}>
             <DataGrid
               rows={stockRows}
               columns={stockColumns}
