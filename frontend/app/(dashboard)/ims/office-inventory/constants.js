@@ -26,3 +26,14 @@ export function formatStockQuantity(value, unit) {
     maximumFractionDigits: fractionDigits,
   }).format(n);
 }
+
+export function formatTransactionDateDisplay(value) {
+  if (!value) return '';
+  const s = String(value).slice(0, 10);
+  const match = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return s;
+  const [, y, mo, d] = match;
+  return `${Number(d)}/${Number(mo)}/${y}`;
+}
+
+export const DEFAULT_PAGE_SIZE = 100;

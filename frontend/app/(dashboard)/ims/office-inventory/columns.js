@@ -1,4 +1,4 @@
-import { formatStockQuantity } from './constants';
+import { formatStockQuantity, formatTransactionDateDisplay } from './constants';
 
 export function getStockColumns() {
   return [
@@ -51,5 +51,45 @@ export function getHistoryColumns() {
     { field: 'location', headerName: 'Location', width: 100 },
     { field: 'project', headerName: 'Project', width: 150 },
     { field: 'notes', headerName: 'Keterangan', width: 180 },
+  ];
+}
+
+export function getSearchColumns() {
+  return [
+    {
+      field: 'transactionDate',
+      headerName: 'Tgl',
+      width: 110,
+      valueFormatter: (value) => formatTransactionDateDisplay(value),
+    },
+    { field: 'remarks', headerName: 'Remarks', width: 130 },
+    { field: 'location', headerName: 'Location', width: 100 },
+    { field: 'invoiceReference', headerName: 'No Inv / SJ', width: 160 },
+    { field: 'unit', headerName: 'Satuan', width: 90 },
+    {
+      field: 'quantityIn',
+      headerName: 'IN',
+      width: 90,
+      valueGetter: (_value, row) =>
+        row.movementType === 'IN' ? row.quantity : null,
+      valueFormatter: (value, row) =>
+        value != null ? formatStockQuantity(value, row?.unit) : '',
+    },
+    {
+      field: 'quantityOut',
+      headerName: 'OUT',
+      width: 90,
+      valueGetter: (_value, row) =>
+        row.movementType === 'OUT' ? row.quantity : null,
+      valueFormatter: (value, row) =>
+        value != null ? formatStockQuantity(value, row?.unit) : '',
+    },
+    {
+      field: 'stockAfter',
+      headerName: 'SO',
+      width: 100,
+      valueFormatter: (value, row) => formatStockQuantity(value, row?.unit),
+    },
+    { field: 'notes', headerName: 'Keterangan', flex: 1, minWidth: 180 },
   ];
 }

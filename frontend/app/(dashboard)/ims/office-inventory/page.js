@@ -90,6 +90,10 @@ export default function OfficeInventoryPage() {
               movements={inv.movements}
               itemsLoading={inv.itemsLoading}
               movementsLoading={inv.movementsLoading}
+              searchItem={inv.searchItem}
+              searchMovements={inv.searchMovements}
+              searchLoading={inv.searchLoading}
+              onSearchItemChange={inv.fetchItemMovementHistory}
             />
           </CardContent>
         </Card>

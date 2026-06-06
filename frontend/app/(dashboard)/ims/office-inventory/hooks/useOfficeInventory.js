@@ -32,6 +32,9 @@ export function useOfficeInventory() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [searchItem, setSearchItem] = useState(null);
+  const [searchMovements, setSearchMovements] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const showSnackbar = useCallback((message, severity = 'success') => {
     setSnackbarMessage(message);
@@ -57,7 +60,7 @@ export function useOfficeInventory() {
   const fetchMovements = useCallback(async () => {
     setMovementsLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '500', offset: '0' });
+      const params = new URLSearchParams({ limit: '5000', offset: '0' });
       const response = await fetch(
         `${API_BASE_URL}/api/office-inventory/movements?${params.toString()}`
       );
@@ -73,6 +76,33 @@ export function useOfficeInventory() {
       setMovementsLoading(false);
     }
   }, [showSnackbar]);
+
+  const fetchItemMovementHistory = useCallback(
+    async (item) => {
+      if (!item?.id) {
+        setSearchItem(null);
+        setSearchMovements([]);
+        return;
+      }
+      setSearchItem(item);
+      setSearchLoading(true);
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/office-inventory/items/${item.id}/movement-history`
+        );
+        if (!response.ok) throw new Error('Failed to fetch item movement history');
+        const data = await response.json();
+        setSearchMovements(Array.isArray(data.rows) ? data.rows : []);
+        if (data.item) setSearchItem(data.item);
+      } catch (error) {
+        setSearchMovements([]);
+        showSnackbar(error.message || 'Failed to fetch item movement history', 'error');
+      } finally {
+        setSearchLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
 
   useEffect(() => {
     fetchItems();
@@ -144,13 +174,16 @@ export function useOfficeInventory() {
       showSnackbar('Movement recorded successfully');
       resetForm();
       await Promise.all([fetchItems(), fetchMovements()]);
+      if (searchItem?.id && (form.itemId === searchItem.id || form.itemName === searchItem.name)) {
+        await fetchItemMovementHistory(searchItem);
+      }
     } catch (error) {
       showSnackbar(error.message || 'Failed to record movement', 'error');
     } finally {
       setSubmitting(false);
       setConfirmOverstockOpen(false);
     }
-  }, [form, fetchItems, fetchMovements, resetForm, showSnackbar]);
+  }, [form, fetchItems, fetchMovements, resetForm, showSnackbar, searchItem, fetchItemMovementHistory]);
 
   const validateAndSubmit = useCallback(() => {
     const qty = parseFloat(form.quantity);
@@ -231,6 +264,11 @@ export function useOfficeInventory() {
     generateReport,
     fetchItems,
     fetchMovements,
+    searchItem,
+    setSearchItem,
+    searchMovements,
+    searchLoading,
+    fetchItemMovementHistory,
     snackbarOpen,
     setSnackbarOpen,
     snackbarMessage,
