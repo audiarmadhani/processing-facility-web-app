@@ -4,6 +4,7 @@ export function getStockColumns() {
   return [
     { field: 'name', headerName: 'Nama Barang', flex: 1, minWidth: 180 },
     { field: 'category', headerName: 'Kategori', width: 160 },
+    { field: 'itemType', headerName: 'Jenis Barang', width: 150 },
     { field: 'unit', headerName: 'Satuan', width: 100 },
     {
       field: 'currentStock',
@@ -44,9 +45,11 @@ export function getHistoryColumns() {
         value != null ? formatStockQuantity(value, row?.unit) : '',
     },
     { field: 'unit', headerName: 'Satuan', width: 90 },
+    { field: 'itemType', headerName: 'Jenis', width: 130 },
     { field: 'remarks', headerName: 'Remarks', width: 130 },
     { field: 'pic', headerName: 'PIC', width: 100 },
     { field: 'location', headerName: 'Location', width: 100 },
     { field: 'project', headerName: 'Project', width: 150 },
+    { field: 'notes', headerName: 'Keterangan', width: 180 },
   ];
 }
