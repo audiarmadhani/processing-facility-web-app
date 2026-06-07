@@ -17,6 +17,7 @@ import {
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useMemo } from 'react';
 import { useDriverPickups } from '../hooks/useDriverPickups';
+import { enrichPickupRowsWithFacilityDistance } from '../utils/pickupGeo';
 
 const DriverPickupMap = dynamic(() => import('./DriverPickupMap'), { ssr: false });
 
@@ -37,6 +38,11 @@ function formatCoord(value) {
 function formatWeight(value) {
   if (value == null || Number.isNaN(Number(value))) return EMPTY;
   return Number(value).toLocaleString();
+}
+
+function formatDistanceKm(value) {
+  if (value == null || Number.isNaN(Number(value))) return EMPTY;
+  return `${Number(value).toFixed(2)} km`;
 }
 
 function buildYearOptions(currentYear) {
@@ -72,6 +78,13 @@ const pickupColumns = [
     sortable: true,
     width: 100,
     renderCell: ({ value }) => formatCoord(value),
+  },
+  {
+    field: 'facility_distance_km',
+    headerName: 'Dist. to Facility (km)',
+    sortable: true,
+    width: 150,
+    renderCell: ({ value }) => formatDistanceKm(value),
   },
   {
     field: 'estimated_weight',
@@ -117,6 +130,10 @@ export default function DriverPickupSection() {
   const currentYear = new Date().getFullYear();
   const yearOptions = useMemo(() => buildYearOptions(currentYear), [currentYear]);
   const { year, setYear, rows, loading, error } = useDriverPickups(currentYear);
+  const rowsWithDistance = useMemo(
+    () => enrichPickupRowsWithFacilityDistance(rows),
+    [rows]
+  );
 
   return (
     <Card variant="outlined">
@@ -162,7 +179,7 @@ export default function DriverPickupSection() {
         ) : (
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
-              <DriverPickupMap rows={rows} />
+              <DriverPickupMap rows={rowsWithDistance} />
             </Grid>
             <Grid item xs={12} md={6}>
               {rows.length === 0 ? (
@@ -171,7 +188,7 @@ export default function DriverPickupSection() {
                 </Typography>
               ) : null}
               <div style={{ height: 480, width: '100%' }}>
-                <DataGrid rows={rows} columns={pickupColumns} {...gridCommonProps} />
+                <DataGrid rows={rowsWithDistance} columns={pickupColumns} {...gridCommonProps} />
               </div>
             </Grid>
           </Grid>
