@@ -178,10 +178,10 @@ export default function DriverPickupSection() {
           </Box>
         ) : (
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <DriverPickupMap rows={rowsWithDistance} />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               {rows.length === 0 ? (
                 <Typography color="text.secondary" sx={{ py: 2 }}>
                   No driver pickups for {year}.
