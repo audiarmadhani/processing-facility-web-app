@@ -932,6 +932,8 @@ const handleSubmitExit = async () => {
             color={
               params.value === "In Dry Mill"
                 ? "primary"
+                : params.value === "Not Started"
+                ? "warning"
                 : params.value === "Processed"
                 ? "success"
                 : "default"
@@ -1063,6 +1065,8 @@ const handleSubmitExit = async () => {
             color={
               params.value === "In Dry Mill"
                 ? "primary"
+                : params.value === "Not Started"
+                ? "warning"
                 : params.value === "Processed"
                 ? "success"
                 : "default"

@@ -26,7 +26,9 @@ export function isBatchMerged(row) {
 }
 
 export function isActiveDryMillBatch(row) {
-  return normalizeStatus(row?.status) === 'In Dry Mill';
+  if (hasExitedDryMill(row)) return false;
+  const status = normalizeStatus(row?.status);
+  return status === 'In Dry Mill' || status === 'Not Started';
 }
 
 export function canSelectForMerge(row) {
