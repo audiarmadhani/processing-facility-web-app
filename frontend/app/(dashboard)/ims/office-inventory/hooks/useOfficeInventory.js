@@ -16,6 +16,7 @@ const emptyForm = () => ({
   remarks: '',
   location: '',
   project: '',
+  detail: '',
 });
 
 export function useOfficeInventory() {
@@ -150,6 +151,7 @@ export function useOfficeInventory() {
         pic: form.pic || null,
         location: form.location || null,
         project: form.project || null,
+        notes: form.detail?.trim() || null,
       };
 
       if (form.itemId) {

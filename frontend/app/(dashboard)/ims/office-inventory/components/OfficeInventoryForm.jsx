@@ -189,6 +189,16 @@ export default function OfficeInventoryForm({
           />
         </Grid>
 
+        <Grid item xs={12} md={6}>
+          <TextField
+            label="Detail"
+            size="small"
+            fullWidth
+            value={form.detail}
+            onChange={(e) => updateForm({ detail: e.target.value })}
+          />
+        </Grid>
+
         <Grid item xs={12} md={3}>
           <Button
             type="submit"

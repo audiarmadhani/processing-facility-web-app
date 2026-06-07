@@ -50,7 +50,7 @@ export function getHistoryColumns() {
     { field: 'pic', headerName: 'PIC', width: 100 },
     { field: 'location', headerName: 'Location', width: 100 },
     { field: 'project', headerName: 'Project', width: 150 },
-    { field: 'notes', headerName: 'Keterangan', width: 180 },
+    { field: 'notes', headerName: 'Detail', flex: 1, minWidth: 180 },
   ];
 }
 
