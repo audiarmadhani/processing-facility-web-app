@@ -45,8 +45,8 @@ import WarehouseTemperatureChart from './charts/WarehouseTemperatureChart';
 import WetmillTemperatureChart from './charts/WetmillTemperatureChart';
 import TradingViewWidget from './charts/TradingViewWidget';
 import WeightFlowSankeyChart from './charts/WeightFlowSankeyChart';
-const ArabicaMapComponent = dynamic(() => import("./charts/ArabicaMap"), { ssr: false });
-const RobustaMapComponent = dynamic(() => import("./charts/RobustaMap"), { ssr: false });
+import useResponsiveChartHeight from './charts/useResponsiveChartHeight';
+const PickupPointsMapComponent = dynamic(() => import("./charts/PickupPointsMap"), { ssr: false });
 
 const DEFAULT_METRICS = {
   totalBatches: 0,
@@ -129,6 +129,7 @@ function Dashboard() {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const chartHeight = useResponsiveChartHeight();
   const formatWeight = (weight) => {
     const numericWeight = Number(weight) || 0;
     if (numericWeight >= 1e9) {
@@ -1451,37 +1452,43 @@ function Dashboard() {
               </Grid> */}
 
               {/* Arabica Farmers Contribution Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
+              <Grid item xs={12} md={6} sx={{ height: { xs: `${chartHeight}px`, md: `${chartHeight}px` } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom>
                       Arabica Farmers Contribution
                     </Typography>
-                    <ArabicaFarmersContributionChart timeframe={timeframe} />
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <ArabicaFarmersContributionChart timeframe={timeframe} height={chartHeight - 80} />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
               {/* Arabica Cherry Quality Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
+              <Grid item xs={12} md={6} sx={{ height: { xs: `${chartHeight}px`, md: `${chartHeight}px` } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom>
                       Arabica Cherry Quality
                     </Typography>
-                    <ArabicaCherryQualityChart timeframe={timeframe} />
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <ArabicaCherryQualityChart timeframe={timeframe} height={chartHeight - 80} />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
-              {/* Arabica Map */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
+              {/* Arabica Pickup Map */}
+              <Grid item xs={12} md={12} sx={{ height: { xs: '55vh', sm: '60vh', md: '65vh', lg: '70vh' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom>
-                      Arabica Coverage Map
+                      Arabica Pickup Locations
                     </Typography>
-                    <ArabicaMapComponent />
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <PickupPointsMapComponent species="Arabica" />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
@@ -1940,37 +1947,43 @@ function Dashboard() {
               </Grid> */}
 
               {/* Robusta Farmers Contribution Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
+              <Grid item xs={12} md={6} sx={{ height: { xs: `${chartHeight}px`, md: `${chartHeight}px` } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom>
                       Robusta Farmers Contribution
                     </Typography>
-                    <RobustaFarmersContributionChart timeframe={timeframe} />
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <RobustaFarmersContributionChart timeframe={timeframe} height={chartHeight - 80} />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
               {/* Robusta Cherry Quality Bar Chart */}
-              <Grid item xs={12} md={6} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
+              <Grid item xs={12} md={6} sx={{ height: { xs: `${chartHeight}px`, md: `${chartHeight}px` } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom>
                       Robusta Cherry Quality
                     </Typography>
-                    <RobustaCherryQualityChart timeframe={timeframe} />
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <RobustaCherryQualityChart timeframe={timeframe} height={chartHeight - 80} />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
-              {/* Robusta Map */}
-              <Grid item xs={12} md={12} sx={{ height: { xs: '600px', sm:'600px', md: '600px' } }}>
-                <Card variant="outlined">
-                  <CardContent>
+              {/* Robusta Pickup Map */}
+              <Grid item xs={12} md={12} sx={{ height: { xs: '55vh', sm: '60vh', md: '65vh', lg: '70vh' } }}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom>
-                      Robusta Coverage Map
+                      Robusta Pickup Locations
                     </Typography>
-                    <RobustaMapComponent />
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <PickupPointsMapComponent species="Robusta" />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>

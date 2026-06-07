@@ -31,6 +31,7 @@ import ThermostatIcon from '@mui/icons-material/Thermostat';
 import RouteIcon from '@mui/icons-material/Route';
 import HistoryIcon from '@mui/icons-material/History';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import TvIcon from '@mui/icons-material/Tv';
 
 export const metadata = {
   title: "BTM HEQA Platform",
@@ -44,6 +45,7 @@ const NAVIGATION: Navigation = [
   { kind: "header", title: "Main items" },
   { segment: "", title: "Dashboard", icon: <DashboardIcon /> },
   { segment: "updates", title: "Updates", icon: <HistoryIcon /> },
+  { segment: "tv", title: "TV Display", icon: <TvIcon /> },
 
   { kind: "divider" },
 

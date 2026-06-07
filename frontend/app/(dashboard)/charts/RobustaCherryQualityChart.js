@@ -16,7 +16,7 @@ const colorCategories = {
   ],
 };
 
-const RobustaCherryQualityChart = ({ timeframe = "this_month" }) => {
+const RobustaCherryQualityChart = ({ timeframe = "this_month", height = 500 }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +56,7 @@ const RobustaCherryQualityChart = ({ timeframe = "this_month" }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height }}>
         <CircularProgress />
       </Box>
     );
@@ -64,7 +64,7 @@ const RobustaCherryQualityChart = ({ timeframe = "this_month" }) => {
 
   if (data.length === 0) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height }}>
         <Typography variant="body1" color="text.secondary">
           No cherry quality data for the selected timeframe.
         </Typography>
@@ -72,12 +72,10 @@ const RobustaCherryQualityChart = ({ timeframe = "this_month" }) => {
     );
   }
 
-  const chartHeight = 500;
-
   const colorScheme = 'Set3';
 
   return (
-    <Box sx={{ height: chartHeight }}>
+    <Box sx={{ height }}>
       <BarChart
         dataset={data}
         xAxis={[{ scaleType: "band", dataKey: "qcDate", label: "QC Date", disableTicks : true }]}
@@ -88,7 +86,7 @@ const RobustaCherryQualityChart = ({ timeframe = "this_month" }) => {
             { dataKey: "overripe", label: "Overripe", stack: "stack1" },
           ]}
         yAxis={[{ label: "Percentage (%)" }]}
-        height={500}
+        height={height}
         sx={{
           ".MuiChart-axisLeft .MuiChart-axisLabel": {
             transform: "translate(-100px, 0)",

@@ -12,7 +12,7 @@ const colorCategories = {
   ],
 };
 
-const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
+const ArabicaFarmersContributionChart = ({ timeframe = "last_month", height = 500 }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -73,7 +73,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height }}>
         <CircularProgress />
       </Box>
     );
@@ -87,12 +87,12 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
     );
   }
 
-  const chartHeight = data && data.length > 0 ? 500 : "auto";
+  const chartHeight = data && data.length > 0 ? height : height;
 
   return (
     <Box sx={{ height: chartHeight }}>
       {data.length === 0 ? (
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 500 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height }}>
           <Typography variant="body1">No data available for the selected timeframe.</Typography>
         </Box>
       ) : (
@@ -108,7 +108,7 @@ const ArabicaFarmersContributionChart = ({ timeframe = "last_month" }) => {
               { dataKey: "overripeWeight", label: "Overripe", stack: 'ripenessWeight', color: colorCategories.Set3[3] },
               { dataKey: "unknownWeight", label: "Unknown", stack: 'ripenessWeight', color: colorCategories.Set3[4] },
             ]}
-          height={500}
+          height={height}
           sx={{
             ".MuiChart-axisLeft .MuiChart-axisLabel": {
               transform: "translate(-100px, 0)",

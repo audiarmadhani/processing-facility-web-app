@@ -21,6 +21,7 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import axios from "axios";
 import { formatIdr } from "../../station/_shared/utils/format";
 import FarmerFormFields from "./FarmerFormFields";
+import DriverPickupSection from "./components/DriverPickupSection";
 import {
   FARMER_API_BASE,
   emptyFarmerForm,
@@ -381,6 +382,12 @@ function FarmerInputStation() {
               </div>
             </CardContent>
           </Card>
+        </Grid>
+      )}
+
+      {canViewGrids && (
+        <Grid item xs={12}>
+          <DriverPickupSection />
         </Grid>
       )}
 
