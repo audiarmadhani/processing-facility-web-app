@@ -263,7 +263,7 @@ export function useReceivingStation(session) {
 
   const handleGenerateCherryReport = async () => {
     if (!cherryReportDate) {
-      snackbar.showError('Select a report date.');
+      snackbar.showError('Select a batch date.');
       return;
     }
 
@@ -279,7 +279,7 @@ export function useReceivingStation(session) {
       const data = await response.json();
       const rows = Array.isArray(data.rows) ? data.rows : [];
       if (rows.length === 0) {
-        snackbar.showError('No cherry receiving batches found for that date.');
+        snackbar.showError('No cherry receiving batches found for that batch date.');
         return;
       }
       generateCherryReceiveReport(rows, cherryReportDate);

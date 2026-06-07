@@ -8,6 +8,7 @@ export default function ReceivingDataPanel({
   rows,
   columns,
   reportDate,
+  reportDateLabel = 'Report date',
   onReportDateChange,
   onGenerateReport,
   reportGenerating,
@@ -21,7 +22,7 @@ export default function ReceivingDataPanel({
         {onGenerateReport ? (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2, alignItems: 'center' }}>
             <TextField
-              label="Report date"
+              label={reportDateLabel}
               type="date"
               size="small"
               value={reportDate || ''}

@@ -35,6 +35,12 @@ function formatExperiment(experimentNumber) {
   return String(experimentNumber).trim();
 }
 
+function batchDateFromRow(row) {
+  if (row.batchDate) return row.batchDate;
+  const bn = row.batchNumber || '';
+  return /^\d{4}-\d{2}-\d{2}/.test(bn) ? bn.slice(0, 10) : '';
+}
+
 export function cherryReceiveReportFilename(reportDate) {
   const ymd = dayjs(reportDate).isValid()
     ? dayjs(reportDate).format('YYYYMMDD')
@@ -51,7 +57,7 @@ export function generateCherryReceiveReport(rows, reportDate) {
     const price = row.price != null && row.price !== '' ? Number(row.price) : null;
     return {
       batchNumber: row.batchNumber || '',
-      receivingDate: formatReportDate(row.receivingDate),
+      receivingDate: formatReportDate(batchDateFromRow(row)),
       farmerName: row.farmerName || '',
       broker: row.broker || '',
       type: row.type || '',

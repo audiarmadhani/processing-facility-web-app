@@ -55,6 +55,7 @@ function ReceivingStation() {
                 rows={station.cherryData}
                 columns={station.cherryColumns}
                 reportDate={station.cherryReportDate}
+                reportDateLabel="Batch date"
                 onReportDateChange={station.setCherryReportDate}
                 onGenerateReport={station.handleGenerateCherryReport}
                 reportGenerating={station.cherryReportGenerating}
