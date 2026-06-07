@@ -9,6 +9,7 @@ import {
   batchUniqueId,
   batchPipelineKey,
   canSelectForMerge,
+  dedupeParentBatches,
   getProcessStatusColor,
   getProcessStatusLabel,
   hasHullerDone,
@@ -163,7 +164,7 @@ export function useDryMillData(session) {
       const response = await axios.get(`${API_BASE_URL}/api/dry-mill-data`);
       const data = response.data;
 
-      let parentBatchesData = data.map((batch) => mapParentBatch(batch));
+      let parentBatchesData = dedupeParentBatches(data.map((batch) => mapParentBatch(batch)));
       parentBatchesData = await enrichParentBatchesWithLatestMoisture(parentBatchesData);
 
       const subBatchesData = data

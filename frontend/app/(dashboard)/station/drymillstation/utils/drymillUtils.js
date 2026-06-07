@@ -11,6 +11,33 @@ export function batchUniqueId(batch) {
   return `${batch.batchNumber},${batch.producer},${batch.processingType}`;
 }
 
+export function parentBatchRowKey(batch) {
+  return `${batch.batchNumber}__${batch.producer || 'N/A'}__${batch.processingType}`;
+}
+
+function parentBatchRowScore(batch) {
+  let score = 0;
+  if (batch.dryMillEntered) score += 4;
+  if (normalizeStatus(batch.status) === 'In Dry Mill') score += 2;
+  if (batch.lotNumber && batch.lotNumber !== 'N/A') score += 1;
+  return score;
+}
+
+/** One parent row per batch + producer + processing type (API can return multiple lot rows). */
+export function dedupeParentBatches(batches) {
+  const byKey = new Map();
+
+  for (const batch of batches) {
+    const key = parentBatchRowKey(batch);
+    const existing = byKey.get(key);
+    if (!existing || parentBatchRowScore(batch) > parentBatchRowScore(existing)) {
+      byKey.set(key, batch);
+    }
+  }
+
+  return [...byKey.values()];
+}
+
 export function normalizeStatus(status) {
   return typeof status === 'string' ? status.trim() : status;
 }
@@ -69,7 +96,7 @@ export function mapParentBatch(batch) {
     referenceNumber: batch.referenceNumber || 'N/A',
     dryMillMerged: batch.dryMillMerged === true ? 'Merged' : 'Not Merged',
     latestMoisture: null,
-    id: `${batch.batchNumber}__${producer}__${batch.processingType}`,
+    id: parentBatchRowKey({ ...batch, producer }),
   };
 }
 
