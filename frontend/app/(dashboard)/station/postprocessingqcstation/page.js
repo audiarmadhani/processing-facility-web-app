@@ -61,6 +61,8 @@ function PostProcessingQCPage() {
           selectedBatch={station.selectedBatch}
           formData={station.formData}
           onFormChange={station.handleFormChange}
+          onEditCuppingEntry={station.handleEditCuppingEntry}
+          onCancelCuppingEdit={station.handleCancelCuppingEdit}
           onAddCuppingEntry={station.handleAddCuppingEntry}
           onRemoveCuppingEntry={station.handleRemoveCuppingEntry}
           onClose={station.handleCloseCuppingDialog}

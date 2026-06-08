@@ -8,6 +8,7 @@ export const emptyCuppingDraft = () => ({
   cuppedAt: new Date().toISOString().slice(0, 10),
   notes: '',
   okForFurtherProcess: null,
+  editingIndex: null,
 });
 
 export const emptyFormData = () => ({

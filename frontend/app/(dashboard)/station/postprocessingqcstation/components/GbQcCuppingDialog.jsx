@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -22,6 +23,7 @@ import {
   Typography,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 
 function formatCuppedDate(value) {
   if (!value) return '—';
@@ -40,6 +42,8 @@ export default function GbQcCuppingDialog({
   selectedBatch,
   formData,
   onFormChange,
+  onEditCuppingEntry,
+  onCancelCuppingEdit,
   onAddCuppingEntry,
   onRemoveCuppingEntry,
   onClose,
@@ -47,6 +51,7 @@ export default function GbQcCuppingDialog({
   saving,
 }) {
   const draft = formData.cuppingDraft || {};
+  const isEditing = draft.editingIndex !== null && draft.editingIndex !== undefined;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -65,7 +70,7 @@ export default function GbQcCuppingDialog({
               <TableCell>Date cupped</TableCell>
               <TableCell>Notes</TableCell>
               <TableCell>OK / Not OK</TableCell>
-              <TableCell width={60} />
+              <TableCell width={100} />
             </TableRow>
           </TableHead>
           <TableBody>
@@ -77,18 +82,30 @@ export default function GbQcCuppingDialog({
               </TableRow>
             ) : (
               formData.cuppingEntries.map((entry, index) => (
-                <TableRow key={entry.id || `draft-${index}`}>
+                <TableRow
+                  key={entry.id || `draft-${index}`}
+                  selected={isEditing && draft.editingIndex === index}
+                >
                   <TableCell>{formatCuppedDate(entry.cuppedAt)}</TableCell>
                   <TableCell>{entry.notes}</TableCell>
                   <TableCell>{formatOkLabel(entry.okForFurtherProcess)}</TableCell>
                   <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => onRemoveCuppingEntry(index)}
-                      aria-label="Remove cupping entry"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => onEditCuppingEntry(index)}
+                        aria-label="Edit cupping entry"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => onRemoveCuppingEntry(index)}
+                        aria-label="Remove cupping entry"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))
@@ -142,9 +159,16 @@ export default function GbQcCuppingDialog({
             />
           </Grid>
           <Grid item xs={12}>
-            <Button variant="contained" onClick={onAddCuppingEntry}>
-              Add cupping
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button variant="contained" onClick={onAddCuppingEntry}>
+                {isEditing ? 'Update cupping' : 'Add cupping'}
+              </Button>
+              {isEditing ? (
+                <Button variant="outlined" onClick={onCancelCuppingEdit}>
+                  Cancel edit
+                </Button>
+              ) : null}
+            </Box>
           </Grid>
         </Grid>
       </DialogContent>

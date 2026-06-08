@@ -21,7 +21,7 @@ import {
   getCompletedQCColumns,
 } from '../columns';
 
-const GRID_HEIGHT = 560;
+const GRID_HEIGHT = 1120;
 
 const gridDefaults = {
   height: GRID_HEIGHT,

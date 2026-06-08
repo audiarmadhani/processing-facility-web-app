@@ -376,38 +376,93 @@ export function useGbQcStation(session) {
     }));
   };
 
+  const handleEditCuppingEntry = (index) => {
+    const entry = formData.cuppingEntries[index];
+    if (!entry) return;
+
+    setFormData((prevData) => ({
+      ...prevData,
+      cuppingDraft: {
+        cuppedAt: entry.cuppedAt,
+        notes: entry.notes,
+        okForFurtherProcess: entry.okForFurtherProcess,
+        editingIndex: index,
+      },
+    }));
+  };
+
+  const handleCancelCuppingEdit = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      cuppingDraft: emptyCuppingDraft(),
+    }));
+  };
+
   const handleAddCuppingEntry = () => {
     const draft = formData.cuppingDraft;
     if (!isCuppingEntryComplete(draft)) {
       setSnackbar({
         open: true,
-        message: 'Fill date cupped, notes, and OK / Not OK before adding.',
+        message: 'Fill date cupped, notes, and OK / Not OK before saving the entry.',
         severity: 'error',
       });
       return;
     }
 
-    setFormData((prevData) => ({
-      ...prevData,
-      cuppingEntries: [
-        ...prevData.cuppingEntries,
-        {
-          id: null,
-          cuppedAt: draft.cuppedAt,
-          notes: draft.notes.trim(),
-          okForFurtherProcess: draft.okForFurtherProcess,
-          cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
-        },
-      ],
-      cuppingDraft: emptyCuppingDraft(),
-    }));
+    const editingIndex = draft.editingIndex;
+    const updatedEntry = {
+      cuppedAt: draft.cuppedAt,
+      notes: draft.notes.trim(),
+      okForFurtherProcess: draft.okForFurtherProcess,
+      cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
+    };
+
+    setFormData((prevData) => {
+      if (editingIndex !== null && editingIndex !== undefined) {
+        const existing = prevData.cuppingEntries[editingIndex];
+        if (!existing) {
+          return { ...prevData, cuppingDraft: emptyCuppingDraft() };
+        }
+
+        return {
+          ...prevData,
+          cuppingEntries: prevData.cuppingEntries.map((entry, index) =>
+            index === editingIndex
+              ? {
+                  ...existing,
+                  ...updatedEntry,
+                  id: existing.id,
+                  cuppedBy: existing.cuppedBy || updatedEntry.cuppedBy,
+                }
+              : entry
+          ),
+          cuppingDraft: emptyCuppingDraft(),
+        };
+      }
+
+      return {
+        ...prevData,
+        cuppingEntries: [
+          ...prevData.cuppingEntries,
+          {
+            id: null,
+            ...updatedEntry,
+          },
+        ],
+        cuppingDraft: emptyCuppingDraft(),
+      };
+    });
   };
 
   const handleRemoveCuppingEntry = (index) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      cuppingEntries: prevData.cuppingEntries.filter((_, i) => i !== index),
-    }));
+    setFormData((prevData) => {
+      const wasEditing = prevData.cuppingDraft?.editingIndex === index;
+      return {
+        ...prevData,
+        cuppingEntries: prevData.cuppingEntries.filter((_, i) => i !== index),
+        cuppingDraft: wasEditing ? emptyCuppingDraft() : prevData.cuppingDraft,
+      };
+    });
   };
 
   const isCuppingComplete = (entries) =>
@@ -614,6 +669,8 @@ export function useGbQcStation(session) {
     handleCloseCuppingDialog,
     handleCloseQcDialog,
     handleFormChange,
+    handleEditCuppingEntry,
+    handleCancelCuppingEdit,
     handleAddCuppingEntry,
     handleRemoveCuppingEntry,
     isFormComplete,

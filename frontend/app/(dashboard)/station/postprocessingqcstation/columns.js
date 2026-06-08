@@ -145,6 +145,12 @@ export function getReadyForQcColumns({
       valueFormatter: (value) => formatDateTime(value),
     },
     { field: 'roastCount', headerName: 'Roasts', width: 90 },
+    {
+      field: 'cuppingCount',
+      headerName: 'Cupping',
+      width: 90,
+      valueFormatter: (value) => (value == null ? 0 : value),
+    },
     { field: 'roastedBy', headerName: 'Roasted by', width: 120 },
     { field: 'dryingWeight', headerName: 'Drying wt (kg)', width: 120 },
     {
