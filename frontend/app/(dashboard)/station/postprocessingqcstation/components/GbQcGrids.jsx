@@ -1,6 +1,17 @@
 'use client';
 
-import { Grid, Card, CardContent, Typography, Button, CircularProgress, Box } from '@mui/material';
+import { useState } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Tab,
+  Tabs,
+  Typography,
+} from '@mui/material';
+import TabPanel from '../../_shared/components/TabPanel';
 import StationDataGrid from '../../_shared/components/StationDataGrid';
 import {
   getDryingColumns,
@@ -10,42 +21,22 @@ import {
   getCompletedQCColumns,
 } from '../columns';
 
-const PIPELINE_GRID_HEIGHT = 480;
-const ROAST_GRID_HEIGHT = 480;
+const GRID_HEIGHT = 560;
 
-const pipelineGridDefaults = {
-  height: PIPELINE_GRID_HEIGHT,
+const gridDefaults = {
+  height: GRID_HEIGHT,
   pageSizeOptions: [25, 50, 100],
   initialState: { pagination: { paginationModel: { pageSize: 100 } } },
   getRowId: (row) => row.id,
 };
 
-function PipelineSection({ title, subtitle, count, xs = 12, children }) {
-  return (
-    <Grid item xs={12} md={xs}>
-      <Card variant="outlined" sx={{ height: '100%' }}>
-        <CardContent>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h5" gutterBottom>
-              {title}
-              {count !== undefined && (
-                <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                  ({count})
-                </Typography>
-              )}
-            </Typography>
-            {subtitle && (
-              <Typography variant="body2" color="text.secondary">
-                {subtitle}
-              </Typography>
-            )}
-          </Box>
-          {children}
-        </CardContent>
-      </Card>
-    </Grid>
-  );
-}
+const TAB_CONFIG = [
+  { key: 'drying', title: 'Drying List' },
+  { key: 'dried', title: 'Dried List' },
+  { key: 'roast', title: 'Roast List' },
+  { key: 'ready', title: 'Ready for QC' },
+  { key: 'completed', title: 'Completed QC' },
+];
 
 export default function GbQcGrids({
   dryingBatches,
@@ -56,97 +47,105 @@ export default function GbQcGrids({
   isLoading,
   onRefresh,
   onRecordRoast,
-  onStartQC,
+  onOpenCupping,
+  onOpenGbQc,
   onExportPdf,
   readyQcActionAnchorEl,
   readyQcActionRow,
   onReadyQcActionMenuOpen,
   onReadyQcActionMenuClose,
 }) {
+  const [tabValue, setTabValue] = useState(0);
+
+  const batchCounts = [
+    dryingBatches.length,
+    driedBatches.length,
+    roastBatches.length,
+    readyForQcBatches.length,
+    completedQCBatches.length,
+  ];
+
+  const readyForQcColumns = getReadyForQcColumns({
+    onOpenCupping,
+    onOpenGbQc,
+    onRecordRoast,
+    actionAnchorEl: readyQcActionAnchorEl,
+    selectedActionRow: readyQcActionRow,
+    handleActionMenuOpen: onReadyQcActionMenuOpen,
+    handleActionMenuClose: onReadyQcActionMenuClose,
+  });
+
+  const tabGrids = [
+    {
+      subtitle: 'Batches still in the drying process',
+      rows: dryingBatches,
+      columns: getDryingColumns(),
+    },
+    {
+      subtitle: 'Drying finished — not yet entered dry mill',
+      rows: driedBatches,
+      columns: getDriedColumns(),
+    },
+    {
+      subtitle: 'Hulled batches in dry mill — record sample roast before merge.',
+      rows: roastBatches,
+      columns: getRoastColumns(onRecordRoast),
+    },
+    {
+      subtitle: 'Roast recorded — cupping or GB QC',
+      rows: readyForQcBatches,
+      columns: readyForQcColumns,
+    },
+    {
+      subtitle: null,
+      rows: completedQCBatches,
+      columns: getCompletedQCColumns(onExportPdf),
+    },
+  ];
+
   return (
-    <>
-      <Grid item xs={12}>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={onRefresh}
-            disabled={isLoading}
-            startIcon={isLoading ? <CircularProgress size={20} /> : null}
-          >
-            {isLoading ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        </Box>
-      </Grid>
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={onRefresh}
+          disabled={isLoading}
+          startIcon={isLoading ? <CircularProgress size={20} /> : null}
+        >
+          {isLoading ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </Box>
 
-      <PipelineSection
-        title="Drying List"
-        subtitle="Batches still in the drying process"
-        count={dryingBatches.length}
-        xs={6}
-      >
-        <StationDataGrid
-          rows={dryingBatches}
-          columns={getDryingColumns()}
-          {...pipelineGridDefaults}
-        />
-      </PipelineSection>
+      <Card variant="outlined">
+        <Tabs
+          value={tabValue}
+          onChange={(_, value) => setTabValue(value)}
+          variant="scrollable"
+          scrollButtons="auto"
+          aria-label="GB QC pipeline tabs"
+        >
+          {TAB_CONFIG.map((tab, index) => (
+            <Tab
+              key={tab.key}
+              label={`${tab.title} (${batchCounts[index]})`}
+              id={`gb-qc-tab-${index}`}
+              aria-controls={`gb-qc-tabpanel-${index}`}
+            />
+          ))}
+        </Tabs>
 
-      <PipelineSection
-        title="Dried List"
-        subtitle="Drying finished — not yet entered dry mill"
-        count={driedBatches.length}
-        xs={6}
-      >
-        <StationDataGrid
-          rows={driedBatches}
-          columns={getDriedColumns()}
-          {...pipelineGridDefaults}
-        />
-      </PipelineSection>
-
-      <PipelineSection
-        title="Roast List"
-        subtitle="Hulled batches in dry mill — record sample roast before merge."
-        count={roastBatches.length}
-      >
-        <StationDataGrid
-          rows={roastBatches}
-          columns={getRoastColumns(onRecordRoast)}
-          height={ROAST_GRID_HEIGHT}
-          pageSizeOptions={[25, 50, 100]}
-          initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
-          getRowId={(row) => row.id}
-        />
-      </PipelineSection>
-
-      <PipelineSection
-        title="Ready for QC"
-        subtitle="Roast recorded — start or continue green bean QC"
-        count={readyForQcBatches.length}
-        xs={6}
-      >
-        <StationDataGrid
-          rows={readyForQcBatches}
-          columns={getReadyForQcColumns({
-            onStartQC,
-            onRecordRoast,
-            actionAnchorEl: readyQcActionAnchorEl,
-            selectedActionRow: readyQcActionRow,
-            handleActionMenuOpen: onReadyQcActionMenuOpen,
-            handleActionMenuClose: onReadyQcActionMenuClose,
-          })}
-          {...pipelineGridDefaults}
-        />
-      </PipelineSection>
-
-      <PipelineSection title="Completed QC" count={completedQCBatches.length} xs={6}>
-        <StationDataGrid
-          rows={completedQCBatches}
-          columns={getCompletedQCColumns(onExportPdf)}
-          {...pipelineGridDefaults}
-        />
-      </PipelineSection>
-    </>
+        {tabGrids.map((grid, index) => (
+          <TabPanel key={TAB_CONFIG[index].key} value={tabValue} index={index}>
+            {grid.subtitle && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {grid.subtitle}
+              </Typography>
+            )}
+            <StationDataGrid rows={grid.rows} columns={grid.columns} {...gridDefaults} />
+          </TabPanel>
+        ))}
+      </Card>
+    </Box>
   );
 }

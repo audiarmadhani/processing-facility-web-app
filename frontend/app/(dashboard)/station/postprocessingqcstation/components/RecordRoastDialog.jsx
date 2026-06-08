@@ -2,12 +2,10 @@
 
 import {
   Button,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   Grid,
   Table,
   TableBody,
@@ -44,8 +42,6 @@ export default function RecordRoastDialog({
   setFirstCrackMinutes,
   notes,
   setNotes,
-  startQcAfter,
-  setStartQcAfter,
   isLoading,
   onClose,
   onAddRoast,
@@ -170,18 +166,6 @@ export default function RecordRoastDialog({
             </Button>
           </Grid>
         </Grid>
-
-        <FormControlLabel
-          sx={{ mt: 2 }}
-          control={
-            <Checkbox
-              checked={startQcAfter}
-              onChange={(e) => setStartQcAfter(e.target.checked)}
-              disabled={isLoading}
-            />
-          }
-          label="Open QC form after closing"
-        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={isLoading}>

@@ -23,9 +23,7 @@ function emptyRoastForm() {
 }
 
 function mapCuppingEntry(entry) {
-  const cuppedAt = entry.cuppedAt
-    ? String(entry.cuppedAt).slice(0, 10)
-    : '';
+  const cuppedAt = entry.cuppedAt ? String(entry.cuppedAt).slice(0, 10) : '';
   return {
     id: entry.id,
     cuppedAt,
@@ -44,6 +42,78 @@ function isCuppingEntryComplete(entry) {
   );
 }
 
+function parseNumericField(source, key, fallback = 0) {
+  const value = source?.[key];
+  if (value === '' || value === null || value === undefined) return fallback;
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function buildSubmissionPayload({
+  formData,
+  cuppingEntries,
+  loadedQcData,
+  isCompleted,
+  session,
+}) {
+  const defectSource = formData?.triage !== undefined && formData?.triage !== ''
+    ? formData
+    : loadedQcData || formData;
+
+  return {
+    kelembapan: 0,
+    waterActivity: 0,
+    triage: parseNumericField(defectSource, 'triage', 0),
+    bijiHitam: parseNumericField(defectSource, 'bijiHitam', 0),
+    bijiHitamSebagian: parseNumericField(defectSource, 'bijiHitamSebagian', 0),
+    bijiHitamPecah: parseNumericField(defectSource, 'bijiHitamPecah', 0),
+    kopiGelondong: parseNumericField(defectSource, 'kopiGelondong', 0),
+    bijiCoklat: parseNumericField(defectSource, 'bijiCoklat', 0),
+    kulitKopiBesar: parseNumericField(defectSource, 'kulitKopiBesar', 0),
+    kulitKopiSedang: parseNumericField(defectSource, 'kulitKopiSedang', 0),
+    kulitKopiKecil: parseNumericField(defectSource, 'kulitKopiKecil', 0),
+    bijiBerKulitTanduk: parseNumericField(defectSource, 'bijiBerKulitTanduk', 0),
+    kulitTandukBesar: parseNumericField(defectSource, 'kulitTandukBesar', 0),
+    kulitTandukSedang: parseNumericField(defectSource, 'kulitTandukSedang', 0),
+    kulitTandukKecil: parseNumericField(defectSource, 'kulitTandukKecil', 0),
+    bijiPecah: parseNumericField(defectSource, 'bijiPecah', 0),
+    bijiMuda: parseNumericField(defectSource, 'bijiMuda', 0),
+    bijiBerlubangSatu: parseNumericField(defectSource, 'bijiBerlubangSatu', 0),
+    bijiBerlubangLebihSatu: parseNumericField(defectSource, 'bijiBerlubangLebihSatu', 0),
+    bijiBertutul: parseNumericField(defectSource, 'bijiBertutul', 0),
+    rantingBesar: parseNumericField(defectSource, 'rantingBesar', 0),
+    rantingSedang: parseNumericField(defectSource, 'rantingSedang', 0),
+    rantingKecil: parseNumericField(defectSource, 'rantingKecil', 0),
+    totalBobotKotoran: parseNumericField(defectSource, 'totalBobotKotoran', 0),
+    seranggaHidup:
+      defectSource?.seranggaHidup !== undefined && defectSource?.seranggaHidup !== null
+        ? defectSource.seranggaHidup
+        : null,
+    bijiBauBusuk:
+      defectSource?.bijiBauBusuk !== undefined && defectSource?.bijiBauBusuk !== null
+        ? defectSource.bijiBauBusuk
+        : null,
+    cuppingEntries: (cuppingEntries || []).map((entry) => ({
+      id: entry.id,
+      cuppedAt: entry.cuppedAt,
+      notes: entry.notes.trim(),
+      okForFurtherProcess: entry.okForFurtherProcess,
+    })),
+    cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
+    isCompleted,
+  };
+}
+
+function mapQcDataToForm(legacyQcData) {
+  if (!legacyQcData) return emptyFormData();
+  return {
+    ...emptyFormData(),
+    ...legacyQcData,
+    cuppingEntries: [],
+    cuppingDraft: emptyCuppingDraft(),
+  };
+}
+
 export function useGbQcStation(session) {
   const webcamRef = useRef(null);
   const [dryingBatches, setDryingBatches] = useState([]);
@@ -52,10 +122,14 @@ export function useGbQcStation(session) {
   const [readyForQcBatches, setReadyForQcBatches] = useState([]);
   const [completedQCBatches, setCompletedQCBatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [openQcDialog, setOpenQcDialog] = useState(false);
+  const [openCuppingDialog, setOpenCuppingDialog] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [openCamera, setOpenCamera] = useState(false);
   const [formData, setFormData] = useState(emptyFormData());
+  const [loadedQcData, setLoadedQcData] = useState(null);
+  const [cuppingEntriesForValidation, setCuppingEntriesForValidation] = useState([]);
+  const [cuppingSaving, setCuppingSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const [openRoastDialog, setOpenRoastDialog] = useState(false);
@@ -66,7 +140,6 @@ export function useGbQcStation(session) {
   const [endTemp, setEndTemp] = useState('');
   const [firstCrackMinutes, setFirstCrackMinutes] = useState('');
   const [roastNotes, setRoastNotes] = useState('');
-  const [startQcAfterRoast, setStartQcAfterRoast] = useState(true);
   const [readyQcActionAnchorEl, setReadyQcActionAnchorEl] = useState(null);
   const [readyQcActionRow, setReadyQcActionRow] = useState(null);
 
@@ -138,27 +211,43 @@ export function useGbQcStation(session) {
     }
   };
 
-  const handleStartQC = async (batch) => {
+  const loadQcRecord = async (batchNumber) => {
+    try {
+      const res = await axios.get(gbQcApi(`/postproqc/${batchNumber}`));
+      return res.data || null;
+    } catch (error) {
+      console.error('Error fetching QC data for batch:', error);
+      return null;
+    }
+  };
+
+  const handleOpenCupping = async (batch) => {
     setSelectedBatch(batch);
     try {
-      const res = await axios.get(gbQcApi(`/postproqc/${batch.batchNumber}`));
-      const legacyQcData = res.data || null;
+      const legacyQcData = await loadQcRecord(batch.batchNumber);
       const cuppingEntries = await loadCuppingEntries(batch.batchNumber, legacyQcData);
+      setLoadedQcData(legacyQcData);
+      setFormData({
+        ...emptyFormData(),
+        cuppingEntries,
+        cuppingDraft: emptyCuppingDraft(),
+      });
+      setOpenCuppingDialog(true);
+    } catch (error) {
+      console.error('Error opening cupping dialog:', error);
+      setSnackbar({ open: true, message: 'Failed to load cupping data!', severity: 'error' });
+    }
+  };
 
-      if (legacyQcData) {
-        setFormData({
-          ...emptyFormData(),
-          ...legacyQcData,
-          cuppingEntries,
-          cuppingDraft: emptyCuppingDraft(),
-        });
-      } else {
-        setFormData({
-          ...emptyFormData(),
-          cuppingEntries,
-        });
-      }
-      setOpenDialog(true);
+  const handleOpenGbQc = async (batch) => {
+    setSelectedBatch(batch);
+    try {
+      const legacyQcData = await loadQcRecord(batch.batchNumber);
+      const cuppingEntries = await loadCuppingEntries(batch.batchNumber, legacyQcData);
+      setLoadedQcData(legacyQcData);
+      setCuppingEntriesForValidation(cuppingEntries);
+      setFormData(mapQcDataToForm(legacyQcData));
+      setOpenQcDialog(true);
     } catch (error) {
       console.error('Error fetching QC data for batch:', error);
       setSnackbar({ open: true, message: 'Failed to load QC data!', severity: 'error' });
@@ -196,22 +285,16 @@ export function useGbQcStation(session) {
   const handleOpenRecordRoast = async (batch) => {
     setRoastTarget(batch);
     resetRoastForm();
-    setStartQcAfterRoast(true);
     setOpenRoastDialog(true);
     await fetchRoastHistory(batch);
   };
 
   const handleCloseRoastDialog = async () => {
-    const shouldOpenQc = startQcAfterRoast;
-    const target = roastTarget;
     setOpenRoastDialog(false);
     setRoastTarget(null);
     setRoastHistory([]);
     resetRoastForm();
     await fetchData();
-    if (shouldOpenQc && target) {
-      await handleStartQC(target);
-    }
   };
 
   const handleAddRoast = async () => {
@@ -240,9 +323,18 @@ export function useGbQcStation(session) {
     }
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  const handleCloseCuppingDialog = () => {
+    setOpenCuppingDialog(false);
     setSelectedBatch(null);
+    setLoadedQcData(null);
+    setFormData(emptyFormData());
+  };
+
+  const handleCloseQcDialog = () => {
+    setOpenQcDialog(false);
+    setSelectedBatch(null);
+    setLoadedQcData(null);
+    setCuppingEntriesForValidation([]);
     setFormData(emptyFormData());
   };
 
@@ -318,10 +410,11 @@ export function useGbQcStation(session) {
     }));
   };
 
+  const isCuppingComplete = (entries) =>
+    entries.length >= 1 && entries.every(isCuppingEntryComplete);
+
   const isFormComplete = () => {
-    const cuppingComplete =
-      formData.cuppingEntries.length >= 1 &&
-      formData.cuppingEntries.every(isCuppingEntryComplete);
+    const cuppingComplete = isCuppingComplete(cuppingEntriesForValidation);
 
     return (
       cuppingComplete &&
@@ -352,65 +445,85 @@ export function useGbQcStation(session) {
     );
   };
 
-  const handleSaveQC = async (isCompleted) => {
-    try {
-      const submissionData = {
-        kelembapan: 0,
-        waterActivity: 0,
-        triage: formData.triage === '' ? 0 : parseFloat(formData.triage),
-        bijiHitam: formData.bijiHitam === '' ? 0 : parseFloat(formData.bijiHitam),
-        bijiHitamSebagian: formData.bijiHitamSebagian === '' ? 0 : parseFloat(formData.bijiHitamSebagian),
-        bijiHitamPecah: formData.bijiHitamPecah === '' ? 0 : parseFloat(formData.bijiHitamPecah),
-        kopiGelondong: formData.kopiGelondong === '' ? 0 : parseFloat(formData.kopiGelondong),
-        bijiCoklat: formData.bijiCoklat === '' ? 0 : parseFloat(formData.bijiCoklat),
-        kulitKopiBesar: formData.kulitKopiBesar === '' ? 0 : parseFloat(formData.kulitKopiBesar),
-        kulitKopiSedang: formData.kulitKopiSedang === '' ? 0 : parseFloat(formData.kulitKopiSedang),
-        kulitKopiKecil: formData.kulitKopiKecil === '' ? 0 : parseFloat(formData.kulitKopiKecil),
-        bijiBerKulitTanduk: formData.bijiBerKulitTanduk === '' ? 0 : parseFloat(formData.bijiBerKulitTanduk),
-        kulitTandukBesar: formData.kulitTandukBesar === '' ? 0 : parseFloat(formData.kulitTandukBesar),
-        kulitTandukSedang: formData.kulitTandukSedang === '' ? 0 : parseFloat(formData.kulitTandukSedang),
-        kulitTandukKecil: formData.kulitTandukKecil === '' ? 0 : parseFloat(formData.kulitTandukKecil),
-        bijiPecah: formData.bijiPecah === '' ? 0 : parseFloat(formData.bijiPecah),
-        bijiMuda: formData.bijiMuda === '' ? 0 : parseFloat(formData.bijiMuda),
-        bijiBerlubangSatu: formData.bijiBerlubangSatu === '' ? 0 : parseFloat(formData.bijiBerlubangSatu),
-        bijiBerlubangLebihSatu:
-          formData.bijiBerlubangLebihSatu === '' ? 0 : parseFloat(formData.bijiBerlubangLebihSatu),
-        bijiBertutul: formData.bijiBertutul === '' ? 0 : parseFloat(formData.bijiBertutul),
-        rantingBesar: formData.rantingBesar === '' ? 0 : parseFloat(formData.rantingBesar),
-        rantingSedang: formData.rantingSedang === '' ? 0 : parseFloat(formData.rantingSedang),
-        rantingKecil: formData.rantingKecil === '' ? 0 : parseFloat(formData.rantingKecil),
-        totalBobotKotoran: formData.totalBobotKotoran === '' ? 0 : parseFloat(formData.totalBobotKotoran),
-        seranggaHidup: formData.seranggaHidup,
-        bijiBauBusuk: formData.bijiBauBusuk,
-        cuppingEntries: formData.cuppingEntries.map((entry) => ({
-          id: entry.id,
-          cuppedAt: entry.cuppedAt,
-          notes: entry.notes.trim(),
-          okForFurtherProcess: entry.okForFurtherProcess,
-        })),
-        cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
-      };
+  const postQcData = async ({ cuppingEntries, isCompleted, formOverride = null }) => {
+    const submissionData = buildSubmissionPayload({
+      formData: formOverride || formData,
+      cuppingEntries,
+      loadedQcData,
+      isCompleted,
+      session,
+    });
 
-      await axios.post(gbQcApi('/postproqc'), {
-        batchNumber: selectedBatch.batchNumber,
-        ...submissionData,
+    await axios.post(gbQcApi('/postproqc'), {
+      batchNumber: selectedBatch.batchNumber,
+      ...submissionData,
+    });
+  };
+
+  const handleSaveCupping = async () => {
+    if (!selectedBatch) return;
+    if (!isCuppingComplete(formData.cuppingEntries)) {
+      setSnackbar({
+        open: true,
+        message: 'Add at least one complete cupping entry before saving.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    setCuppingSaving(true);
+    try {
+      await postQcData({
+        cuppingEntries: formData.cuppingEntries,
+        isCompleted: false,
+        formOverride: emptyFormData(),
+      });
+      setSnackbar({ open: true, message: 'Cupping saved successfully!', severity: 'success' });
+      await fetchData();
+      handleCloseCuppingDialog();
+    } catch (error) {
+      console.error('Error saving cupping data:', error);
+      setSnackbar({ open: true, message: 'Failed to save cupping data!', severity: 'error' });
+    } finally {
+      setCuppingSaving(false);
+    }
+  };
+
+  const handleSaveQC = async (isCompleted) => {
+    if (!selectedBatch) return;
+
+    try {
+      const latestCupping = await loadCuppingEntries(selectedBatch.batchNumber, loadedQcData);
+      if (isCompleted) {
+        setCuppingEntriesForValidation(latestCupping);
+        if (!isCuppingComplete(latestCupping)) {
+          setSnackbar({
+            open: true,
+            message: 'Complete at least one cupping session before completing GB QC.',
+            severity: 'error',
+          });
+          return;
+        }
+      }
+
+      await postQcData({
+        cuppingEntries: latestCupping,
         isCompleted,
       });
+
       setSnackbar({
         open: true,
         message: isCompleted ? 'QC completed successfully!' : 'QC data saved successfully!',
         severity: 'success',
       });
-      fetchData();
+      await fetchData();
+
       if (isCompleted) {
-        handleCloseDialog();
+        handleCloseQcDialog();
       } else {
-        const cuppingEntries = await loadCuppingEntries(selectedBatch.batchNumber);
-        setFormData((prev) => ({
-          ...prev,
-          cuppingEntries,
-          cuppingDraft: emptyCuppingDraft(),
-        }));
+        const refreshedQc = await loadQcRecord(selectedBatch.batchNumber);
+        setLoadedQcData(refreshedQc);
+        setCuppingEntriesForValidation(latestCupping);
       }
     } catch (error) {
       console.error('Error saving QC data:', error);
@@ -470,15 +583,18 @@ export function useGbQcStation(session) {
     readyForQcBatches,
     completedQCBatches,
     isLoading,
-    openDialog,
+    openQcDialog,
+    openCuppingDialog,
     selectedBatch,
     openCamera,
     setOpenCamera,
     formData,
+    cuppingSaving,
     snackbar,
     setSnackbar,
     fetchData,
-    handleStartQC,
+    handleOpenCupping,
+    handleOpenGbQc,
     handleOpenRecordRoast,
     handleCloseRoastDialog,
     handleAddRoast,
@@ -495,13 +611,13 @@ export function useGbQcStation(session) {
     setFirstCrackMinutes,
     roastNotes,
     setRoastNotes,
-    startQcAfterRoast,
-    setStartQcAfterRoast,
-    handleCloseDialog,
+    handleCloseCuppingDialog,
+    handleCloseQcDialog,
     handleFormChange,
     handleAddCuppingEntry,
     handleRemoveCuppingEntry,
     isFormComplete,
+    handleSaveCupping,
     handleSaveQC,
     handleCapture,
     handleExportToPDF,

@@ -1,6 +1,6 @@
 'use client';
 
-import { Grid } from '@mui/material';
+import { Box } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import StationAccessGate from '../_shared/components/StationAccessGate';
 import StationSnackbar from '../_shared/components/StationSnackbar';
@@ -8,6 +8,7 @@ import { GB_QC_ALLOWED_ROLES } from './constants';
 import { useGbQcStation } from './hooks/useGbQcStation';
 import GbQcGrids from './components/GbQcGrids';
 import GbQcDialog from './components/GbQcDialog';
+import GbQcCuppingDialog from './components/GbQcCuppingDialog';
 import GbQcCameraDialog from './components/GbQcCameraDialog';
 import RecordRoastDialog from './components/RecordRoastDialog';
 
@@ -17,7 +18,7 @@ function PostProcessingQCPage() {
 
   return (
     <StationAccessGate status={status} session={session} allowedRoles={GB_QC_ALLOWED_ROLES}>
-      <Grid container spacing={3}>
+      <Box sx={{ width: '100%' }}>
         <GbQcGrids
           dryingBatches={station.dryingBatches}
           driedBatches={station.driedBatches}
@@ -27,7 +28,8 @@ function PostProcessingQCPage() {
           isLoading={station.isLoading}
           onRefresh={station.fetchData}
           onRecordRoast={station.handleOpenRecordRoast}
-          onStartQC={station.handleStartQC}
+          onOpenCupping={station.handleOpenCupping}
+          onOpenGbQc={station.handleOpenGbQc}
           onExportPdf={station.handleExportToPDF}
           readyQcActionAnchorEl={station.readyQcActionAnchorEl}
           readyQcActionRow={station.readyQcActionRow}
@@ -49,21 +51,29 @@ function PostProcessingQCPage() {
           setFirstCrackMinutes={station.setFirstCrackMinutes}
           notes={station.roastNotes}
           setNotes={station.setRoastNotes}
-          startQcAfter={station.startQcAfterRoast}
-          setStartQcAfter={station.setStartQcAfterRoast}
           isLoading={station.isLoading}
           onClose={station.handleCloseRoastDialog}
           onAddRoast={station.handleAddRoast}
         />
 
-        <GbQcDialog
-          open={station.openDialog}
+        <GbQcCuppingDialog
+          open={station.openCuppingDialog}
           selectedBatch={station.selectedBatch}
           formData={station.formData}
           onFormChange={station.handleFormChange}
           onAddCuppingEntry={station.handleAddCuppingEntry}
           onRemoveCuppingEntry={station.handleRemoveCuppingEntry}
-          onClose={station.handleCloseDialog}
+          onClose={station.handleCloseCuppingDialog}
+          onSave={station.handleSaveCupping}
+          saving={station.cuppingSaving}
+        />
+
+        <GbQcDialog
+          open={station.openQcDialog}
+          selectedBatch={station.selectedBatch}
+          formData={station.formData}
+          onFormChange={station.handleFormChange}
+          onClose={station.handleCloseQcDialog}
           onOpenCamera={() => station.setOpenCamera(true)}
           onSave={station.handleSaveQC}
           onComplete={station.handleSaveQC}
@@ -83,7 +93,7 @@ function PostProcessingQCPage() {
           severity={station.snackbar.severity}
           onClose={() => station.setSnackbar({ ...station.snackbar, open: false })}
         />
-      </Grid>
+      </Box>
     </StationAccessGate>
   );
 }

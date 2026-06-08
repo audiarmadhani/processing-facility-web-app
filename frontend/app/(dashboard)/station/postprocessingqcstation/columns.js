@@ -121,7 +121,8 @@ export function getRoastColumns(onRecordRoast) {
 }
 
 export function getReadyForQcColumns({
-  onStartQC,
+  onOpenCupping,
+  onOpenGbQc,
   onRecordRoast,
   actionAnchorEl,
   selectedActionRow,
@@ -131,7 +132,8 @@ export function getReadyForQcColumns({
   const runAction = (action, row) => {
     handleActionMenuClose();
     if (action === 'roast') onRecordRoast(row);
-    if (action === 'qc') onStartQC(row);
+    if (action === 'cupping') onOpenCupping(row);
+    if (action === 'qc') onOpenGbQc(row);
   };
 
   return [
@@ -179,7 +181,8 @@ export function getReadyForQcColumns({
             onClose={handleActionMenuClose}
           >
             <MenuItem onClick={() => runAction('roast', row)}>Record roast</MenuItem>
-            <MenuItem onClick={() => runAction('qc', row)}>Start QC</MenuItem>
+            <MenuItem onClick={() => runAction('cupping', row)}>Cupping</MenuItem>
+            <MenuItem onClick={() => runAction('qc', row)}>GB QC</MenuItem>
           </Menu>
         </>
       ),
