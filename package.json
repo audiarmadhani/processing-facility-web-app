@@ -8,6 +8,7 @@
     "start-frontend": "cd frontend && npm run dev",
     "start-backend": "cd backend && npm run start",
     "dev:driver": "echo 'Driver app: clone https://github.com/audiarmadhani/processing-facility-driver-app && cd processing-facility-driver-app && npm run dev' && exit 1",
+    "dev:field": "cd field-app && npm run dev",
     "start-dashboard": "echo 'Dashboard: clone https://github.com/audiarmadhani/processingfacility-dashboard && cd processingfacility-dashboard && npm run dev' && exit 1",
     "build-dashboard": "echo 'Dashboard: clone https://github.com/audiarmadhani/processingfacility-dashboard && cd processingfacility-dashboard && npm run build' && exit 1"
   },
