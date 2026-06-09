@@ -45,14 +45,20 @@ export function buildMeasuredPoints(measurements) {
       const x = parseMeasurementDate(m.measurement_date);
       const y = parseFloat(m.moisture);
       if (!x || Number.isNaN(y)) return null;
+      const createdAt = m.created_at ? new Date(m.created_at).getTime() : index;
       return {
         x,
         y,
         id: m.id ?? `measurement-${index}`,
+        createdAt,
       };
     })
     .filter(Boolean)
-    .sort((a, b) => a.x.getTime() - b.x.getTime());
+    .sort((a, b) => {
+      const dateDiff = a.x.getTime() - b.x.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return a.createdAt - b.createdAt;
+    });
 }
 
 export function hoursSinceEntered(enteredAtIso, measurementDate) {

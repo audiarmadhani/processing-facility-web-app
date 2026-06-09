@@ -17,6 +17,29 @@ function toLocalTimeInputValue(date = new Date()) {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+const MAX_MOISTURE_READINGS_PER_DAY = 2;
+
+function measurementDateKey(value) {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+}
+
+function countMoistureReadingsOnDate(measurements, dateKey, excludeId = null) {
+  return (measurements || []).filter((m) => {
+    if (excludeId != null && m.id === excludeId) return false;
+    return measurementDateKey(m.measurement_date) === dateKey;
+  }).length;
+}
+
+async function readApiError(response, fallback) {
+  try {
+    const body = await response.json();
+    return body.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export const DRYING_ALLOWED_ROLES = ['admin', 'manager', 'drying'];
 
 export function useDryingStation(session) {
@@ -651,6 +674,21 @@ export function useDryingStation(session) {
       }
     }
 
+    const dateKey = measurementDateKey(measurementDate);
+    const sameDayCount = countMoistureReadingsOnDate(
+      dryingMeasurements,
+      dateKey,
+      editingMoistureId || null
+    );
+    if (sameDayCount >= MAX_MOISTURE_READINGS_PER_DAY) {
+      setSnackbarMessage(
+        `Maximum ${MAX_MOISTURE_READINGS_PER_DAY} moisture readings allowed per day for this batch`
+      );
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
     try {
       const moistureValue = parseFloat(newMoisture);
 
@@ -667,7 +705,11 @@ export function useDryingStation(session) {
             body: JSON.stringify(payload),
           }
         );
-        if (!response.ok) throw new Error('Failed to update drying measurement');
+        if (!response.ok) {
+          throw new Error(
+            await readApiError(response, 'Failed to update drying measurement')
+          );
+        }
         const result = await response.json();
         setDryingMeasurements(
           dryingMeasurements.map((m) =>
@@ -691,7 +733,9 @@ export function useDryingStation(session) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('Failed to save drying measurement');
+        if (!response.ok) {
+          throw new Error(await readApiError(response, 'Failed to save drying measurement'));
+        }
         const result = await response.json();
         setDryingMeasurements([...dryingMeasurements, result.measurement]);
         setNewMoisture('');
