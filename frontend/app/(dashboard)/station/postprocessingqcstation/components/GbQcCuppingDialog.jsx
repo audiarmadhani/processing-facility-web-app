@@ -3,17 +3,13 @@
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
   Grid,
   IconButton,
-  InputLabel,
-  MenuItem,
-  OutlinedInput,
-  Select,
   Table,
   TableBody,
   TableCell,
@@ -24,17 +20,16 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import {
+  CUPPING_OUTCOMES,
+  formatOutcomeLabel,
+  outcomeChipColor,
+} from '../utils/cuppingOutcome';
 
 function formatCuppedDate(value) {
   if (!value) return '—';
   const d = new Date(value);
   return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
-}
-
-function formatOkLabel(value) {
-  if (value === true) return 'OK';
-  if (value === false) return 'Not OK';
-  return '—';
 }
 
 export default function GbQcCuppingDialog({
@@ -53,6 +48,12 @@ export default function GbQcCuppingDialog({
   const draft = formData.cuppingDraft || {};
   const isEditing = draft.editingIndex !== null && draft.editingIndex !== undefined;
 
+  const handleOutcomeSelect = (value) => {
+    onFormChange({
+      target: { name: 'cuppingDraft.cuppingOutcome', value },
+    });
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Cupping — Batch {selectedBatch?.batchNumber}</DialogTitle>
@@ -69,7 +70,7 @@ export default function GbQcCuppingDialog({
             <TableRow>
               <TableCell>Date cupped</TableCell>
               <TableCell>Notes</TableCell>
-              <TableCell>OK / Not OK</TableCell>
+              <TableCell>Outcome</TableCell>
               <TableCell width={100} />
             </TableRow>
           </TableHead>
@@ -88,7 +89,13 @@ export default function GbQcCuppingDialog({
                 >
                   <TableCell>{formatCuppedDate(entry.cuppedAt)}</TableCell>
                   <TableCell>{entry.notes}</TableCell>
-                  <TableCell>{formatOkLabel(entry.okForFurtherProcess)}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={formatOutcomeLabel(entry.cuppingOutcome)}
+                      color={outcomeChipColor(entry.cuppingOutcome)}
+                      size="small"
+                    />
+                  </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
                       <IconButton
@@ -125,26 +132,23 @@ export default function GbQcCuppingDialog({
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={8}>
-            <FormControl fullWidth>
-              <InputLabel>OK for further process?</InputLabel>
-              <Select
-                name="cuppingDraft.okForFurtherProcess"
-                value={
-                  draft.okForFurtherProcess === null || draft.okForFurtherProcess === undefined
-                    ? ''
-                    : draft.okForFurtherProcess.toString()
-                }
-                onChange={onFormChange}
-                input={<OutlinedInput label="OK for further process?" />}
-              >
-                <MenuItem value="" disabled>
-                  Select OK / Not OK
-                </MenuItem>
-                <MenuItem value="true">OK</MenuItem>
-                <MenuItem value="false">Not OK</MenuItem>
-              </Select>
-            </FormControl>
+          <Grid item xs={12}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              Outcome
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {CUPPING_OUTCOMES.map((outcome) => (
+                <Button
+                  key={outcome.value}
+                  variant={draft.cuppingOutcome === outcome.value ? 'contained' : 'outlined'}
+                  color={outcome.color}
+                  onClick={() => handleOutcomeSelect(outcome.value)}
+                  size="small"
+                >
+                  {outcome.label}
+                </Button>
+              ))}
+            </Box>
           </Grid>
           <Grid item xs={12}>
             <TextField

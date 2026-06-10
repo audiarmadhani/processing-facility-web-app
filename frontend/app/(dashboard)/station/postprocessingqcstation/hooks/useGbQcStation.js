@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { gbQcApi, emptyFormData, emptyCuppingDraft } from '../constants';
+import { isValidCuppingOutcome, legacyOkToCuppingOutcome } from '../utils/cuppingOutcome';
 import { generateGbQcPdf } from '../utils/generateGbQcPdf';
 import { withPipelineIds } from '../utils/pipelineRowId';
 
@@ -18,6 +19,7 @@ function emptyRoastForm() {
     roastProfile: '',
     endTemp: '',
     firstCrackMinutes: '',
+    firstCrackTemp: '',
     notes: '',
   };
 }
@@ -28,7 +30,9 @@ function mapCuppingEntry(entry) {
     id: entry.id,
     cuppedAt,
     notes: entry.notes || '',
-    okForFurtherProcess: entry.okForFurtherProcess ?? null,
+    cuppingOutcome: isValidCuppingOutcome(entry.cuppingOutcome)
+      ? entry.cuppingOutcome
+      : legacyOkToCuppingOutcome(entry.okForFurtherProcess),
     cuppedBy: entry.cuppedBy || null,
   };
 }
@@ -38,7 +42,7 @@ function isCuppingEntryComplete(entry) {
     !!entry.cuppedAt &&
     typeof entry.notes === 'string' &&
     entry.notes.trim() !== '' &&
-    entry.okForFurtherProcess !== null
+    isValidCuppingOutcome(entry.cuppingOutcome)
   );
 }
 
@@ -97,7 +101,7 @@ function buildSubmissionPayload({
       id: entry.id,
       cuppedAt: entry.cuppedAt,
       notes: entry.notes.trim(),
-      okForFurtherProcess: entry.okForFurtherProcess,
+      cuppingOutcome: entry.cuppingOutcome,
     })),
     cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
     isCompleted,
@@ -139,6 +143,7 @@ export function useGbQcStation(session) {
   const [roastProfile, setRoastProfile] = useState('');
   const [endTemp, setEndTemp] = useState('');
   const [firstCrackMinutes, setFirstCrackMinutes] = useState('');
+  const [firstCrackTemp, setFirstCrackTemp] = useState('');
   const [roastNotes, setRoastNotes] = useState('');
   const [readyQcActionAnchorEl, setReadyQcActionAnchorEl] = useState(null);
   const [readyQcActionRow, setReadyQcActionRow] = useState(null);
@@ -199,7 +204,7 @@ export function useGbQcStation(session) {
               ? String(legacyQcData.updatedAt).slice(0, 10)
               : new Date().toISOString().slice(0, 10),
             notes: legacyQcData.tastingNotes.trim(),
-            okForFurtherProcess: legacyQcData.okForFurtherProcess ?? null,
+            cuppingOutcome: legacyOkToCuppingOutcome(legacyQcData.okForFurtherProcess),
             cuppedBy: null,
           },
         ];
@@ -279,6 +284,7 @@ export function useGbQcStation(session) {
     setRoastProfile(defaults.roastProfile);
     setEndTemp(defaults.endTemp);
     setFirstCrackMinutes(defaults.firstCrackMinutes);
+    setFirstCrackTemp(defaults.firstCrackTemp);
     setRoastNotes(defaults.notes);
   };
 
@@ -308,6 +314,10 @@ export function useGbQcStation(session) {
         roastProfile: roastProfile.trim(),
         endTemp: parseFloat(endTemp),
         firstCrackMinutes: parseFloat(firstCrackMinutes),
+        firstCrackTemp:
+          firstCrackTemp !== '' && !Number.isNaN(parseFloat(firstCrackTemp))
+            ? parseFloat(firstCrackTemp)
+            : null,
         notes: roastNotes.trim() || null,
         roastedBy: session?.user?.name || session?.user?.email || 'unknown',
       });
@@ -350,12 +360,12 @@ export function useGbQcStation(session) {
 
     if (name.startsWith('cuppingDraft.')) {
       const field = name.replace('cuppingDraft.', '');
-      if (field === 'okForFurtherProcess') {
+      if (field === 'cuppingOutcome') {
         setFormData((prevData) => ({
           ...prevData,
           cuppingDraft: {
             ...prevData.cuppingDraft,
-            okForFurtherProcess: value === '' ? null : value === 'true',
+            cuppingOutcome: value === '' ? null : value,
           },
         }));
       } else {
@@ -385,7 +395,7 @@ export function useGbQcStation(session) {
       cuppingDraft: {
         cuppedAt: entry.cuppedAt,
         notes: entry.notes,
-        okForFurtherProcess: entry.okForFurtherProcess,
+        cuppingOutcome: entry.cuppingOutcome,
         editingIndex: index,
       },
     }));
@@ -403,7 +413,7 @@ export function useGbQcStation(session) {
     if (!isCuppingEntryComplete(draft)) {
       setSnackbar({
         open: true,
-        message: 'Fill date cupped, notes, and OK / Not OK before saving the entry.',
+        message: 'Fill date cupped, notes, and outcome before saving the entry.',
         severity: 'error',
       });
       return;
@@ -413,7 +423,7 @@ export function useGbQcStation(session) {
     const updatedEntry = {
       cuppedAt: draft.cuppedAt,
       notes: draft.notes.trim(),
-      okForFurtherProcess: draft.okForFurtherProcess,
+      cuppingOutcome: draft.cuppingOutcome,
       cuppedBy: session?.user?.name || session?.user?.email || 'unknown',
     };
 
@@ -664,6 +674,8 @@ export function useGbQcStation(session) {
     setEndTemp,
     firstCrackMinutes,
     setFirstCrackMinutes,
+    firstCrackTemp,
+    setFirstCrackTemp,
     roastNotes,
     setRoastNotes,
     handleCloseCuppingDialog,

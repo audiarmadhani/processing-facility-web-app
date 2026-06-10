@@ -40,6 +40,8 @@ export default function RecordRoastDialog({
   setEndTemp,
   firstCrackMinutes,
   setFirstCrackMinutes,
+  firstCrackTemp,
+  setFirstCrackTemp,
   notes,
   setNotes,
   isLoading,
@@ -76,6 +78,7 @@ export default function RecordRoastDialog({
               <TableCell>Profile</TableCell>
               <TableCell>End °C</TableCell>
               <TableCell>1st crack (min)</TableCell>
+              <TableCell>1st crack (°C)</TableCell>
               <TableCell>Notes</TableCell>
               <TableCell>By</TableCell>
             </TableRow>
@@ -83,7 +86,7 @@ export default function RecordRoastDialog({
           <TableBody>
             {roastHistory.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={8} align="center">
                   No roasts recorded yet
                 </TableCell>
               </TableRow>
@@ -94,6 +97,7 @@ export default function RecordRoastDialog({
                   <TableCell>{row.roastProfile || '—'}</TableCell>
                   <TableCell>{formatNumber(row.endTemp)}</TableCell>
                   <TableCell>{formatNumber(row.firstCrackMinutes)}</TableCell>
+                  <TableCell>{formatNumber(row.firstCrackTemp)}</TableCell>
                   <TableCell>{row.notes || '—'}</TableCell>
                   <TableCell>{row.roastedBy || '—'}</TableCell>
                 </TableRow>
@@ -145,6 +149,17 @@ export default function RecordRoastDialog({
               fullWidth
               value={firstCrackMinutes}
               onChange={(e) => setFirstCrackMinutes(e.target.value)}
+              disabled={isLoading}
+              inputProps={{ min: 0, step: 0.1 }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="First crack temp (°C, optional)"
+              type="number"
+              fullWidth
+              value={firstCrackTemp}
+              onChange={(e) => setFirstCrackTemp(e.target.value)}
               disabled={isLoading}
               inputProps={{ min: 0, step: 0.1 }}
             />

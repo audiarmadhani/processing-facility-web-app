@@ -41,6 +41,12 @@ export function getDryingColumns({
       ),
     },
     {
+      field: 'previousDryingArea',
+      headerName: 'Previous Drying Area',
+      width: 170,
+      renderCell: ({ value }) => value || '—',
+    },
+    {
       field: 'priority',
       headerName: 'Priority',
       width: 110,

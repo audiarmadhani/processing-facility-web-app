@@ -10,18 +10,6 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 
-const dialogContentSx = {
-  '& .MuiOutlinedInput-root': {
-    backgroundColor: '#1E1E1E',
-  },
-  '& .MuiOutlinedInput-root.Mui-disabled': {
-    backgroundColor: '#1E1E1E',
-  },
-  '& .MuiSelect-select': {
-    backgroundColor: 'transparent',
-  },
-};
-
 export default function FinishBatchDialog({ book, form }) {
   return (
     <Dialog
@@ -31,7 +19,7 @@ export default function FinishBatchDialog({ book, form }) {
       fullWidth
     >
       <DialogTitle>Finish Fermentation - Batch {book.selectedRow?.batchNumber}</DialogTitle>
-      <DialogContent sx={dialogContentSx}>
+      <DialogContent>
         <TextField
           label="End Date and Time"
           type="datetime-local"

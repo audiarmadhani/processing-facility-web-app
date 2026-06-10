@@ -189,6 +189,12 @@ function DryingStationPage() {
             dryingAreas={station.dryingAreas}
             newDryingArea={station.newDryingArea}
             onDryingAreaChange={station.setNewDryingArea}
+            moveDate={station.moveDate}
+            onMoveDateChange={station.setMoveDate}
+            moveTime={station.moveTime}
+            onMoveTimeChange={station.setMoveTime}
+            dryingAreaMovements={station.dryingAreaMovements}
+            movementsLoading={station.movementsLoading}
             onClose={station.handleCloseMoveDialog}
             onConfirm={station.handleMoveBatch}
           />

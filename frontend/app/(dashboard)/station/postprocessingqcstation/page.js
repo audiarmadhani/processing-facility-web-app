@@ -49,6 +49,8 @@ function PostProcessingQCPage() {
           setEndTemp={station.setEndTemp}
           firstCrackMinutes={station.firstCrackMinutes}
           setFirstCrackMinutes={station.setFirstCrackMinutes}
+          firstCrackTemp={station.firstCrackTemp}
+          setFirstCrackTemp={station.setFirstCrackTemp}
           notes={station.roastNotes}
           setNotes={station.setRoastNotes}
           isLoading={station.isLoading}

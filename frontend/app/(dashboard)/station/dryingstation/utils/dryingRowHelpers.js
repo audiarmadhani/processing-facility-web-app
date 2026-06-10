@@ -7,12 +7,48 @@ export function computeDryingPriority(status, currentMoisture) {
   return 'Low';
 }
 
+const WITA_TIMEZONE = 'Asia/Makassar';
+
 /** Format a DB timestamp as YYYY-MM-DD in WITA (Asia/Makassar). */
 export function formatDryingDateWita(isoTimestamp) {
   if (!isoTimestamp) return 'N/A';
   const date = new Date(isoTimestamp);
   if (isNaN(date.getTime())) return 'N/A';
-  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+  return date.toLocaleDateString('en-CA', { timeZone: WITA_TIMEZONE });
+}
+
+/** Format a DB timestamp as YYYY-MM-DD HH:mm in WITA. */
+export function formatDryingDateTimeWita(isoTimestamp) {
+  if (!isoTimestamp) return 'N/A';
+  const date = new Date(isoTimestamp);
+  if (isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleString('en-CA', {
+    timeZone: WITA_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).replace(',', '');
+}
+
+/** Current date (YYYY-MM-DD) in WITA for date inputs. */
+export function witaDateInputValue(date = new Date()) {
+  return date.toLocaleDateString('en-CA', { timeZone: WITA_TIMEZONE });
+}
+
+/** Current time (HH:mm) in WITA for time inputs. */
+export function witaTimeInputValue(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: WITA_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  const hour = parts.find((p) => p.type === 'hour')?.value ?? '00';
+  const minute = parts.find((p) => p.type === 'minute')?.value ?? '00';
+  return `${hour}:${minute}`;
 }
 
 export function sortDryingRows(a, b) {

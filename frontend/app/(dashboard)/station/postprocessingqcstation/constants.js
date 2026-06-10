@@ -7,7 +7,7 @@ export const gbQcApi = (path) => apiUrl(path);
 export const emptyCuppingDraft = () => ({
   cuppedAt: new Date().toISOString().slice(0, 10),
   notes: '',
-  okForFurtherProcess: null,
+  cuppingOutcome: null,
   editingIndex: null,
 });
 

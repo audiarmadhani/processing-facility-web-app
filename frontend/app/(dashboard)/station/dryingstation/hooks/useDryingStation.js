@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { apiUrl } from '../../_shared/config';
-import { computeDryingPriority, formatDryingDateWita, sortDryingRows } from '../utils/dryingRowHelpers';
+import {
+  computeDryingPriority,
+  formatDryingDateWita,
+  sortDryingRows,
+  witaDateInputValue,
+  witaTimeInputValue,
+} from '../utils/dryingRowHelpers';
 
 const debounce = (func, wait) => {
   let timeout;
@@ -65,6 +71,10 @@ export function useDryingStation(session) {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [newDryingArea, setNewDryingArea] = useState('');
+  const [moveDate, setMoveDate] = useState(() => witaDateInputValue());
+  const [moveTime, setMoveTime] = useState(() => witaTimeInputValue());
+  const [dryingAreaMovements, setDryingAreaMovements] = useState([]);
+  const [movementsLoading, setMovementsLoading] = useState(false);
   const [openWeightDialog, setOpenWeightDialog] = useState(false);
   const [weightMeasurements, setWeightMeasurements] = useState([]);
   const [newBagWeight, setNewBagWeight] = useState('');
@@ -189,16 +199,21 @@ export function useDryingStation(session) {
   
       let weightsResult = [];
       let latestMoistureResult = [];
+      let previousDryingAreas = {};
       if (areaBatchNumbers.length > 0) {
         const batchQuery = areaBatchNumbers.join(',');
-        const [weightsResponse, moistureResponse] = await Promise.all([
+        const [weightsResponse, moistureResponse, previousResponse] = await Promise.all([
           fetch(apiUrl(`/drying-weight-measurements/aggregated?batchNumbers=${encodeURIComponent(batchQuery)}`)),
           fetch(apiUrl(`/drying-measurements/latest?batchNumbers=${encodeURIComponent(batchQuery)}`)),
+          fetch(apiUrl(`/drying-area-movements/previous?batchNumbers=${encodeURIComponent(batchQuery)}`)),
         ]);
         if (!weightsResponse.ok) throw new Error('Failed to fetch aggregated weights');
         weightsResult = await weightsResponse.json();
         if (moistureResponse.ok) {
           latestMoistureResult = await moistureResponse.json();
+        }
+        if (previousResponse.ok) {
+          previousDryingAreas = await previousResponse.json();
         }
       }
 
@@ -242,6 +257,7 @@ export function useDryingStation(session) {
             status,
             currentMoisture,
             priority: computeDryingPriority(status, currentMoisture),
+            previousDryingArea: previousDryingAreas[batch.batchNumber] || null,
             dryingArea: latestEntry?.dryingArea || 'N/A',
             startDryingDate: formatDryingDateWita(latestEntry?.entered_at),
             dryingEnteredAt: latestEntry?.entered_at || null,
@@ -782,9 +798,37 @@ export function useDryingStation(session) {
     setNewMeasurementDate(new Date().toISOString().slice(0, 10));
   }, []);
 
+  const fetchDryingAreaMovements = useCallback(async (batchNumber) => {
+    setMovementsLoading(true);
+    try {
+      const response = await fetch(apiUrl(`/drying-area-movements/${encodeURIComponent(batchNumber)}`));
+      if (!response.ok) throw new Error('Failed to fetch drying area history');
+      const data = await response.json();
+      setDryingAreaMovements(data);
+    } catch (error) {
+      setDryingAreaMovements([]);
+      setSnackbarMessage(error.message || 'Failed to fetch drying area history');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } finally {
+      setMovementsLoading(false);
+    }
+  }, []);
+
   const handleMoveBatch = useCallback(async () => {
     if (!newDryingArea) {
       setSnackbarMessage('Please select a drying area');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const timePart =
+      moveTime && /^\d{1,2}:\d{2}$/.test(moveTime) ? moveTime : '00:00';
+    const moved_at = moveDate ? `${moveDate}T${timePart}:00` : undefined;
+
+    if (!moved_at) {
+      setSnackbarMessage('Please enter move date and time');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       return;
@@ -794,9 +838,10 @@ export function useDryingStation(session) {
       const payload = {
         batchNumber: selectedBatch.batchNumber,
         newDryingArea,
-        rfid: selectedBatch.rfid
+        rfid: selectedBatch.rfid,
+        moved_at,
       };
-      const response = await fetch('https://processing-facility-backend.onrender.com/api/move-drying-area', {
+      const response = await fetch(apiUrl('/move-drying-area'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -811,6 +856,7 @@ export function useDryingStation(session) {
       setOpenSnackbar(true);
       setOpenMoveDialog(false);
       setNewDryingArea('');
+      setDryingAreaMovements([]);
       setSelectedBatch(null);
       await Promise.all([fetchAreaData(selectedBatch.dryingArea, true), fetchAreaData(newDryingArea, true)]);
     } catch (error) {
@@ -818,7 +864,7 @@ export function useDryingStation(session) {
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
-  }, [newDryingArea, selectedBatch, fetchAreaData]);
+  }, [newDryingArea, moveDate, moveTime, selectedBatch, fetchAreaData]);
 
   const handleRefreshData = useMemo(() => debounce(async () => {
     if (isFetchingRef.current) return;
@@ -885,8 +931,13 @@ export function useDryingStation(session) {
 
   const handleMoveClick = useCallback((batch) => {
     setSelectedBatch(batch);
+    setNewDryingArea('');
+    setMoveDate(witaDateInputValue());
+    setMoveTime(witaTimeInputValue());
+    setDryingAreaMovements([]);
     setOpenMoveDialog(true);
-  }, []);
+    fetchDryingAreaMovements(batch.batchNumber);
+  }, [fetchDryingAreaMovements]);
 
   const handleWeightClick = useCallback((batch) => {
     setSelectedBatch(batch);
@@ -926,6 +977,7 @@ export function useDryingStation(session) {
   const handleCloseMoveDialog = useCallback(() => {
     setOpenMoveDialog(false);
     setNewDryingArea('');
+    setDryingAreaMovements([]);
     setSelectedBatch(null);
   }, []);
 
@@ -1141,6 +1193,12 @@ export function useDryingStation(session) {
     openMoveDialog,
     newDryingArea,
     setNewDryingArea,
+    moveDate,
+    setMoveDate,
+    moveTime,
+    setMoveTime,
+    dryingAreaMovements,
+    movementsLoading,
     openWeightDialog,
     weightMeasurements,
     newBagWeight,
