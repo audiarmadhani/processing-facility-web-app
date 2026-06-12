@@ -36,6 +36,8 @@ export default function MoveBatchDialog({
   onMoveDateChange,
   moveTime,
   onMoveTimeChange,
+  moveNotes,
+  onMoveNotesChange,
   dryingAreaMovements,
   movementsLoading,
   onClose,
@@ -77,6 +79,11 @@ export default function MoveBatchDialog({
                 <Typography variant="caption" color="text.secondary">
                   {formatDryingDateTimeWita(movement.movedAt)} WITA
                 </Typography>
+                {movement.notes ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {movement.notes}
+                  </Typography>
+                ) : null}
               </Paper>
             ))
           )}
@@ -124,6 +131,18 @@ export default function MoveBatchDialog({
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
           Date and time are in WITA (UTC+8)
         </Typography>
+
+        <TextField
+          label="Reason for move"
+          value={moveNotes}
+          onChange={(e) => onMoveNotesChange(e.target.value)}
+          fullWidth
+          multiline
+          minRows={2}
+          maxRows={4}
+          sx={{ mt: 2 }}
+          placeholder="e.g. Moisture too high, needs sun drying"
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>

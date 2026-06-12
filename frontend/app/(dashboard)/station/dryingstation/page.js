@@ -193,6 +193,8 @@ function DryingStationPage() {
             onMoveDateChange={station.setMoveDate}
             moveTime={station.moveTime}
             onMoveTimeChange={station.setMoveTime}
+            moveNotes={station.moveNotes}
+            onMoveNotesChange={station.setMoveNotes}
             dryingAreaMovements={station.dryingAreaMovements}
             movementsLoading={station.movementsLoading}
             onClose={station.handleCloseMoveDialog}
