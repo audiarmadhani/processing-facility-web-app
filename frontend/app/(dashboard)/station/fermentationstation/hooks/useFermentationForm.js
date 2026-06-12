@@ -14,6 +14,8 @@ import {
   tanksToDisplay,
   normalizeTanksSelection,
   isBarrelOrBucket,
+  getRowDryingAreas,
+  dryingAreasToDisplay,
 } from '../constants';
 import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
@@ -109,7 +111,7 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const [secondFermentationTimeTarget, setSecondFermentationTimeTarget] = useState('');
   const [secondFermentationStart, setSecondFermentationStart] = useState('');
   const [secondFermentationEnd, setSecondFermentationEnd] = useState('');
-  const [dryingArea, setDryingArea] = useState('');
+  const [dryingAreas, setDryingAreas] = useState([]);
   const [avgTemperature, setAvgTemperature] = useState('');
   const [preDryingWeight, setPreDryingWeight] = useState('');
   const [finalMoisture, setFinalMoisture] = useState('');
@@ -394,12 +396,15 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const normalizeDetailsRecord = (raw) => {
     if (!raw || typeof raw !== 'object') return {};
     const rowTanks = getRowTanks(raw);
+    const rowDryingAreas = getRowDryingAreas(raw);
     return {
       ...raw,
       fermentationStart: raw.fermentationStart ?? raw.startDate ?? '',
       fermentationEnd: raw.fermentationEnd ?? raw.endDate ?? '',
       tanks: rowTanks,
       tank: tanksToDisplay(rowTanks),
+      dryingAreas: rowDryingAreas,
+      dryingArea: dryingAreasToDisplay(rowDryingAreas) || raw.dryingArea || '',
     };
   };
 
@@ -678,7 +683,7 @@ useEffect(() => {
     secondFermentationTimeTarget: secondFermentationTimeTarget ? parseInt(secondFermentationTimeTarget) : null,
     secondFermentationStart: toRaw(secondFermentationStart),
     secondFermentationEnd: toRaw(secondFermentationEnd),
-    dryingArea,
+    dryingArea: dryingAreasToDisplay(dryingAreas) || null,
     avgTemperature: avgTemperature ? parseFloat(avgTemperature) : null,
     preDryingWeight: preDryingWeight ? parseFloat(preDryingWeight) : null,
     finalMoisture: finalMoisture ? parseFloat(finalMoisture) : null,
@@ -869,7 +874,7 @@ useEffect(() => {
     setSecondFermentationTimeTarget('');
     setSecondFermentationStart('');
     setSecondFermentationEnd('');
-    setDryingArea('');
+    setDryingAreas([]);
     setAvgTemperature('');
     setPreDryingWeight('');
     setFinalMoisture('');
@@ -1013,6 +1018,7 @@ useEffect(() => {
       setIfValid('secondIsSubmerged', detailsData.secondIsSubmerged);
       setIfValid('fermentationStarter', detailsData.fermentationStarter);
       setNumber('fermentationStarterAmount', detailsData.fermentationStarterAmount);
+      setIfValid('dryingArea', dryingAreasToDisplay(getRowDryingAreas(detailsData)));
 
       // -------------------------
       // 🧾 META
@@ -1743,7 +1749,7 @@ useEffect(() => {
     secondFermentationTimeTarget, setSecondFermentationTimeTarget,
     secondFermentationStart, setSecondFermentationStart,
     secondFermentationEnd, setSecondFermentationEnd,
-    dryingArea, setDryingArea,
+    dryingAreas, setDryingAreas,
     avgTemperature, setAvgTemperature,
     preDryingWeight, setPreDryingWeight,
     finalMoisture, setFinalMoisture,

@@ -10,17 +10,18 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  OutlinedInput,
-  Box,
-  CircularProgress,
 } from '@mui/material';
 import { Autocomplete } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import { accordionFormContentSx, accordionDetailsSx } from '../../constants';
+import { accordionFormContentSx, accordionDetailsSx, DRYING_AREA_OPTIONS, getRowDryingAreas, dryingAreasToDisplay } from '../../constants';
 import { wideMenuProps as MenuProps } from '../../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../../utils/formatDateTimeLocal';
 
+function dryingAreaOptionsForRow(row) {
+  const existing = getRowDryingAreas(row);
+  return [...new Set([...DRYING_AREA_OPTIONS, ...existing])];
+}
 
 export default function DryingSection({ mode, form }) {
   const {
@@ -35,7 +36,7 @@ export default function DryingSection({ mode, form }) {
     avgTemperature,
     bagType,
     detailsData,
-    dryingArea,
+    dryingAreas,
     dryingEnd,
     dryingStart,
     finalMoisture,
@@ -51,6 +52,7 @@ export default function DryingSection({ mode, form }) {
     secondFinalMoisture,
     secondPostDryingWeight,
     setDetailsData,
+    setDryingAreas,
     storage,
     storageTemperature,
     type
@@ -68,6 +70,22 @@ export default function DryingSection({ mode, form }) {
                         <Grid item xs={12}>
                           <Card>
                             <CardContent sx={accordionFormContentSx}>
+
+                              <Autocomplete
+                                multiple
+                                sx={{ mb: 2 }}
+                                options={DRYING_AREA_OPTIONS}
+                                value={dryingAreas}
+                                onChange={(e, newValue) => setDryingAreas(newValue || [])}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    label="Drying Area(s)"
+                                    helperText="Select one or more drying areas for this batch."
+                                    fullWidth
+                                  />
+                                )}
+                              />
 
                               <Autocomplete
                                 sx={{ mb: 2 }}   // margin-bottom
@@ -109,6 +127,9 @@ export default function DryingSection({ mode, form }) {
     );
   }
 
+  const detailsDryingAreas = getRowDryingAreas(detailsData);
+  const detailsDryingAreaOptions = dryingAreaOptionsForRow(detailsData);
+
   return (
     <>
           <Accordion sx={{ mb:2, borderRadius: 2, boxShadow: 'none' }} >
@@ -118,19 +139,28 @@ export default function DryingSection({ mode, form }) {
             <AccordionDetails sx={accordionDetailsSx}>
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
-                  <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
-                    <InputLabel id="drying-area-details-label">Drying Area</InputLabel>
-                    <Select
-                      labelId="drying-area-details-label"
-                      value={detailsData.dryingArea || ''}
-                      onChange={(e) => setDetailsData({ ...detailsData, dryingArea: e.target.value })}
-                      label="Drying Area"
-                    >
-                      <MenuItem value="greenhouse">Greenhouse</MenuItem>
-                      <MenuItem value="sun dry">Sun Dry</MenuItem>
-                      <MenuItem value="drying room">Drying Room</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <Autocomplete
+                    multiple
+                    options={detailsDryingAreaOptions}
+                    value={detailsDryingAreas}
+                    onChange={(e, newValue) => {
+                      const areas = newValue || [];
+                      setDetailsData({
+                        ...detailsData,
+                        dryingAreas: areas,
+                        dryingArea: dryingAreasToDisplay(areas),
+                      });
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Drying Area(s)"
+                        helperText="Select one or more drying areas."
+                        fullWidth
+                        sx={{ mt: 1 }}
+                      />
+                    )}
+                  />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField

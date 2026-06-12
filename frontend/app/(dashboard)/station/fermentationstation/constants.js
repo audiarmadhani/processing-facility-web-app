@@ -47,6 +47,28 @@ export function tanksToDisplay(tanks) {
   return tanks.join(', ');
 }
 
+export const DRYING_AREA_OPTIONS = [
+  'Drying Area 1',
+  'Drying Area 2',
+  'Drying Area 3',
+  'Drying Area 4',
+  'Drying Area 5',
+  'Drying Sun Dry',
+  'Drying Room',
+];
+
+export function getRowDryingAreas(row) {
+  if (!row) return [];
+  if (Array.isArray(row.dryingAreas) && row.dryingAreas.length) return row.dryingAreas;
+  if (!row.dryingArea?.trim()) return [];
+  return row.dryingArea.split(',').map((area) => area.trim()).filter(Boolean);
+}
+
+export function dryingAreasToDisplay(areas) {
+  if (!areas?.length) return '';
+  return areas.join(', ');
+}
+
 /** Normalize Autocomplete multi-select with shared vs BB/BUC mutual exclusion. */
 export function normalizeTanksSelection(newValue) {
   const selected = [...new Set((newValue || []).filter(Boolean))];
