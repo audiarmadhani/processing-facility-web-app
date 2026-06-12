@@ -8,6 +8,7 @@ import {
   sortDryingRows,
   witaDateInputValue,
   witaTimeInputValue,
+  witaDateTimePayload,
 } from '../utils/dryingRowHelpers';
 
 const debounce = (func, wait) => {
@@ -824,9 +825,7 @@ export function useDryingStation(session) {
       return;
     }
 
-    const timePart =
-      moveTime && /^\d{1,2}:\d{2}$/.test(moveTime) ? moveTime : '00:00';
-    const moved_at = moveDate ? `${moveDate}T${timePart}:00` : undefined;
+    const moved_at = witaDateTimePayload(moveDate, moveTime);
 
     if (!moved_at) {
       setSnackbarMessage('Please enter move date and time');
@@ -1047,9 +1046,7 @@ export function useDryingStation(session) {
   };
 
   const handleAssignDrying = async (batchNumber, dryingArea, enteredDate, enteredTime) => {
-    const timePart =
-      enteredTime && /^\d{1,2}:\d{2}$/.test(enteredTime) ? enteredTime : '00:00';
-    const entered_at = enteredDate ? `${enteredDate}T${timePart}:00` : undefined;
+    const entered_at = witaDateTimePayload(enteredDate, enteredTime);
 
     try {
       await fetch(`https://processing-facility-backend.onrender.com/api/assign-drying`, {
@@ -1078,9 +1075,7 @@ export function useDryingStation(session) {
   const handleFinishDrying = useCallback(async () => {
     if (!selectedRowForFinish || !finishDate) return;
 
-    const timePart =
-      finishTime && /^\d{1,2}:\d{2}$/.test(finishTime) ? finishTime : '00:00';
-    const exited_at = `${finishDate}T${timePart}:00`;
+    const exited_at = witaDateTimePayload(finishDate, finishTime);
     const exitedAt = new Date(exited_at);
 
     if (isNaN(exitedAt.getTime())) {

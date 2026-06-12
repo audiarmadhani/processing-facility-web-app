@@ -51,6 +51,15 @@ export function witaTimeInputValue(date = new Date()) {
   return `${hour}:${minute}`;
 }
 
+/** Build an API datetime payload interpreted as WITA (UTC+8). */
+export function witaDateTimePayload(date, time) {
+  if (!date) return undefined;
+  const timePart = time && /^\d{1,2}:\d{2}$/.test(time) ? time : '00:00';
+  const [hour, minute] = timePart.split(':');
+  const hh = String(hour).padStart(2, '0');
+  return `${date}T${hh}:${minute}:00+08:00`;
+}
+
 export function sortDryingRows(a, b) {
   const priorityOrder = { High: 0, Medium: 1, Low: 2 };
   const prioritySort = (row) => {
