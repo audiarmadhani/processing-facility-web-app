@@ -5,7 +5,7 @@ import 'jspdf-autotable';
 import dayjs from 'dayjs';
 import { calculateFermentationEndGoal, formatFermentationDisplay } from './fermentationDateTime';
 import { formatCherryQuantityKg } from './resolveCherryQuantity';
-import { getRowTanks, tanksToDisplay } from '../constants';
+import { getRowTanks, tanksToDisplay, getRowDryingMethods, dryingMethodsToDisplay } from '../constants';
 
 function orderSheetBatchLabel(batchNumber) {
   return batchNumber?.trim() ? batchNumber : 'TBD';
@@ -33,7 +33,7 @@ export function generateOrderSheet(formState) {
     waterTemperature, coolerTemperature, secondFermentation, secondFermentationTank,
     secondPostPulped, secondPostPulpedDelva, secondWashed, secondStarterType, secondGas,
     secondPressure, secondIsSubmerged, secondTotalVolume, secondTemperature,
-    secondFermentationTimeTarget, drying, secondDrying, rehydration, cherryQuantity,
+    secondFermentationTimeTarget, dryingMethods, secondDrying, rehydration, cherryQuantity,
   } = formState;
 
   const fullReferenceNumber =
@@ -133,7 +133,7 @@ export function generateOrderSheet(formState) {
       { label: 'Second Temperature', value: secondValue(secondTemperature, v => `${v} °C`) },
       { label: 'Second Fermentation Time Target', value: secondValue(secondFermentationTimeTarget, v => `${v} h`) },
       
-      { label: 'Drying', value: drying || 'N/A' },
+      { label: 'Drying Method', value: dryingMethodsToDisplay(dryingMethods) || 'N/A' },
       { label: 'Second Drying', value: secondDrying || 'N/A' },
       { label: 'Rehydration', value: rehydration || 'N/A' },
       
@@ -293,7 +293,7 @@ export function generateOrderSheetRow(row) {
       { label: 'Second Time Target', value: secondValue(data.secondFermentationTimeTarget, v => `${v} h`) },
 
       // DRYING
-      { label: 'Drying', value: safe(data.drying) },
+      { label: 'Drying Method', value: dryingMethodsToDisplay(getRowDryingMethods(data)) || safe(data.drying) },
       { label: 'Second Drying', value: safe(data.secondDrying) },
       { label: 'Rehydration', value: safe(data.rehydration) },
     ];

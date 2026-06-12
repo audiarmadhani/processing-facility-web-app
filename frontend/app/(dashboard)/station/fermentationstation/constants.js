@@ -47,7 +47,7 @@ export function tanksToDisplay(tanks) {
   return tanks.join(', ');
 }
 
-export const DRYING_AREA_OPTIONS = [
+export const DRYING_METHOD_OPTIONS = [
   'Drying Area 1',
   'Drying Area 2',
   'Drying Area 3',
@@ -57,16 +57,35 @@ export const DRYING_AREA_OPTIONS = [
   'Drying Room',
 ];
 
-export function getRowDryingAreas(row) {
+/** @deprecated Use DRYING_METHOD_OPTIONS */
+export const DRYING_AREA_OPTIONS = DRYING_METHOD_OPTIONS;
+
+export function getRowDryingMethods(row) {
   if (!row) return [];
+  if (Array.isArray(row.dryingMethods) && row.dryingMethods.length) return row.dryingMethods;
   if (Array.isArray(row.dryingAreas) && row.dryingAreas.length) return row.dryingAreas;
-  if (!row.dryingArea?.trim()) return [];
-  return row.dryingArea.split(',').map((area) => area.trim()).filter(Boolean);
+  if (row.drying?.trim()) {
+    return row.drying.split(',').map((method) => method.trim()).filter(Boolean);
+  }
+  if (row.dryingArea?.trim()) {
+    return row.dryingArea.split(',').map((method) => method.trim()).filter(Boolean);
+  }
+  return [];
 }
 
+/** @deprecated Use getRowDryingMethods */
+export function getRowDryingAreas(row) {
+  return getRowDryingMethods(row);
+}
+
+export function dryingMethodsToDisplay(methods) {
+  if (!methods?.length) return '';
+  return methods.join(', ');
+}
+
+/** @deprecated Use dryingMethodsToDisplay */
 export function dryingAreasToDisplay(areas) {
-  if (!areas?.length) return '';
-  return areas.join(', ');
+  return dryingMethodsToDisplay(areas);
 }
 
 /** Normalize Autocomplete multi-select with shared vs BB/BUC mutual exclusion. */

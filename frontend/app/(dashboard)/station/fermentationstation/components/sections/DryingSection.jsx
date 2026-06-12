@@ -14,32 +14,32 @@ import {
 import { Autocomplete } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import { accordionFormContentSx, accordionDetailsSx, DRYING_AREA_OPTIONS, getRowDryingAreas, dryingAreasToDisplay } from '../../constants';
-import { wideMenuProps as MenuProps } from '../../../_shared/constants/menuProps';
+import {
+  accordionFormContentSx,
+  accordionDetailsSx,
+  DRYING_METHOD_OPTIONS,
+  getRowDryingMethods,
+  dryingMethodsToDisplay,
+} from '../../constants';
 import { formatDateTimeLocal } from '../../utils/formatDateTimeLocal';
 
-function dryingAreaOptionsForRow(row) {
-  const existing = getRowDryingAreas(row);
-  return [...new Set([...DRYING_AREA_OPTIONS, ...existing])];
+function dryingMethodOptionsForRow(row) {
+  const existing = getRowDryingMethods(row);
+  return [...new Set([...DRYING_METHOD_OPTIONS, ...existing])];
 }
 
 export default function DryingSection({ mode, form }) {
   const {
     accordionDetailsSx,
     accordionFormContentSx,
-    drying,
     rehydration,
     secondDrying,
-    setDrying,
     setRehydration,
     setSecondDrying,
-    avgTemperature,
-    bagType,
     detailsData,
-    dryingAreas,
+    dryingMethods,
     dryingEnd,
     dryingStart,
-    finalMoisture,
     formatDateTimeLocal,
     hullingTime,
     postDryingWeight,
@@ -52,10 +52,9 @@ export default function DryingSection({ mode, form }) {
     secondFinalMoisture,
     secondPostDryingWeight,
     setDetailsData,
-    setDryingAreas,
+    setDryingMethods,
     storage,
     storageTemperature,
-    type
   } = form;
 
   if (mode === 'create') {
@@ -74,26 +73,16 @@ export default function DryingSection({ mode, form }) {
                               <Autocomplete
                                 multiple
                                 sx={{ mb: 2 }}
-                                options={DRYING_AREA_OPTIONS}
-                                value={dryingAreas}
-                                onChange={(e, newValue) => setDryingAreas(newValue || [])}
+                                options={DRYING_METHOD_OPTIONS}
+                                value={dryingMethods}
+                                onChange={(e, newValue) => setDryingMethods(newValue || [])}
                                 renderInput={(params) => (
                                   <TextField
                                     {...params}
-                                    label="Drying Area(s)"
-                                    helperText="Select one or more drying areas for this batch."
+                                    label="Drying Method(s)"
+                                    helperText="Select one or more drying methods for this batch."
                                     fullWidth
                                   />
-                                )}
-                              />
-
-                              <Autocomplete
-                                sx={{ mb: 2 }}   // margin-bottom
-                                options={['Greenhouse', 'Drying Room', 'Sun Dry']}
-                                value={drying || null}
-                                onChange={(e, newValue) => setDrying(newValue || '')}
-                                renderInput={(params) => (
-                                  <TextField {...params} label="Drying Method" fullWidth />
                                 )}
                               />
 
@@ -127,8 +116,8 @@ export default function DryingSection({ mode, form }) {
     );
   }
 
-  const detailsDryingAreas = getRowDryingAreas(detailsData);
-  const detailsDryingAreaOptions = dryingAreaOptionsForRow(detailsData);
+  const detailsDryingMethods = getRowDryingMethods(detailsData);
+  const detailsDryingMethodOptions = dryingMethodOptionsForRow(detailsData);
 
   return (
     <>
@@ -141,21 +130,21 @@ export default function DryingSection({ mode, form }) {
                 <Grid item xs={4}>
                   <Autocomplete
                     multiple
-                    options={detailsDryingAreaOptions}
-                    value={detailsDryingAreas}
+                    options={detailsDryingMethodOptions}
+                    value={detailsDryingMethods}
                     onChange={(e, newValue) => {
-                      const areas = newValue || [];
+                      const methods = newValue || [];
                       setDetailsData({
                         ...detailsData,
-                        dryingAreas: areas,
-                        dryingArea: dryingAreasToDisplay(areas),
+                        dryingMethods: methods,
+                        drying: dryingMethodsToDisplay(methods),
                       });
                     }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Drying Area(s)"
-                        helperText="Select one or more drying areas."
+                        label="Drying Method(s)"
+                        helperText="Select one or more drying methods."
                         fullWidth
                         sx={{ mt: 1 }}
                       />
@@ -327,21 +316,6 @@ export default function DryingSection({ mode, form }) {
                     >
                       <MenuItem value="yes">Yes</MenuItem>
                       <MenuItem value="no">No</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
-                    <InputLabel id="drying-details-label">Drying Method</InputLabel>
-                    <Select
-                      labelId="drying-details-label"
-                      value={detailsData.drying || ''}
-                      onChange={(e) => setDetailsData({ ...detailsData, drying: e.target.value })}
-                      label="Drying Method"
-                    >
-                      <MenuItem value="Greenhouse">Greenhouse</MenuItem>
-                      <MenuItem value="Drying Room">Drying Room</MenuItem>
-                      <MenuItem value="Sun Dry">Sun Dry</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>

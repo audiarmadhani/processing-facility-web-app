@@ -14,8 +14,8 @@ import {
   tanksToDisplay,
   normalizeTanksSelection,
   isBarrelOrBucket,
-  getRowDryingAreas,
-  dryingAreasToDisplay,
+  getRowDryingMethods,
+  dryingMethodsToDisplay,
 } from '../constants';
 import { wideMenuProps as MenuProps } from '../../_shared/constants/menuProps';
 import { formatDateTimeLocal } from '../utils/formatDateTimeLocal';
@@ -111,7 +111,7 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const [secondFermentationTimeTarget, setSecondFermentationTimeTarget] = useState('');
   const [secondFermentationStart, setSecondFermentationStart] = useState('');
   const [secondFermentationEnd, setSecondFermentationEnd] = useState('');
-  const [dryingAreas, setDryingAreas] = useState([]);
+  const [dryingMethods, setDryingMethods] = useState([]);
   const [avgTemperature, setAvgTemperature] = useState('');
   const [preDryingWeight, setPreDryingWeight] = useState('');
   const [finalMoisture, setFinalMoisture] = useState('');
@@ -141,7 +141,6 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const [brewTankTemperature, setBrewTankTemperature] = useState('');
   const [waterTemperature, setWaterTemperature] = useState('');
   const [coolerTemperature, setCoolerTemperature] = useState('');
-  const [drying, setDrying] = useState('');
   const [fermentationData, setFermentationData] = useState([]);
   const [availableBatches, setAvailableBatches] = useState([]);
   const [availableTanks, setAvailableTanks] = useState([]);
@@ -396,15 +395,15 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
   const normalizeDetailsRecord = (raw) => {
     if (!raw || typeof raw !== 'object') return {};
     const rowTanks = getRowTanks(raw);
-    const rowDryingAreas = getRowDryingAreas(raw);
+    const rowDryingMethods = getRowDryingMethods(raw);
     return {
       ...raw,
       fermentationStart: raw.fermentationStart ?? raw.startDate ?? '',
       fermentationEnd: raw.fermentationEnd ?? raw.endDate ?? '',
       tanks: rowTanks,
       tank: tanksToDisplay(rowTanks),
-      dryingAreas: rowDryingAreas,
-      dryingArea: dryingAreasToDisplay(rowDryingAreas) || raw.dryingArea || '',
+      dryingMethods: rowDryingMethods,
+      drying: dryingMethodsToDisplay(rowDryingMethods) || raw.drying || '',
     };
   };
 
@@ -683,7 +682,7 @@ useEffect(() => {
     secondFermentationTimeTarget: secondFermentationTimeTarget ? parseInt(secondFermentationTimeTarget) : null,
     secondFermentationStart: toRaw(secondFermentationStart),
     secondFermentationEnd: toRaw(secondFermentationEnd),
-    dryingArea: dryingAreasToDisplay(dryingAreas) || null,
+    drying: dryingMethodsToDisplay(dryingMethods) || null,
     avgTemperature: avgTemperature ? parseFloat(avgTemperature) : null,
     preDryingWeight: preDryingWeight ? parseFloat(preDryingWeight) : null,
     finalMoisture: finalMoisture ? parseFloat(finalMoisture) : null,
@@ -713,7 +712,6 @@ useEffect(() => {
     brewTankTemperature: brewTankTemperature ? parseFloat(brewTankTemperature) : null,
     waterTemperature: waterTemperature ? parseFloat(waterTemperature) : null,
     coolerTemperature: coolerTemperature ? parseFloat(coolerTemperature) : null,
-    drying,
     createdBy: session?.user?.name,
   });
 
@@ -874,7 +872,7 @@ useEffect(() => {
     setSecondFermentationTimeTarget('');
     setSecondFermentationStart('');
     setSecondFermentationEnd('');
-    setDryingAreas([]);
+    setDryingMethods([]);
     setAvgTemperature('');
     setPreDryingWeight('');
     setFinalMoisture('');
@@ -903,7 +901,6 @@ useEffect(() => {
     setBrewTankTemperature('');
     setWaterTemperature('');
     setCoolerTemperature('');
-    setDrying('');
     setEditingEntryId(null);
   };
 
@@ -1018,7 +1015,7 @@ useEffect(() => {
       setIfValid('secondIsSubmerged', detailsData.secondIsSubmerged);
       setIfValid('fermentationStarter', detailsData.fermentationStarter);
       setNumber('fermentationStarterAmount', detailsData.fermentationStarterAmount);
-      setIfValid('dryingArea', dryingAreasToDisplay(getRowDryingAreas(detailsData)));
+      setIfValid('drying', dryingMethodsToDisplay(getRowDryingMethods(detailsData)));
 
       // -------------------------
       // 🧾 META
@@ -1082,7 +1079,7 @@ useEffect(() => {
       waterTemperature, coolerTemperature, secondFermentation, secondFermentationTank,
       secondPostPulped, secondPostPulpedDelva, secondWashed, secondStarterType, secondGas,
       secondPressure, secondIsSubmerged, secondTotalVolume, secondTemperature,
-      secondFermentationTimeTarget, drying, secondDrying, rehydration, cherryQuantity,
+      secondFermentationTimeTarget, dryingMethods, secondDrying, rehydration, cherryQuantity,
     });
   };
 
@@ -1749,7 +1746,7 @@ useEffect(() => {
     secondFermentationTimeTarget, setSecondFermentationTimeTarget,
     secondFermentationStart, setSecondFermentationStart,
     secondFermentationEnd, setSecondFermentationEnd,
-    dryingAreas, setDryingAreas,
+    dryingMethods, setDryingMethods,
     avgTemperature, setAvgTemperature,
     preDryingWeight, setPreDryingWeight,
     finalMoisture, setFinalMoisture,
@@ -1779,7 +1776,6 @@ useEffect(() => {
     brewTankTemperature, setBrewTankTemperature,
     waterTemperature, setWaterTemperature,
     coolerTemperature, setCoolerTemperature,
-    drying, setDrying,
     fermentationData,
     availableBatches,
     availableTanks,
