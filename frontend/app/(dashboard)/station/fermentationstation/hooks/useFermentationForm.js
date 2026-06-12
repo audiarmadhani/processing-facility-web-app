@@ -391,6 +391,18 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
     }
   };
 
+  const normalizeDetailsRecord = (raw) => {
+    if (!raw || typeof raw !== 'object') return {};
+    const rowTanks = getRowTanks(raw);
+    return {
+      ...raw,
+      fermentationStart: raw.fermentationStart ?? raw.startDate ?? '',
+      fermentationEnd: raw.fermentationEnd ?? raw.endDate ?? '',
+      tanks: rowTanks,
+      tank: tanksToDisplay(rowTanks),
+    };
+  };
+
   const fetchDetailsData = async (rowOrBatch, referenceNumber, experimentNumber) => {
     try {
       const isRow = rowOrBatch && typeof rowOrBatch === 'object';
@@ -399,11 +411,10 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
 
       if (entryId && !batchNumber) {
         const response = await axios.get(`${API_BASE_URL}/api/fermentation/details/id/${entryId}`);
-        const raw = response.data?.[0] || {};
-        const rowTanks = getRowTanks(raw);
-        setDetailsData({ ...raw, tanks: rowTanks, tank: tanksToDisplay(rowTanks) });
+        const data = normalizeDetailsRecord(response.data?.[0] || {});
+        setDetailsData(data);
         await loadCherryWeight(null);
-        return;
+        return data;
       }
 
       const queryParams = new URLSearchParams();
@@ -414,11 +425,10 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
         `${API_BASE_URL}/api/fermentation/details/${batchNumber}?${queryParams.toString()}`
       );
 
-      const raw = response.data?.[0] || {};
-      const rowTanks = getRowTanks(raw);
-      const data = { ...raw, tanks: rowTanks, tank: tanksToDisplay(rowTanks) };
+      const data = normalizeDetailsRecord(response.data?.[0] || {});
       setDetailsData(data);
       await loadCherryWeight(batchNumber, data.preprocessingWeight);
+      return data;
 
     } catch (error) {
       console.error('Error fetching details data:', error);
@@ -955,8 +965,8 @@ useEffect(() => {
       setDate('harvestAt', detailsData.harvestAt);
       setDate('harvestDate', detailsData.harvestDate);
       setDate('receivedAt', detailsData.receivedAt);
-      setDate('fermentationStart', detailsData.fermentationStart);
-      setDate('fermentationEnd', detailsData.fermentationEnd);
+      setDate('fermentationStart', detailsData.fermentationStart || detailsData.startDate);
+      setDate('fermentationEnd', detailsData.fermentationEnd || detailsData.endDate);
       setDate('preFermentationStorageStart', detailsData.preFermentationStorageStart);
       setDate('preFermentationStorageEnd', detailsData.preFermentationStorageEnd);
 
@@ -1028,11 +1038,12 @@ useEffect(() => {
 
       await axios.patch(updateUrl, payload);
 
+      await fetchFermentationData();
+      await fetchDetailsData(selectedBatch);
+
       const label = selectedBatch.batchNumber || 'TBD';
       setSnackbarMessage(`Details updated for batch ${label}.`);
       setSnackbarSeverity('success');
-      setOpenDetailsDialog(false);
-      await fetchFermentationData();
 
     } catch (error) {
       console.error('Error updating fermentation details:', error);
