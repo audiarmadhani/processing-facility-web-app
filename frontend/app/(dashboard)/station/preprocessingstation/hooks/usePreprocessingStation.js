@@ -987,13 +987,16 @@ export function usePreprocessingStation(session) {
       "CM Natural", "CM Washed", "CM Pulped Natural",
       "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
       "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
-      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural",
+      "N2 Natural", "N2 Washed", "N2 Pulped Natural"
     ],
     "Experimental Lot": [
+      "Natural", "Washed", "Pulped Natural",
       "CM Natural", "CM Washed", "CM Pulped Natural",
       "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
       "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
-      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural",
+      "N2 Natural", "N2 Washed", "N2 Pulped Natural"
     ],
     "Experiment Lot": [
       "Natural", "Washed", "Pulped Natural",
@@ -1007,7 +1010,8 @@ export function usePreprocessingStation(session) {
       "CM Natural", "CM Washed", "CM Pulped Natural",
       "Anaerobic Natural", "Anaerobic Washed", "Anaerobic Pulped Natural",
       "Aerobic Natural", "Aerobic Washed", "Aerobic Pulped Natural",
-      "O2 Natural", "O2 Washed", "O2 Pulped Natural"
+      "O2 Natural", "O2 Washed", "O2 Pulped Natural",
+      "N2 Natural", "N2 Washed", "N2 Pulped Natural"
     ],
     "Commercial Lot": ["Natural", "Washed"],
     "Community Lot": [
@@ -1033,6 +1037,9 @@ export function usePreprocessingStation(session) {
     "O2 Natural": ["Specialty"],
     "O2 Washed": ["Specialty"],
     "O2 Pulped Natural": ["Specialty"],
+    "N2 Natural": ["Specialty"],
+    "N2 Washed": ["Specialty"],
+    "N2 Pulped Natural": ["Specialty"],
   };
 
   useEffect(() => {
