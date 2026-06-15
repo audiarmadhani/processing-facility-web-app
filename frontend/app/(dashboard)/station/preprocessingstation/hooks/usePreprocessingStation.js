@@ -1018,6 +1018,7 @@ export function usePreprocessingStation(session) {
   const processingTypeOptions = {
     "": [""],
     "Natural": ["Specialty", "G1", "G2", "G3", "G4"],
+    "Wet Hulled": ["Specialty", "G1", "G2", "G3", "G4"],
     "Washed": ["Specialty", "G1", "G2", "G3", "G4"],
     "Pulped Natural": ["Specialty"],
     "CM Natural": ["Specialty"],
