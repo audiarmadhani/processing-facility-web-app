@@ -301,7 +301,7 @@ export default function FermentationSection({ mode, form }) {
                               <TextField
                                 label="Tank Amount"
                                 type="number"
-                                value={detailsData.tankAmount}
+                                value={tankAmount}
                                 onChange={(e) => setTankAmount(e.target.value)}
                                 fullWidth
                                 margin="normal"
@@ -310,7 +310,7 @@ export default function FermentationSection({ mode, form }) {
                               <TextField
                                 label="Leachate Target (L)"
                                 type="number"
-                                value={detailsData.leachateTarget}
+                                value={leachateTarget}
                                 onChange={(e) => setLeachateTarget(e.target.value)}
                                 fullWidth
                                 margin="normal"
@@ -319,7 +319,7 @@ export default function FermentationSection({ mode, form }) {
                               <TextField
                                 label="Brew Tank Temperature (°C)"
                                 type="number"
-                                value={detailsData.brewTankTemperature}
+                                value={brewTankTemperature}
                                 onChange={(e) => setBrewTankTemperature(e.target.value)}
                                 fullWidth
                                 margin="normal"
@@ -328,7 +328,7 @@ export default function FermentationSection({ mode, form }) {
                               <TextField
                                 label="Water Temperature (°C)"
                                 type="number"
-                                value={detailsData.waterTemperature}
+                                value={waterTemperature}
                                 onChange={(e) => setWaterTemperature(e.target.value)}
                                 fullWidth
                                 margin="normal"
@@ -337,7 +337,7 @@ export default function FermentationSection({ mode, form }) {
                               <TextField
                                 label="Cooler Temperature (°C)"
                                 type="number"
-                                value={detailsData.coolerTemperature}
+                                value={coolerTemperature}
                                 onChange={(e) => setCoolerTemperature(e.target.value)}
                                 fullWidth
                                 margin="normal"
@@ -699,22 +699,24 @@ export default function FermentationSection({ mode, form }) {
                   <TextField
                     label="Tank Amount"
                     type="number"
-                    value={tankAmount}
-                    onChange={(e) => setTankAmount(e.target.value)}
+                    value={detailsData.tankAmount ?? ''}
+                    onChange={(e) => setDetailsData({ ...detailsData, tankAmount: e.target.value })}
                     fullWidth
-                    margin="normal"
-                    disabled={fieldDisabled.tankAmount}
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled={detailsFieldDisabled.tankAmount}
                   />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
                     label="Leachate Target (L)"
                     type="number"
-                    value={leachateTarget}
-                    onChange={(e) => setLeachateTarget(e.target.value)}
+                    value={detailsData.leachateTarget ?? ''}
+                    onChange={(e) => setDetailsData({ ...detailsData, leachateTarget: e.target.value })}
                     fullWidth
-                    margin="normal"
-                    disabled={fieldDisabled.leachateTarget}
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled={detailsFieldDisabled.leachateTarget}
                   />
                 </Grid>
                 <Grid item xs={4}>
@@ -732,33 +734,36 @@ export default function FermentationSection({ mode, form }) {
                   <TextField
                     label="Brew Tank Temperature (°C)"
                     type="number"
-                    value={brewTankTemperature}
-                    onChange={(e) => setBrewTankTemperature(e.target.value)}
+                    value={detailsData.brewTankTemperature ?? ''}
+                    onChange={(e) => setDetailsData({ ...detailsData, brewTankTemperature: e.target.value })}
                     fullWidth
-                    margin="normal"
-                    disabled={fieldDisabled.brewTankTemperature}
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled={detailsFieldDisabled.brewTankTemperature}
                   />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
                     label="Water Temperature (°C)"
                     type="number"
-                    value={waterTemperature}
-                    onChange={(e) => setWaterTemperature(e.target.value)}
+                    value={detailsData.waterTemperature ?? ''}
+                    onChange={(e) => setDetailsData({ ...detailsData, waterTemperature: e.target.value })}
                     fullWidth
-                    margin="normal"
-                    disabled={fieldDisabled.waterTemperature}
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled={detailsFieldDisabled.waterTemperature}
                   />
                 </Grid>
                 <Grid item xs={4}>
                   <TextField
                     label="Cooler Temperature (°C)"
                     type="number"
-                    value={coolerTemperature}
-                    onChange={(e) => setCoolerTemperature(e.target.value)}
+                    value={detailsData.coolerTemperature ?? ''}
+                    onChange={(e) => setDetailsData({ ...detailsData, coolerTemperature: e.target.value })}
                     fullWidth
-                    margin="normal"
-                    disabled={fieldDisabled.coolerTemperature}
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled={detailsFieldDisabled.coolerTemperature}
                   />
                 </Grid>
               </Grid>
