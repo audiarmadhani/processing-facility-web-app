@@ -74,7 +74,14 @@ export default function RfidUnassignPage() {
         field: 'experimentNumber',
         headerName: 'Experiment',
         width: 120,
-        valueFormatter: (value) => value || '—',
+        type: 'number',
+        align: 'left',
+        headerAlign: 'left',
+        valueGetter: (_value, row) => {
+          const n = Number(row.experimentNumber);
+          return Number.isFinite(n) ? n : null;
+        },
+        valueFormatter: (value) => (value == null ? '—' : String(value)),
       },
       { field: 'rfid', headerName: 'RFID', flex: 1, minWidth: 140 },
       { field: 'farmerName', headerName: 'Farmer', flex: 1, minWidth: 160 },
