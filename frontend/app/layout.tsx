@@ -31,7 +31,7 @@ import ThermostatIcon from '@mui/icons-material/Thermostat';
 import RouteIcon from '@mui/icons-material/Route';
 import HistoryIcon from '@mui/icons-material/History';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import TvIcon from '@mui/icons-material/Tv';
+import NfcIcon from '@mui/icons-material/Nfc';
 
 export const metadata = {
   title: "BTM HEQA Platform",
@@ -134,6 +134,7 @@ const NAVIGATION: Navigation = [
     icon: <AdminPanelSettingsIcon />,
     children: [
       { segment: "database", title: "Database", icon: <StorageIcon /> },
+      { segment: "unassign", title: "Unassign RFID", icon: <NfcIcon /> },
       { segment: "report", title: "Report (WIP)", icon: <SummarizeIcon /> },
       { segment: "cctv", title: "CCTV (WIP)", icon: <VideocamIcon /> },
     ],
