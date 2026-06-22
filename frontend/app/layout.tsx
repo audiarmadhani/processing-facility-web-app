@@ -32,6 +32,7 @@ import RouteIcon from '@mui/icons-material/Route';
 import HistoryIcon from '@mui/icons-material/History';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import NfcIcon from '@mui/icons-material/Nfc';
+import TvIcon from '@mui/icons-material/Tv';
 
 export const metadata = {
   title: "BTM HEQA Platform",
