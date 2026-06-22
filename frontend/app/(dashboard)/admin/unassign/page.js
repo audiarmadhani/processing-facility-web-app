@@ -51,9 +51,14 @@ export default function RfidUnassignPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const selectedRow = useMemo(
-    () => rows.find((row) => row.id === selectionModel[0]) || null,
+  const selectedRows = useMemo(
+    () => rows.filter((row) => selectionModel.includes(row.id)),
     [rows, selectionModel]
+  );
+
+  const selectedWithActiveStations = useMemo(
+    () => selectedRows.filter((row) => row.hasActiveStation),
+    [selectedRows]
   );
 
   useEffect(() => {
@@ -65,6 +70,12 @@ export default function RfidUnassignPage() {
   const columns = useMemo(
     () => [
       { field: 'batchNumber', headerName: 'Batch', flex: 1, minWidth: 150 },
+      {
+        field: 'experimentNumber',
+        headerName: 'Experiment',
+        width: 120,
+        valueFormatter: (value) => value || '—',
+      },
       { field: 'rfid', headerName: 'RFID', flex: 1, minWidth: 140 },
       { field: 'farmerName', headerName: 'Farmer', flex: 1, minWidth: 160 },
       { field: 'commodityType', headerName: 'Commodity', width: 120 },
@@ -89,15 +100,57 @@ export default function RfidUnassignPage() {
   );
 
   const handleConfirmUnassign = async () => {
-    if (!selectedRow) return;
+    if (!selectedRows.length) return;
 
     setSubmitting(true);
     try {
-      await unassignBatch(selectedRow.batchNumber, session?.user?.name || null);
-      setSnackbarMessage(
-        `RFID ${selectedRow.rfid} released from batch ${selectedRow.batchNumber}.`
+      const results = await Promise.allSettled(
+        selectedRows.map((row) =>
+          unassignBatch(row.batchNumber, session?.user?.name || null)
+        )
       );
-      setSnackbarSeverity('success');
+
+      const succeeded = [];
+      const failed = [];
+
+      results.forEach((result, index) => {
+        const row = selectedRows[index];
+        if (result.status === 'fulfilled') {
+          succeeded.push(row);
+        } else {
+          failed.push({
+            row,
+            error:
+              result.reason?.response?.data?.error ||
+              result.reason?.message ||
+              'Failed to unassign',
+          });
+        }
+      });
+
+      if (failed.length === 0) {
+        setSnackbarMessage(
+          succeeded.length === 1
+            ? `RFID ${succeeded[0].rfid} released from batch ${succeeded[0].batchNumber}.`
+            : `Released ${succeeded.length} RFID assignments.`
+        );
+        setSnackbarSeverity('success');
+      } else if (succeeded.length === 0) {
+        setSnackbarMessage(
+          failed.length === 1
+            ? failed[0].error
+            : `Failed to unassign ${failed.length} batches.`
+        );
+        setSnackbarSeverity('error');
+      } else {
+        setSnackbarMessage(
+          `Released ${succeeded.length} batch(es). ${failed.length} failed: ${failed
+            .map((item) => item.row.batchNumber)
+            .join(', ')}.`
+        );
+        setSnackbarSeverity('warning');
+      }
+
       setOpenSnackbar(true);
       setConfirmOpen(false);
       setSelectionModel([]);
@@ -148,10 +201,10 @@ export default function RfidUnassignPage() {
           variant="contained"
           color="warning"
           startIcon={<NfcIcon />}
-          disabled={!selectedRow || submitting}
+          disabled={!selectedRows.length || submitting}
           onClick={() => setConfirmOpen(true)}
         >
-          Unassign selected
+          Unassign selected{selectedRows.length ? ` (${selectedRows.length})` : ''}
         </Button>
       </Box>
 
@@ -161,7 +214,6 @@ export default function RfidUnassignPage() {
           columns={columns}
           loading={loading}
           checkboxSelection
-          disableMultipleRowSelection
           rowSelectionModel={selectionModel}
           onRowSelectionModelChange={(newSelection) => {
             setSelectionModel(Array.isArray(newSelection) ? newSelection : []);
@@ -174,22 +226,44 @@ export default function RfidUnassignPage() {
         />
       </Box>
 
-      <Dialog open={confirmOpen} onClose={() => !submitting && setConfirmOpen(false)}>
-        <DialogTitle>Unassign RFID?</DialogTitle>
+      <Dialog open={confirmOpen} onClose={() => !submitting && setConfirmOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Unassign RFID{selectedRows.length > 1 ? ` (${selectedRows.length} batches)` : ''}?
+        </DialogTitle>
         <DialogContent>
           <DialogContentText component="div">
-            <Typography gutterBottom>
-              Release RFID <strong>{selectedRow?.rfid}</strong> from batch{' '}
-              <strong>{selectedRow?.batchNumber}</strong>?
-            </Typography>
-            <Typography gutterBottom>
-              Farmer: {selectedRow?.farmerName || '—'}
-            </Typography>
-            {selectedRow?.hasActiveStation && (
+            {selectedRows.length === 1 ? (
+              <>
+                <Typography gutterBottom>
+                  Release RFID <strong>{selectedRows[0].rfid}</strong> from batch{' '}
+                  <strong>{selectedRows[0].batchNumber}</strong>?
+                </Typography>
+                <Typography gutterBottom>
+                  Farmer: {selectedRows[0].farmerName || '—'}
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography gutterBottom>
+                  Release RFID cards from the following {selectedRows.length} batches?
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, my: 1 }}>
+                  {selectedRows.map((row) => (
+                    <Typography component="li" key={row.batchNumber} variant="body2">
+                      {row.batchNumber} — {row.rfid}
+                      {row.farmerName ? ` (${row.farmerName})` : ''}
+                    </Typography>
+                  ))}
+                </Box>
+              </>
+            )}
+            {selectedWithActiveStations.length > 0 && (
               <Alert severity="warning" sx={{ mt: 2 }}>
-                This batch still has open station entries (
-                {selectedRow.activeStations?.join(', ')}). Unassigning will not close them; the
-                physical card will track a new batch after Receiving.
+                {selectedWithActiveStations.length === 1
+                  ? `Batch ${selectedWithActiveStations[0].batchNumber} still has open station entries (${selectedWithActiveStations[0].activeStations?.join(', ')}).`
+                  : `${selectedWithActiveStations.length} selected batch(es) still have open station entries.`}{' '}
+                Unassigning will not close them; physical cards will track new batches after
+                Receiving.
               </Alert>
             )}
           </DialogContentText>
