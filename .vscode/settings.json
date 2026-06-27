@@ -1,3 +1,4 @@
 {
-    "idf.pythonInstallPath": "/opt/homebrew/bin/python3"
+    "idf.pythonInstallPath": "/opt/homebrew/bin/python3",
+    "cmake.sourceDirectory": "/Users/audiarmadhani/processing-facility-web-app/esp-iot-solution/components/audio/adc_mic"
 }
