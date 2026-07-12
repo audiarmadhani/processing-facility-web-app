@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -21,6 +21,10 @@ import {
   Select,
   InputLabel,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { useSession } from 'next-auth/react';
@@ -136,6 +140,9 @@ const Dashboard = () => {
     notes: '', // Optional notes for the payment
   });
   const [paymentProof, setPaymentProof] = useState(null);
+  const [openDeliveryDateDialog, setOpenDeliveryDateDialog] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const pendingDoRef = useRef(null);
 
   const onDrop = (acceptedFiles) => {
     setPaymentProof(acceptedFiles[0]); // Store the first file dropped
@@ -289,17 +296,20 @@ const Dashboard = () => {
         created_at: updatedProcessingOrder.created_at || order.created_at || null,
       };
 
-      // Generate SPK, SPM, and DO PDFs
-      const spkDoc = generateSPKPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const spmDoc = generateSPMPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
-      const doDoc = generateDOPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      // Generate SPK and SPM first; DO waits for delivery date dialog
+      const pdfPayload = {
+        ...order,
+        customerName: order.customer_name,
+        status: order.status,
+        shippingMethod: order.shipping_method,
+        items: order.items,
+      };
+      const spkDoc = generateSPKPDF(pdfPayload);
+      const spmDoc = generateSPMPDF(pdfPayload);
 
-      // Save PDFs locally
       spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
-      doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
-      // Upload PDFs to Google Drive
       const uploadDocument = async (doc, type, filename) => {
         const blob = doc.output('blob');
         const formData = new FormData();
@@ -319,18 +329,24 @@ const Dashboard = () => {
       await Promise.all([
         uploadDocument(spkDoc, 'SPK', `SPK_${String(order.order_id).padStart(4, '0')}.pdf`),
         uploadDocument(spmDoc, 'SPM', `SPM_${String(order.order_id).padStart(4, '0')}.pdf`),
-        uploadDocument(doDoc, 'DO', `DO_${String(order.order_id).padStart(4, '0')}.pdf`),
       ]);
 
-      // Update the orders state
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
       setSelectedOrder(order);
 
-      setSnackbar({ open: true, message: 'Documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
+      pendingDoRef.current = {
+        mode: 'process',
+        orderId,
+        order,
+        pdfPayload,
+      };
+      setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+      setOpenDeliveryDateDialog(true);
+      setLoading(false);
+      setProcessing(false);
     } catch (error) {
       console.error('Error processing order:', error);
       setSnackbar({ open: true, message: `Error processing order: ${error.message}`, severity: 'error' });
-    } finally {
       setLoading(false);
       setProcessing(false);
     }
@@ -763,21 +779,7 @@ const Dashboard = () => {
 
     try {
       const order = selectedOrder || editOrder;
-      const spkDoc = generateSPKPDF({
-        ...order,
-        customerName: order.customer_name || 'Unknown Customer',
-        status: order.status || 'Processing',
-        shippingMethod: order.shipping_method || 'Self',
-        items: order.items || [],
-      });
-      const spmDoc = generateSPMPDF({
-        ...order,
-        customerName: order.customer_name || 'Unknown Customer',
-        status: order.status || 'Processing',
-        shippingMethod: order.shipping_method || 'Self',
-        items: order.items || [],
-      });
-      const doDoc = generateDOPDF({
+      const pdfPayload = {
         ...order,
         customerName: order.customer_name || 'Unknown Customer',
         status: order.status || 'Processing',
@@ -790,17 +792,93 @@ const Dashboard = () => {
         driver_name: order.driver_name || 'N/A',
         driver_vehicle_number: order.driver_vehicle_number || 'N/A',
         driver_vehicle_type: order.driver_vehicle_type || 'N/A',
-      });
+      };
+      const spkDoc = generateSPKPDF(pdfPayload);
+      const spmDoc = generateSPMPDF(pdfPayload);
 
-      // Save PDFs locally using jsPDF.save()
       spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
-      doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
-      setSnackbar({ open: true, message: 'Documents regenerated and saved locally successfully', severity: 'success' });
+      pendingDoRef.current = {
+        mode: 'download',
+        orderId: order.order_id,
+        order,
+        pdfPayload,
+      };
+      setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+      setOpenDeliveryDateDialog(true);
     } catch (error) {
       console.error('Error regenerating documents:', error);
       setSnackbar({ open: true, message: `Error regenerating documents: ${error.message}`, severity: 'error' });
+    }
+  };
+
+  const handleCancelDeliveryDateDialog = () => {
+    const pending = pendingDoRef.current;
+    setOpenDeliveryDateDialog(false);
+    pendingDoRef.current = null;
+    if (pending?.mode === 'process') {
+      setSnackbar({
+        open: true,
+        message: 'SPK/SPM generated. DO skipped (no delivery date).',
+        severity: 'warning',
+      });
+    } else if (pending?.mode === 'download') {
+      setSnackbar({
+        open: true,
+        message: 'SPK/SPM downloaded. DO skipped (no delivery date).',
+        severity: 'warning',
+      });
+    }
+  };
+
+  const handleConfirmDeliveryDateDialog = async () => {
+    if (!deliveryDate || !pendingDoRef.current) return;
+
+    const pending = pendingDoRef.current;
+    const { mode, orderId, order, pdfPayload } = pending;
+    setOpenDeliveryDateDialog(false);
+    pendingDoRef.current = null;
+
+    try {
+      if (mode === 'process') {
+        setLoading(true);
+        setProcessing(true);
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate);
+        doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+
+        const blob = doDoc.output('blob');
+        const formData = new FormData();
+        formData.append('order_id', orderId.toString());
+        formData.append('type', 'DO');
+        formData.append('file', blob, `DO_${String(order.order_id).padStart(4, '0')}.pdf`);
+
+        const res = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) throw new Error(`Failed to upload DO document: ${await res.text()}`);
+
+        setSnackbar({
+          open: true,
+          message: 'Documents generated, uploaded to Google Drive, and saved locally successfully',
+          severity: 'success',
+        });
+      } else {
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate);
+        doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+        setSnackbar({
+          open: true,
+          message: 'Documents regenerated and saved locally successfully',
+          severity: 'success',
+        });
+      }
+    } catch (error) {
+      console.error('Error generating DO:', error);
+      setSnackbar({ open: true, message: `Error generating DO: ${error.message}`, severity: 'error' });
+    } finally {
+      setLoading(false);
+      setProcessing(false);
     }
   };
 
@@ -1234,7 +1312,7 @@ const Dashboard = () => {
   };
 
   // Generate DO PDF
-  const generateDOPDF = (order) => {
+  const generateDOPDF = (order, deliveryDateValue) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for DO PDF generation');
     }
@@ -1295,7 +1373,7 @@ const Dashboard = () => {
           item.batch_number || 'N/A',
           item.quantity || 0,
           Math.ceil(item.quantity / 50) || 0,
-          dayjs().add(14, 'days').format('YYYY-MM-DD'), // Example: 14 days from now
+          deliveryDateValue || 'N/A',
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
         headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -2320,6 +2398,35 @@ const Dashboard = () => {
           </Box>
         </Paper>
       </Modal>
+
+      <Dialog open={openDeliveryDateDialog} onClose={handleCancelDeliveryDateDialog}>
+        <DialogTitle>Delivery Date</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter the delivery date for the Delivery Order PDF.
+          </Typography>
+          <TextField
+            label="Delivery Date"
+            type="date"
+            value={deliveryDate}
+            onChange={(e) => setDeliveryDate(e.target.value)}
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDeliveryDateDialog}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmDeliveryDateDialog}
+            disabled={!deliveryDate || loading || processing}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
   
       {/* Reject Order Confirmation Modal */}
       <Modal
