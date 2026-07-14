@@ -199,7 +199,7 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
     // mechanics
     stirring: isBiomaster || isBucketOrBB,
     airlock: isCarrybrew || isBiomaster,
-    gas: isBucketOrBB,
+    gas: false,
 
     // chemistry
     pH: isCarrybrew || isBucketOrBB,
@@ -225,7 +225,7 @@ export function useFermentationForm(session, { onCheckInSuccess } = {}) {
     coolerTemperature: detailsIsBiomaster || detailsIsBucketOrBB,
     stirring: detailsIsBiomaster || detailsIsBucketOrBB,
     airlock: detailsIsCarrybrew || detailsIsBiomaster,
-    gas: detailsIsBucketOrBB,
+    gas: false,
     pH: detailsIsCarrybrew || detailsIsBucketOrBB,
     leachateTarget: detailsIsCarrybrew || detailsIsBucketOrBB,
     tankAmount: detailsIsBiomaster || detailsIsBucketOrBB,
