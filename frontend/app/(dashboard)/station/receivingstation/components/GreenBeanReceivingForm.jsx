@@ -108,6 +108,7 @@ export default function GreenBeanReceivingForm({
                   <MenuItem value="Honey">Honey</MenuItem>
                   <MenuItem value="Anaerobic">Anaerobic</MenuItem>
                   <MenuItem value="CM Natural">CM Natural</MenuItem>
+                  <MenuItem value="Wet Hulled">Wet Hulled</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
