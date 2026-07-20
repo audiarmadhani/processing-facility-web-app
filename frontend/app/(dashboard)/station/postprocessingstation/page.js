@@ -33,6 +33,7 @@ function PostprocessingStation() {
   const [productLine, setProductLine] = useState('');
   const [producer, setProducer] = useState('');
   const [quality, setQuality] = useState('');
+  const [referenceNumber, setReferenceNumber] = useState('');
 
 
   const ITEM_HEIGHT = 48;
@@ -86,7 +87,8 @@ function PostprocessingStation() {
       quality,
       notes,
       producer,
-      productLine
+      productLine,
+      referenceNumber: referenceNumber.trim(),
     };
 
     try {
@@ -107,11 +109,12 @@ function PostprocessingStation() {
         setProducer('');
         setProductLine('');
         setQuality('');
+        setReferenceNumber('');
         fetchPostprocessingData();
         setSnackbarOpen(true);
       } else {
         const errorData = await response.json();
-        console.error(errorData.message || 'Error creating batch.');
+        console.error(errorData.message || errorData.error || 'Error creating batch.');
       }
     } catch (error) {
       console.error('Failed to communicate with the backend:', error);
@@ -256,6 +259,16 @@ function PostprocessingStation() {
                       <MenuItem value="G4">G4</MenuItem>
                     </Select>
                   </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="Reference Number"
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
+                    fullWidth
+                    required
+                  />
                 </Grid>
 
                 <Grid item xs={12}>

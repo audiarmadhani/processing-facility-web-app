@@ -31,8 +31,8 @@ export function usePreprocessingStation(session) {
   const [rfidTag, setRfidTag] = useState('');
   const [weightProcessed, setWeightProcessed] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
-  const [lotNumber, setLotNumber] = useState('N/A');
-  const [referenceNumber, setReferenceNumber] = useState('N/A');
+  const [lotNumber, setLotNumber] = useState('');
+  const [referenceNumber, setReferenceNumber] = useState('');
   const [openHistory, setOpenHistory] = useState(false);
   const [weightAvailable, setWeightAvailable] = useState('0.00');
   const [totalProcessedWeight, setTotalProcessedWeight] = useState('0.00');
@@ -74,6 +74,8 @@ export function usePreprocessingStation(session) {
   const [editProducer, setEditProducer] = useState('');
   const [editProductLine, setEditProductLine] = useState('');
   const [editProcessingType, setEditProcessingType] = useState('');
+  const [editLotNumber, setEditLotNumber] = useState('');
+  const [editReferenceNumber, setEditReferenceNumber] = useState('');
   const [actionAnchorEl, setActionAnchorEl] = useState(null);
   const [selectedActionRow, setSelectedActionRow] = useState(null);
   const [openTrackWeightDialog, setOpenTrackWeightDialog] = useState(false);
@@ -172,8 +174,8 @@ export function usePreprocessingStation(session) {
       setQCDate(formatDate(data.qcDate));
       setTotalWeight(totalWeightNum.toFixed(2));
       setTotalBags(data.totalBags || 'N/A');
-      setLotNumber(lotNumber);
-      setReferenceNumber(referenceNumber);
+      setLotNumber(lotNumber && lotNumber !== 'N/A' ? lotNumber : '');
+      setReferenceNumber(referenceNumber && referenceNumber !== 'N/A' ? referenceNumber : '');
       setWeightAvailable(weightAvailable);
       setTotalProcessedWeight(totalProcessedWeight);
 
@@ -240,8 +242,8 @@ export function usePreprocessingStation(session) {
             await fetchAvailableWeight(finalBatchNumber, totalWeightNum);
           setWeightAvailable(weightAvailable);
           setTotalProcessedWeight(totalProcessedWeight);
-          setLotNumber(lotNumber);
-          setReferenceNumber(referenceNumber);
+          setLotNumber(lotNumber && lotNumber !== 'N/A' ? lotNumber : '');
+          setReferenceNumber(referenceNumber && referenceNumber !== 'N/A' ? referenceNumber : '');
 
           if (finished) {
             setSnackBarMessage(`Batch ${finalBatchNumber} is already marked as complete.`);
@@ -537,12 +539,29 @@ export function usePreprocessingStation(session) {
       return;
     }
 
+    const trimmedLot = (lotNumber || '').trim();
+    const trimmedRef = (referenceNumber || '').trim();
+    if (!trimmedLot) {
+      setSnackBarMessage('Lot number is required.');
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+    if (producer === 'HQ' && !trimmedRef) {
+      setSnackBarMessage('Reference number is required for HQ producer.');
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+
     const preprocessingData = {
       batchNumber: trimmedBatchNumber,
       producer,
       productLine,
       processingType,
       quality,
+      lotNumber: trimmedLot,
+      referenceNumber: trimmedRef || null,
       createdBy: session?.user?.name || 'Unknown',
       notes: notes.trim() || null,
     };
@@ -641,6 +660,12 @@ export function usePreprocessingStation(session) {
     setEditProducer(targetRow.producer === 'N/A' ? '' : targetRow.producer);
     setEditProductLine(targetRow.productLine === 'N/A' ? '' : targetRow.productLine);
     setEditProcessingType(targetRow.processingType === 'N/A' ? '' : targetRow.processingType);
+    setEditLotNumber(
+      !targetRow.lotNumber || targetRow.lotNumber === 'N/A' ? '' : targetRow.lotNumber
+    );
+    setEditReferenceNumber(
+      !targetRow.referenceNumber || targetRow.referenceNumber === 'N/A' ? '' : targetRow.referenceNumber
+    );
 
     setOpenEditDialog(true);
   };
@@ -704,6 +729,21 @@ export function usePreprocessingStation(session) {
   };
 
   const handleUpdateMetadata = async () => {
+    const trimmedLot = (editLotNumber || '').trim();
+    const trimmedRef = (editReferenceNumber || '').trim();
+    if (!trimmedLot) {
+      setSnackBarMessage('Lot number is required.');
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+    if (editProducer === 'HQ' && !trimmedRef) {
+      setSnackBarMessage('Reference number is required for HQ producer.');
+      setSnackBarSeverity('warning');
+      setOpenSnackBar(true);
+      return;
+    }
+
     try {
       await axios.patch(
         `${API_BASE_URL}/preprocessing/update-metadata/${selectedBatch}`,
@@ -711,6 +751,8 @@ export function usePreprocessingStation(session) {
           producer: editProducer,
           productLine: editProductLine,
           processingType: editProcessingType,
+          lotNumber: trimmedLot,
+          referenceNumber: trimmedRef || null,
         }
       );
 
@@ -743,8 +785,8 @@ export function usePreprocessingStation(session) {
     setRfidTag('');
     setWeightProcessed('');
     setBatchNumber('');
-    setLotNumber('N/A');
-    setReferenceNumber('N/A');
+    setLotNumber('');
+    setReferenceNumber('');
     setFarmerName('');
     setBatchType('');
     setReceivingDate('');
@@ -1109,6 +1151,8 @@ export function usePreprocessingStation(session) {
     editProducer, setEditProducer,
     editProductLine, setEditProductLine,
     editProcessingType, setEditProcessingType,
+    editLotNumber, setEditLotNumber,
+    editReferenceNumber, setEditReferenceNumber,
     filteredPreprocessingData,
     MenuProps: MENU_PROPS,
     producerOptions,

@@ -9,12 +9,14 @@ import { MENU_PROPS } from '../columns';
 
 export default function PreprocessingScanCard({ station }) {
   const {
-    batchNumber, setBatchNumber, farmerName, lotNumber, referenceNumber, receivingDate, qcDate,
+    batchNumber, setBatchNumber, farmerName, lotNumber, setLotNumber, referenceNumber, setReferenceNumber,
+    receivingDate, qcDate,
     totalWeight, totalBags, totalProcessedWeight, weightAvailable, weightProcessed, setWeightProcessed,
     producer, setProducer, productLine, setProductLine, processingType, setProcessingType,
     quality, setQuality, notes, setNotes, openSnackBar, setOpenSnackBar, snackBarMessage, snackBarSeverity,
     openConfirmDialog, selectedBatchNumber, isFinishing, openEditDialog, setOpenEditDialog,
     editProducer, setEditProducer, editProductLine, setEditProductLine, editProcessingType, setEditProcessingType,
+    editLotNumber, setEditLotNumber, editReferenceNumber, setEditReferenceNumber,
     producerOptions, productLineOptions, processingTypeOptions, parseWeightInput,
     handleRfidScan, handleBatchNumberSearch, handleAllWeight, handleSubmit, showWeightHistory,
     handleCancelFinish, handleFinishBatch, handleUpdateMetadata,
@@ -76,7 +78,8 @@ export default function PreprocessingScanCard({ station }) {
         <TextField
           label="Lot Number"
           value={lotNumber}
-          InputProps={{ readOnly: true }}
+          onChange={(e) => setLotNumber(e.target.value)}
+          required
           fullWidth
         />
       </Grid>
@@ -84,7 +87,9 @@ export default function PreprocessingScanCard({ station }) {
         <TextField
           label="Reference Number"
           value={referenceNumber}
-          InputProps={{ readOnly: true }}
+          onChange={(e) => setReferenceNumber(e.target.value)}
+          required={producer === 'HQ'}
+          helperText={producer === 'BTM' ? 'Optional for BTM' : undefined}
           fullWidth
         />
       </Grid>
@@ -339,7 +344,7 @@ export default function PreprocessingScanCard({ station }) {
         </Select>
       </FormControl>
 
-      <FormControl fullWidth>
+      <FormControl fullWidth sx={{ mb: 2 }}>
         <InputLabel>Processing Type</InputLabel>
         <Select
           value={editProcessingType}
@@ -353,6 +358,23 @@ export default function PreprocessingScanCard({ station }) {
           ))}
         </Select>
       </FormControl>
+
+      <TextField
+        label="Lot Number"
+        value={editLotNumber}
+        onChange={(e) => setEditLotNumber(e.target.value)}
+        required
+        fullWidth
+        sx={{ mb: 2 }}
+      />
+      <TextField
+        label="Reference Number"
+        value={editReferenceNumber}
+        onChange={(e) => setEditReferenceNumber(e.target.value)}
+        required={editProducer === 'HQ'}
+        helperText={editProducer === 'BTM' ? 'Optional for BTM' : undefined}
+        fullWidth
+      />
     </DialogContent>
 
     <DialogActions>

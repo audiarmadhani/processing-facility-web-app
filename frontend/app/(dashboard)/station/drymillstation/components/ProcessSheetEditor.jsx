@@ -59,7 +59,7 @@ const createEmptyProcessTables = () => {
   GRADE_ORDER.forEach((g) => {
     base.Suton.grades[g] = { weight: '' };
     base.Sizer.grades[g] = { weight: '' };
-    base.Handpicking.grades[g] = { weight: '' };
+    base.Handpicking.grades[g] = { weight: '', lotNumber: '', referenceNumber: '' };
   });
 
   return base;
@@ -280,6 +280,25 @@ export default function ProcessSheetEditor({
       }
     });
 
+    try {
+      const gradesRes = await axios.get(
+        `${API_BASE_URL}/api/drymill/grades-rows/${encodeURIComponent(batchNumber)}`
+      );
+      const gradeRows = Array.isArray(gradesRes.data) ? gradesRes.data : [];
+      gradeRows.forEach((row) => {
+        const grade = row.grade;
+        if (grade && base.Handpicking.grades[grade]) {
+          if (row.lotNumber) base.Handpicking.grades[grade].lotNumber = String(row.lotNumber);
+          if (row.referenceNumber) {
+            base.Handpicking.grades[grade].referenceNumber = String(row.referenceNumber);
+          }
+          if (row.id) base.Handpicking.grades[grade].gradeRowId = row.id;
+        }
+      });
+    } catch {
+      // Non-fatal: lot/ref fields stay empty until user enters them
+    }
+
     setProcessTables(base);
     setHasUnsavedChanges?.(false);
     onProcessSaved?.(selectedBatch.id, res.data);
@@ -382,6 +401,16 @@ export default function ProcessSheetEditor({
       }
     }
 
+    if (procLabel === 'Handpicking') {
+      for (const gradeName of toSave) {
+        const lot = String(grades[gradeName]?.lotNumber ?? '').trim();
+        if (!lot) {
+          showSnackbar(`Lot number is required for ${gradeName}.`, 'error');
+          return;
+        }
+      }
+    }
+
     const whRow = processTables?.[procLabel]?.warehouseRow || '';
     const whCol = processTables?.[procLabel]?.warehouseColumn || '';
     if (!isWarehousePairValid(whRow, whCol)) {
@@ -407,6 +436,51 @@ export default function ProcessSheetEditor({
           operator: session?.user?.name || 'unknown',
           notes: `${procLabel} ${gradeName} recorded via UI: ${parsed.toFixed(2)} kg`,
         });
+      }
+
+      if (procLabel === 'Handpicking') {
+        let existingByGrade = {};
+        try {
+          const gradesRes = await axios.get(
+            `${API_BASE_URL}/api/drymill/grades-rows/${encodeURIComponent(selectedBatch.batchNumber)}`
+          );
+          const gradeRows = Array.isArray(gradesRes.data) ? gradesRes.data : [];
+          gradeRows.forEach((row) => {
+            if (row.grade) existingByGrade[row.grade] = row;
+          });
+        } catch {
+          existingByGrade = {};
+        }
+
+        for (const gradeName of toSave) {
+          const parsed = parseWeightInput(grades[gradeName]?.weight);
+          const lotNumber = String(grades[gradeName]?.lotNumber ?? '').trim();
+          const referenceNumber =
+            String(grades[gradeName]?.referenceNumber ?? '').trim() || null;
+          const subBatchId = `${selectedBatch.batchNumber}-${gradeName.replace(/\s+/g, '-')}`;
+          const existing = existingByGrade[gradeName];
+
+          if (existing?.id) {
+            await axios.put(`${API_BASE_URL}/api/drymill/grade/${existing.id}`, {
+              subBatchId,
+              grade: gradeName,
+              weight: parsed,
+              processing_type: selectedBatch.processingType,
+              lotNumber,
+              referenceNumber,
+            });
+          } else {
+            await axios.post(`${API_BASE_URL}/api/drymill/grade`, {
+              batchNumber: selectedBatch.batchNumber,
+              subBatchId,
+              grade: gradeName,
+              weight: parsed,
+              processing_type: selectedBatch.processingType,
+              lotNumber,
+              referenceNumber,
+            });
+          }
+        }
       }
 
       showSnackbar(`${procLabel} grades saved (${toSave.length}).`, 'success');
@@ -552,11 +626,14 @@ export default function ProcessSheetEditor({
                   <TableCell>Grade</TableCell>
                   <TableCell>Yield (%)</TableCell>
                   <TableCell>Total Weight (kg)</TableCell>
+                  {proc === 'Handpicking' && <TableCell>Lot Number</TableCell>}
+                  {proc === 'Handpicking' && <TableCell>Reference Number</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {GRADE_ORDER.map((gradeName) => {
-                  const value = processTables?.[proc]?.grades?.[gradeName]?.weight ?? '';
+                  const gradeState = processTables?.[proc]?.grades?.[gradeName] || {};
+                  const value = gradeState.weight ?? '';
                   let yieldPct = null;
                   if (proc === 'Suton') {
                     yieldPct = calcYield(
@@ -577,6 +654,23 @@ export default function ProcessSheetEditor({
                     );
                   }
 
+                  const updateGradeField = (field, newValue) => {
+                    markDirty();
+                    setProcessTables((prev) => ({
+                      ...prev,
+                      [proc]: {
+                        ...prev[proc],
+                        grades: {
+                          ...prev[proc].grades,
+                          [gradeName]: {
+                            ...prev[proc].grades[gradeName],
+                            [field]: newValue,
+                          },
+                        },
+                      },
+                    }));
+                  };
+
                   return (
                     <TableRow key={`${proc}-${gradeName}`}>
                       <TableCell>{gradeName}</TableCell>
@@ -588,23 +682,7 @@ export default function ProcessSheetEditor({
                       <TableCell>
                         <TextField
                           value={value}
-                          onChange={(e) => {
-                            markDirty();
-                            const newValue = e.target.value;
-                            setProcessTables((prev) => ({
-                              ...prev,
-                              [proc]: {
-                                ...prev[proc],
-                                grades: {
-                                  ...prev[proc].grades,
-                                  [gradeName]: {
-                                    ...prev[proc].grades[gradeName],
-                                    weight: newValue,
-                                  },
-                                },
-                              },
-                            }));
-                          }}
+                          onChange={(e) => updateGradeField('weight', e.target.value)}
                           size="small"
                           type="number"
                           inputProps={{ min: 0, step: 0.01 }}
@@ -612,6 +690,30 @@ export default function ProcessSheetEditor({
                           disabled={isLoading || !selectedBatch}
                         />
                       </TableCell>
+                      {proc === 'Handpicking' && (
+                        <TableCell>
+                          <TextField
+                            value={gradeState.lotNumber ?? ''}
+                            onChange={(e) => updateGradeField('lotNumber', e.target.value)}
+                            size="small"
+                            placeholder="Required if weight entered"
+                            fullWidth
+                            disabled={isLoading || !selectedBatch}
+                          />
+                        </TableCell>
+                      )}
+                      {proc === 'Handpicking' && (
+                        <TableCell>
+                          <TextField
+                            value={gradeState.referenceNumber ?? ''}
+                            onChange={(e) => updateGradeField('referenceNumber', e.target.value)}
+                            size="small"
+                            placeholder="Optional"
+                            fullWidth
+                            disabled={isLoading || !selectedBatch}
+                          />
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
@@ -627,6 +729,8 @@ export default function ProcessSheetEditor({
                   <TableCell>
                     <Typography fontWeight={700}>{stepTotal.toFixed(2)} kg</Typography>
                   </TableCell>
+                  {proc === 'Handpicking' && <TableCell />}
+                  {proc === 'Handpicking' && <TableCell />}
                 </TableRow>
               </TableBody>
             </Table>
