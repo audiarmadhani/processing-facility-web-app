@@ -54,6 +54,7 @@ export const DRYING_METHOD_OPTIONS = [
   'Drying Area 4',
   'Drying Area 5',
   'Drying Sun Dry',
+  'Sun Dry Net',
   'Drying Room',
 ];
 

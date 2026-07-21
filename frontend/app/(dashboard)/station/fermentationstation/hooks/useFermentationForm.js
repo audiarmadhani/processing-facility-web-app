@@ -545,15 +545,9 @@ useEffect(() => {
     }
   };
 
-  // Add handlers for referenceNumber and processingType linkage
+  // Reference number is freeform manual input (no mapping auto-fill of processing type)
   const handleReferenceNumberChange = (value) => {
     setReferenceNumber(value);
-    const selectedMapping = referenceMappings.find(mapping => mapping.referenceNumber === value);
-    if (selectedMapping) {
-      setProcessingType(selectedMapping.processingType || '');
-    } else {
-      setProcessingType('');
-    }
   };
 
   const handleProcessingTypeChange = (value) => {

@@ -144,24 +144,14 @@ export default function CherryInformationSection({ mode, form }) {
                                 sx={{ mb: 2 }}
                               />
 
-                              <Autocomplete
-                                sx={{ mb: 2 }}   // margin-bottom
-                                options={referenceMappings.filter(
-                                  m => !processingType || m.processingType === processingType
-                                )}
-                                getOptionLabel={(option) => option.referenceNumber || ''}
-                                value={
-                                  referenceMappings.find(m => m.referenceNumber === referenceNumber) || null
-                                }
-                                onChange={(e, newValue) => {
-                                  handleReferenceNumberChange(newValue?.referenceNumber || '');
-                                }}
-                                isOptionEqualToValue={(option, value) =>
-                                  option.referenceNumber === value.referenceNumber
-                                }
-                                renderInput={(params) => (
-                                  <TextField {...params} label="Reference Number" fullWidth />
-                                )}
+                              <TextField
+                                label="Reference Number"
+                                value={referenceNumber}
+                                onChange={(e) => handleReferenceNumberChange(e.target.value)}
+                                fullWidth
+                                required
+                                margin="normal"
+                                sx={{ mb: 2 }}
                               />
 
                               <TextField
@@ -321,31 +311,19 @@ export default function CherryInformationSection({ mode, form }) {
                   />
                 </Grid>
                 <Grid item xs={4}>
-                  <FormControl fullWidth variant="outlined" sx={{ mt: 1 }}>
-                    <InputLabel id="reference-number-details-label">Reference Number</InputLabel>
-                    <Select
-                      labelId="reference-number-details-label"
-                      value={detailsData.referenceNumber || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const selectedMapping = referenceMappings.find(mapping => mapping.referenceNumber === value);
-                        setDetailsData({
-                          ...detailsData,
-                          referenceNumber: value,
-                          processingType: selectedMapping ? selectedMapping.processingType : detailsData.processingType
-                        });
-                      }}
-                      label="Reference Number"
-                    >
-                      {referenceMappings
-                        .filter(mapping => !detailsData.processingType || mapping.processingType === detailsData.processingType)
-                        .map(mapping => (
-                          <MenuItem key={mapping.id} value={mapping.referenceNumber}>
-                            {mapping.referenceNumber}
-                          </MenuItem>
-                        ))}
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    label="Reference Number"
+                    value={detailsData.referenceNumber || ''}
+                    onChange={(e) =>
+                      setDetailsData({
+                        ...detailsData,
+                        referenceNumber: e.target.value,
+                      })
+                    }
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                  />
                 </Grid>
                 <Grid item xs={4}>
                 <TextField
