@@ -39,6 +39,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import CustomerModal from '../../components/CustomerModal';
 import DriverModal from '../../components/DriverModal';
 import { useDropzone } from 'react-dropzone'; // Add this import at the top of Dashboard.js
+import { resolveWarehouse, warehousePdfFields } from '../_shared/warehouseUtils';
+
+const OMS_API_BASE = 'https://processing-facility-backend.onrender.com/api';
 
 const getBackgroundColor = (color, theme, coefficient) => ({
   backgroundColor: darken(color, coefficient),
@@ -143,6 +146,10 @@ const Dashboard = () => {
   const [openDeliveryDateDialog, setOpenDeliveryDateDialog] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState(dayjs().format('YYYY-MM-DD'));
   const pendingDoRef = useRef(null);
+  const [warehouses, setWarehouses] = useState([]);
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
+  const [openWarehouseDialog, setOpenWarehouseDialog] = useState(false);
+  const pendingShipmentRef = useRef(null);
 
   const onDrop = (acceptedFiles) => {
     setPaymentProof(acceptedFiles[0]); // Store the first file dropped
@@ -155,10 +162,11 @@ const Dashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [ordersRes, customersRes, driversRes] = await Promise.all([
-          fetch('https://processing-facility-backend.onrender.com/api/orders'),
-          fetch('https://processing-facility-backend.onrender.com/api/customers'),
-          fetch('https://processing-facility-backend.onrender.com/api/drivers'),
+        const [ordersRes, customersRes, driversRes, warehousesRes] = await Promise.all([
+          fetch(`${OMS_API_BASE}/orders`),
+          fetch(`${OMS_API_BASE}/customers`),
+          fetch(`${OMS_API_BASE}/drivers`),
+          fetch(`${OMS_API_BASE}/warehouses`),
         ]);
 
         if (!ordersRes.ok || !customersRes.ok || !driversRes.ok) {
@@ -168,11 +176,13 @@ const Dashboard = () => {
         const ordersData = await ordersRes.json();
         const customersData = await customersRes.json();
         const driversData = await driversRes.json();
+        const warehousesData = warehousesRes.ok ? await warehousesRes.json() : [];
 
         console.log('Fetch Response Data:', ordersData); // Log the response for debugging
         setOrders(Array.isArray(ordersData) ? ordersData : []);
         setCustomers(customersData);
         setDrivers(driversData);
+        setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message);
@@ -341,6 +351,10 @@ const Dashboard = () => {
         pdfPayload,
       };
       setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+      {
+        const pref = resolveWarehouse(warehouses, order.warehouse_id);
+        setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
+      }
       setOpenDeliveryDateDialog(true);
       setLoading(false);
       setProcessing(false);
@@ -456,8 +470,9 @@ const Dashboard = () => {
       }
 
       // Generate Surat Jalan and BAST PDFs
-      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name, vehicle_number: order.vehicle_number_plate });
-      const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items });
+      const warehouse = resolveWarehouse(warehouses, order.warehouse_id || selectedWarehouseId);
+      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name, vehicle_number: order.vehicle_number_plate }, warehouse);
+      const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items }, warehouse);
       
       // Save PDFs locally using jsPDF.save()
       suratJalanDoc.save(`SuratJalan_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -806,6 +821,10 @@ const Dashboard = () => {
         pdfPayload,
       };
       setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+      {
+        const pref = resolveWarehouse(warehouses, order.warehouse_id);
+        setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
+      }
       setOpenDeliveryDateDialog(true);
     } catch (error) {
       console.error('Error regenerating documents:', error);
@@ -820,31 +839,60 @@ const Dashboard = () => {
     if (pending?.mode === 'process') {
       setSnackbar({
         open: true,
-        message: 'SPK/SPM generated. DO skipped (no delivery date).',
+        message: 'SPK/SPM generated. DO skipped (no delivery date / warehouse).',
         severity: 'warning',
       });
     } else if (pending?.mode === 'download') {
       setSnackbar({
         open: true,
-        message: 'SPK/SPM downloaded. DO skipped (no delivery date).',
+        message: 'SPK/SPM downloaded. DO skipped (no delivery date / warehouse).',
         severity: 'warning',
       });
     }
   };
 
+  const saveOrderWarehouse = async (orderId, warehouseId) => {
+    const res = await fetch(`${OMS_API_BASE}/orders/${orderId}/warehouse`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ warehouse_id: Number(warehouseId) }),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to save warehouse: ${await res.text()}`);
+    }
+    return res.json();
+  };
+
   const handleConfirmDeliveryDateDialog = async () => {
-    if (!deliveryDate || !pendingDoRef.current) return;
+    if (!deliveryDate || !pendingDoRef.current || !selectedWarehouseId) return;
 
     const pending = pendingDoRef.current;
     const { mode, orderId, order, pdfPayload } = pending;
+    const warehouse = resolveWarehouse(warehouses, selectedWarehouseId);
     setOpenDeliveryDateDialog(false);
     pendingDoRef.current = null;
 
     try {
+      await saveOrderWarehouse(orderId, selectedWarehouseId);
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.order_id === orderId
+            ? {
+                ...o,
+                warehouse_id: Number(selectedWarehouseId),
+                warehouse_name: warehouse.name,
+                warehouse_company_name: warehouse.company_name,
+                warehouse_address: warehouse.address,
+                warehouse_phone: warehouse.phone,
+              }
+            : o
+        )
+      );
+
       if (mode === 'process') {
         setLoading(true);
         setProcessing(true);
-        const doDoc = generateDOPDF(pdfPayload, deliveryDate);
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse);
         doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
         const blob = doDoc.output('blob');
@@ -853,7 +901,7 @@ const Dashboard = () => {
         formData.append('type', 'DO');
         formData.append('file', blob, `DO_${String(order.order_id).padStart(4, '0')}.pdf`);
 
-        const res = await fetch('https://processing-facility-backend.onrender.com/api/documents/upload', {
+        const res = await fetch(`${OMS_API_BASE}/documents/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -865,7 +913,7 @@ const Dashboard = () => {
           severity: 'success',
         });
       } else {
-        const doDoc = generateDOPDF(pdfPayload, deliveryDate);
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse);
         doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
         setSnackbar({
           open: true,
@@ -946,7 +994,49 @@ const Dashboard = () => {
 
   const handleReadyForShipmentConfirm = () => {
     setOpenConfirmReadyForShipment(false);
-    if (selectedOrder) handleReadyForShipment(selectedOrder.order_id);
+    if (!selectedOrder) return;
+    pendingShipmentRef.current = { orderId: selectedOrder.order_id };
+    const pref = resolveWarehouse(warehouses, selectedOrder.warehouse_id);
+    setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
+    setOpenWarehouseDialog(true);
+  };
+
+  const handleCancelWarehouseDialog = () => {
+    setOpenWarehouseDialog(false);
+    pendingShipmentRef.current = null;
+  };
+
+  const handleConfirmWarehouseDialog = async () => {
+    if (!selectedWarehouseId || !pendingShipmentRef.current) return;
+    const { orderId } = pendingShipmentRef.current;
+    setOpenWarehouseDialog(false);
+    pendingShipmentRef.current = null;
+    try {
+      const warehouse = resolveWarehouse(warehouses, selectedWarehouseId);
+      await saveOrderWarehouse(orderId, selectedWarehouseId);
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.order_id === orderId
+            ? {
+                ...o,
+                warehouse_id: Number(selectedWarehouseId),
+                warehouse_name: warehouse.name,
+                warehouse_company_name: warehouse.company_name,
+                warehouse_address: warehouse.address,
+                warehouse_phone: warehouse.phone,
+              }
+            : o
+        )
+      );
+      await handleReadyForShipment(orderId);
+    } catch (error) {
+      console.error('Error saving warehouse for shipment:', error);
+      setSnackbar({
+        open: true,
+        message: `Error saving warehouse: ${error.message}`,
+        severity: 'error',
+      });
+    }
   };
 
   const handleInTransitConfirm = () => {
@@ -1312,11 +1402,12 @@ const Dashboard = () => {
   };
 
   // Generate DO PDF
-  const generateDOPDF = (order, deliveryDateValue) => {
+  const generateDOPDF = (order, deliveryDateValue, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for DO PDF generation');
     }
 
+    const wh = warehousePdfFields(warehouse);
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -1325,11 +1416,11 @@ const Dashboard = () => {
 
     // Header: Left-aligned company details, Right-aligned title on the same line
     doc.setFont('Helvetica', 'bold');
-    doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
+    doc.text(wh.company_name, 20, 20);
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
-    doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
-    doc.text('Telp. 085175027797', 20, 30);
+    doc.text(wh.address, 20, 25);
+    if (wh.phone) doc.text(wh.phone, 20, 30);
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(20); // Larger font for "SURAT JALAN"
     doc.text('Delivery Order (DO)', 190, 20, { align: 'right' });
@@ -1389,11 +1480,12 @@ const Dashboard = () => {
   };
 
   // Generate Surat Jalan PDF
-  const generateSuratJalanPDF = (order) => {
+  const generateSuratJalanPDF = (order, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for Surat Jalan PDF generation');
     }
 
+    const wh = warehousePdfFields(warehouse);
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -1405,11 +1497,11 @@ const Dashboard = () => {
     doc.setFontSize(12);
 
     // Header: Left-aligned company details, Right-aligned title on the same line
-    doc.text('PT. BERKAS TUAIAN MELIMPAH', 20, 20);
+    doc.text(wh.company_name, 20, 20);
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
-    doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 20, 25);
-    doc.text('Telp. 085175027797', 20, 30);
+    doc.text(wh.address, 20, 25);
+    if (wh.phone) doc.text(wh.phone, 20, 30);
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(20); // Larger font for "SURAT JALAN"
     doc.text('SURAT JALAN', 190, 20, { align: 'right' });
@@ -1501,11 +1593,12 @@ const Dashboard = () => {
   };
 
   // Generate BAST PDF
-  const generateBASTPDF = (order) => {
+  const generateBASTPDF = (order, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for BAST PDF generation');
     }
 
+    const wh = warehousePdfFields(warehouse);
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -1517,7 +1610,7 @@ const Dashboard = () => {
     doc.setFontSize(12);
 
     // Header: Company Name and Document Title
-    doc.text('PT. BERKAS TUAIAN MELIMPAH', 105, 24, { align: 'center' });
+    doc.text(wh.company_name, 105, 24, { align: 'center' });
     doc.text('BERITA ACARA SERAH TERIMA (BAST)', 105, 30, { align: 'center' });
     doc.setFontSize(10);
     doc.text(`Nomor: BAST/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 105, 37, { align: 'center' });
@@ -1529,11 +1622,11 @@ const Dashboard = () => {
     // Party 1 (Sender/Company)
     doc.text('Nama', 20, 60);
     doc.text(':', 40, 60);
-    doc.text(`PT. Berkas Tuaian Melimpah`, 45, 60); // Match OCR content
+    doc.text(wh.company_name, 45, 60);
 
     doc.text('Alamat', 20, 65);
     doc.text(':', 40, 65);
-    doc.text('Bengkala, Kubutambahan, Buleleng, Bali', 45, 65); // Example address, adjust as needed
+    doc.text(wh.address, 45, 65);
 
     doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, 70);
 
@@ -2400,10 +2493,10 @@ const Dashboard = () => {
       </Modal>
 
       <Dialog open={openDeliveryDateDialog} onClose={handleCancelDeliveryDateDialog}>
-        <DialogTitle>Delivery Date</DialogTitle>
+        <DialogTitle>Delivery Order details</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Enter the delivery date for the Delivery Order PDF.
+            Enter the delivery date and shipping-from warehouse for the Delivery Order PDF.
           </Typography>
           <TextField
             label="Delivery Date"
@@ -2413,15 +2506,64 @@ const Dashboard = () => {
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
-            sx={{ mt: 1 }}
+            sx={{ mt: 1, mb: 2 }}
           />
+          <FormControl fullWidth required>
+            <InputLabel id="do-warehouse-label">Warehouse</InputLabel>
+            <Select
+              labelId="do-warehouse-label"
+              label="Warehouse"
+              value={selectedWarehouseId}
+              onChange={(e) => setSelectedWarehouseId(e.target.value)}
+            >
+              {warehouses.map((w) => (
+                <MenuItem key={w.id} value={String(w.id)}>
+                  {w.name}{w.is_default ? ' (default)' : ''} — {w.address}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelDeliveryDateDialog}>Cancel</Button>
           <Button
             variant="contained"
             onClick={handleConfirmDeliveryDateDialog}
-            disabled={!deliveryDate || loading || processing}
+            disabled={!deliveryDate || !selectedWarehouseId || loading || processing}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openWarehouseDialog} onClose={handleCancelWarehouseDialog}>
+        <DialogTitle>Shipping-from warehouse</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Select the warehouse address for Surat Jalan and BAST.
+          </Typography>
+          <FormControl fullWidth required sx={{ mt: 1 }}>
+            <InputLabel id="sj-warehouse-label">Warehouse</InputLabel>
+            <Select
+              labelId="sj-warehouse-label"
+              label="Warehouse"
+              value={selectedWarehouseId}
+              onChange={(e) => setSelectedWarehouseId(e.target.value)}
+            >
+              {warehouses.map((w) => (
+                <MenuItem key={w.id} value={String(w.id)}>
+                  {w.name}{w.is_default ? ' (default)' : ''} — {w.address}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelWarehouseDialog}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmWarehouseDialog}
+            disabled={!selectedWarehouseId || loading || processing}
           >
             Confirm
           </Button>
