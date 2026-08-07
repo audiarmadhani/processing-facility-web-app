@@ -860,11 +860,11 @@ const Dashboard = () => {
     }
   };
 
-  const handleRedownloadDocument = async (docRow) => {
-    if (!REGENERABLE_DOC_TYPES.includes(docRow.type)) {
+  const handleRedownloadDocument = async (orderId, type) => {
+    if (!REGENERABLE_DOC_TYPES.includes(type)) {
       setSnackbar({
         open: true,
-        message: `${docRow.type} cannot be regenerated here (uploaded file or Order List).`,
+        message: `${type} cannot be regenerated here (uploaded file or Order List).`,
         severity: 'warning',
       });
       return;
@@ -872,7 +872,7 @@ const Dashboard = () => {
 
     try {
       setDocumentsLoading(true);
-      const res = await fetch(`${OMS_API_BASE}/orders/${docRow.order_id}`, {
+      const res = await fetch(`${OMS_API_BASE}/orders/${orderId}`, {
         headers: { Accept: 'application/json' },
       });
       if (!res.ok) throw new Error(await res.text());
@@ -881,13 +881,13 @@ const Dashboard = () => {
       const dateSuffix = new Date().toISOString().split('T')[0];
       const paddedId = String(order.order_id).padStart(4, '0');
 
-      if (docRow.type === 'SPK') {
+      if (type === 'SPK') {
         generateSPKPDF(pdfPayload).save(`SPK_${paddedId}_${dateSuffix}.pdf`);
         setSnackbar({ open: true, message: 'SPK regenerated successfully', severity: 'success' });
-      } else if (docRow.type === 'SPM') {
+      } else if (type === 'SPM') {
         generateSPMPDF(pdfPayload).save(`SPM_${paddedId}_${dateSuffix}.pdf`);
         setSnackbar({ open: true, message: 'SPM regenerated successfully', severity: 'success' });
-      } else if (docRow.type === 'DO') {
+      } else if (type === 'DO') {
         pendingDoRef.current = {
           mode: 'download',
           orderId: order.order_id,
@@ -900,9 +900,9 @@ const Dashboard = () => {
           setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
         }
         setOpenDeliveryDateDialog(true);
-      } else if (docRow.type === 'Surat Jalan' || docRow.type === 'BAST') {
+      } else if (type === 'Surat Jalan' || type === 'BAST') {
         const warehouse = resolveWarehouse(warehouses, order.warehouse_id);
-        if (docRow.type === 'Surat Jalan') {
+        if (type === 'Surat Jalan') {
           const sjDoc = generateSuratJalanPDF(
             {
               ...order,
@@ -931,7 +931,7 @@ const Dashboard = () => {
         }
         setSnackbar({
           open: true,
-          message: `${docRow.type} regenerated successfully`,
+          message: `${type} regenerated successfully`,
           severity: 'success',
         });
       }
@@ -939,7 +939,7 @@ const Dashboard = () => {
       console.error('Error redownloading document:', error);
       setSnackbar({
         open: true,
-        message: `Error regenerating ${docRow.type}: ${error.message}`,
+        message: `Error regenerating ${type}: ${error.message}`,
         severity: 'error',
       });
     } finally {
@@ -1979,39 +1979,70 @@ const Dashboard = () => {
     { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
   ];
 
+  const DOC_TYPE_COLUMNS = [
+    'SPK',
+    'SPM',
+    'DO',
+    'Surat Jalan',
+    'BAST',
+    'Order List',
+    'SPB',
+    'Payment Proof',
+  ];
+
+  const documentsByOrderRows = (() => {
+    const byOrder = new Map();
+    for (const doc of documents) {
+      if (!byOrder.has(doc.order_id)) {
+        byOrder.set(doc.order_id, {
+          id: doc.order_id,
+          order_id: doc.order_id,
+          customer_name: doc.customer_name || '-',
+          order_status: doc.order_status || '-',
+          docsByType: {},
+        });
+      }
+      const row = byOrder.get(doc.order_id);
+      const existing = row.docsByType[doc.type];
+      if (!existing || new Date(doc.created_at) > new Date(existing.created_at)) {
+        row.docsByType[doc.type] = doc;
+      }
+    }
+    return Array.from(byOrder.values()).sort((a, b) => b.order_id - a.order_id);
+  })();
+
   const documentColumns = [
     { field: 'order_id', headerName: 'Order ID', width: 90, sortable: true },
-    { field: 'type', headerName: 'Type', width: 140, sortable: true },
-    { field: 'customer_name', headerName: 'Customer', width: 220, sortable: true },
-    { field: 'order_status', headerName: 'Order Status', width: 160, sortable: true },
-    {
-      field: 'created_at',
-      headerName: 'Generated At',
-      width: 180,
-      sortable: true,
-      valueFormatter: (value) =>
-        value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-',
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 140,
+    { field: 'customer_name', headerName: 'Customer', width: 200, sortable: true },
+    { field: 'order_status', headerName: 'Order Status', width: 150, sortable: true },
+    ...DOC_TYPE_COLUMNS.map((docType) => ({
+      field: docType,
+      headerName: docType,
+      width: 120,
       sortable: false,
       renderCell: (params) => {
-        const canRegenerate = REGENERABLE_DOC_TYPES.includes(params.row.type);
+        const hasDoc = Boolean(params.row.docsByType?.[docType]);
+        if (!hasDoc) {
+          return (
+            <Typography variant="body2" color="text.secondary">
+              —
+            </Typography>
+          );
+        }
+        const canRegenerate = REGENERABLE_DOC_TYPES.includes(docType);
         return (
           <Button
             variant="outlined"
             size="small"
             disabled={!canRegenerate || documentsLoading}
-            onClick={() => handleRedownloadDocument(params.row)}
-            sx={{ textTransform: 'none' }}
+            onClick={() => handleRedownloadDocument(params.row.order_id, docType)}
+            sx={{ textTransform: 'none', minWidth: 0, px: 1 }}
           >
-            Redownload
+            Download
           </Button>
         );
       },
-    },
+    })),
   ];
 
   // Ensure ordersRows handles undefined or null orders safely with additional logging
@@ -2137,14 +2168,14 @@ const Dashboard = () => {
           <Typography variant="h6" gutterBottom>
             Generated Documents
           </Typography>
-          <Box sx={{ height: 500, width: '100%' }}>
+          <Box sx={{ height: 1000, width: '100%' }}>
             <DataGrid
-              rows={documents}
+              rows={documentsByOrderRows}
               columns={documentColumns}
               getRowId={(row) => row.id}
               loading={documentsLoading}
-              pageSizeOptions={[5, 10, 25]}
-              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              pageSizeOptions={[25, 50, 100]}
+              initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
               slots={{ toolbar: GridToolbar }}
               slotProps={{ toolbar: { showQuickFilter: true } }}
               disableRowSelectionOnClick
