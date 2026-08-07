@@ -40,7 +40,7 @@ const OrderCreation = () => {
   const [formData, setFormData] = useState({
     customer_id: '',
     driver_id: '',
-    items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
+    items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
     shipping_method: 'Customer',
     driver_details: {
       name: '',
@@ -206,14 +206,14 @@ const OrderCreation = () => {
   const addItem = () => {
     setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
     }));
   };
 
   const addEditItem = () => {
     setEditOrder((prev) => ({
       ...prev,
-      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
     }));
   };
 
@@ -345,7 +345,7 @@ const OrderCreation = () => {
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
           product: item.product,
-          jumlah_karung: Number(item.jumlah_karung) || Math.ceil((parseFloat(item.quantity) || 0) / 50),
+          jumlah_karung: Number(item.jumlah_karung),
         })),
       };
 
@@ -401,7 +401,7 @@ const OrderCreation = () => {
       setFormData({
         customer_id: '',
         driver_id: '',
-        items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: 50 }],
+        items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
         shipping_method: 'Customer',
         driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
         price: '',
@@ -498,12 +498,12 @@ const OrderCreation = () => {
     addText('Items:', 14, tableOffset, { bold: true });
     doc.autoTable({
       startY: tableOffset + 8,
-      head: [['Batch Number', 'Product', 'Quantity (kg)', 'Price (IDR)', 'Subtotal (IDR)']],
+      head: [['Batch Number', 'Product', 'Quantity (kg)', 'Jumlah Karung', 'Price (IDR)', 'Subtotal (IDR)']],
       body: formData.items.map((item) => [
         item.batch_number,
         item.product,
         item.quantity,
-        item.jumlah_karung ? item.jumlah_karung : Math.ceil((parseFloat(item.quantity) || 0) / 50),
+        Number(item.jumlah_karung) || 0,
         item.price || '0',
         (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)).toLocaleString('id-ID', {
           style: 'currency',
@@ -751,7 +751,7 @@ const OrderCreation = () => {
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
           product: item.product,
-          jumlah_karung: Number(item.jumlah_karung) || Math.ceil((parseFloat(item.quantity) || 0) / 50),
+          jumlah_karung: Number(item.jumlah_karung),
         })),
       };
 
