@@ -150,6 +150,10 @@ const Dashboard = () => {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [openWarehouseDialog, setOpenWarehouseDialog] = useState(false);
   const pendingShipmentRef = useRef(null);
+  const [documents, setDocuments] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+
+  const REGENERABLE_DOC_TYPES = ['SPK', 'SPM', 'DO', 'Surat Jalan', 'BAST'];
 
   const onDrop = (acceptedFiles) => {
     setPaymentProof(acceptedFiles[0]); // Store the first file dropped
@@ -157,16 +161,33 @@ const Dashboard = () => {
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
+  const fetchDocuments = async () => {
+    setDocumentsLoading(true);
+    try {
+      const res = await fetch(`${OMS_API_BASE}/documents`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setDocuments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setDocuments([]);
+      setSnackbar({ open: true, message: `Error fetching documents: ${err.message}`, severity: 'error' });
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [ordersRes, customersRes, driversRes, warehousesRes] = await Promise.all([
+        const [ordersRes, customersRes, driversRes, warehousesRes, documentsRes] = await Promise.all([
           fetch(`${OMS_API_BASE}/orders`),
           fetch(`${OMS_API_BASE}/customers`),
           fetch(`${OMS_API_BASE}/drivers`),
           fetch(`${OMS_API_BASE}/warehouses`),
+          fetch(`${OMS_API_BASE}/documents`),
         ]);
 
         if (!ordersRes.ok || !customersRes.ok || !driversRes.ok) {
@@ -177,16 +198,19 @@ const Dashboard = () => {
         const customersData = await customersRes.json();
         const driversData = await driversRes.json();
         const warehousesData = warehousesRes.ok ? await warehousesRes.json() : [];
+        const documentsData = documentsRes.ok ? await documentsRes.json() : [];
 
         console.log('Fetch Response Data:', ordersData); // Log the response for debugging
         setOrders(Array.isArray(ordersData) ? ordersData : []);
         setCustomers(customersData);
         setDrivers(driversData);
         setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
+        setDocuments(Array.isArray(documentsData) ? documentsData : []);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message);
         setOrders([]); // Set to empty array on error
+        setDocuments([]);
         setSnackbar({ open: true, message: `Error fetching data: ${err.message}`, severity: 'error' });
       } finally {
         setLoading(false);
@@ -343,6 +367,7 @@ const Dashboard = () => {
 
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
       setSelectedOrder(order);
+      fetchDocuments();
 
       pendingDoRef.current = {
         mode: 'process',
@@ -505,6 +530,7 @@ const Dashboard = () => {
       setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
 
       setSelectedOrder(order);
+      fetchDocuments();
 
       setSnackbar({ open: true, message: 'Shipment documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
     } catch (error) {
@@ -789,25 +815,27 @@ const Dashboard = () => {
   };
 
   // Regenerate and download PDFs from modal
+  const buildPdfPayload = (order) => ({
+    ...order,
+    customerName: order.customer_name || 'Unknown Customer',
+    status: order.status || 'Processing',
+    shippingMethod: order.shipping_method || 'Self',
+    items: order.items || [],
+    customer_address: order.customer_address || 'N/A',
+    customer_city: order.customer_city || 'N/A',
+    customer_state: order.customer_state || 'N/A',
+    customer_zip_code: order.customer_zip_code || 'N/A',
+    driver_name: order.driver_name || 'N/A',
+    driver_vehicle_number: order.driver_vehicle_number || 'N/A',
+    driver_vehicle_type: order.driver_vehicle_type || 'N/A',
+  });
+
   const handleDownloadDocuments = () => {
     if (!selectedOrder && !editOrder) return;
 
     try {
       const order = selectedOrder || editOrder;
-      const pdfPayload = {
-        ...order,
-        customerName: order.customer_name || 'Unknown Customer',
-        status: order.status || 'Processing',
-        shippingMethod: order.shipping_method || 'Self',
-        items: order.items || [],
-        customer_address: order.customer_address || 'N/A',
-        customer_city: order.customer_city || 'N/A',
-        customer_state: order.customer_state || 'N/A',
-        customer_zip_code: order.customer_zip_code || 'N/A',
-        driver_name: order.driver_name || 'N/A',
-        driver_vehicle_number: order.driver_vehicle_number || 'N/A',
-        driver_vehicle_type: order.driver_vehicle_type || 'N/A',
-      };
+      const pdfPayload = buildPdfPayload(order);
       const spkDoc = generateSPKPDF(pdfPayload);
       const spmDoc = generateSPMPDF(pdfPayload);
 
@@ -829,6 +857,93 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error regenerating documents:', error);
       setSnackbar({ open: true, message: `Error regenerating documents: ${error.message}`, severity: 'error' });
+    }
+  };
+
+  const handleRedownloadDocument = async (docRow) => {
+    if (!REGENERABLE_DOC_TYPES.includes(docRow.type)) {
+      setSnackbar({
+        open: true,
+        message: `${docRow.type} cannot be regenerated here (uploaded file or Order List).`,
+        severity: 'warning',
+      });
+      return;
+    }
+
+    try {
+      setDocumentsLoading(true);
+      const res = await fetch(`${OMS_API_BASE}/orders/${docRow.order_id}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const order = await res.json();
+      const pdfPayload = buildPdfPayload(order);
+      const dateSuffix = new Date().toISOString().split('T')[0];
+      const paddedId = String(order.order_id).padStart(4, '0');
+
+      if (docRow.type === 'SPK') {
+        generateSPKPDF(pdfPayload).save(`SPK_${paddedId}_${dateSuffix}.pdf`);
+        setSnackbar({ open: true, message: 'SPK regenerated successfully', severity: 'success' });
+      } else if (docRow.type === 'SPM') {
+        generateSPMPDF(pdfPayload).save(`SPM_${paddedId}_${dateSuffix}.pdf`);
+        setSnackbar({ open: true, message: 'SPM regenerated successfully', severity: 'success' });
+      } else if (docRow.type === 'DO') {
+        pendingDoRef.current = {
+          mode: 'download',
+          orderId: order.order_id,
+          order,
+          pdfPayload,
+        };
+        setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+        {
+          const pref = resolveWarehouse(warehouses, order.warehouse_id);
+          setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
+        }
+        setOpenDeliveryDateDialog(true);
+      } else if (docRow.type === 'Surat Jalan' || docRow.type === 'BAST') {
+        const warehouse = resolveWarehouse(warehouses, order.warehouse_id);
+        if (docRow.type === 'Surat Jalan') {
+          const sjDoc = generateSuratJalanPDF(
+            {
+              ...order,
+              customerName: order.customer_name,
+              status: order.status,
+              shippingMethod: order.shipping_method,
+              items: order.items,
+              driver: order.driver_name,
+              vehicle_number: order.vehicle_number_plate || order.driver_vehicle_number,
+            },
+            warehouse
+          );
+          sjDoc.save(`SuratJalan_${order.order_id}_${dateSuffix}.pdf`);
+        } else {
+          const bastDoc = generateBASTPDF(
+            {
+              ...order,
+              customerName: order.customer_name,
+              status: order.status,
+              shippingMethod: order.shipping_method,
+              items: order.items,
+            },
+            warehouse
+          );
+          bastDoc.save(`BAST_${order.order_id}_${dateSuffix}.pdf`);
+        }
+        setSnackbar({
+          open: true,
+          message: `${docRow.type} regenerated successfully`,
+          severity: 'success',
+        });
+      }
+    } catch (error) {
+      console.error('Error redownloading document:', error);
+      setSnackbar({
+        open: true,
+        message: `Error regenerating ${docRow.type}: ${error.message}`,
+        severity: 'error',
+      });
+    } finally {
+      setDocumentsLoading(false);
     }
   };
 
@@ -907,6 +1022,7 @@ const Dashboard = () => {
         });
         if (!res.ok) throw new Error(`Failed to upload DO document: ${await res.text()}`);
 
+        fetchDocuments();
         setSnackbar({
           open: true,
           message: 'Documents generated, uploaded to Google Drive, and saved locally successfully',
@@ -1202,6 +1318,7 @@ const Dashboard = () => {
         if (!uploadRes.ok) throw new Error('Failed to upload payment proof: ' + (await uploadRes.text()));
         await uploadRes.json();
         setPaymentProof(null); // Reset after upload
+        fetchDocuments();
       }
 
       const order = await fetchOrderById(orderId);
@@ -1862,6 +1979,41 @@ const Dashboard = () => {
     { field: 'created_at', headerName: 'Created At', width: 180, sortable: true }, // Removed valueFormatter
   ];
 
+  const documentColumns = [
+    { field: 'order_id', headerName: 'Order ID', width: 90, sortable: true },
+    { field: 'type', headerName: 'Type', width: 140, sortable: true },
+    { field: 'customer_name', headerName: 'Customer', width: 220, sortable: true },
+    { field: 'order_status', headerName: 'Order Status', width: 160, sortable: true },
+    {
+      field: 'created_at',
+      headerName: 'Generated At',
+      width: 180,
+      sortable: true,
+      valueFormatter: (value) =>
+        value ? dayjs(value).format('YYYY-MM-DD HH:mm') : '-',
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 140,
+      sortable: false,
+      renderCell: (params) => {
+        const canRegenerate = REGENERABLE_DOC_TYPES.includes(params.row.type);
+        return (
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={!canRegenerate || documentsLoading}
+            onClick={() => handleRedownloadDocument(params.row)}
+            sx={{ textTransform: 'none' }}
+          >
+            Redownload
+          </Button>
+        );
+      },
+    },
+  ];
+
   // Ensure ordersRows handles undefined or null orders safely with additional logging
   const ordersRows = Array.isArray(orders) ? orders.map(order => {
     console.log('Mapping order:', order); // Log each order being mapped for debugging
@@ -1976,6 +2128,28 @@ const Dashboard = () => {
               getRowClassName={(params) => `super-app-theme--${params.row.status}`}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Generated Documents Table */}
+      <Card variant="outlined" sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Generated Documents
+          </Typography>
+          <Box sx={{ height: 500, width: '100%' }}>
+            <DataGrid
+              rows={documents}
+              columns={documentColumns}
+              getRowId={(row) => row.id}
+              loading={documentsLoading}
+              pageSizeOptions={[5, 10, 25]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              slots={{ toolbar: GridToolbar }}
+              slotProps={{ toolbar: { showQuickFilter: true } }}
+              disableRowSelectionOnClick
+            />
+          </Box>
         </CardContent>
       </Card>
   
