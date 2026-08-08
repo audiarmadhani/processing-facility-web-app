@@ -158,6 +158,9 @@ const Dashboard = () => {
   const [doUsesSavedBagWeight, setDoUsesSavedBagWeight] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [openArriveDialog, setOpenArriveDialog] = useState(false);
+  const [actualDeliveryDate, setActualDeliveryDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const pendingArriveOrderIdRef = useRef(null);
 
   const REGENERABLE_DOC_TYPES = ['SPK', 'SPM', 'DO', 'Surat Jalan', 'BAST'];
 
@@ -1009,6 +1012,18 @@ const Dashboard = () => {
     return res.json();
   };
 
+  const saveOrderEstimatedDeliveryDate = async (orderId, estimatedDeliveryDate) => {
+    const res = await fetch(`${OMS_API_BASE}/orders/${orderId}/estimated-delivery-date`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ estimated_delivery_date: estimatedDeliveryDate }),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to save estimated delivery date: ${await res.text()}`);
+    }
+    return res.json();
+  };
+
   const handleConfirmDeliveryDateDialog = async () => {
     if (!deliveryDate || !pendingDoRef.current || !selectedWarehouseId || !isValidBagWeight(bagWeightKg)) return;
 
@@ -1024,6 +1039,7 @@ const Dashboard = () => {
     try {
       await saveOrderWarehouse(orderId, selectedWarehouseId);
       await saveOrderBagWeight(orderId, bagWeight);
+      await saveOrderEstimatedDeliveryDate(orderId, deliveryDate);
       setOrders((prev) =>
         prev.map((o) =>
           o.order_id === orderId
@@ -1035,6 +1051,7 @@ const Dashboard = () => {
                 warehouse_address: warehouse.address,
                 warehouse_phone: warehouse.phone,
                 bag_weight_kg: parseFloat(bagWeight),
+                estimated_delivery_date: deliveryDate,
               }
             : o
         )
@@ -1067,6 +1084,7 @@ const Dashboard = () => {
       } else {
         const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse, bagWeight);
         doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
+        fetchDocuments();
         setSnackbar({
           open: true,
           message: 'Documents regenerated and saved locally successfully',
@@ -1319,26 +1337,35 @@ const Dashboard = () => {
     setOpenConfirmInTransit(true);
   };
 
-  // Handle Order Arrived (update status to 'Delivered' and record arrive_at timestamp)
-  // Handle Order Arrived (update status to 'Arrived' and record arrive_at timestamp)
-  // Handle Order Arrived (replace existing)
-  const handleOrderArrived = async (orderId) => {
+  // Handle Order Arrived — prompt for actual delivery date, then mark Arrived
+  const openOrderArrivedDialog = (orderId) => {
+    pendingArriveOrderIdRef.current = orderId;
+    setActualDeliveryDate(dayjs().format('YYYY-MM-DD'));
+    setOpenArriveDialog(true);
+    handleActionsClose();
+  };
+
+  const handleCancelArriveDialog = () => {
+    setOpenArriveDialog(false);
+    pendingArriveOrderIdRef.current = null;
+  };
+
+  const handleConfirmArriveDialog = async () => {
+    const orderId = pendingArriveOrderIdRef.current;
+    if (!orderId || !actualDeliveryDate) return;
+
+    setOpenArriveDialog(false);
+    pendingArriveOrderIdRef.current = null;
     setLoading(true);
     try {
-      // get canonical order (reuses selectedOrder if available)
       const order = await fetchOrderById(orderId);
       if (!order || !order.order_id) throw new Error('Order not found');
 
-      // Build payload by copying required canonical fields, then overriding what we need.
-      // IMPORTANT: include all fields the backend validates as required.
       const payload = {
-        // required identity/address fields (preserve from canonical order)
         customer_id: order.customer_id,
         shipping_method: order.shipping_method || order.shippingMethod || 'Self',
         shipping_address: order.shipping_address || order.shippingAddress || order.address || null,
         billing_address: order.billing_address || order.billingAddress || order.billing || null,
-
-        // preserve other fields to avoid accidental clearing:
         driver_id: order.driver_id || null,
         driver_name: order.driver_name || order.driver_details?.name || null,
         driver_vehicle_number: order.driver_vehicle_number || order.driver_details?.vehicle_number_plate || null,
@@ -1347,9 +1374,8 @@ const Dashboard = () => {
         price: (order.price !== undefined && order.price !== null) ? String(order.price) : '0',
         tax_percentage: (order.tax_percentage !== undefined && order.tax_percentage !== null) ? String(order.tax_percentage) : '0',
         items: order.items || [],
-
-        // the update we intend:
-        status: 'Arrived'
+        status: 'Arrived',
+        arrive_at: `${actualDeliveryDate}T12:00:00.000Z`,
       };
 
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
@@ -1361,8 +1387,8 @@ const Dashboard = () => {
       if (!res.ok) throw new Error('Failed to mark order as arrived: ' + (await res.text()));
       const updatedOrder = await res.json();
 
-      // update UI
       setOrders(prev => prev.map(o => o.order_id === orderId ? updatedOrder : o));
+      fetchDocuments();
       setSnackbar({ open: true, message: 'Order marked as arrived', severity: 'success' });
     } catch (err) {
       console.error('Error marking order as arrived:', err);
@@ -1370,6 +1396,10 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOrderArrived = async (orderId) => {
+    openOrderArrivedDialog(orderId);
   };
 
   // Update handleRecordPayment to include uploading the proof of payment
@@ -2160,6 +2190,19 @@ const Dashboard = () => {
     'Payment Proof',
   ];
 
+  const formatDocDate = (value) => {
+    if (!value) return '—';
+    return dayjs(value).format('YYYY-MM-DD');
+  };
+
+  const formatSuratJalanNumber = (orderId, sjDoc) => {
+    if (!sjDoc || !orderId) return '—';
+    const year = dayjs(sjDoc.created_at).isValid()
+      ? dayjs(sjDoc.created_at).format('YYYY')
+      : dayjs().format('YYYY');
+    return `SJ/${String(orderId).padStart(4, '0')}/${year}`;
+  };
+
   const documentsByOrderRows = (() => {
     const byOrder = new Map();
     for (const doc of documents) {
@@ -2169,22 +2212,62 @@ const Dashboard = () => {
           order_id: doc.order_id,
           customer_name: doc.customer_name || '-',
           order_status: doc.order_status || '-',
+          order_created_at: doc.order_created_at || null,
+          estimated_delivery_date: doc.estimated_delivery_date || null,
+          arrive_at: doc.arrive_at || null,
           docsByType: {},
         });
       }
       const row = byOrder.get(doc.order_id);
+      if (!row.order_created_at && doc.order_created_at) row.order_created_at = doc.order_created_at;
+      if (!row.estimated_delivery_date && doc.estimated_delivery_date) {
+        row.estimated_delivery_date = doc.estimated_delivery_date;
+      }
+      if (!row.arrive_at && doc.arrive_at) row.arrive_at = doc.arrive_at;
       const existing = row.docsByType[doc.type];
       if (!existing || new Date(doc.created_at) > new Date(existing.created_at)) {
         row.docsByType[doc.type] = doc;
       }
     }
-    return Array.from(byOrder.values()).sort((a, b) => b.order_id - a.order_id);
+    return Array.from(byOrder.values())
+      .map((row) => ({
+        ...row,
+        surat_jalan_number: formatSuratJalanNumber(row.order_id, row.docsByType['Surat Jalan']),
+      }))
+      .sort((a, b) => b.order_id - a.order_id);
   })();
 
   const documentColumns = [
     { field: 'order_id', headerName: 'Order ID', width: 90, sortable: true },
-    { field: 'customer_name', headerName: 'Customer', width: 200, sortable: true },
-    { field: 'order_status', headerName: 'Order Status', width: 150, sortable: true },
+    { field: 'customer_name', headerName: 'Customer', width: 180, sortable: true },
+    { field: 'order_status', headerName: 'Order Status', width: 140, sortable: true },
+    {
+      field: 'order_created_at',
+      headerName: 'Order Created',
+      width: 130,
+      sortable: true,
+      valueFormatter: (value) => formatDocDate(value),
+    },
+    {
+      field: 'estimated_delivery_date',
+      headerName: 'Est. Delivery',
+      width: 130,
+      sortable: true,
+      valueFormatter: (value) => formatDocDate(value),
+    },
+    {
+      field: 'arrive_at',
+      headerName: 'Actual Delivery',
+      width: 130,
+      sortable: true,
+      valueFormatter: (value) => formatDocDate(value),
+    },
+    {
+      field: 'surat_jalan_number',
+      headerName: 'SJ Number',
+      width: 140,
+      sortable: true,
+    },
     ...DOC_TYPE_COLUMNS.map((docType) => ({
       field: docType,
       headerName: docType,
@@ -2919,6 +3002,35 @@ const Dashboard = () => {
             variant="contained"
             onClick={handleConfirmDeliveryDateDialog}
             disabled={!deliveryDate || !selectedWarehouseId || !isValidBagWeight(bagWeightKg) || loading || processing}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openArriveDialog} onClose={handleCancelArriveDialog}>
+        <DialogTitle>Mark Order Arrived</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter the actual delivery date for this order.
+          </Typography>
+          <TextField
+            label="Actual Delivery Date"
+            type="date"
+            value={actualDeliveryDate}
+            onChange={(e) => setActualDeliveryDate(e.target.value)}
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelArriveDialog}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmArriveDialog}
+            disabled={!actualDeliveryDate || loading}
           >
             Confirm
           </Button>
