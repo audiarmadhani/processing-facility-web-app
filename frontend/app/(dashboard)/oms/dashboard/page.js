@@ -606,7 +606,7 @@ const Dashboard = () => {
           driver_max_capacity: order.driver_max_capacity,
           price: order.price?.toString() || '0', // Reuse existing price, converted to string
           tax_percentage: order.tax_percentage?.toString() || '0', // Reuse existing tax_percentage, converted to string
-          items: order.items,
+          // Status-only update — leave existing line items untouched
           shipping_address: order.shipping_address || order.customer_address,
           billing_address: order.billing_address || order.shipping_address || order.customer_address,
         }),
