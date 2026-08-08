@@ -40,7 +40,7 @@ import CustomerModal from '../../components/CustomerModal';
 import DriverModal from '../../components/DriverModal';
 import { useDropzone } from 'react-dropzone'; // Add this import at the top of Dashboard.js
 import { resolveWarehouse, warehousePdfFields } from '../_shared/warehouseUtils';
-import { bagsFromWeight, isValidBagWeight } from '../_shared/bagWeightUtils';
+import { bagsForItem } from '../_shared/bagWeightUtils';
 import { drawMultilineText, drawWarehouseHeader, PDF_LINE_HEIGHT_MM } from '../_shared/pdfTextUtils';
 
 const OMS_API_BASE = 'https://processing-facility-backend.onrender.com/api';
@@ -152,10 +152,6 @@ const Dashboard = () => {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [openWarehouseDialog, setOpenWarehouseDialog] = useState(false);
   const pendingShipmentRef = useRef(null);
-  const [bagWeightKg, setBagWeightKg] = useState('');
-  const [openBagWeightDialog, setOpenBagWeightDialog] = useState(false);
-  const pendingBagWeightRef = useRef(null);
-  const [doUsesSavedBagWeight, setDoUsesSavedBagWeight] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [openArriveDialog, setOpenArriveDialog] = useState(false);
@@ -247,7 +243,7 @@ const Dashboard = () => {
   };
 
   // Handle order processing with a single update to "Processing" before upload, save PDFs locally after
-  const handleProcessOrder = async (orderId, bagWeight) => {
+  const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
     try {
@@ -339,10 +335,6 @@ const Dashboard = () => {
         created_at: updatedProcessingOrder.created_at || order.created_at || null,
       };
 
-      if (!isValidBagWeight(bagWeight)) {
-        throw new Error('Bag weight (kg) is required and must be a positive number');
-      }
-
       // Generate SPK and SPM first; DO waits for delivery date dialog
       const pdfPayload = {
         ...order,
@@ -351,8 +343,8 @@ const Dashboard = () => {
         shippingMethod: order.shipping_method,
         items: order.items,
       };
-      const spkDoc = generateSPKPDF(pdfPayload, bagWeight);
-      const spmDoc = generateSPMPDF(pdfPayload, bagWeight);
+      const spkDoc = generateSPKPDF(pdfPayload);
+      const spmDoc = generateSPMPDF(pdfPayload);
 
       spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -378,21 +370,17 @@ const Dashboard = () => {
         uploadDocument(spmDoc, 'SPM', `SPM_${String(order.order_id).padStart(4, '0')}.pdf`),
       ]);
 
-      await saveOrderBagWeight(orderId, bagWeight);
-
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? { ...order, bag_weight_kg: parseFloat(bagWeight) } : o));
-      setSelectedOrder({ ...order, bag_weight_kg: parseFloat(bagWeight) });
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
+      setSelectedOrder(order);
       fetchDocuments();
 
       pendingDoRef.current = {
         mode: 'process',
         orderId,
-        order: { ...order, bag_weight_kg: parseFloat(bagWeight) },
+        order: order,
         pdfPayload,
       };
       setDeliveryDate(dayjs().format('YYYY-MM-DD'));
-      setBagWeightKg('');
-      setDoUsesSavedBagWeight(false);
       {
         const pref = resolveWarehouse(warehouses, order.warehouse_id);
         setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
@@ -409,13 +397,10 @@ const Dashboard = () => {
   };
 
   // Handle generating shipment documents (Surat Jalan and BAST) with status update to "Ready for Shipment"
-  const handleReadyForShipment = async (orderId, bagWeight) => {
+  const handleReadyForShipment = async (orderId) => {
     setLoading(true);
     setProcessing(true);
     try {
-      if (!isValidBagWeight(bagWeight)) {
-        throw new Error('Bag weight (kg) is required and must be a positive number');
-      }
 
       // Fetch the current order details with enhanced error handling
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
@@ -517,8 +502,8 @@ const Dashboard = () => {
 
       // Generate Surat Jalan and BAST PDFs
       const warehouse = resolveWarehouse(warehouses, order.warehouse_id || selectedWarehouseId);
-      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name, vehicle_number: order.vehicle_number_plate }, warehouse, bagWeight);
-      const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items }, warehouse, bagWeight);
+      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name, vehicle_number: order.vehicle_number_plate }, warehouse);
+      const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items }, warehouse);
       
       // Save PDFs locally using jsPDF.save()
       suratJalanDoc.save(`SuratJalan_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -547,12 +532,10 @@ const Dashboard = () => {
         uploadDocument(bastDoc, 'BAST', `BAST_${order.order_id}.pdf`),
       ]);
 
-      await saveOrderBagWeight(orderId, bagWeight);
-
       // Update the orders state safely with the current "Ready for Shipment" status
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? { ...order, bag_weight_kg: parseFloat(bagWeight) } : o));
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
 
-      setSelectedOrder({ ...order, bag_weight_kg: parseFloat(bagWeight) });
+      setSelectedOrder(order);
       fetchDocuments();
 
       setSnackbar({ open: true, message: 'Shipment documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
@@ -858,16 +841,29 @@ const Dashboard = () => {
   const handleDownloadDocuments = () => {
     if (!selectedOrder && !editOrder) return;
 
-    const order = selectedOrder || editOrder;
-    const pdfPayload = buildPdfPayload(order);
-    pendingBagWeightRef.current = {
-      mode: 'download-spk-spm',
-      orderId: order.order_id,
-      order,
-      pdfPayload,
-    };
-    setBagWeightKg('');
-    setOpenBagWeightDialog(true);
+    try {
+      const order = selectedOrder || editOrder;
+      const pdfPayload = buildPdfPayload(order);
+      const dateSuffix = new Date().toISOString().split('T')[0];
+      generateSPKPDF(pdfPayload).save(`SPK_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
+      generateSPMPDF(pdfPayload).save(`SPM_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
+
+      pendingDoRef.current = {
+        mode: 'download',
+        orderId: order.order_id,
+        order,
+        pdfPayload,
+      };
+      setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+      {
+        const pref = resolveWarehouse(warehouses, order.warehouse_id);
+        setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
+      }
+      setOpenDeliveryDateDialog(true);
+    } catch (error) {
+      console.error('Error regenerating documents:', error);
+      setSnackbar({ open: true, message: `Error regenerating documents: ${error.message}`, severity: 'error' });
+    }
   };
 
   const handleRedownloadDocument = async (orderId, type) => {
@@ -890,16 +886,6 @@ const Dashboard = () => {
       const pdfPayload = buildPdfPayload(order);
       const dateSuffix = new Date().toISOString().split('T')[0];
       const paddedId = String(order.order_id).padStart(4, '0');
-      const savedBagWeight = order.bag_weight_kg;
-
-      if (!isValidBagWeight(savedBagWeight)) {
-        setSnackbar({
-          open: true,
-          message: 'No saved bag weight for this order. Generate the document again from the order actions first.',
-          severity: 'warning',
-        });
-        return;
-      }
 
       if (type === 'DO') {
         pendingDoRef.current = {
@@ -909,18 +895,16 @@ const Dashboard = () => {
           pdfPayload,
         };
         setDeliveryDate(dayjs().format('YYYY-MM-DD'));
-        setBagWeightKg(String(savedBagWeight));
-        setDoUsesSavedBagWeight(true);
         {
           const pref = resolveWarehouse(warehouses, order.warehouse_id);
           setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
         }
         setOpenDeliveryDateDialog(true);
       } else if (type === 'SPK') {
-        generateSPKPDF(pdfPayload, savedBagWeight).save(`SPK_${paddedId}_${dateSuffix}.pdf`);
+        generateSPKPDF(pdfPayload).save(`SPK_${paddedId}_${dateSuffix}.pdf`);
         setSnackbar({ open: true, message: 'SPK regenerated successfully', severity: 'success' });
       } else if (type === 'SPM') {
-        generateSPMPDF(pdfPayload, savedBagWeight).save(`SPM_${paddedId}_${dateSuffix}.pdf`);
+        generateSPMPDF(pdfPayload).save(`SPM_${paddedId}_${dateSuffix}.pdf`);
         setSnackbar({ open: true, message: 'SPM regenerated successfully', severity: 'success' });
       } else if (type === 'Surat Jalan' || type === 'BAST') {
         const warehouse = resolveWarehouse(warehouses, order.warehouse_id);
@@ -935,8 +919,7 @@ const Dashboard = () => {
               driver: order.driver_name,
               vehicle_number: order.vehicle_number_plate || order.driver_vehicle_number,
             },
-            warehouse,
-            savedBagWeight
+            warehouse
           ).save(`SuratJalan_${order.order_id}_${dateSuffix}.pdf`);
         } else {
           generateBASTPDF(
@@ -947,8 +930,7 @@ const Dashboard = () => {
               shippingMethod: order.shipping_method,
               items: order.items,
             },
-            warehouse,
-            savedBagWeight
+            warehouse
           ).save(`BAST_${order.order_id}_${dateSuffix}.pdf`);
         }
         setSnackbar({
@@ -973,8 +955,6 @@ const Dashboard = () => {
     const pending = pendingDoRef.current;
     setOpenDeliveryDateDialog(false);
     pendingDoRef.current = null;
-    setBagWeightKg('');
-    setDoUsesSavedBagWeight(false);
     if (pending?.mode === 'process') {
       setSnackbar({
         open: true,
@@ -1002,17 +982,6 @@ const Dashboard = () => {
     return res.json();
   };
 
-  const saveOrderBagWeight = async (orderId, bagWeight) => {
-    const res = await fetch(`${OMS_API_BASE}/orders/${orderId}/bag-weight`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ bag_weight_kg: parseFloat(bagWeight) }),
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to save bag weight: ${await res.text()}`);
-    }
-    return res.json();
-  };
 
   const saveOrderEstimatedDeliveryDate = async (orderId, estimatedDeliveryDate) => {
     const res = await fetch(`${OMS_API_BASE}/orders/${orderId}/estimated-delivery-date`, {
@@ -1027,20 +996,15 @@ const Dashboard = () => {
   };
 
   const handleConfirmDeliveryDateDialog = async () => {
-    if (!deliveryDate || !pendingDoRef.current || !selectedWarehouseId || !isValidBagWeight(bagWeightKg)) return;
+    if (!deliveryDate || !pendingDoRef.current || !selectedWarehouseId) return;
 
     const pending = pendingDoRef.current;
     const { mode, orderId, order, pdfPayload } = pending;
     const warehouse = resolveWarehouse(warehouses, selectedWarehouseId);
-    const bagWeight = bagWeightKg;
     setOpenDeliveryDateDialog(false);
     pendingDoRef.current = null;
-    setBagWeightKg('');
-    setDoUsesSavedBagWeight(false);
-
     try {
       await saveOrderWarehouse(orderId, selectedWarehouseId);
-      await saveOrderBagWeight(orderId, bagWeight);
       await saveOrderEstimatedDeliveryDate(orderId, deliveryDate);
       setOrders((prev) =>
         prev.map((o) =>
@@ -1052,7 +1016,6 @@ const Dashboard = () => {
                 warehouse_company_name: warehouse.company_name,
                 warehouse_address: warehouse.address,
                 warehouse_phone: warehouse.phone,
-                bag_weight_kg: parseFloat(bagWeight),
                 estimated_delivery_date: deliveryDate,
               }
             : o
@@ -1062,7 +1025,7 @@ const Dashboard = () => {
       if (mode === 'process') {
         setLoading(true);
         setProcessing(true);
-        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse, bagWeight);
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse);
         doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
         const blob = doDoc.output('blob');
@@ -1084,7 +1047,7 @@ const Dashboard = () => {
           severity: 'success',
         });
       } else {
-        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse, bagWeight);
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse);
         doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
         fetchDocuments();
         setSnackbar({
@@ -1156,13 +1119,7 @@ const Dashboard = () => {
 
   const handleProcessConfirm = () => {
     setOpenConfirmProcess(false);
-    if (!selectedOrder) return;
-    pendingBagWeightRef.current = {
-      mode: 'process',
-      orderId: selectedOrder.order_id,
-    };
-    setBagWeightKg('');
-    setOpenBagWeightDialog(true);
+    if (selectedOrder) handleProcessOrder(selectedOrder.order_id);
   };
 
   const handleRejectConfirm = () => {
@@ -1176,23 +1133,19 @@ const Dashboard = () => {
     pendingShipmentRef.current = { orderId: selectedOrder.order_id };
     const pref = resolveWarehouse(warehouses, selectedOrder.warehouse_id);
     setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
-    setBagWeightKg('');
     setOpenWarehouseDialog(true);
   };
 
   const handleCancelWarehouseDialog = () => {
     setOpenWarehouseDialog(false);
     pendingShipmentRef.current = null;
-    setBagWeightKg('');
-  };
+    };
 
   const handleConfirmWarehouseDialog = async () => {
-    if (!selectedWarehouseId || !pendingShipmentRef.current || !isValidBagWeight(bagWeightKg)) return;
+    if (!selectedWarehouseId || !pendingShipmentRef.current) return;
     const { orderId } = pendingShipmentRef.current;
-    const bagWeight = bagWeightKg;
     setOpenWarehouseDialog(false);
     pendingShipmentRef.current = null;
-    setBagWeightKg('');
     try {
       const warehouse = resolveWarehouse(warehouses, selectedWarehouseId);
       await saveOrderWarehouse(orderId, selectedWarehouseId);
@@ -1210,7 +1163,7 @@ const Dashboard = () => {
             : o
         )
       );
-      await handleReadyForShipment(orderId, bagWeight);
+      await handleReadyForShipment(orderId);
     } catch (error) {
       console.error('Error saving warehouse for shipment:', error);
       setSnackbar({
@@ -1221,59 +1174,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleCancelBagWeightDialog = () => {
-    setOpenBagWeightDialog(false);
-    pendingBagWeightRef.current = null;
-    setBagWeightKg('');
-  };
-
-  const handleConfirmBagWeightDialog = async () => {
-    if (!isValidBagWeight(bagWeightKg) || !pendingBagWeightRef.current) return;
-    const pending = pendingBagWeightRef.current;
-    const bagWeight = bagWeightKg;
-    setOpenBagWeightDialog(false);
-    pendingBagWeightRef.current = null;
-    setBagWeightKg('');
-
-    try {
-      if (pending.mode === 'process') {
-        await handleProcessOrder(pending.orderId, bagWeight);
-        return;
-      }
-
-      if (pending.mode === 'download-spk-spm') {
-        const { order, pdfPayload } = pending;
-        const spkDoc = generateSPKPDF(pdfPayload, bagWeight);
-        const spmDoc = generateSPMPDF(pdfPayload, bagWeight);
-        const dateSuffix = new Date().toISOString().split('T')[0];
-        spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
-        spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
-        await saveOrderBagWeight(order.order_id, bagWeight);
-
-        pendingDoRef.current = {
-          mode: 'download',
-          orderId: order.order_id,
-          order: { ...order, bag_weight_kg: parseFloat(bagWeight) },
-          pdfPayload,
-        };
-        setDeliveryDate(dayjs().format('YYYY-MM-DD'));
-        setBagWeightKg(String(bagWeight));
-        setDoUsesSavedBagWeight(true);
-        {
-          const pref = resolveWarehouse(warehouses, order.warehouse_id);
-          setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
-        }
-        setOpenDeliveryDateDialog(true);
-      }
-    } catch (error) {
-      console.error('Error confirming bag weight:', error);
-      setSnackbar({
-        open: true,
-        message: `Error generating documents: ${error.message}`,
-        severity: 'error',
-      });
-    }
-  };
 
   const handleInTransitConfirm = () => {
     setOpenConfirmInTransit(false);
@@ -1543,12 +1443,9 @@ const Dashboard = () => {
   };
 
   // Generate SPK PDF
-  const generateSPKPDF = (order, bagWeight) => {
+  const generateSPKPDF = (order) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for SPK PDF generation');
-    }
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for SPK PDF generation');
     }
 
     const doc = new jsPDF({
@@ -1584,7 +1481,7 @@ const Dashboard = () => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          bagsFromWeight(item.quantity, bagWeight),
+          bagsForItem(item),
           (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1601,12 +1498,9 @@ const Dashboard = () => {
   };
 
   // Generate SPM PDF
-  const generateSPMPDF = (order, bagWeight) => {
+  const generateSPMPDF = (order) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for SPM PDF generation');
-    }
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for SPM PDF generation');
     }
 
     const doc = new jsPDF({
@@ -1640,7 +1534,7 @@ const Dashboard = () => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          bagsFromWeight(item.quantity, bagWeight),
+          bagsForItem(item),
           dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1657,12 +1551,9 @@ const Dashboard = () => {
   };
 
   // Generate DO PDF
-  const generateDOPDF = (order, deliveryDateValue, warehouse, bagWeight) => {
+  const generateDOPDF = (order, deliveryDateValue, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for DO PDF generation');
-    }
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for DO PDF generation');
     }
 
     const wh = warehousePdfFields(warehouse);
@@ -1738,7 +1629,7 @@ const Dashboard = () => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          bagsFromWeight(item.quantity, bagWeight),
+          bagsForItem(item),
           deliveryDateValue || 'N/A',
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1755,12 +1646,9 @@ const Dashboard = () => {
   };
 
   // Generate Surat Jalan PDF
-  const generateSuratJalanPDF = (order, warehouse, bagWeight) => {
+  const generateSuratJalanPDF = (order, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for Surat Jalan PDF generation');
-    }
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for Surat Jalan PDF generation');
     }
 
     const wh = warehousePdfFields(warehouse);
@@ -1825,7 +1713,7 @@ const Dashboard = () => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0,
-        bagsFromWeight(item.quantity, bagWeight),
+        bagsForItem(item),
         'Barang Pesanan Pelanggan', // Description
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1870,12 +1758,9 @@ const Dashboard = () => {
   };
 
   // Generate BAST PDF
-  const generateBASTPDF = (order, warehouse, bagWeight) => {
+  const generateBASTPDF = (order, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for BAST PDF generation');
-    }
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for BAST PDF generation');
     }
 
     const wh = warehousePdfFields(warehouse);
@@ -1960,7 +1845,7 @@ const Dashboard = () => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
-        bagsFromWeight(item.quantity, bagWeight),
+        bagsForItem(item),
         'Barang Pesanan Pelanggan', // Description, match OCR
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -2956,9 +2841,7 @@ const Dashboard = () => {
         <DialogTitle>Delivery Order details</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {doUsesSavedBagWeight
-              ? 'Enter the delivery date and shipping-from warehouse for the Delivery Order PDF. Bag weight from the previous generation will be reused.'
-              : 'Enter the delivery date, bag weight, and shipping-from warehouse for the Delivery Order PDF.'}
+            Enter the delivery date and shipping-from warehouse for the Delivery Order PDF.
           </Typography>
           <TextField
             label="Delivery Date"
@@ -2970,18 +2853,6 @@ const Dashboard = () => {
             InputLabelProps={{ shrink: true }}
             sx={{ mt: 1, mb: 2 }}
           />
-          {!doUsesSavedBagWeight && (
-            <TextField
-              label="Bag weight (kg)"
-              type="number"
-              value={bagWeightKg}
-              onChange={(e) => setBagWeightKg(e.target.value)}
-              fullWidth
-              required
-              inputProps={{ min: 0, step: 'any' }}
-              sx={{ mb: 2 }}
-            />
-          )}
           <FormControl fullWidth required>
             <InputLabel id="do-warehouse-label">Warehouse</InputLabel>
             <Select
@@ -3003,7 +2874,7 @@ const Dashboard = () => {
           <Button
             variant="contained"
             onClick={handleConfirmDeliveryDateDialog}
-            disabled={!deliveryDate || !selectedWarehouseId || !isValidBagWeight(bagWeightKg) || loading || processing}
+            disabled={!deliveryDate || !selectedWarehouseId || loading || processing}
           >
             Confirm
           </Button>
@@ -3043,9 +2914,9 @@ const Dashboard = () => {
         <DialogTitle>Shipping-from warehouse</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select the warehouse address and bag weight for Surat Jalan and BAST.
+            Select the warehouse address for Surat Jalan and BAST.
           </Typography>
-          <FormControl fullWidth required sx={{ mt: 1, mb: 2 }}>
+          <FormControl fullWidth required sx={{ mt: 1 }}>
             <InputLabel id="sj-warehouse-label">Warehouse</InputLabel>
             <Select
               labelId="sj-warehouse-label"
@@ -3060,52 +2931,13 @@ const Dashboard = () => {
               ))}
             </Select>
           </FormControl>
-          <TextField
-            label="Bag weight (kg)"
-            type="number"
-            value={bagWeightKg}
-            onChange={(e) => setBagWeightKg(e.target.value)}
-            fullWidth
-            required
-            inputProps={{ min: 0, step: 'any' }}
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelWarehouseDialog}>Cancel</Button>
           <Button
             variant="contained"
             onClick={handleConfirmWarehouseDialog}
-            disabled={!selectedWarehouseId || !isValidBagWeight(bagWeightKg) || loading || processing}
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openBagWeightDialog} onClose={handleCancelBagWeightDialog}>
-        <DialogTitle>Bag weight</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Enter the bag weight (kg) used to calculate the number of bags on the document.
-          </Typography>
-          <TextField
-            label="Bag weight (kg)"
-            type="number"
-            value={bagWeightKg}
-            onChange={(e) => setBagWeightKg(e.target.value)}
-            fullWidth
-            required
-            autoFocus
-            inputProps={{ min: 0, step: 'any' }}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelBagWeightDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmBagWeightDialog}
-            disabled={!isValidBagWeight(bagWeightKg) || loading || processing}
+            disabled={!selectedWarehouseId || loading || processing}
           >
             Confirm
           </Button>

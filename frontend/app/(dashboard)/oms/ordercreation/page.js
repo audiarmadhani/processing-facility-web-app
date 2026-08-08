@@ -33,6 +33,8 @@ import dayjs from 'dayjs';
 import CloseIcon from '@mui/icons-material/Close';
 import { drawMultilineText, PDF_LINE_HEIGHT_MM } from '../_shared/pdfTextUtils';
 
+import { bagsFromWeight, isValidBagWeight } from '../_shared/bagWeightUtils';
+
 const OrderCreation = () => {
   const { data: session, status } = useSession();
   const [customers, setCustomers] = useState([]);
@@ -41,7 +43,7 @@ const OrderCreation = () => {
   const [formData, setFormData] = useState({
     customer_id: '',
     driver_id: '',
-    items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
+    items: [{ batch_number: '', quantity: '', price: '', product: '', bag_weight_kg: '' }],
     shipping_method: 'Customer',
     driver_details: {
       name: '',
@@ -159,8 +161,8 @@ const OrderCreation = () => {
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...formData.items];
-    // Keep jumlah_karung stored as number when possible
-    if (field === 'jumlah_karung') {
+    // Keep bag_weight_kg stored as number when possible
+    if (field === 'bag_weight_kg') {
       newItems[index][field] = value === '' ? '' : Number(value);
     } else {
       newItems[index][field] = value;
@@ -190,7 +192,7 @@ const OrderCreation = () => {
 
   const handleEditItemChange = (index, field, value) => {
     const newItems = [...editOrder.items];
-    if (field === 'jumlah_karung') {
+    if (field === 'bag_weight_kg') {
       newItems[index][field] = value === '' ? '' : Number(value);
     } else {
       newItems[index][field] = value;
@@ -207,14 +209,14 @@ const OrderCreation = () => {
   const addItem = () => {
     setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', bag_weight_kg: '' }],
     }));
   };
 
   const addEditItem = () => {
     setEditOrder((prev) => ({
       ...prev,
-      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', bag_weight_kg: '' }],
     }));
   };
 
@@ -291,8 +293,8 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!formData.items.every((item) => item.batch_number && item.quantity && item.price && item.product && (item.jumlah_karung || item.jumlah_karung === 0))) {
-      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, product and jumlah karung', severity: 'warning' });
+    if (!formData.items.every((item) => item.batch_number && item.quantity && item.price && item.product && isValidBagWeight(item.bag_weight_kg))) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, product and bag weight (kg)', severity: 'warning' });
       return;
     }
     if (!formData.shipping_address) {
@@ -319,13 +321,12 @@ const OrderCreation = () => {
     for (const item of formData.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const jumlahKarung = Number(item.jumlah_karung) || 0;
       if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
-      if (isNaN(jumlahKarung) || jumlahKarung <= 0) {
-        setSnackbar({ open: true, message: 'Invalid jumlah karung for an item', severity: 'error' });
+      if (!isValidBagWeight(item.bag_weight_kg)) {
+        setSnackbar({ open: true, message: 'Invalid bag weight (kg) for an item', severity: 'error' });
         return;
       }
     }
@@ -346,7 +347,7 @@ const OrderCreation = () => {
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
           product: item.product,
-          jumlah_karung: Number(item.jumlah_karung),
+          bag_weight_kg: Number(item.bag_weight_kg),
         })),
       };
 
@@ -402,7 +403,7 @@ const OrderCreation = () => {
       setFormData({
         customer_id: '',
         driver_id: '',
-        items: [{ batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
+        items: [{ batch_number: '', quantity: '', price: '', product: '', bag_weight_kg: '' }],
         shipping_method: 'Customer',
         driver_details: { name: '', vehicle_number_plate: '', vehicle_type: '', max_capacity: '' },
         price: '',
@@ -517,12 +518,13 @@ const OrderCreation = () => {
     addText('Items:', 14, tableOffset, { bold: true });
     doc.autoTable({
       startY: tableOffset + 8,
-      head: [['Batch Number', 'Product', 'Quantity (kg)', 'Jumlah Karung', 'Price (IDR)', 'Subtotal (IDR)']],
+      head: [['Batch Number', 'Product', 'Quantity (kg)', 'Bag wt (kg)', 'Bags', 'Price (IDR)', 'Subtotal (IDR)']],
       body: formData.items.map((item) => [
         item.batch_number,
         item.product,
         item.quantity,
-        Number(item.jumlah_karung) || 0,
+        item.bag_weight_kg || 0,
+        bagsFromWeight(item.quantity, item.bag_weight_kg),
         item.price || '0',
         (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)).toLocaleString('id-ID', {
           style: 'currency',
@@ -715,8 +717,8 @@ const OrderCreation = () => {
       setSnackbar({ open: true, message: 'Driver is required for Self shipping', severity: 'warning' });
       return;
     }
-    if (!formData.items.every((item) => item.batch_number && item.quantity && item.price && item.product && (item.jumlah_karung || item.jumlah_karung === 0))) {
-      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, product and jumlah karung', severity: 'warning' });
+    if (!editOrder.items.every((item) => item.batch_number && item.quantity && item.price && item.product && isValidBagWeight(item.bag_weight_kg))) {
+      setSnackbar({ open: true, message: 'All items must have batch number, quantity, price, product and bag weight (kg)', severity: 'warning' });
       return;
     }
     if (!editOrder.shipping_address) {
@@ -743,13 +745,12 @@ const OrderCreation = () => {
     for (const item of editOrder.items) {
       const itemPrice = parseFloat(item.price) || 0;
       const itemQuantity = parseFloat(item.quantity) || 0;
-      const jumlahKarung = Number(item.jumlah_karung) || 0;
       if (isNaN(itemPrice) || itemPrice < 0 || isNaN(itemQuantity) || itemQuantity <= 0) {
         setSnackbar({ open: true, message: 'Invalid item price or quantity', severity: 'error' });
         return;
       }
-      if (isNaN(jumlahKarung) || jumlahKarung <= 0) {
-        setSnackbar({ open: true, message: 'Invalid jumlah karung for an item', severity: 'error' });
+      if (!isValidBagWeight(item.bag_weight_kg)) {
+        setSnackbar({ open: true, message: 'Invalid bag weight (kg) for an item', severity: 'error' });
         return;
       }
     }
@@ -770,7 +771,7 @@ const OrderCreation = () => {
           quantity: parseFloat(item.quantity),
           price: parseFloat(item.price),
           product: item.product,
-          jumlah_karung: Number(item.jumlah_karung),
+          bag_weight_kg: Number(item.bag_weight_kg),
         })),
       };
 
@@ -1144,12 +1145,20 @@ const OrderCreation = () => {
                       inputProps={{ min: 0, step: 0.01 }}
                     />
                     <TextField
-                      label="Jumlah Karung"
+                      label="Bag weight (kg)"
                       type="number"
-                      value={item.jumlah_karung}
-                      onChange={(e) => handleItemChange(index, 'jumlah_karung', e.target.value)}
+                      value={item.bag_weight_kg}
+                      onChange={(e) => handleItemChange(index, 'bag_weight_kg', e.target.value)}
                       sx={{ mr: 2, width: 120 }}
-                      inputProps={{ min: 1, step: 1 }}
+                      required
+                      inputProps={{ min: 0, step: 'any' }}
+                    />
+                    <TextField
+                      label="Bags"
+                      type="number"
+                      value={bagsFromWeight(item.quantity, item.bag_weight_kg) || ''}
+                      InputProps={{ readOnly: true }}
+                      sx={{ mr: 2, width: 90 }}
                     />
                     <TextField
                       label="Price (IDR)"
@@ -1579,12 +1588,20 @@ const OrderCreation = () => {
                         inputProps={{ min: 0, step: 0.01 }}
                       />
                       <TextField
-                        label="Jumlah Karung"
+                        label="Bag weight (kg)"
                         type="number"
-                        value={item.jumlah_karung}
-                        onChange={(e) => handleEditItemChange(index, 'jumlah_karung', e.target.value)}
+                        value={item.bag_weight_kg}
+                        onChange={(e) => handleEditItemChange(index, 'bag_weight_kg', e.target.value)}
                         sx={{ mr: 2, width: 120 }}
-                        inputProps={{ min: 1, step: 1 }}
+                        required
+                        inputProps={{ min: 0, step: 'any' }}
+                      />
+                      <TextField
+                        label="Bags"
+                        type="number"
+                        value={bagsFromWeight(item.quantity, item.bag_weight_kg) || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ mr: 2, width: 90 }}
                       />
                       <TextField
                         label="Price (IDR)"

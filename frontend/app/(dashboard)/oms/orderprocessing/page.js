@@ -40,7 +40,7 @@ import CustomerModal from '../../components/CustomerModal';
 import DriverModal from '../../components/DriverModal';
 import { useDropzone } from 'react-dropzone'; // Add this import at the top of Dashboard.js
 import { resolveWarehouse, warehousePdfFields } from '../_shared/warehouseUtils';
-import { bagsFromWeight, isValidBagWeight } from '../_shared/bagWeightUtils';
+import { bagsForItem } from '../_shared/bagWeightUtils';
 import { drawMultilineText, drawWarehouseHeader, PDF_LINE_HEIGHT_MM } from '../_shared/pdfTextUtils';
 
 const OMS_API_BASE = 'https://processing-facility-backend.onrender.com/api';
@@ -152,10 +152,6 @@ const Dashboard = () => {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [openWarehouseDialog, setOpenWarehouseDialog] = useState(false);
   const pendingShipmentRef = useRef(null);
-  const [bagWeightKg, setBagWeightKg] = useState('');
-  const [openBagWeightDialog, setOpenBagWeightDialog] = useState(false);
-  const pendingBagWeightRef = useRef(null);
-  const [doUsesSavedBagWeight, setDoUsesSavedBagWeight] = useState(false);
 
   const onDrop = (acceptedFiles) => {
     setPaymentProof(acceptedFiles[0]); // Store the first file dropped
@@ -258,7 +254,7 @@ useEffect(() => {
   };
 
   // Handle order processing with a single update to "Processing" before upload, save PDFs locally after
-  const handleProcessOrder = async (orderId, bagWeight) => {
+  const handleProcessOrder = async (orderId) => {
     setLoading(true);
     setProcessing(true);
     try {
@@ -351,9 +347,6 @@ useEffect(() => {
       };
 
       // Generate SPK and SPM first; DO waits for delivery date dialog
-      if (!isValidBagWeight(bagWeight)) {
-        throw new Error('Bag weight (kg) is required and must be a positive number');
-      }
       const pdfPayload = {
         ...order,
         customerName: order.customer_name,
@@ -361,8 +354,8 @@ useEffect(() => {
         shippingMethod: order.shipping_method,
         items: order.items,
       };
-      const spkDoc = generateSPKPDF(pdfPayload, bagWeight);
-      const spmDoc = generateSPMPDF(pdfPayload, bagWeight);
+      const spkDoc = generateSPKPDF(pdfPayload);
+      const spmDoc = generateSPMPDF(pdfPayload);
 
       spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
       spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -388,20 +381,16 @@ useEffect(() => {
         uploadDocument(spmDoc, 'SPM', `SPM_${String(order.order_id).padStart(4, '0')}.pdf`),
       ]);
 
-      await saveOrderBagWeight(orderId, bagWeight);
-
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? { ...order, bag_weight_kg: parseFloat(bagWeight) } : o));
-      setSelectedOrder({ ...order, bag_weight_kg: parseFloat(bagWeight) });
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
+      setSelectedOrder(order);
 
       pendingDoRef.current = {
         mode: 'process',
         orderId,
-        order: { ...order, bag_weight_kg: parseFloat(bagWeight) },
+        order: order,
         pdfPayload,
       };
       setDeliveryDate(dayjs().format('YYYY-MM-DD'));
-      setBagWeightKg('');
-      setDoUsesSavedBagWeight(false);
       {
         const pref = resolveWarehouse(warehouses, order.warehouse_id);
         setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
@@ -418,13 +407,10 @@ useEffect(() => {
   };
 
   // Handle generating shipment documents (Surat Jalan and BAST) with status update to "Ready for Shipment"
-  const handleReadyForShipment = async (orderId, bagWeight) => {
+  const handleReadyForShipment = async (orderId) => {
     setLoading(true);
     setProcessing(true);
     try {
-      if (!isValidBagWeight(bagWeight)) {
-        throw new Error('Bag weight (kg) is required and must be a positive number');
-      }
       // Fetch the current order details with enhanced error handling
       const res = await fetch(`https://processing-facility-backend.onrender.com/api/orders/${orderId}`, {
         headers: { 'Accept': 'application/json' }, // Ensure JSON response
@@ -525,8 +511,8 @@ useEffect(() => {
 
       // Generate Surat Jalan and BAST PDFs
       const warehouse = resolveWarehouse(warehouses, order.warehouse_id || selectedWarehouseId);
-      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name, vehicle_number: order.vehicle_number_plate }, warehouse, bagWeight);
-      const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items }, warehouse, bagWeight);
+      const suratJalanDoc = generateSuratJalanPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items, driver: order.driver_name, vehicle_number: order.vehicle_number_plate }, warehouse);
+      const bastDoc = generateBASTPDF({ ...order, customerName: order.customer_name, status: order.status, shippingMethod: order.shipping_method, items: order.items }, warehouse);
       
       // Save PDFs locally using jsPDF.save()
       suratJalanDoc.save(`SuratJalan_${order.order_id}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -555,12 +541,10 @@ useEffect(() => {
         uploadDocument(bastDoc, 'BAST', `BAST_${order.order_id}.pdf`),
       ]);
 
-      await saveOrderBagWeight(orderId, bagWeight);
-
       // Update the orders state safely with the current "Ready for Shipment" status
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? { ...order, bag_weight_kg: parseFloat(bagWeight) } : o));
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
 
-      setSelectedOrder({ ...order, bag_weight_kg: parseFloat(bagWeight) });
+      setSelectedOrder(order);
 
       setSnackbar({ open: true, message: 'Shipment documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
     } catch (error) {
@@ -695,7 +679,7 @@ useEffect(() => {
   const addEditItem = () => {
     setEditOrder((prev) => ({
       ...prev,
-      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', jumlah_karung: '' }],
+      items: [...prev.items, { batch_number: '', quantity: '', price: '', product: '', bag_weight_kg: '' }],
     }));
   };
 
@@ -852,37 +836,48 @@ useEffect(() => {
   // Regenerate and download PDFs from modal
   const handleDownloadDocuments = () => {
     if (!selectedOrder && !editOrder) return;
-    const order = selectedOrder || editOrder;
-    const pdfPayload = {
-      ...order,
-      customerName: order.customer_name || 'Unknown Customer',
-      status: order.status || 'Processing',
-      shippingMethod: order.shipping_method || 'Self',
-      items: order.items || [],
-      customer_address: order.customer_address || 'N/A',
-      customer_city: order.customer_city || 'N/A',
-      customer_state: order.customer_state || 'N/A',
-      customer_zip_code: order.customer_zip_code || 'N/A',
-      driver_name: order.driver_name || 'N/A',
-      driver_vehicle_number: order.driver_vehicle_number || 'N/A',
-      driver_vehicle_type: order.driver_vehicle_type || 'N/A',
-    };
-    pendingBagWeightRef.current = {
-      mode: 'download-spk-spm',
-      orderId: order.order_id,
-      order,
-      pdfPayload,
-    };
-    setBagWeightKg('');
-    setOpenBagWeightDialog(true);
+    try {
+      const order = selectedOrder || editOrder;
+      const pdfPayload = {
+        ...order,
+        customerName: order.customer_name || 'Unknown Customer',
+        status: order.status || 'Processing',
+        shippingMethod: order.shipping_method || 'Self',
+        items: order.items || [],
+        customer_address: order.customer_address || 'N/A',
+        customer_city: order.customer_city || 'N/A',
+        customer_state: order.customer_state || 'N/A',
+        customer_zip_code: order.customer_zip_code || 'N/A',
+        driver_name: order.driver_name || 'N/A',
+        driver_vehicle_number: order.driver_vehicle_number || 'N/A',
+        driver_vehicle_type: order.driver_vehicle_type || 'N/A',
+      };
+      const dateSuffix = new Date().toISOString().split('T')[0];
+      generateSPKPDF(pdfPayload).save(`SPK_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
+      generateSPMPDF(pdfPayload).save(`SPM_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
+
+      pendingDoRef.current = {
+        mode: 'download',
+        orderId: order.order_id,
+        order,
+        pdfPayload,
+      };
+      setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+      {
+        const pref = resolveWarehouse(warehouses, order.warehouse_id);
+        setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
+      }
+      setOpenDeliveryDateDialog(true);
+    } catch (error) {
+      console.error('Error regenerating documents:', error);
+      setSnackbar({ open: true, message: `Error regenerating documents: ${error.message}`, severity: 'error' });
+    }
   };
 
   const handleCancelDeliveryDateDialog = () => {
     const pending = pendingDoRef.current;
     setOpenDeliveryDateDialog(false);
     pendingDoRef.current = null;
-    setBagWeightKg('');
-    setDoUsesSavedBagWeight(false);
     if (pending?.mode === 'process') {
       setSnackbar({
         open: true,
@@ -910,33 +905,17 @@ useEffect(() => {
     return res.json();
   };
 
-  const saveOrderBagWeight = async (orderId, bagWeight) => {
-    const res = await fetch(`${OMS_API_BASE}/orders/${orderId}/bag-weight`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ bag_weight_kg: parseFloat(bagWeight) }),
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to save bag weight: ${await res.text()}`);
-    }
-    return res.json();
-  };
 
   const handleConfirmDeliveryDateDialog = async () => {
-    if (!deliveryDate || !pendingDoRef.current || !selectedWarehouseId || !isValidBagWeight(bagWeightKg)) return;
+    if (!deliveryDate || !pendingDoRef.current || !selectedWarehouseId) return;
 
     const pending = pendingDoRef.current;
     const { mode, orderId, order, pdfPayload } = pending;
     const warehouse = resolveWarehouse(warehouses, selectedWarehouseId);
-    const bagWeight = bagWeightKg;
     setOpenDeliveryDateDialog(false);
     pendingDoRef.current = null;
-    setBagWeightKg('');
-    setDoUsesSavedBagWeight(false);
-
     try {
       await saveOrderWarehouse(orderId, selectedWarehouseId);
-      await saveOrderBagWeight(orderId, bagWeight);
       setOrders((prev) =>
         prev.map((o) =>
           o.order_id === orderId
@@ -947,8 +926,7 @@ useEffect(() => {
                 warehouse_company_name: warehouse.company_name,
                 warehouse_address: warehouse.address,
                 warehouse_phone: warehouse.phone,
-                bag_weight_kg: parseFloat(bagWeight),
-              }
+                }
             : o
         )
       );
@@ -956,7 +934,7 @@ useEffect(() => {
       if (mode === 'process') {
         setLoading(true);
         setProcessing(true);
-        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse, bagWeight);
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse);
         doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
 
         const blob = doDoc.output('blob');
@@ -977,7 +955,7 @@ useEffect(() => {
           severity: 'success',
         });
       } else {
-        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse, bagWeight);
+        const doDoc = generateDOPDF(pdfPayload, deliveryDate, warehouse);
         doDoc.save(`DO_${String(order.order_id).padStart(4, '0')}_${new Date().toISOString().split('T')[0]}.pdf`);
         setSnackbar({
           open: true,
@@ -1031,13 +1009,7 @@ useEffect(() => {
 
   const handleProcessConfirm = () => {
     setOpenConfirmProcess(false);
-    if (!selectedOrder) return;
-    pendingBagWeightRef.current = {
-      mode: 'process',
-      orderId: selectedOrder.order_id,
-    };
-    setBagWeightKg('');
-    setOpenBagWeightDialog(true);
+    if (selectedOrder) handleProcessOrder(selectedOrder.order_id);
   };
 
   const handleRejectConfirm = () => {
@@ -1051,23 +1023,19 @@ useEffect(() => {
     pendingShipmentRef.current = { orderId: selectedOrder.order_id };
     const pref = resolveWarehouse(warehouses, selectedOrder.warehouse_id);
     setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
-    setBagWeightKg('');
     setOpenWarehouseDialog(true);
   };
 
   const handleCancelWarehouseDialog = () => {
     setOpenWarehouseDialog(false);
     pendingShipmentRef.current = null;
-    setBagWeightKg('');
-  };
+    };
 
   const handleConfirmWarehouseDialog = async () => {
-    if (!selectedWarehouseId || !pendingShipmentRef.current || !isValidBagWeight(bagWeightKg)) return;
+    if (!selectedWarehouseId || !pendingShipmentRef.current) return;
     const { orderId } = pendingShipmentRef.current;
-    const bagWeight = bagWeightKg;
     setOpenWarehouseDialog(false);
     pendingShipmentRef.current = null;
-    setBagWeightKg('');
     try {
       const warehouse = resolveWarehouse(warehouses, selectedWarehouseId);
       await saveOrderWarehouse(orderId, selectedWarehouseId);
@@ -1085,7 +1053,7 @@ useEffect(() => {
             : o
         )
       );
-      await handleReadyForShipment(orderId, bagWeight);
+      await handleReadyForShipment(orderId);
     } catch (error) {
       console.error('Error saving warehouse for shipment:', error);
       setSnackbar({
@@ -1096,59 +1064,6 @@ useEffect(() => {
     }
   };
 
-  const handleCancelBagWeightDialog = () => {
-    setOpenBagWeightDialog(false);
-    pendingBagWeightRef.current = null;
-    setBagWeightKg('');
-  };
-
-  const handleConfirmBagWeightDialog = async () => {
-    if (!isValidBagWeight(bagWeightKg) || !pendingBagWeightRef.current) return;
-    const pending = pendingBagWeightRef.current;
-    const bagWeight = bagWeightKg;
-    setOpenBagWeightDialog(false);
-    pendingBagWeightRef.current = null;
-    setBagWeightKg('');
-
-    try {
-      if (pending.mode === 'process') {
-        await handleProcessOrder(pending.orderId, bagWeight);
-        return;
-      }
-
-      if (pending.mode === 'download-spk-spm') {
-        const { order, pdfPayload } = pending;
-        const spkDoc = generateSPKPDF(pdfPayload, bagWeight);
-        const spmDoc = generateSPMPDF(pdfPayload, bagWeight);
-        const dateSuffix = new Date().toISOString().split('T')[0];
-        spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
-        spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
-        await saveOrderBagWeight(order.order_id, bagWeight);
-
-        pendingDoRef.current = {
-          mode: 'download',
-          orderId: order.order_id,
-          order: { ...order, bag_weight_kg: parseFloat(bagWeight) },
-          pdfPayload,
-        };
-        setDeliveryDate(dayjs().format('YYYY-MM-DD'));
-        setBagWeightKg(String(bagWeight));
-        setDoUsesSavedBagWeight(true);
-        {
-          const pref = resolveWarehouse(warehouses, order.warehouse_id);
-          setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
-        }
-        setOpenDeliveryDateDialog(true);
-      }
-    } catch (error) {
-      console.error('Error confirming bag weight:', error);
-      setSnackbar({
-        open: true,
-        message: `Error generating documents: ${error.message}`,
-        severity: 'error',
-      });
-    }
-  };
 
   const handleInTransitConfirm = () => {
     setOpenConfirmInTransit(false);
@@ -1366,10 +1281,7 @@ useEffect(() => {
   };
 
   // Generate SPK PDF
-  const generateSPKPDF = (order, bagWeight) => {
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for SPK PDF generation');
-    }
+  const generateSPKPDF = (order) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for SPK PDF generation');
     }
@@ -1407,7 +1319,7 @@ useEffect(() => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          bagsFromWeight(item.quantity, bagWeight),
+          bagsForItem(item),
           (item.price || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1424,10 +1336,7 @@ useEffect(() => {
   };
 
   // Generate SPM PDF
-  const generateSPMPDF = (order, bagWeight) => {
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for SPM PDF generation');
-    }
+  const generateSPMPDF = (order) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for SPM PDF generation');
     }
@@ -1463,7 +1372,7 @@ useEffect(() => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          bagsFromWeight(item.quantity, bagWeight),
+          bagsForItem(item),
           dayjs().add(7, 'days').format('YYYY-MM-DD'), // Example: 7 days from now
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1480,10 +1389,7 @@ useEffect(() => {
   };
 
   // Generate DO PDF
-  const generateDOPDF = (order, deliveryDateValue, warehouse, bagWeight) => {
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for DO PDF generation');
-    }
+  const generateDOPDF = (order, deliveryDateValue, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for DO PDF generation');
     }
@@ -1561,7 +1467,7 @@ useEffect(() => {
           item.product || 'N/A',
           item.batch_number || 'N/A',
           item.quantity || 0,
-          bagsFromWeight(item.quantity, bagWeight),
+          bagsForItem(item),
           deliveryDateValue || 'N/A',
         ]),
         styles: { font: 'Helvetica', fontSize: 11, cellPadding: 2 },
@@ -1578,10 +1484,7 @@ useEffect(() => {
   };
 
   // Generate Surat Jalan PDF
-  const generateSuratJalanPDF = (order, warehouse, bagWeight) => {
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for Surat Jalan PDF generation');
-    }
+  const generateSuratJalanPDF = (order, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for Surat Jalan PDF generation');
     }
@@ -1648,7 +1551,7 @@ useEffect(() => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0,
-        bagsFromWeight(item.quantity, bagWeight),
+        bagsForItem(item),
         'Barang Pesanan Pelanggan', // Description
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -1693,10 +1596,7 @@ useEffect(() => {
   };
 
   // Generate BAST PDF
-  const generateBASTPDF = (order, warehouse, bagWeight) => {
-    if (!isValidBagWeight(bagWeight)) {
-      throw new Error('Bag weight (kg) is required for BAST PDF generation');
-    }
+  const generateBASTPDF = (order, warehouse) => {
     if (!order || typeof order !== 'object') {
       throw new Error('Invalid order object for BAST PDF generation');
     }
@@ -1783,7 +1683,7 @@ useEffect(() => {
         item.product || 'N/A',
         item.batch_number || 'N/A',
         item.quantity || 0, // Match OCR format ($10000.00(kg) → simplified to numeric with kg)
-        bagsFromWeight(item.quantity, bagWeight),
+        bagsForItem(item),
         'Barang Pesanan Pelanggan', // Description, match OCR
       ]),
       styles: { font: 'Helvetica', fontSize: 10, cellPadding: 1.5 },
@@ -2514,10 +2414,17 @@ useEffect(() => {
                         sx={{ mr: 1, width: '120px' }}
                       />
                       <TextField
-                        label="Jumlah Karung"
+                        label="Bag weight (kg)"
                         type="number"
-                        value={item.jumlah_karung}
+                        value={item.bag_weight_kg ?? ''}
+                        InputProps={{ readOnly: true }}
                         sx={{ mr: 2, width: 120 }}
+                      />
+                      <TextField
+                        label="Bags"
+                        type="number"
+                        value={item.jumlah_karung ?? bagsForItem(item) ?? ''}
+                        sx={{ mr: 2, width: 90 }}
                         InputProps={{ readOnly: true }}
                       />
                       <TextField
@@ -2645,9 +2552,7 @@ useEffect(() => {
         <DialogTitle>Delivery Order details</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {doUsesSavedBagWeight
-              ? 'Enter the delivery date and shipping-from warehouse for the Delivery Order PDF. Bag weight from the previous generation will be reused.'
-              : 'Enter the delivery date, bag weight, and shipping-from warehouse for the Delivery Order PDF.'}
+            Enter the delivery date and shipping-from warehouse for the Delivery Order PDF.
           </Typography>
           <TextField
             label="Delivery Date"
@@ -2659,18 +2564,6 @@ useEffect(() => {
             InputLabelProps={{ shrink: true }}
             sx={{ mt: 1, mb: 2 }}
           />
-          {!doUsesSavedBagWeight && (
-            <TextField
-              label="Bag weight (kg)"
-              type="number"
-              value={bagWeightKg}
-              onChange={(e) => setBagWeightKg(e.target.value)}
-              fullWidth
-              required
-              inputProps={{ min: 0, step: 'any' }}
-              sx={{ mb: 2 }}
-            />
-          )}
           <FormControl fullWidth required>
             <InputLabel id="do-warehouse-label">Warehouse</InputLabel>
             <Select
@@ -2692,7 +2585,7 @@ useEffect(() => {
           <Button
             variant="contained"
             onClick={handleConfirmDeliveryDateDialog}
-            disabled={!deliveryDate || !selectedWarehouseId || !isValidBagWeight(bagWeightKg) || loading || processing}
+            disabled={!deliveryDate || !selectedWarehouseId || loading || processing}
           >
             Confirm
           </Button>
@@ -2703,9 +2596,9 @@ useEffect(() => {
         <DialogTitle>Shipping-from warehouse</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select the warehouse address and bag weight for Surat Jalan and BAST.
+            Select the warehouse address for Surat Jalan and BAST.
           </Typography>
-          <FormControl fullWidth required sx={{ mt: 1, mb: 2 }}>
+          <FormControl fullWidth required sx={{ mt: 1 }}>
             <InputLabel id="sj-warehouse-label">Warehouse</InputLabel>
             <Select
               labelId="sj-warehouse-label"
@@ -2720,52 +2613,13 @@ useEffect(() => {
               ))}
             </Select>
           </FormControl>
-          <TextField
-            label="Bag weight (kg)"
-            type="number"
-            value={bagWeightKg}
-            onChange={(e) => setBagWeightKg(e.target.value)}
-            fullWidth
-            required
-            inputProps={{ min: 0, step: 'any' }}
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelWarehouseDialog}>Cancel</Button>
           <Button
             variant="contained"
             onClick={handleConfirmWarehouseDialog}
-            disabled={!selectedWarehouseId || !isValidBagWeight(bagWeightKg) || loading || processing}
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openBagWeightDialog} onClose={handleCancelBagWeightDialog}>
-        <DialogTitle>Bag weight</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Enter the bag weight (kg) used to calculate the number of bags on the document.
-          </Typography>
-          <TextField
-            label="Bag weight (kg)"
-            type="number"
-            value={bagWeightKg}
-            onChange={(e) => setBagWeightKg(e.target.value)}
-            fullWidth
-            required
-            autoFocus
-            inputProps={{ min: 0, step: 'any' }}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelBagWeightDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmBagWeightDialog}
-            disabled={!isValidBagWeight(bagWeightKg) || loading || processing}
+            disabled={!selectedWarehouseId || loading || processing}
           >
             Confirm
           </Button>
