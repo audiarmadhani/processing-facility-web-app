@@ -157,14 +157,38 @@ const Dashboard = () => {
   const [openArriveDialog, setOpenArriveDialog] = useState(false);
   const [actualDeliveryDate, setActualDeliveryDate] = useState(dayjs().format('YYYY-MM-DD'));
   const pendingArriveOrderIdRef = useRef(null);
+  const [openSignedUploadDialog, setOpenSignedUploadDialog] = useState(false);
+  const [signedUploadOrder, setSignedUploadOrder] = useState(null);
+  const [signedUploadFile, setSignedUploadFile] = useState(null);
+  const [signedUploadType, setSignedUploadType] = useState('Surat Jalan');
+  const [signedUploading, setSignedUploading] = useState(false);
 
   const REGENERABLE_DOC_TYPES = ['SPK', 'SPM', 'DO', 'Surat Jalan', 'BAST'];
+  const SIGNED_UPLOAD_TYPES = ['Surat Jalan', 'BAST', 'DO', 'SPK', 'SPM', 'Other'];
 
   const onDrop = (acceptedFiles) => {
     setPaymentProof(acceptedFiles[0]); // Store the first file dropped
   };
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+
+  const onSignedDrop = (acceptedFiles) => {
+    setSignedUploadFile(acceptedFiles[0] || null);
+  };
+
+  const {
+    getRootProps: getSignedRootProps,
+    getInputProps: getSignedInputProps,
+    isDragActive: isSignedDragActive,
+  } = useDropzone({
+    onDrop: onSignedDrop,
+    multiple: false,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+    },
+  });
 
   const fetchDocuments = async () => {
     setDocumentsLoading(true);
@@ -1252,6 +1276,64 @@ const Dashboard = () => {
     pendingArriveOrderIdRef.current = null;
   };
 
+  const openSignedUpload = (row) => {
+    setSignedUploadOrder({
+      order_id: row.order_id,
+      surat_jalan_number: row.surat_jalan_number,
+      folder_name: String(row.order_id).padStart(4, '0'),
+    });
+    setSignedUploadType('Surat Jalan');
+    setSignedUploadFile(null);
+    setOpenSignedUploadDialog(true);
+  };
+
+  const handleCancelSignedUpload = () => {
+    if (signedUploading) return;
+    setOpenSignedUploadDialog(false);
+    setSignedUploadOrder(null);
+    setSignedUploadFile(null);
+  };
+
+  const handleConfirmSignedUpload = async () => {
+    if (!signedUploadOrder?.order_id || !signedUploadFile) {
+      setSnackbar({ open: true, message: 'Please select a file to upload', severity: 'warning' });
+      return;
+    }
+
+    setSignedUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('order_id', String(signedUploadOrder.order_id));
+      formData.append('type', signedUploadType);
+      formData.append('file', signedUploadFile, signedUploadFile.name);
+
+      const res = await fetch(`${OMS_API_BASE}/documents/signed-upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const result = await res.json();
+
+      setOpenSignedUploadDialog(false);
+      setSignedUploadOrder(null);
+      setSignedUploadFile(null);
+      setSnackbar({
+        open: true,
+        message: `Signed document uploaded to folder ${result.folder_name}`,
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Error uploading signed document:', error);
+      setSnackbar({
+        open: true,
+        message: `Failed to upload signed document: ${error.message}`,
+        severity: 'error',
+      });
+    } finally {
+      setSignedUploading(false);
+    }
+  };
+
   const handleConfirmArriveDialog = async () => {
     const orderId = pendingArriveOrderIdRef.current;
     if (!orderId || !actualDeliveryDate) return;
@@ -2155,6 +2237,23 @@ const Dashboard = () => {
       width: 140,
       sortable: true,
     },
+    {
+      field: 'signed_upload',
+      headerName: 'Signed Docs',
+      width: 130,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          size="small"
+          color="secondary"
+          onClick={() => openSignedUpload(params.row)}
+          sx={{ textTransform: 'none', minWidth: 0, px: 1 }}
+        >
+          Upload
+        </Button>
+      ),
+    },
     ...DOC_TYPE_COLUMNS.map((docType) => ({
       field: docType,
       headerName: docType,
@@ -2906,6 +3005,70 @@ const Dashboard = () => {
             disabled={!actualDeliveryDate || loading}
           >
             Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openSignedUploadDialog} onClose={handleCancelSignedUpload} fullWidth maxWidth="sm">
+        <DialogTitle>Upload Signed Document</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Order {signedUploadOrder?.order_id ?? '—'}
+            {signedUploadOrder?.surat_jalan_number && signedUploadOrder.surat_jalan_number !== '—'
+              ? ` · ${signedUploadOrder.surat_jalan_number}`
+              : ''}
+            . File will be saved under Drive folder{' '}
+            <strong>{signedUploadOrder?.folder_name || '—'}</strong>.
+          </Typography>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel id="signed-doc-type-label">Document type</InputLabel>
+            <Select
+              labelId="signed-doc-type-label"
+              label="Document type"
+              value={signedUploadType}
+              onChange={(e) => setSignedUploadType(e.target.value)}
+            >
+              {SIGNED_UPLOAD_TYPES.map((t) => (
+                <MenuItem key={t} value={t}>{t}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Box
+            sx={{
+              mb: 1,
+              p: 2,
+              height: 180,
+              border: '2px dashed #ccc',
+              borderRadius: 2,
+              textAlign: 'center',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              bgcolor: isSignedDragActive ? 'action.hover' : 'transparent',
+            }}
+            {...getSignedRootProps()}
+          >
+            <input {...getSignedInputProps()} />
+            {signedUploadFile ? (
+              <Typography variant="body2">{signedUploadFile.name}</Typography>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {isSignedDragActive
+                  ? 'Drop the file here…'
+                  : 'Drag & drop a signed PDF/image here, or click to browse'}
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelSignedUpload} disabled={signedUploading}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmSignedUpload}
+            disabled={!signedUploadFile || signedUploading}
+          >
+            {signedUploading ? 'Uploading…' : 'Upload'}
           </Button>
         </DialogActions>
       </Dialog>
