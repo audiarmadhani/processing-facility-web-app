@@ -41,6 +41,7 @@ import DriverModal from '../../components/DriverModal';
 import { useDropzone } from 'react-dropzone'; // Add this import at the top of Dashboard.js
 import { resolveWarehouse, warehousePdfFields } from '../_shared/warehouseUtils';
 import { bagsFromWeight, isValidBagWeight } from '../_shared/bagWeightUtils';
+import { drawMultilineText, drawWarehouseHeader, PDF_LINE_HEIGHT_MM } from '../_shared/pdfTextUtils';
 
 const OMS_API_BASE = 'https://processing-facility-backend.onrender.com/api';
 
@@ -154,6 +155,7 @@ const Dashboard = () => {
   const [bagWeightKg, setBagWeightKg] = useState('');
   const [openBagWeightDialog, setOpenBagWeightDialog] = useState(false);
   const pendingBagWeightRef = useRef(null);
+  const [doUsesSavedBagWeight, setDoUsesSavedBagWeight] = useState(false);
 
   const onDrop = (acceptedFiles) => {
     setPaymentProof(acceptedFiles[0]); // Store the first file dropped
@@ -386,17 +388,20 @@ useEffect(() => {
         uploadDocument(spmDoc, 'SPM', `SPM_${String(order.order_id).padStart(4, '0')}.pdf`),
       ]);
 
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
-      setSelectedOrder(order);
+      await saveOrderBagWeight(orderId, bagWeight);
+
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? { ...order, bag_weight_kg: parseFloat(bagWeight) } : o));
+      setSelectedOrder({ ...order, bag_weight_kg: parseFloat(bagWeight) });
 
       pendingDoRef.current = {
         mode: 'process',
         orderId,
-        order,
+        order: { ...order, bag_weight_kg: parseFloat(bagWeight) },
         pdfPayload,
       };
       setDeliveryDate(dayjs().format('YYYY-MM-DD'));
       setBagWeightKg('');
+      setDoUsesSavedBagWeight(false);
       {
         const pref = resolveWarehouse(warehouses, order.warehouse_id);
         setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
@@ -550,10 +555,12 @@ useEffect(() => {
         uploadDocument(bastDoc, 'BAST', `BAST_${order.order_id}.pdf`),
       ]);
 
-      // Update the orders state safely with the current "Ready for Shipment" status
-      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? order : o));
+      await saveOrderBagWeight(orderId, bagWeight);
 
-      setSelectedOrder(order);
+      // Update the orders state safely with the current "Ready for Shipment" status
+      setOrders(prevOrders => prevOrders.map(o => o.order_id === orderId ? { ...order, bag_weight_kg: parseFloat(bagWeight) } : o));
+
+      setSelectedOrder({ ...order, bag_weight_kg: parseFloat(bagWeight) });
 
       setSnackbar({ open: true, message: 'Shipment documents generated, uploaded to Google Drive, and saved locally successfully', severity: 'success' });
     } catch (error) {
@@ -873,6 +880,7 @@ useEffect(() => {
     setOpenDeliveryDateDialog(false);
     pendingDoRef.current = null;
     setBagWeightKg('');
+    setDoUsesSavedBagWeight(false);
     if (pending?.mode === 'process') {
       setSnackbar({
         open: true,
@@ -900,6 +908,18 @@ useEffect(() => {
     return res.json();
   };
 
+  const saveOrderBagWeight = async (orderId, bagWeight) => {
+    const res = await fetch(`${OMS_API_BASE}/orders/${orderId}/bag-weight`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ bag_weight_kg: parseFloat(bagWeight) }),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to save bag weight: ${await res.text()}`);
+    }
+    return res.json();
+  };
+
   const handleConfirmDeliveryDateDialog = async () => {
     if (!deliveryDate || !pendingDoRef.current || !selectedWarehouseId || !isValidBagWeight(bagWeightKg)) return;
 
@@ -910,9 +930,11 @@ useEffect(() => {
     setOpenDeliveryDateDialog(false);
     pendingDoRef.current = null;
     setBagWeightKg('');
+    setDoUsesSavedBagWeight(false);
 
     try {
       await saveOrderWarehouse(orderId, selectedWarehouseId);
+      await saveOrderBagWeight(orderId, bagWeight);
       setOrders((prev) =>
         prev.map((o) =>
           o.order_id === orderId
@@ -923,6 +945,7 @@ useEffect(() => {
                 warehouse_company_name: warehouse.company_name,
                 warehouse_address: warehouse.address,
                 warehouse_phone: warehouse.phone,
+                bag_weight_kg: parseFloat(bagWeight),
               }
             : o
         )
@@ -1098,14 +1121,17 @@ useEffect(() => {
         const dateSuffix = new Date().toISOString().split('T')[0];
         spkDoc.save(`SPK_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
         spmDoc.save(`SPM_${String(order.order_id).padStart(4, '0')}_${dateSuffix}.pdf`);
+        await saveOrderBagWeight(order.order_id, bagWeight);
 
         pendingDoRef.current = {
           mode: 'download',
           orderId: order.order_id,
-          order,
+          order: { ...order, bag_weight_kg: parseFloat(bagWeight) },
           pdfPayload,
         };
         setDeliveryDate(dayjs().format('YYYY-MM-DD'));
+        setBagWeightKg(String(bagWeight));
+        setDoUsesSavedBagWeight(true);
         {
           const pref = resolveWarehouse(warehouses, order.warehouse_id);
           setSelectedWarehouseId(pref.id != null ? String(pref.id) : '');
@@ -1468,49 +1494,66 @@ useEffect(() => {
     });
 
     // Header: Left-aligned company details, Right-aligned title on the same line
+    const { nextY: headerEndY } = drawWarehouseHeader(doc, wh, {
+      maxWidth: 120,
+      nameFontSize: 12,
+      bodyFontSize: 11,
+    });
     doc.setFont('Helvetica', 'bold');
-    doc.text(wh.company_name, 20, 20);
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.text(wh.address, 20, 25);
-    if (wh.phone) doc.text(wh.phone, 20, 30);
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(20); // Larger font for "SURAT JALAN"
+    doc.setFontSize(20);
     doc.text('Delivery Order (DO)', 190, 20, { align: 'right' });
-    doc.setFontSize(11); // Reset font size
+    doc.setFontSize(11);
     doc.setFont('Helvetica', 'normal');
 
-    // Divider
-    doc.line(20, 35, 190, 35); // Horizontal line
+    const dividerY = Math.max(headerEndY + 2, 35);
+    doc.line(20, dividerY, 190, dividerY);
 
-    doc.text(`Order ID`, 20, 40);
-    doc.text(`: ${String(order.order_id).padStart(4, '0')}`, 50, 40);
-    doc.text(`Customer`, 20, 50);
-    doc.text(`: ${order.customerName || 'Unknown Customer'}`, 50, 50);
-    doc.text(`Address`, 20, 55);
-    doc.text(`: ${order.customer_address || 'N/A'}`, 50, 55);
-    doc.text(`City`, 20, 60);
-    doc.text(`: ${order.customer_city || 'N/A'}`, 50, 60);
-    doc.text(`State`, 20, 65);
-    doc.text(`: ${order.customer_state || 'N/A'}`, 50, 65);
-    doc.text(`Zip Code`, 20, 70);
-    doc.text(`: ${order.customer_zip_code || 'N/A'}`, 50, 70);
-    doc.text(`Shipping Method`, 20, 80);
-    doc.text(`: ${order.shippingMethod || 'Self'}`, 50, 80);
-    doc.text(`Driver Name`, 20, 85);
-    doc.text(`: ${order.driver_name || 'N/A'}`, 50, 85);
-    doc.text(`Number Plate`, 20, 90);
-    doc.text(`: ${order.driver_vehicle_number || 'N/A'}`, 50, 90);
-    doc.text(`Vehicle Type`, 20, 95);
-    doc.text(`: ${order.driver_vehicle_type || 'N/A'}`, 50, 95);
-    doc.text(`Status`, 20, 100); // Show current status in DO
-    doc.text(`: ${order.status || 'Pending'}`, 50, 100); // Show current status in DO
+    let y = dividerY + 5;
+    doc.text(`Order ID`, 20, y);
+    doc.text(`: ${String(order.order_id).padStart(4, '0')}`, 50, y);
+    y += 10;
+    doc.text(`Customer`, 20, y);
+    doc.text(`: ${order.customerName || 'Unknown Customer'}`, 50, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text(`Address`, 20, y);
+    const addressResult = drawMultilineText(
+      doc,
+      `: ${order.customer_address || 'N/A'}`,
+      50,
+      y,
+      { maxWidth: 140 }
+    );
+    y = addressResult.nextY;
+    doc.text(`City`, 20, y);
+    doc.text(`: ${order.customer_city || 'N/A'}`, 50, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text(`State`, 20, y);
+    doc.text(`: ${order.customer_state || 'N/A'}`, 50, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text(`Zip Code`, 20, y);
+    doc.text(`: ${order.customer_zip_code || 'N/A'}`, 50, y);
+    y += 10;
+    doc.text(`Shipping Method`, 20, y);
+    doc.text(`: ${order.shippingMethod || 'Self'}`, 50, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text(`Driver Name`, 20, y);
+    doc.text(`: ${order.driver_name || 'N/A'}`, 50, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text(`Number Plate`, 20, y);
+    doc.text(`: ${order.driver_vehicle_number || 'N/A'}`, 50, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text(`Vehicle Type`, 20, y);
+    doc.text(`: ${order.driver_vehicle_type || 'N/A'}`, 50, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text(`Status`, 20, y);
+    doc.text(`: ${order.status || 'Pending'}`, 50, y);
+    y += 10;
 
     if (!order.items || !Array.isArray(order.items)) {
-      doc.text('No items available', 20, 110);
+      doc.text('No items available', 20, y);
     } else {
       doc.autoTable({
-        startY: 110,
+        startY: y,
         head: [['Product', 'Reference', 'Quantity (kg)', 'No of Bags', 'Delivery Date']],
         body: order.items.map(item => [
           item.product || 'N/A',
@@ -1525,9 +1568,9 @@ useEffect(() => {
       });
     }
 
-    doc.line(20, doc.lastAutoTable?.finalY + 10 || 110, 190, doc.lastAutoTable?.finalY + 10 || 110);
-    doc.text('Authorized by:', 20, doc.lastAutoTable?.finalY + 20 || 120);
-    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || 130);
+    doc.line(20, doc.lastAutoTable?.finalY + 10 || y, 190, doc.lastAutoTable?.finalY + 10 || y);
+    doc.text('Authorized by:', 20, doc.lastAutoTable?.finalY + 20 || y + 10);
+    doc.text(session.user.name || '-', 20, doc.lastAutoTable?.finalY + 30 || y + 20);
 
     return doc;
   };
@@ -1548,54 +1591,53 @@ useEffect(() => {
       format: [210, 297], // A4 size
     });
 
-    // Set fonts and sizes
+    const { nextY: headerEndY } = drawWarehouseHeader(doc, wh, {
+      maxWidth: 120,
+      nameFontSize: 12,
+      bodyFontSize: 11,
+    });
     doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(12);
-
-    // Header: Left-aligned company details, Right-aligned title on the same line
-    doc.text(wh.company_name, 20, 20);
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.text(wh.address, 20, 25);
-    if (wh.phone) doc.text(wh.phone, 20, 30);
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(20); // Larger font for "SURAT JALAN"
+    doc.setFontSize(20);
     doc.text('SURAT JALAN', 190, 20, { align: 'right' });
-    doc.setFontSize(10); // Reset font size
+    doc.setFontSize(10);
 
-    // Divider
-    doc.line(20, 35, 190, 35); // Horizontal line
+    const dividerY = Math.max(headerEndY + 2, 35);
+    doc.line(20, dividerY, 190, dividerY);
 
     // Customer and Document Details: Left-aligned customer, Right-aligned details on the same line
     doc.setFont('Helvetica', 'normal');
-    doc.text('Kepada Yth.', 20, 45);
-    doc.text(`${order.customerName || 'Unknown Customer'}`, 45, 45);
-    doc.text('Alamat:', 20, 50);
-
-    // Truncate and split address into multiple lines if too long
-    const address = `${order.customer_address}` || 'N/A';
-    const maxWidth = 200; // Available width for address (from x: 45 to x: 190)
-    const fontSize = 10; // Current font size
-    const lines = doc.splitTextToSize(address, maxWidth / (fontSize / 2)); // Split text to fit width, approximate scaling
-    lines.forEach((line, index) => {
-      doc.text(line, 45, 50 + (index * 5)); // 5mm line height, starting at y: 50
+    let y = dividerY + 10;
+    doc.text('Kepada Yth.', 20, y);
+    doc.text(`${order.customerName || 'Unknown Customer'}`, 45, y);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text('Alamat:', 20, y);
+    const addressResult = drawMultilineText(doc, order.customer_address || 'N/A', 45, y, {
+      maxWidth: 85,
     });
-
-    doc.text(`${order.customer_city || 'N/A'}, ${order.customer_state || 'N/A'}, ${order.customer_zip_code || 'N/A'}`, 45, 50 + (lines.length * 5));
-    doc.text('Telp:', 20, 55 + (lines.length * 5));
-    doc.text(`${order.customer_phone || 'N/A'}`, 45, 55 + (lines.length * 5));
+    y = addressResult.nextY;
+    const cityLine = `${order.customer_city || 'N/A'}, ${order.customer_state || 'N/A'}, ${order.customer_zip_code || 'N/A'}`;
+    const cityResult = drawMultilineText(doc, cityLine, 45, y, { maxWidth: 85 });
+    y = cityResult.nextY;
+    doc.text('Telp:', 20, y);
+    doc.text(`${order.customer_phone || 'N/A'}`, 45, y);
+    const leftEndY = y + PDF_LINE_HEIGHT_MM;
 
     // Right-aligned document details on the same line as "Kepada Yth."
     const expedition = order.shippingMethod === 'Self' ? 'Warehouse arranged' : 'Customer arranged';
-    doc.text(`No. Surat Jalan : SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, 45, { align: 'right' });
-    doc.text(`Tanggal : ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, 50, { align: 'right' });
-    doc.text(`Ekspedisi : ${expedition}`, 190, 55, { align: 'right' });
-    doc.text(`Nama Driver : ${order.driver_name}`, 190, 60, { align: 'right' });
-    doc.text(`TNKB : ${order.driver_vehicle_number}`, 190, 65, { align: 'right' });
+    let rightY = dividerY + 10;
+    doc.text(`No. Surat Jalan : SJ/${String(order.order_id).padStart(4, '0')}/${dayjs().format('YYYY')}`, 190, rightY, { align: 'right' });
+    rightY += PDF_LINE_HEIGHT_MM;
+    doc.text(`Tanggal : ${dayjs().locale('id').format('DD MMMM YYYY')}`, 190, rightY, { align: 'right' });
+    rightY += PDF_LINE_HEIGHT_MM;
+    doc.text(`Ekspedisi : ${expedition}`, 190, rightY, { align: 'right' });
+    rightY += PDF_LINE_HEIGHT_MM;
+    doc.text(`Nama Driver : ${order.driver_name}`, 190, rightY, { align: 'right' });
+    rightY += PDF_LINE_HEIGHT_MM;
+    doc.text(`TNKB : ${order.driver_vehicle_number}`, 190, rightY, { align: 'right' });
+    rightY += PDF_LINE_HEIGHT_MM;
 
     // Items Table
-    let tableStartY = 65 + (lines.length * 5); // Adjust table start based on address lines
-    if (tableStartY < 65) tableStartY = 65; // Ensure table doesn’t start too early
+    const tableStartY = Math.max(leftEndY, rightY) + 5;
 
     doc.autoTable({
       startY: tableStartY,
@@ -1676,37 +1718,63 @@ useEffect(() => {
 
     // Document Information
     doc.setFont('Helvetica', 'normal');
-    doc.text(`Pada hari ini, ${dayjs().locale('id').format('dddd')}, tanggal ${dayjs().locale('id').format('DD MMMM YYYY')}, kami yang bertanda tangan di bawah ini:`, 20, 50);
+    const introResult = drawMultilineText(
+      doc,
+      `Pada hari ini, ${dayjs().locale('id').format('dddd')}, tanggal ${dayjs().locale('id').format('DD MMMM YYYY')}, kami yang bertanda tangan di bawah ini:`,
+      20,
+      50,
+      { maxWidth: 170 }
+    );
 
     // Party 1 (Sender/Company)
-    doc.text('Nama', 20, 60);
-    doc.text(':', 40, 60);
-    doc.text(wh.company_name, 45, 60);
+    let y = introResult.nextY + PDF_LINE_HEIGHT_MM;
+    doc.text('Nama', 20, y);
+    doc.text(':', 40, y);
+    doc.text(wh.company_name, 45, y);
 
-    doc.text('Alamat', 20, 65);
-    doc.text(':', 40, 65);
-    doc.text(wh.address, 45, 65);
-
-    doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, 70);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text('Alamat', 20, y);
+    doc.text(':', 40, y);
+    const party1Address = drawMultilineText(doc, wh.address, 45, y, { maxWidth: 145 });
+    y = party1Address.nextY;
+    doc.text('Selanjutnya disebut PIHAK PERTAMA', 20, y);
 
     // Party 2 (Receiver/Customer)
-    doc.text('Nama', 20, 80);
-    doc.text(':', 40, 80);
-    doc.text(`${order.customerName || 'Unknown Customer'}`, 45, 80);
+    y += PDF_LINE_HEIGHT_MM * 2;
+    doc.text('Nama', 20, y);
+    doc.text(':', 40, y);
+    doc.text(`${order.customerName || 'Unknown Customer'}`, 45, y);
 
-    doc.text('Alamat', 20, 85);
-    doc.text(':', 40, 85);
-    doc.text(`${order.customer_address}` || 'N/A', 45, 85);
-    doc.text(`${order.customer_city}, ${order.customer_state}, ${order.customer_zip_code}` || 'N/A', 45, 90);
-
-    doc.text('Selanjutnya disebut PIHAK KEDUA', 20, 95);
+    y += PDF_LINE_HEIGHT_MM;
+    doc.text('Alamat', 20, y);
+    doc.text(':', 40, y);
+    const party2Street = drawMultilineText(doc, order.customer_address || 'N/A', 45, y, {
+      maxWidth: 145,
+    });
+    y = party2Street.nextY;
+    const party2City = drawMultilineText(
+      doc,
+      `${order.customer_city || 'N/A'}, ${order.customer_state || 'N/A'}, ${order.customer_zip_code || 'N/A'}`,
+      45,
+      y,
+      { maxWidth: 145 }
+    );
+    y = party2City.nextY;
+    doc.text('Selanjutnya disebut PIHAK KEDUA', 20, y);
 
     // Statement
-    doc.text('Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:', 20, 100);
+    y += PDF_LINE_HEIGHT_MM * 2;
+    const statementResult = drawMultilineText(
+      doc,
+      'Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:',
+      20,
+      y,
+      { maxWidth: 170 }
+    );
 
     // Items Table (Updated to match OCR, removing Merk Barang column)
     doc.autoTable({
-      startY: 110,
+      startY: statementResult.nextY + 5,
       head: [['No.', 'Jenis Barang', 'Product Reference', 'Berat Total (kg)', 'Jumlah Karung', 'Keterangan']],
       body: order.items.map((item, index) => [
         (index + 1).toString(),
@@ -1723,18 +1791,31 @@ useEffect(() => {
 
     // Purpose/Usage Statement
     const tableEndY = doc.lastAutoTable.finalY;
-    doc.text('Untuk diserahkan kepada pelanggan PT. Berkas Tuaian Melimpah sebagai barang pesanan.', 20, tableEndY + 10);
-    doc.text('Demikian Berita Acara Serah Terima Barang ini dibuat untuk dapat dipergunakan sebagaimana mestinya.', 20, tableEndY + 15);
+    const purposeY = drawMultilineText(
+      doc,
+      'Untuk diserahkan kepada pelanggan PT. Berkas Tuaian Melimpah sebagai barang pesanan.',
+      20,
+      tableEndY + 10,
+      { maxWidth: 170 }
+    );
+    const closingY = drawMultilineText(
+      doc,
+      'Demikian Berita Acara Serah Terima Barang ini dibuat untuk dapat dipergunakan sebagaimana mestinya.',
+      20,
+      purposeY.nextY,
+      { maxWidth: 170 }
+    );
 
     // Signatures
+    const signatureY = closingY.nextY + 15;
     doc.setFont('Helvetica', 'bold');
-    doc.text('PIHAK PERTAMA', 50, tableEndY + 30, { align: 'center' });
-    doc.text('PIHAK KEDUA', 140, tableEndY + 30, { align: 'center' });
+    doc.text('PIHAK PERTAMA', 50, signatureY, { align: 'center' });
+    doc.text('PIHAK KEDUA', 140, signatureY, { align: 'center' });
   
     doc.setFont('Helvetica', 'normal');
-    doc.text(`Haris Ariansyah`, 50, tableEndY + 60, { align: 'center' });
-    doc.text(`Manager`, 50, tableEndY + 65, { align: 'center' });
-    doc.text(`${order.customerName || 'Unknown Customer'}`, 140, tableEndY + 60, { align: 'center' });
+    doc.text(`Haris Ariansyah`, 50, signatureY + 30, { align: 'center' });
+    doc.text(`Manager`, 50, signatureY + 35, { align: 'center' });
+    doc.text(`${order.customerName || 'Unknown Customer'}`, 140, signatureY + 30, { align: 'center' });
 
     return doc;
   };
@@ -2562,7 +2643,9 @@ useEffect(() => {
         <DialogTitle>Delivery Order details</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Enter the delivery date, bag weight, and shipping-from warehouse for the Delivery Order PDF.
+            {doUsesSavedBagWeight
+              ? 'Enter the delivery date and shipping-from warehouse for the Delivery Order PDF. Bag weight from the previous generation will be reused.'
+              : 'Enter the delivery date, bag weight, and shipping-from warehouse for the Delivery Order PDF.'}
           </Typography>
           <TextField
             label="Delivery Date"
@@ -2574,16 +2657,18 @@ useEffect(() => {
             InputLabelProps={{ shrink: true }}
             sx={{ mt: 1, mb: 2 }}
           />
-          <TextField
-            label="Bag weight (kg)"
-            type="number"
-            value={bagWeightKg}
-            onChange={(e) => setBagWeightKg(e.target.value)}
-            fullWidth
-            required
-            inputProps={{ min: 0, step: 'any' }}
-            sx={{ mb: 2 }}
-          />
+          {!doUsesSavedBagWeight && (
+            <TextField
+              label="Bag weight (kg)"
+              type="number"
+              value={bagWeightKg}
+              onChange={(e) => setBagWeightKg(e.target.value)}
+              fullWidth
+              required
+              inputProps={{ min: 0, step: 'any' }}
+              sx={{ mb: 2 }}
+            />
+          )}
           <FormControl fullWidth required>
             <InputLabel id="do-warehouse-label">Warehouse</InputLabel>
             <Select

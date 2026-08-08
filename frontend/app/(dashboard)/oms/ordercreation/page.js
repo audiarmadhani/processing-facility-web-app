@@ -31,6 +31,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
 import CloseIcon from '@mui/icons-material/Close';
+import { drawMultilineText, PDF_LINE_HEIGHT_MM } from '../_shared/pdfTextUtils';
 
 const OrderCreation = () => {
   const { data: session, status } = useSession();
@@ -456,28 +457,46 @@ const OrderCreation = () => {
 
     let yOffset = 43;
     const columnWidth = (doc.internal.pageSize.getWidth() - 40) / 2;
+    const addressMaxWidth = columnWidth - 4;
 
     addText('Customer Information:', 14, yOffset, { bold: true });
     yOffset += 8;
-    addText(`Name: ${customer ? customer.name : '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`Default Address: ${customer ? customer.address : '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`Shipping Address: ${formData.shipping_address || '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`Billing Address: ${formData.billing_address || '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`Phone: ${customer ? customer.phone : '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`Email: ${customer ? customer.email || '-' : '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`Country: ${customer ? customer.country || '-' : '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`State: ${customer ? customer.state || '-' : '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`City: ${customer ? customer.city || '-' : '-'}` , 14, yOffset);
-    yOffset += 6;
-    addText(`Zip Code: ${customer ? customer.zip_code || '-' : '-'}` , 14, yOffset);
+    addText(`Name: ${customer ? customer.name : '-'}`, 14, yOffset);
+    yOffset += PDF_LINE_HEIGHT_MM + 1;
+    doc.setFont('Arial', 'normal');
+    doc.setFontSize(12);
+    yOffset = drawMultilineText(
+      doc,
+      `Default Address: ${customer ? customer.address : '-'}`,
+      14,
+      yOffset,
+      { maxWidth: addressMaxWidth, lineHeight: PDF_LINE_HEIGHT_MM + 1 }
+    ).nextY;
+    yOffset = drawMultilineText(
+      doc,
+      `Shipping Address: ${formData.shipping_address || '-'}`,
+      14,
+      yOffset,
+      { maxWidth: addressMaxWidth, lineHeight: PDF_LINE_HEIGHT_MM + 1 }
+    ).nextY;
+    yOffset = drawMultilineText(
+      doc,
+      `Billing Address: ${formData.billing_address || '-'}`,
+      14,
+      yOffset,
+      { maxWidth: addressMaxWidth, lineHeight: PDF_LINE_HEIGHT_MM + 1 }
+    ).nextY;
+    addText(`Phone: ${customer ? customer.phone : '-'}`, 14, yOffset);
+    yOffset += PDF_LINE_HEIGHT_MM + 1;
+    addText(`Email: ${customer ? customer.email || '-' : '-'}`, 14, yOffset);
+    yOffset += PDF_LINE_HEIGHT_MM + 1;
+    addText(`Country: ${customer ? customer.country || '-' : '-'}`, 14, yOffset);
+    yOffset += PDF_LINE_HEIGHT_MM + 1;
+    addText(`State: ${customer ? customer.state || '-' : '-'}`, 14, yOffset);
+    yOffset += PDF_LINE_HEIGHT_MM + 1;
+    addText(`City: ${customer ? customer.city || '-' : '-'}`, 14, yOffset);
+    yOffset += PDF_LINE_HEIGHT_MM + 1;
+    addText(`Zip Code: ${customer ? customer.zip_code || '-' : '-'}`, 14, yOffset);
 
     let shippingOffset = 43;
     addText('Shipping Information:', 14 + columnWidth + 10, shippingOffset, { bold: true });
