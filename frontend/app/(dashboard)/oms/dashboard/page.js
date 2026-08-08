@@ -160,11 +160,9 @@ const Dashboard = () => {
   const [openSignedUploadDialog, setOpenSignedUploadDialog] = useState(false);
   const [signedUploadOrder, setSignedUploadOrder] = useState(null);
   const [signedUploadFile, setSignedUploadFile] = useState(null);
-  const [signedUploadType, setSignedUploadType] = useState('Surat Jalan');
   const [signedUploading, setSignedUploading] = useState(false);
 
   const REGENERABLE_DOC_TYPES = ['SPK', 'SPM', 'DO', 'Surat Jalan', 'BAST'];
-  const SIGNED_UPLOAD_TYPES = ['Surat Jalan', 'BAST', 'DO', 'SPK', 'SPM', 'Other'];
 
   const onDrop = (acceptedFiles) => {
     setPaymentProof(acceptedFiles[0]); // Store the first file dropped
@@ -1282,7 +1280,6 @@ const Dashboard = () => {
       surat_jalan_number: row.surat_jalan_number,
       folder_name: String(row.order_id).padStart(4, '0'),
     });
-    setSignedUploadType('Surat Jalan');
     setSignedUploadFile(null);
     setOpenSignedUploadDialog(true);
   };
@@ -1304,7 +1301,6 @@ const Dashboard = () => {
     try {
       const formData = new FormData();
       formData.append('order_id', String(signedUploadOrder.order_id));
-      formData.append('type', signedUploadType);
       formData.append('file', signedUploadFile, signedUploadFile.name);
 
       const res = await fetch(`${OMS_API_BASE}/documents/signed-upload`, {
@@ -3018,21 +3014,8 @@ const Dashboard = () => {
               ? ` · ${signedUploadOrder.surat_jalan_number}`
               : ''}
             . File will be saved under Drive folder{' '}
-            <strong>{signedUploadOrder?.folder_name || '—'}</strong>.
+            <strong>{signedUploadOrder?.folder_name || '—'}</strong> with its original name.
           </Typography>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="signed-doc-type-label">Document type</InputLabel>
-            <Select
-              labelId="signed-doc-type-label"
-              label="Document type"
-              value={signedUploadType}
-              onChange={(e) => setSignedUploadType(e.target.value)}
-            >
-              {SIGNED_UPLOAD_TYPES.map((t) => (
-                <MenuItem key={t} value={t}>{t}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
           <Box
             sx={{
               mb: 1,
